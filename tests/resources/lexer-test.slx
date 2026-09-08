@@ -1,0 +1,102 @@
+// This is a single-line comment
+/*
+  This is a multi-line comment.
+  This file tests all tokens defined in solix::lexer::TokenType.
+*/
+
+package main.test;
+
+// Alias test
+alias IntAlias = int32;
+
+// Enum test
+public enum State {
+    START,
+    STOP
+}
+
+// Class and access modifiers test
+internal class MathUtils {
+    private const float32 PI = 3.14159;
+    protected static string name = "Math Module";
+
+    public inline int32 add(int32 a, int32 b) {
+        return a + b;
+    }
+}
+
+public class Main {
+    // Testing primitive types and basic tokens
+    static void testPrimitives() {
+        bool bVal = !true;
+        
+        int8 i8 = 1;
+        int16 i16 = 2;
+        int32 i32 = 3;
+        int64 i64 = 4;
+        
+        uint8 u8 = 5;
+        uint16 u16 = 6;
+        uint32 u32 = 7;
+        uint64 u64 = 8;
+        
+        float32 f32 = 9.0;
+        float64 f64 = 10.0;
+        
+        char c = 'C';
+        string s = "Hello Solix";
+    }
+
+    public static void main(array string args) {
+        IntAlias counter = 0;
+        MathUtils utils = new MathUtils();
+
+        // Testing operators: assign, arithmetic, and increment/decrement
+        counter = counter + 1;
+        counter = counter - 1;
+        counter = counter * 2;
+        counter = counter / 2;
+        counter = counter % 2;
+        counter++;
+        counter--;
+
+        // Testing logical and relational operators
+        if (counter == 0 && counter != 1) {
+            counter++;
+        } else if (counter < 5 || counter > 10) {
+            counter--;
+        }
+
+        if (counter <= 2 && counter >= 0) {
+            // Testing arrays and punctuation [], .
+            array int32 nums = new array int32[5];
+            nums[0] = utils.add(10, 20);
+        }
+
+        // Testing loops: for, while, break, continue
+        for (int32 i = 0; i < 10; i++) {
+            if (i == 5) {
+                continue;
+            }
+            if (i == 8) {
+                break;
+            }
+        }
+
+        while (counter < 10) {
+            counter++;
+        }
+
+        // Testing switch, case, default, and colon
+        switch (counter) {
+            case 1:
+                counter = 10;
+                break;
+            default:
+                counter = 0;
+                break;
+        }
+
+        return;
+    }
+}

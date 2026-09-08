@@ -6,8 +6,10 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
+file(GLOB_RECURSE TEST_SOURCES "src/lexer/*.cpp")
+
 add_executable(solix_tests
-    src/main.cpp
+    ${TEST_SOURCES}
 )
 
 target_link_libraries(solix_tests PRIVATE Catch2::Catch2WithMain solix_language)
