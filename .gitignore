@@ -1,0 +1,20 @@
+# CMake build directory
+build/
+build-*/
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Compiled files
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# FetchContent
+_deps/
