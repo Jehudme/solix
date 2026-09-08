@@ -1,0 +1,62 @@
+{
+	"abstract" : true,
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"target_link_libraries"
+		],
+		"files" : 
+		[
+			"out/Debug/_deps/spdlog-src/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 198,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 204,
+				"parent" : 0
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 11
+	},
+	"id" : "spdlog_header_only::@eb35cfce7893ccfeff1e",
+	"interfaceCompileDependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "Threads::Threads::@eb35cfce7893ccfeff1e"
+		}
+	],
+	"interfaceLinkLibraries" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "Threads::Threads::@eb35cfce7893ccfeff1e"
+		}
+	],
+	"name" : "spdlog_header_only",
+	"paths" : 
+	{
+		"build" : "_deps/spdlog-build",
+		"source" : "out/Debug/_deps/spdlog-src"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

@@ -1,0 +1,16 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/jehud/Projects/enigma/out/Debug/cmake_install.cmake",
+		"/home/jehud/Projects/enigma/out/Debug/language/cmake_install.cmake",
+		"/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-build/cmake_install.cmake",
+		"/home/jehud/Projects/enigma/out/Debug/launcher/cmake_install.cmake",
+		"/home/jehud/Projects/enigma/out/Debug/_deps/cli11-build/cmake_install.cmake",
+		"/home/jehud/Projects/enigma/out/Debug/_deps/cli11-build/fuzz/cmake_install.cmake",
+		"/home/jehud/Projects/enigma/out/Debug/_deps/cli11-build/src/cmake_install.cmake",
+		"/home/jehud/Projects/enigma/out/Debug/tests/cmake_install.cmake",
+		"/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/cmake_install.cmake",
+		"/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/src/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

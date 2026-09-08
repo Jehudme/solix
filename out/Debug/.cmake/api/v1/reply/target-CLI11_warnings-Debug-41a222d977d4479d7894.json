@@ -1,0 +1,53 @@
+{
+	"abstract" : true,
+	"backtrace" : 3,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_library",
+			"include"
+		],
+		"files" : 
+		[
+			"out/Debug/_deps/cli11-src/cmake/CLI11Warnings.cmake",
+			"out/Debug/_deps/cli11-src/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 133,
+				"parent" : 0
+			},
+			{
+				"file" : 0,
+				"parent" : 1
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 2,
+				"parent" : 2
+			}
+		]
+	},
+	"codemodelVersion" : 
+	{
+		"major" : 2,
+		"minor" : 11
+	},
+	"id" : "CLI11_warnings::@b24886b5f5c9e75d0c2f",
+	"name" : "CLI11_warnings",
+	"paths" : 
+	{
+		"build" : "_deps/cli11-build",
+		"source" : "out/Debug/_deps/cli11-src"
+	},
+	"sources" : [],
+	"type" : "INTERFACE_LIBRARY"
+}

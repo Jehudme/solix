@@ -1,0 +1,1 @@
+/usr/bin/c++ -g -Wl,--dependency-file=CMakeFiles/solix_launcher.dir/link.d CMakeFiles/solix_launcher.dir/src/main.cpp.o CMakeFiles/solix_launcher.dir/src/commands/compile.cpp.o CMakeFiles/solix_launcher.dir/src/commands/execute.cpp.o -o solix_launcher  ../language/libsolix_language.a ../_deps/spdlog-build/libspdlogd.a

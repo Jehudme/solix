@@ -1,0 +1,1 @@
+/usr/bin/c++ -g -Wl,--dependency-file=CMakeFiles/solix_tests.dir/link.d CMakeFiles/solix_tests.dir/src/main.cpp.o -o solix_tests  ../_deps/catch2-build/src/libCatch2Maind.a ../language/libsolix_language.a ../_deps/catch2-build/src/libCatch2d.a ../_deps/spdlog-build/libspdlogd.a
