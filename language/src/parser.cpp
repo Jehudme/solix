@@ -259,6 +259,10 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
         return NodeType::VARIABLE_DECLARATION; 
     }
     
+    if (tokens.back().type == lexer::TokenType::PUNCTUATION_SEMICOLON) {
+        return NodeType::EXPRESSION_STATEMENT;
+    }
+    
     // Expressions
     // Check Assignment (LEFT TO RIGHT at depth 0)
     int p = 0, b = 0, br = 0;
@@ -371,18 +375,11 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
     }
     
     if (tokens.size() == 1) {
-        if (t0 == lexer::TokenType::NUMBER || t0 == lexer::TokenType::STRING ||
-            t0 == lexer::TokenType::IDENTIFIER || t0 == lexer::TokenType::IDENTIFIER) {
-            return NodeType::LITERAL_EXPRESSION;
-        }
-        if (t0 == lexer::TokenType::IDENTIFIER) {
-            return NodeType::IDENTIFIER_EXPRESSION;
-        }
+        if (t0 == lexer::TokenType::NUMBER || t0 == lexer::TokenType::STRING) return NodeType::LITERAL_EXPRESSION;
+        if (t0 == lexer::TokenType::IDENTIFIER) return NodeType::IDENTIFIER_EXPRESSION;
     }
     
-    if (tokens.back().type == lexer::TokenType::PUNCTUATION_SEMICOLON) {
-        return NodeType::EXPRESSION_STATEMENT;
-    }
+
     
     throw_parse_error(tokens, "Unable to determine AST Node Type");
 }
