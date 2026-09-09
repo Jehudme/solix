@@ -223,9 +223,7 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
                         break;
                     }
                 }
-                std::cout << "METHOD!\n";
                     if (has_return_type) return NodeType::METHOD_DECLARATION;
-                std::cout << "CTOR!\n";
                     return NodeType::CONSTRUCTOR_DECLARATION;
             }
         }
