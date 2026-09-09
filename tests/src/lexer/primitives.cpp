@@ -47,4 +47,20 @@ TEST_CASE("Lexer - Primitives Exhaustive", "[lexer][primitives]") {
         REQUIRE(tokens[1].type == TokenType::IDENTIFIER);
         REQUIRE(tokens[2].type == TokenType::PRIMITIVE_INT32);
     }
+
+    SECTION("Array Syntax (Lexer handles as 3 tokens)") {
+        // In modern compilers, int8[] is parsed as [PRIMITIVE_INT8, OPEN_BRACKET, CLOSE_BRACKET]
+        // The parser groups these later!
+        auto tokens = tokenize("int8[] bool[]");
+        
+        REQUIRE(tokens.size() == 7); // int8, [, ], bool, [, ], EOF
+        
+        REQUIRE(tokens[0].type == TokenType::PRIMITIVE_INT8);
+        REQUIRE(tokens[1].type == TokenType::PUNCTUATION_OPEN_BRACKET);
+        REQUIRE(tokens[2].type == TokenType::PUNCTUATION_CLOSE_BRACKET);
+        
+        REQUIRE(tokens[3].type == TokenType::PRIMITIVE_BOOL);
+        REQUIRE(tokens[4].type == TokenType::PUNCTUATION_OPEN_BRACKET);
+        REQUIRE(tokens[5].type == TokenType::PUNCTUATION_CLOSE_BRACKET);
+    }
 }
