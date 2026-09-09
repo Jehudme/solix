@@ -7,12 +7,15 @@ using namespace solix;
 
 TEST_CASE("Parser: AssignmentExpression", "[parser][assignment]") {
     SECTION("Valid Assignment") {
-        std::string source = "count = 10;";
+        std::string source = "class Test { public void method() { count = 10; } }";
         parser::AstTree tree;
         REQUIRE_NOTHROW(tree.include(std::string_view(source)));
         
-        REQUIRE(tree.nodes.size() == 1);
-        auto* expr_stmt = dynamic_cast<parser::ExpressionStatement*>(tree.nodes[0].get());
+        auto* cls = dynamic_cast<parser::ClassDeclaration*>(tree.nodes[0].get());
+        auto* method = dynamic_cast<parser::MethodDeclaration*>(cls->children[0].get());
+        auto* block = dynamic_cast<parser::BlockStatement*>(method->children[0].get());
+        
+        auto* expr_stmt = dynamic_cast<parser::ExpressionStatement*>(block->children[0].get());
         REQUIRE(expr_stmt != nullptr);
         
         auto* assign = dynamic_cast<parser::AssignmentExpression*>(expr_stmt->expression.get());
@@ -28,12 +31,15 @@ TEST_CASE("Parser: AssignmentExpression", "[parser][assignment]") {
     }
 
     SECTION("Valid Array Assignment") {
-        std::string source = "nums[0] = 5;";
+        std::string source = "class Test { public void method() { nums[0] = 5; } }";
         parser::AstTree tree;
         REQUIRE_NOTHROW(tree.include(std::string_view(source)));
         
-        REQUIRE(tree.nodes.size() == 1);
-        auto* expr_stmt = dynamic_cast<parser::ExpressionStatement*>(tree.nodes[0].get());
+        auto* cls = dynamic_cast<parser::ClassDeclaration*>(tree.nodes[0].get());
+        auto* method = dynamic_cast<parser::MethodDeclaration*>(cls->children[0].get());
+        auto* block = dynamic_cast<parser::BlockStatement*>(method->children[0].get());
+        
+        auto* expr_stmt = dynamic_cast<parser::ExpressionStatement*>(block->children[0].get());
         REQUIRE(expr_stmt != nullptr);
         
         auto* assign = dynamic_cast<parser::AssignmentExpression*>(expr_stmt->expression.get());
@@ -41,5 +47,11 @@ TEST_CASE("Parser: AssignmentExpression", "[parser][assignment]") {
         
         auto* target = dynamic_cast<parser::ArrayAccessExpression*>(assign->target.get());
         REQUIRE(target != nullptr);
+    }
+    
+    SECTION("Error: Invalid Top-Level Assignment") {
+        std::string source = "count = 10;";
+        parser::AstTree tree;
+        REQUIRE_THROWS_WITH(tree.include(std::string_view(source)), Catch::Matchers::ContainsSubstring("Invalid top-level declaration"));
     }
 }

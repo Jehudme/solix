@@ -1217,11 +1217,19 @@ void AstTree::include(std::filesystem::path file_path) {
     for (const auto& stmt : stmts) {
         if (!stmt.empty()) {
             auto node = parseTokensToNode(stmt);
-            populateSymbols(this, node.get(), pkg_prefix);
-            if (node && node->node_type == NodeType::PACKAGE_STATEMENT) {
-                pkg_prefix = static_cast<PackageStatement*>(node.get())->package_name + ".";
+            if (node) {
+                if (node->node_type != NodeType::PACKAGE_STATEMENT &&
+                    node->node_type != NodeType::ALIAS_STATEMENT &&
+                    node->node_type != NodeType::ENUM_DECLARATION &&
+                    node->node_type != NodeType::CLASS_DECLARATION) {
+                    throw_parse_error(stmt, "Invalid top-level declaration. Variables and expressions must be inside a class.");
+                }
+                populateSymbols(this, node.get(), pkg_prefix);
+                if (node->node_type == NodeType::PACKAGE_STATEMENT) {
+                    pkg_prefix = static_cast<PackageStatement*>(node.get())->package_name + ".";
+                }
+                nodes.push_back(std::move(node));
             }
-            if (node) nodes.push_back(std::move(node));
         }
     }
 }
@@ -1234,11 +1242,19 @@ void AstTree::include(std::string_view source_code, std::optional<std::filesyste
     for (const auto& stmt : stmts) {
         if (!stmt.empty()) {
             auto node = parseTokensToNode(stmt);
-            populateSymbols(this, node.get(), pkg_prefix);
-            if (node && node->node_type == NodeType::PACKAGE_STATEMENT) {
-                pkg_prefix = static_cast<PackageStatement*>(node.get())->package_name + ".";
+            if (node) {
+                if (node->node_type != NodeType::PACKAGE_STATEMENT &&
+                    node->node_type != NodeType::ALIAS_STATEMENT &&
+                    node->node_type != NodeType::ENUM_DECLARATION &&
+                    node->node_type != NodeType::CLASS_DECLARATION) {
+                    throw_parse_error(stmt, "Invalid top-level declaration. Variables and expressions must be inside a class.");
+                }
+                populateSymbols(this, node.get(), pkg_prefix);
+                if (node->node_type == NodeType::PACKAGE_STATEMENT) {
+                    pkg_prefix = static_cast<PackageStatement*>(node.get())->package_name + ".";
+                }
+                nodes.push_back(std::move(node));
             }
-            if (node) nodes.push_back(std::move(node));
         }
     }
 }
