@@ -1,4 +1,8 @@
 #include "solix/parser.hpp"
+#include <random>
+#include <sstream>
+#include <iomanip>
+#include <unordered_set>
 #include "solix/lexer.hpp"
 #include <stdexcept>
 #include <iostream>
@@ -1203,34 +1207,113 @@ const Node* AstTree::resolveDeclaration(const Node* current_scope, const std::st
 }
 
 
-static void populateSymbols(AstTree* tree, Node* root, std::string prefix) {
+static std::string generate_uuid() {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<> dis(0, 15);
+    std::stringstream ss;
+    ss << "<";
+    for (int i = 0; i < 8; i++) {
+        ss << std::hex << dis(gen);
+    }
+    ss << ">";
+    return ss.str();
+}
+
+static void populateSymbols(AstTree* tree, Node* root, std::string prefix, std::vector<std::unordered_set<std::string>>& scopes) {
     if (!root) return;
     std::string my_prefix = prefix;
     
+    if (root->node_type == NodeType::BLOCK_STATEMENT || root->node_type == NodeType::METHOD_DECLARATION || root->node_type == NodeType::CONSTRUCTOR_DECLARATION) {
+        scopes.push_back({}); // New scope
+    }
+
     if (root->node_type == NodeType::PACKAGE_STATEMENT) {
-        my_prefix = static_cast<PackageStatement*>(root)->package_name + ".";
+        auto pkg = static_cast<PackageStatement*>(root);
+        my_prefix = pkg->package_name + ".";
+        pkg->symbol_name = pkg->package_name;
+        tree->symbols[pkg->symbol_name] = pkg;
     } else if (root->node_type == NodeType::CLASS_DECLARATION) {
         auto cls = static_cast<ClassDeclaration*>(root);
         std::string full_name = prefix + cls->class_name;
         if (tree->symbols.count(full_name)) throw std::runtime_error("Duplicate global symbol: " + full_name);
+        cls->symbol_name = full_name;
         tree->symbols[full_name] = cls;
         my_prefix = full_name + ".";
     } else if (root->node_type == NodeType::ENUM_DECLARATION) {
         auto enm = static_cast<EnumDeclaration*>(root);
         std::string full_name = prefix + enm->enum_name;
         if (tree->symbols.count(full_name)) throw std::runtime_error("Duplicate global symbol: " + full_name);
+        enm->symbol_name = full_name;
         tree->symbols[full_name] = enm;
+        my_prefix = full_name + ".";
     } else if (root->node_type == NodeType::ALIAS_STATEMENT) {
         auto alias = static_cast<AliasStatement*>(root);
         std::string full_name = prefix + alias->alias_name;
         if (tree->symbols.count(full_name)) throw std::runtime_error("Duplicate global symbol: " + full_name);
+        alias->symbol_name = full_name;
         tree->symbols[full_name] = alias;
+    } else if (root->node_type == NodeType::FIELD_DECLARATION) {
+        auto field = static_cast<FieldDeclaration*>(root);
+        std::string full_name = prefix + field->field_name;
+        if (tree->symbols.count(full_name)) throw std::runtime_error("Duplicate field symbol: " + full_name);
+        field->symbol_name = full_name;
+        tree->symbols[full_name] = field;
+    } else if (root->node_type == NodeType::METHOD_DECLARATION) {
+        auto method = static_cast<MethodDeclaration*>(root);
+        for (const auto& param : method->parameters) {
+            scopes.back().insert(param.name);
+        }
+        std::string full_name = prefix + method->method_name + generate_uuid();
+        method->symbol_name = full_name;
+        tree->symbols[full_name] = method;
+        my_prefix = prefix + method->method_name + ".";
+    } else if (root->node_type == NodeType::CONSTRUCTOR_DECLARATION) {
+        auto ctor = static_cast<ConstructorDeclaration*>(root);
+        for (const auto& param : ctor->parameters) {
+            scopes.back().insert(param.name);
+        }
+        std::string full_name = prefix + "constructor" + generate_uuid();
+        ctor->symbol_name = full_name;
+        tree->symbols[full_name] = ctor;
+        my_prefix = prefix + "constructor.";
+    } else if (root->node_type == NodeType::VARIABLE_DECLARATION) {
+        auto var = static_cast<VariableDeclaration*>(root);
+        if (!scopes.empty()) {
+            if (scopes.back().count(var->var_name)) throw std::runtime_error("Duplicate local variable in same scope: " + var->var_name);
+            scopes.back().insert(var->var_name);
+        }
+        std::string full_name = prefix + var->var_name + generate_uuid();
+        var->symbol_name = full_name;
+        tree->symbols[full_name] = var;
     }
     
+    // Process block children normally
     for (const auto& child : root->children) {
-        populateSymbols(tree, child.get(), my_prefix);
+        populateSymbols(tree, child.get(), my_prefix, scopes);
+    }
+    
+    // Process specific node bodies if they aren't directly in children
+    if (root->node_type == NodeType::IF_STATEMENT) {
+        auto if_stmt = static_cast<IfStatement*>(root);
+        if (if_stmt->then_branch) populateSymbols(tree, if_stmt->then_branch.get(), my_prefix, scopes);
+        if (if_stmt->else_branch) populateSymbols(tree, if_stmt->else_branch.get(), my_prefix, scopes);
+    } else if (root->node_type == NodeType::FOR_STATEMENT) {
+        auto for_stmt = static_cast<ForStatement*>(root);
+        if (for_stmt->initialization) populateSymbols(tree, for_stmt->initialization.get(), my_prefix, scopes);
+        if (for_stmt->body) populateSymbols(tree, for_stmt->body.get(), my_prefix, scopes);
+    } else if (root->node_type == NodeType::WHILE_STATEMENT) {
+        auto while_stmt = static_cast<WhileStatement*>(root);
+        if (while_stmt->body) populateSymbols(tree, while_stmt->body.get(), my_prefix, scopes);
+    } else if (root->node_type == NodeType::DO_WHILE_STATEMENT) {
+        auto dowhile_stmt = static_cast<DoWhileStatement*>(root);
+        if (dowhile_stmt->body) populateSymbols(tree, dowhile_stmt->body.get(), my_prefix, scopes);
+    }
+    if (root->node_type == NodeType::BLOCK_STATEMENT || root->node_type == NodeType::METHOD_DECLARATION || root->node_type == NodeType::CONSTRUCTOR_DECLARATION) {
+        scopes.pop_back();
     }
 }
+
 
 void AstTree::include(std::filesystem::path file_path) {
     auto tokens = lexer::tokenize_file(file_path);
@@ -1255,7 +1338,8 @@ void AstTree::include(std::filesystem::path file_path) {
                     has_package = true;
                     pkg_prefix = static_cast<PackageStatement*>(node.get())->package_name + ".";
                 }
-                populateSymbols(this, node.get(), pkg_prefix);
+                std::vector<std::unordered_set<std::string>> scopes;
+                populateSymbols(this, node.get(), pkg_prefix, scopes);
                 nodes.push_back(std::move(node));
             }
         }
@@ -1286,7 +1370,8 @@ void AstTree::include(std::string_view source_code, std::optional<std::filesyste
                     has_package = true;
                     pkg_prefix = static_cast<PackageStatement*>(node.get())->package_name + ".";
                 }
-                populateSymbols(this, node.get(), pkg_prefix);
+                std::vector<std::unordered_set<std::string>> scopes;
+                populateSymbols(this, node.get(), pkg_prefix, scopes);
                 nodes.push_back(std::move(node));
             }
             actual_stmt_idx++;
