@@ -182,7 +182,7 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
     if (t0 == lexer::TokenType::KEYWORD_BREAK) return NodeType::BREAK_STATEMENT;
     if (t0 == lexer::TokenType::KEYWORD_CONTINUE) return NodeType::CONTINUE_STATEMENT;
     if (t0 == lexer::TokenType::KEYWORD_RETURN) return NodeType::RETURN_STATEMENT;
-    if (t0 == lexer::TokenType::IDENTIFIER) return NodeType::DO_WHILE_STATEMENT;
+    if (t0 == lexer::TokenType::IDENTIFIER && tokens.size() > 1 && tokens[0].value.value_or("") == "do" && tokens[1].type == lexer::TokenType::PUNCTUATION_OPEN_BRACE) return NodeType::DO_WHILE_STATEMENT;
     
     // Methods / Constructors
     if (tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) {
@@ -202,11 +202,10 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
                     param_end = i - 1;
                 }
             }
-            if (body_start != -1 && param_end != -1 && param_start == -1) {
+            if (body_start != -1 && param_end != -1 && param_start == -1 && i <= param_end) {
                 if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p_depth++;
-                else 
-        if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p_depth--;
-                if (p_depth == 0) param_start = i;
+                else if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p_depth--;
+                if (p_depth == 0 && tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) param_start = i;
             }
         }
         
@@ -224,8 +223,10 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
                         break;
                     }
                 }
-                if (has_return_type) return NodeType::METHOD_DECLARATION;
-                return NodeType::CONSTRUCTOR_DECLARATION;
+                std::cout << "METHOD!\n";
+                    if (has_return_type) return NodeType::METHOD_DECLARATION;
+                std::cout << "CTOR!\n";
+                    return NodeType::CONSTRUCTOR_DECLARATION;
             }
         }
     }
