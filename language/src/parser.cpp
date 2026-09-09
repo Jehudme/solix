@@ -767,7 +767,19 @@ ClassDeclaration::ClassDeclaration(const std::vector<lexer::Token>& tokens, Node
     std::vector<lexer::Token> body_tokens(tokens.begin() + i + 1, tokens.end() - 1);
     auto statements = divideTokensIntoStatements(body_tokens);
     for (const auto& stmt : statements) {
-        if (!stmt.empty()) children.push_back(parseTokensToNode(stmt, this));
+        if (!stmt.empty()) {
+            auto node = parseTokensToNode(stmt, this);
+            if (node) {
+                if (node->node_type != NodeType::FIELD_DECLARATION &&
+                    node->node_type != NodeType::METHOD_DECLARATION &&
+                    node->node_type != NodeType::CONSTRUCTOR_DECLARATION &&
+                    node->node_type != NodeType::CLASS_DECLARATION &&
+                    node->node_type != NodeType::ENUM_DECLARATION) {
+                    throw_parse_error(stmt, "Invalid class member declaration. Only fields, methods, constructors, nested classes, and nested enums are allowed.");
+                }
+                children.push_back(std::move(node));
+            }
+        }
     }
 }
 
@@ -888,7 +900,18 @@ BlockStatement::BlockStatement(const std::vector<lexer::Token>& tokens, Node* pa
     std::vector<lexer::Token> inner(tokens.begin() + 1, tokens.end() - 1);
     auto statements = divideTokensIntoStatements(inner);
     for (const auto& stmt : statements) {
-        if (!stmt.empty()) children.push_back(parseTokensToNode(stmt, this));
+        if (!stmt.empty()) {
+            auto node = parseTokensToNode(stmt, this);
+            if (node) {
+                if (node->node_type == NodeType::FIELD_DECLARATION) {
+                    throw_parse_error(stmt, "Local variables cannot have access modifiers (public, private, protected, internal) or static/inline modifiers.");
+                }
+                if (node->node_type == NodeType::METHOD_DECLARATION || node->node_type == NodeType::CONSTRUCTOR_DECLARATION) {
+                    throw_parse_error(stmt, "Methods and constructors can only be declared inside a class.");
+                }
+                children.push_back(std::move(node));
+            }
+        }
     }
 }
 IfStatement::IfStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::IF_STATEMENT, parent) {
@@ -1214,7 +1237,9 @@ void AstTree::include(std::filesystem::path file_path) {
     auto stmts = divideTokensIntoStatements(tokens);
     
     std::string pkg_prefix = "";
-    for (const auto& stmt : stmts) {
+    bool has_package = false;
+    for (size_t i = 0; i < stmts.size(); i++) {
+        const auto& stmt = stmts[i];
         if (!stmt.empty()) {
             auto node = parseTokensToNode(stmt);
             if (node) {
@@ -1224,10 +1249,13 @@ void AstTree::include(std::filesystem::path file_path) {
                     node->node_type != NodeType::CLASS_DECLARATION) {
                     throw_parse_error(stmt, "Invalid top-level declaration. Variables and expressions must be inside a class.");
                 }
-                populateSymbols(this, node.get(), pkg_prefix);
                 if (node->node_type == NodeType::PACKAGE_STATEMENT) {
+                    if (has_package) throw_parse_error(stmt, "A file can only have one package statement");
+                    if (i != 0) throw_parse_error(stmt, "Package statement must be the first statement in the file");
+                    has_package = true;
                     pkg_prefix = static_cast<PackageStatement*>(node.get())->package_name + ".";
                 }
+                populateSymbols(this, node.get(), pkg_prefix);
                 nodes.push_back(std::move(node));
             }
         }
@@ -1239,7 +1267,10 @@ void AstTree::include(std::string_view source_code, std::optional<std::filesyste
     auto stmts = divideTokensIntoStatements(tokens);
     
     std::string pkg_prefix = "";
-    for (const auto& stmt : stmts) {
+    bool has_package = false;
+    size_t actual_stmt_idx = 0;
+    for (size_t i = 0; i < stmts.size(); i++) {
+        const auto& stmt = stmts[i];
         if (!stmt.empty()) {
             auto node = parseTokensToNode(stmt);
             if (node) {
@@ -1249,12 +1280,16 @@ void AstTree::include(std::string_view source_code, std::optional<std::filesyste
                     node->node_type != NodeType::CLASS_DECLARATION) {
                     throw_parse_error(stmt, "Invalid top-level declaration. Variables and expressions must be inside a class.");
                 }
-                populateSymbols(this, node.get(), pkg_prefix);
                 if (node->node_type == NodeType::PACKAGE_STATEMENT) {
+                    if (has_package) throw_parse_error(stmt, "A file can only have one package statement");
+                    if (actual_stmt_idx != 0) throw_parse_error(stmt, "Package statement must be the first statement in the file");
+                    has_package = true;
                     pkg_prefix = static_cast<PackageStatement*>(node.get())->package_name + ".";
                 }
+                populateSymbols(this, node.get(), pkg_prefix);
                 nodes.push_back(std::move(node));
             }
+            actual_stmt_idx++;
         }
     }
 }

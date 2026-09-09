@@ -45,3 +45,16 @@ TEST_CASE("Parser: PackageStatement", "[parser][package]") {
         REQUIRE_THROWS_WITH(tree.include(std::string_view(source)), Catch::Matchers::ContainsSubstring("Expected package name"));
     }
 }
+TEST_CASE("Parser: Package Rules", "[parser][package]") {
+    SECTION("Error: Package must be first") {
+        std::string source = "class Test {} package a.b.c;";
+        parser::AstTree tree;
+        REQUIRE_THROWS_WITH(tree.include(std::string_view(source)), Catch::Matchers::ContainsSubstring("Package statement must be the first statement"));
+    }
+    
+    SECTION("Error: Multiple packages") {
+        std::string source = "package a; package b;";
+        parser::AstTree tree;
+        REQUIRE_THROWS_WITH(tree.include(std::string_view(source)), Catch::Matchers::ContainsSubstring("A file can only have one package statement"));
+    }
+}
