@@ -5,6 +5,14 @@
 #include <algorithm>
 
 namespace solix::parser {
+Node::Node(const std::vector<lexer::Token>& tokens, NodeType type, Node* parent) : node_type(type), parent_node(parent) {
+    if (!tokens.empty()) {
+        if (tokens.front().path.has_value()) file_path = tokens.front().path.value();
+        line = tokens.front().line;
+        column = tokens.front().column;
+    }
+}
+
 
 // ==========================================
 // Error Handling & Helpers
@@ -36,7 +44,8 @@ std::vector<lexer::Token> strip_parentheses(const std::vector<lexer::Token>& tok
         int depth = 0;
         bool wraps_entire = true;
         for (size_t i = 0; i < tokens.size(); i++) {
-            if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) depth++;
+            
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) depth++;
             else if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) depth--;
             
             if (depth < 0) throw_parse_error(tokens[i], "Mismatched parentheses: unexpected ')'");
@@ -195,7 +204,8 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
             }
             if (body_start != -1 && param_end != -1 && param_start == -1) {
                 if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p_depth++;
-                else if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p_depth--;
+                else 
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p_depth--;
                 if (p_depth == 0) param_start = i;
             }
         }
@@ -376,7 +386,7 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
 std::unique_ptr<Node> parseTokensToNode(const std::vector<lexer::Token>& raw_tokens, Node* parent) {
     if (raw_tokens.empty()) return nullptr;
     auto tokens = strip_parentheses(raw_tokens);
-    if (tokens.empty()) return nullptr;
+    if (tokens.empty() || (tokens.size() == 1 && tokens[0].type == lexer::TokenType::EOF_TOKEN)) return nullptr;
     
     NodeType type = determineNodeType(tokens);
     switch (type) {
@@ -530,7 +540,8 @@ CallExpression::CallExpression(const std::vector<lexer::Token>& tokens, Node* pa
     int open_idx = -1;
     for (int i = tokens.size() - 1; i >= 0; i--) {
         if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p++;
-        else if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p--;
+        else 
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p--;
         if (p == 0) {
             open_idx = i;
             break;
@@ -610,7 +621,8 @@ NewInstanceExpression::NewInstanceExpression(const std::vector<lexer::Token>& to
     int open_idx = -1;
     for (int i = tokens.size() - 1; i >= 0; i--) {
         if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p++;
-        else if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p--;
+        else 
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p--;
         if (p == 0) {
             open_idx = i;
             break;
@@ -683,6 +695,7 @@ CastExpression::CastExpression(const std::vector<lexer::Token>& tokens, Node* pa
     int p = 0;
     size_t close_idx = 0;
     for (size_t i = 0; i < tokens.size(); i++) {
+        
         if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p++;
         else if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p--;
         if (p == 0) {
@@ -704,6 +717,7 @@ TernaryExpression::TernaryExpression(const std::vector<lexer::Token>& tokens, No
 
 PackageStatement::PackageStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::PACKAGE_STATEMENT, parent) {
     if (tokens.size() < 3) throw_parse_error(tokens, "Expected package name");
+    if (tokens.back().type != lexer::TokenType::PUNCTUATION_SEMICOLON) throw_parse_error(tokens, "Expected ';' after package name");
     for (size_t i = 1; i < tokens.size(); i++) {
         if (tokens[i].type == lexer::TokenType::PUNCTUATION_SEMICOLON) break;
         package_name += std::string(tokens[i].value.value_or(""));
@@ -885,6 +899,7 @@ IfStatement::IfStatement(const std::vector<lexer::Token>& tokens, Node* parent) 
     int p = 0;
     size_t cond_end = 0;
     for (size_t i = 1; i < tokens.size(); i++) {
+        
         if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p++;
         else if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p--;
         if (p == 0) {
@@ -934,6 +949,7 @@ ForStatement::ForStatement(const std::vector<lexer::Token>& tokens, Node* parent
     int p = 0;
     size_t cond_end = 0;
     for (size_t i = 1; i < tokens.size(); i++) {
+        
         if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p++;
         else if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p--;
         if (p == 0) {
@@ -978,6 +994,7 @@ WhileStatement::WhileStatement(const std::vector<lexer::Token>& tokens, Node* pa
     int p = 0;
     size_t cond_end = 0;
     for (size_t i = 1; i < tokens.size(); i++) {
+        
         if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p++;
         else if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p--;
         if (p == 0) {
@@ -1016,6 +1033,7 @@ SwitchStatement::SwitchStatement(const std::vector<lexer::Token>& tokens, Node* 
     int p = 0;
     size_t cond_end = 0;
     for (size_t i = 1; i < tokens.size(); i++) {
+        
         if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p++;
         else if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p--;
         if (p == 0) {
@@ -1190,15 +1208,16 @@ static void populateSymbols(AstTree* tree, Node* root, std::string prefix) {
 void AstTree::include(std::filesystem::path file_path) {
     auto tokens = lexer::tokenize_file(file_path);
     auto stmts = divideTokensIntoStatements(tokens);
+    
     std::string pkg_prefix = "";
     for (const auto& stmt : stmts) {
         if (!stmt.empty()) {
             auto node = parseTokensToNode(stmt);
             populateSymbols(this, node.get(), pkg_prefix);
-            if (node->node_type == NodeType::PACKAGE_STATEMENT) {
+            if (node && node->node_type == NodeType::PACKAGE_STATEMENT) {
                 pkg_prefix = static_cast<PackageStatement*>(node.get())->package_name + ".";
             }
-            nodes.push_back(std::move(node));
+            if (node) nodes.push_back(std::move(node));
         }
     }
 }
@@ -1206,15 +1225,16 @@ void AstTree::include(std::filesystem::path file_path) {
 void AstTree::include(std::string_view source_code, std::optional<std::filesystem::path> file_path) {
     auto tokens = lexer::tokenize(source_code);
     auto stmts = divideTokensIntoStatements(tokens);
+    
     std::string pkg_prefix = "";
     for (const auto& stmt : stmts) {
         if (!stmt.empty()) {
             auto node = parseTokensToNode(stmt);
             populateSymbols(this, node.get(), pkg_prefix);
-            if (node->node_type == NodeType::PACKAGE_STATEMENT) {
+            if (node && node->node_type == NodeType::PACKAGE_STATEMENT) {
                 pkg_prefix = static_cast<PackageStatement*>(node.get())->package_name + ".";
             }
-            nodes.push_back(std::move(node));
+            if (node) nodes.push_back(std::move(node));
         }
     }
 }
