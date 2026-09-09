@@ -2,6 +2,7 @@
 #include "solix/lexer.hpp"
 #include <stdexcept>
 #include <iostream>
+#include <algorithm>
 
 namespace solix::parser {
 
@@ -9,139 +10,410 @@ namespace solix::parser {
 // Error Handling & Helpers
 // ==========================================
 
-/*
- * throw_parse_error
- * 
- * ALGORITHM:
- * 1. Takes a `Token` and a `std::string` message.
- * 2. Extracts the exact file path, line number, and column number from the `Token` (or its `Span` metadata).
- * 3. Formats a highly professional, compiler-grade error message:
- *    "[Solix Parser Error] <file_path>:<line>:<col> - <msg> (At token: '<value>')"
- * 4. Throws a std::runtime_error with the formatted string.
- * Note: Provide an overloaded version that takes a vector of tokens, grabs the first token,
- * and calls the main throw_parse_error. Handle empty token vectors by throwing an "Unexpected EOF" error.
- */
 [[noreturn]] void throw_parse_error(const lexer::Token& tok, const std::string& msg) {
-    throw std::runtime_error("Parse Error: " + msg);
+    std::string err = "[Solix Parser Error] ";
+    if (tok.path.has_value()) {
+        err += tok.path.value().string() + ":";
+    }
+    err += std::to_string(tok.line) + ":" + std::to_string(tok.column);
+    err += " - " + msg;
+    if (tok.value.has_value()) {
+        err += " (At token: '" + std::string(tok.value.value()) + "')";
+    }
+    throw std::runtime_error(err);
 }
+
 [[noreturn]] void throw_parse_error(const std::vector<lexer::Token>& tokens, const std::string& msg) {
     if (tokens.empty()) throw std::runtime_error("Parse Error: " + msg + " (Unexpected EOF)");
     throw_parse_error(tokens[0], msg);
 }
 
-/*
- * strip_parentheses (Helper)
- * ALGORITHM:
- * 1. Checks if the first token is `(` and the last token is `)`.
- * 2. If so, iterate through the tokens to ensure that these outer parentheses actually encapsulate 
- *    the *entire* sequence, meaning the parenthesis depth only drops to 0 at the very last token.
- * 3. If they wrap the whole expression, remove the first and last token, and recursively call strip_parentheses again.
- * 4. Return the stripped token vector.
- * ERROR DETECTION:
- * - If parenthesis depth goes negative at any point, throw "Mismatched parentheses: unexpected ')'".
- * - If parenthesis depth is > 0 at the end of the expression, throw "Mismatched parentheses: expected ')'".
- */
+std::vector<lexer::Token> strip_parentheses(const std::vector<lexer::Token>& tokens) {
+    if (tokens.size() < 2) return tokens;
+    if (tokens.front().type == lexer::TokenType::PUNCTUATION_OPEN_PAREN &&
+        tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) {
+        
+        int depth = 0;
+        bool wraps_entire = true;
+        for (size_t i = 0; i < tokens.size(); i++) {
+            if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) depth++;
+            else if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) depth--;
+            
+            if (depth < 0) throw_parse_error(tokens[i], "Mismatched parentheses: unexpected ')'");
+            if (depth == 0 && i < tokens.size() - 1) {
+                wraps_entire = false;
+                break;
+            }
+        }
+        if (depth > 0) throw_parse_error(tokens.back(), "Mismatched parentheses: expected ')'");
+        
+        if (wraps_entire) {
+            std::vector<lexer::Token> inner(tokens.begin() + 1, tokens.end() - 1);
+            return strip_parentheses(inner);
+        }
+    }
+    return tokens;
+}
 
-/*
- * divideTokensIntoStatements (Helper)
- * ALGORITHM:
- * 1. Iterate through a vector of tokens keeping track of scope depth (`{}` and `()`).
- * 2. Push tokens into a temporary current_statement buffer.
- * 3. If depth == 0 AND we hit a `;`, push current_statement into a list of statements and clear the buffer.
- * 4. If depth == 0 AND we hit a `}` (e.g., end of an `if` or `while` block), push current_statement into the list.
- * 5. Return the `std::vector<std::vector<lexer::Token>>` representing individual statements.
- * ERROR DETECTION:
- * - If depth != 0 at the end of iteration, throw "Mismatched braces or parentheses in block".
- */
+std::vector<std::vector<lexer::Token>> divideTokensIntoStatements(const std::vector<lexer::Token>& tokens) {
+    std::vector<std::vector<lexer::Token>> statements;
+    std::vector<lexer::Token> current;
+    int p = 0, b = 0, br = 0;
+    
+    for (size_t i = 0; i < tokens.size(); i++) {
+        const auto& tok = tokens[i];
+        current.push_back(tok);
+        
+        if (tok.type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p++;
+        else if (tok.type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p--;
+        else if (tok.type == lexer::TokenType::PUNCTUATION_OPEN_BRACE) b++;
+        else if (tok.type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) b--;
+        else if (tok.type == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) br++;
+        else if (tok.type == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) br--;
+        
+        if (p < 0 || b < 0 || br < 0) {
+            throw_parse_error(tok, "Mismatched grouping symbol");
+        }
+        
+        if (p == 0 && b == 0 && br == 0) {
+            if (tok.type == lexer::TokenType::PUNCTUATION_SEMICOLON) {
+                statements.push_back(current);
+                current.clear();
+            } else if (tok.type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) {
+                bool split = true;
+                if (i + 1 < tokens.size()) {
+                    auto next_type = tokens[i+1].type;
+                    if (next_type == lexer::TokenType::KEYWORD_ELSE || 
+                        (next_type == lexer::TokenType::KEYWORD_WHILE && current.front().type == lexer::TokenType::IDENTIFIER)) {
+                        split = false;
+                    }
+                }
+                if (split) {
+                    statements.push_back(current);
+                    current.clear();
+                }
+            }
+        }
+    }
+    if (p != 0 || b != 0 || br != 0) {
+        throw_parse_error(tokens.back(), "Mismatched braces or parentheses in block");
+    }
+    if (!current.empty()) statements.push_back(current);
+    
+    return statements;
+}
 
-/*
- * consumeType (Helper)
- * ALGORITHM:
- * 1. Takes a vector of tokens and a `start_index`.
- * 2. Eagerly consumes consecutive type-related keywords (like `array`).
- * 3. Consumes an identifier.
- * 4. Checks if the next token is a `.` (dot). If so, it consumes the dot and the following identifier,
- *    repeating this to build a full compound type (e.g., `Engine.CoreProcessor`).
- * 5. Returns the `end_index` pointing to the token immediately following the complete type.
- * ERROR DETECTION:
- * - If a dot `.` is found but not followed by an identifier, throw "Expected identifier after '.' in type".
- * - If `array` is found but not followed by a valid type, throw "Expected type after 'array' keyword".
- */
 size_t consumeType(const std::vector<lexer::Token>& tokens, size_t start_index) {
-    return start_index;
+    size_t i = start_index;
+    while (i < tokens.size() && tokens[i].type == lexer::TokenType::PRIMITIVE_ARRAY) {
+        i++;
+    }
+    if (i >= tokens.size()) throw_parse_error(tokens, "Expected type after 'array'");
+    
+    // Accept primitive types or identifiers
+    if (tokens[i].type != lexer::TokenType::IDENTIFIER &&
+        tokens[i].type != lexer::TokenType::PRIMITIVE_INT32 &&
+        tokens[i].type != lexer::TokenType::PRIMITIVE_FLOAT64 &&
+        tokens[i].type != lexer::TokenType::PRIMITIVE_BOOL &&
+        tokens[i].type != lexer::TokenType::PRIMITIVE_STRING &&
+        tokens[i].type != lexer::TokenType::PRIMITIVE_INT8 &&
+        tokens[i].type != lexer::TokenType::PRIMITIVE_INT16 &&
+        tokens[i].type != lexer::TokenType::PRIMITIVE_INT64 &&
+        tokens[i].type != lexer::TokenType::PRIMITIVE_UINT8 &&
+        tokens[i].type != lexer::TokenType::PRIMITIVE_UINT16 &&
+        tokens[i].type != lexer::TokenType::PRIMITIVE_UINT32 &&
+        tokens[i].type != lexer::TokenType::PRIMITIVE_UINT64 &&
+        tokens[i].type != lexer::TokenType::PRIMITIVE_FLOAT32 &&
+        tokens[i].type != lexer::TokenType::PRIMITIVE_CHAR &&
+        tokens[i].type != lexer::TokenType::PRIMITIVE_VOID) {
+        return start_index; // Not a type
+    }
+    i++;
+    
+    while (i < tokens.size() && tokens[i].type == lexer::TokenType::PUNCTUATION_DOT) {
+        i++;
+        if (i >= tokens.size() || tokens[i].type != lexer::TokenType::IDENTIFIER) {
+            throw_parse_error(tokens[i - 1], "Expected identifier after '.' in type");
+        }
+        i++;
+    }
+    return i;
 }
 
 // ==========================================
 // Core Parser Logic
 // ==========================================
 
-/*
- * determineNodeType
- * 
- * ALGORITHM (Order is critical):
- * 1. Call `strip_parentheses` on the input tokens to get a clean baseline.
- * 
- * 2. Top-Level Declarations Check:
- *    - Check `tokens[0].type` for `KEYWORD_PACKAGE`, `KEYWORD_ALIAS`.
- *    - Check if ANY token at depth 0 is `KEYWORD_ENUM` or `KEYWORD_CLASS`.
- * 
- * 3. Control Flow & Keyword Check:
- *    - Check `tokens[0].type` for `KEYWORD_IF`, `KEYWORD_FOR`, `KEYWORD_WHILE`, `KEYWORD_SWITCH`, 
- *      `KEYWORD_CASE`, `KEYWORD_DEFAULT`, `KEYWORD_BREAK`, `KEYWORD_CONTINUE`, `KEYWORD_RETURN`.
- *    - Check if `tokens[0].type` is `IDENTIFIER` with value "do" (for DoWhileStatement).
- * 
- * 4. Method & Constructor Declarations:
- *    - If the sequence ends with `}`, iterate backwards to find the matching `{`. 
- *    - Just before the `{`, verify there is a closing parenthesis `)`. Match it backwards to find `(`.
- *    - If there is an identifier before `(`, and optional type/modifiers before that, it's a Method/Constructor.
- *    - If there's a return type, it's `METHOD_DECLARATION`. Otherwise, `CONSTRUCTOR_DECLARATION`.
- * 
- * 5. Block Statement:
- *    - If `tokens[0] == '{'` and `tokens.back() == '}'`, it's `BLOCK_STATEMENT`.
- * 
- * 6. Variable Declaration / Field Declaration:
- *    - First, skip any access modifiers or specifiers (`public`, `static`, etc.).
- *    - Use `consumeType()` to fully parse the type (e.g., handling `array array float64` or `Engine.CoreProcessor`).
- *    - If the token immediately following the consumed type is an identifier, it is a declaration.
- *    - If it has an `=` or just ends with `;`.
- *    - Differentiate Field from Variable based on presence of modifiers or scope level.
- * 
- * 7. Expressions (Order of checking is critical for precedence):
- *    - Assignment: Search LEFT-TO-RIGHT at depth 0 for `=`. First one found -> `ASSIGNMENT_EXPRESSION`.
- *    - Ternary: Search RIGHT-TO-LEFT at depth 0 for `?` and `:`. -> `TERNARY_EXPRESSION`.
- *    - Binary: Search RIGHT-TO-LEFT at depth 0 for the operator with the LOWEST precedence (e.g., `+`, `-`, `*`, `/`).
- *      (Right-to-left ensures left-associativity). -> `BINARY_EXPRESSION`.
- *    - Unary: Check if `tokens[0]` is `!`, `-`, `++`, `--` OR if `tokens.back()` is `++`, `--`. -> `UNARY_EXPRESSION`.
- *    - Call: If `tokens.back() == ')'`, traverse backwards to match `(`. Tokens before `(` exist -> `CALL_EXPRESSION`.
- *    - Array Access: If `tokens.back() == ']'`, traverse backwards to match `[`. Tokens before `[` exist -> `ARRAY_ACCESS_EXPRESSION`.
- *    - Member Access: Search RIGHT-TO-LEFT at depth 0 for `.`. -> `MEMBER_ACCESS_EXPRESSION`.
- *    - New Instance: Check for `KEYWORD_NEW`. 
- *    - Array Literal: Starts with `{` and ends with `}`, contains commas at depth 0, no semicolons.
- *    - Cast: Check for `(Type) expression` pattern.
- *    - Literal/Identifier: If size == 1, check if NUMBER, STRING, BOOL ("true"/"false"), or IDENTIFIER.
- * 
- * 8. Fallback:
- *    - If `tokens.back()` is `;` and none of the above matched, return `EXPRESSION_STATEMENT`.
- *    - Otherwise, throw "Unable to determine AST Node Type".
- */
-const NodeType determineNodeType(const std::vector<lexer::Token>& tokens) {
-    return NodeType::GENERIC;
+const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
+    if (raw_tokens.empty()) return NodeType::GENERIC;
+    std::vector<lexer::Token> tokens = strip_parentheses(raw_tokens);
+    if (tokens.empty()) return NodeType::GENERIC;
+    
+    auto t0 = tokens[0].type;
+    
+    // Top-Level
+    if (t0 == lexer::TokenType::KEYWORD_PACKAGE) return NodeType::PACKAGE_STATEMENT;
+    if (t0 == lexer::TokenType::KEYWORD_ALIAS) return NodeType::ALIAS_STATEMENT;
+    
+    for (int i = 0; i < tokens.size(); i++) {
+        if (tokens[i].type == lexer::TokenType::KEYWORD_ENUM) return NodeType::ENUM_DECLARATION;
+        if (tokens[i].type == lexer::TokenType::KEYWORD_CLASS) return NodeType::CLASS_DECLARATION;
+        // Stop checking deep for enum/class
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_BRACE || 
+            tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN ||
+            tokens[i].type == lexer::TokenType::PUNCTUATION_SEMICOLON) break;
+    }
+    
+    // Control Flow
+    if (t0 == lexer::TokenType::KEYWORD_IF) return NodeType::IF_STATEMENT;
+    if (t0 == lexer::TokenType::KEYWORD_FOR) return NodeType::FOR_STATEMENT;
+    if (t0 == lexer::TokenType::KEYWORD_WHILE) return NodeType::WHILE_STATEMENT;
+    if (t0 == lexer::TokenType::KEYWORD_SWITCH) return NodeType::SWITCH_STATEMENT;
+    if (t0 == lexer::TokenType::KEYWORD_CASE || t0 == lexer::TokenType::KEYWORD_DEFAULT) return NodeType::CASE_STATEMENT;
+    if (t0 == lexer::TokenType::KEYWORD_BREAK) return NodeType::BREAK_STATEMENT;
+    if (t0 == lexer::TokenType::KEYWORD_CONTINUE) return NodeType::CONTINUE_STATEMENT;
+    if (t0 == lexer::TokenType::KEYWORD_RETURN) return NodeType::RETURN_STATEMENT;
+    if (t0 == lexer::TokenType::IDENTIFIER) return NodeType::DO_WHILE_STATEMENT;
+    
+    // Methods / Constructors
+    if (tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) {
+        int brace_depth = 0;
+        int p_depth = 0;
+        int body_start = -1;
+        int param_end = -1;
+        int param_start = -1;
+        
+        for (int i = tokens.size() - 1; i >= 0; i--) {
+            if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) brace_depth++;
+            else if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_BRACE) brace_depth--;
+            
+            if (brace_depth == 0 && body_start == -1) {
+                body_start = i;
+                if (i > 0 && tokens[i-1].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) {
+                    param_end = i - 1;
+                }
+            }
+            if (body_start != -1 && param_end != -1 && param_start == -1) {
+                if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p_depth++;
+                else if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p_depth--;
+                if (p_depth == 0) param_start = i;
+            }
+        }
+        
+        if (param_start > 0) {
+            if (tokens[param_start-1].type == lexer::TokenType::IDENTIFIER) {
+                // Modifiers and Return Type check
+                bool has_return_type = false;
+                for (int i = param_start - 2; i >= 0; i--) {
+                    auto t = tokens[i].type;
+                    if (t != lexer::TokenType::KEYWORD_PUBLIC && t != lexer::TokenType::KEYWORD_PRIVATE &&
+                        t != lexer::TokenType::KEYWORD_PROTECTED && t != lexer::TokenType::KEYWORD_INTERNAL &&
+                        t != lexer::TokenType::KEYWORD_STATIC && t != lexer::TokenType::KEYWORD_CONST &&
+                        t != lexer::TokenType::KEYWORD_INLINE) {
+                        has_return_type = true;
+                        break;
+                    }
+                }
+                if (has_return_type) return NodeType::METHOD_DECLARATION;
+                return NodeType::CONSTRUCTOR_DECLARATION;
+            }
+        }
+    }
+    
+    // Block
+    if (tokens[0].type == lexer::TokenType::PUNCTUATION_OPEN_BRACE && tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) {
+        return NodeType::BLOCK_STATEMENT;
+    }
+    
+    // Variable / Field Declaration
+    size_t i = 0;
+    while (i < tokens.size() && (
+        tokens[i].type == lexer::TokenType::KEYWORD_PUBLIC ||
+        tokens[i].type == lexer::TokenType::KEYWORD_PRIVATE ||
+        tokens[i].type == lexer::TokenType::KEYWORD_PROTECTED ||
+        tokens[i].type == lexer::TokenType::KEYWORD_INTERNAL ||
+        tokens[i].type == lexer::TokenType::KEYWORD_STATIC ||
+        tokens[i].type == lexer::TokenType::KEYWORD_CONST ||
+        tokens[i].type == lexer::TokenType::KEYWORD_INLINE)) {
+        i++;
+    }
+    
+    size_t after_type = consumeType(tokens, i);
+    if (after_type > i && after_type < tokens.size() && tokens[after_type].type == lexer::TokenType::IDENTIFIER) {
+        if (i > 0) return NodeType::FIELD_DECLARATION;
+        // if no modifiers, could be field or var depending on parent, let's say VARIABLE_DECLARATION, and parent fixes it if needed
+        return NodeType::VARIABLE_DECLARATION; 
+    }
+    
+    // Expressions
+    // Check Assignment (LEFT TO RIGHT at depth 0)
+    int p = 0, b = 0, br = 0;
+    for (int i = 0; i < tokens.size(); i++) {
+        auto t = tokens[i].type;
+        if (t == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p++;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p--;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACE) b++;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) b--;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) br++;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) br--;
+        
+        if (p == 0 && b == 0 && br == 0 && t == lexer::TokenType::OPERATOR_ASSIGN) {
+            return NodeType::ASSIGNMENT_EXPRESSION;
+        }
+    }
+    
+    
+    
+    // Check Binary (RIGHT TO LEFT)
+    // Precedence: (Lower number = evaluated later = higher up in AST)
+    auto getPrecedence = [](lexer::TokenType t) -> int {
+        switch (t) {
+            case lexer::TokenType::OPERATOR_LOGICAL_OR: return 1;
+            case lexer::TokenType::OPERATOR_LOGICAL_AND: return 2;
+            
+            
+            
+            case lexer::TokenType::OPERATOR_EQUAL:
+            case lexer::TokenType::OPERATOR_NOT_EQUAL: return 6;
+            case lexer::TokenType::OPERATOR_LESS_THAN:
+                        case lexer::TokenType::OPERATOR_GREATER_THAN:
+            
+                        
+            case lexer::TokenType::OPERATOR_PLUS:
+            case lexer::TokenType::OPERATOR_MINUS: return 9;
+            case lexer::TokenType::OPERATOR_MULTIPLY:
+            case lexer::TokenType::OPERATOR_DIVIDE:
+            case lexer::TokenType::OPERATOR_MODULO: return 10;
+            default: return 0;
+        }
+    };
+    
+    p = 0; b = 0; br = 0;
+    int min_prec = 100;
+    int min_idx = -1;
+    for (int i = tokens.size() - 1; i >= 0; i--) {
+        auto t = tokens[i].type;
+        if (t == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p--;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) b++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACE) b--;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) br++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) br--;
+        
+        if (p == 0 && b == 0 && br == 0) {
+            int prec = getPrecedence(t);
+            if (prec > 0 && prec < min_prec) {
+                min_prec = prec;
+                min_idx = i;
+            }
+        }
+    }
+    if (min_idx != -1) return NodeType::BINARY_EXPRESSION;
+    
+    // Unary
+    if (t0 == lexer::TokenType::OPERATOR_LOGICAL_NOT || t0 == lexer::TokenType::OPERATOR_MINUS ||
+        t0 == lexer::TokenType::OPERATOR_INCREMENT || t0 == lexer::TokenType::OPERATOR_DECREMENT) {
+        return NodeType::UNARY_EXPRESSION;
+    }
+    if (tokens.back().type == lexer::TokenType::OPERATOR_INCREMENT || tokens.back().type == lexer::TokenType::OPERATOR_DECREMENT) {
+        return NodeType::UNARY_EXPRESSION;
+    }
+    
+    // Postfix Call and Array Access
+    if (tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) {
+        if (t0 == lexer::TokenType::PUNCTUATION_OPEN_PAREN && tokens[1].type != lexer::TokenType::PUNCTUATION_CLOSE_PAREN) {
+            // Might be a cast (Type) expr
+            return NodeType::CAST_EXPRESSION;
+        }
+        return NodeType::CALL_EXPRESSION;
+    }
+    if (tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) {
+        return NodeType::ARRAY_ACCESS_EXPRESSION;
+    }
+    
+    // Member Access (RIGHT TO LEFT)
+    p = 0; b = 0; br = 0;
+    for (int i = tokens.size() - 1; i >= 0; i--) {
+        auto t = tokens[i].type;
+        if (t == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p--;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) b++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACE) b--;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) br++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) br--;
+        
+        if (p == 0 && b == 0 && br == 0 && t == lexer::TokenType::PUNCTUATION_DOT) {
+            return NodeType::MEMBER_ACCESS_EXPRESSION;
+        }
+    }
+    
+    if (t0 == lexer::TokenType::KEYWORD_NEW) {
+        if (tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) return NodeType::ARRAY_CREATION_EXPRESSION;
+        return NodeType::NEW_INSTANCE_EXPRESSION;
+    }
+    
+    if (t0 == lexer::TokenType::PUNCTUATION_OPEN_BRACE && tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) {
+        return NodeType::ARRAY_LITERAL_EXPRESSION;
+    }
+    
+    if (tokens.size() == 1) {
+        if (t0 == lexer::TokenType::NUMBER || t0 == lexer::TokenType::STRING ||
+            t0 == lexer::TokenType::IDENTIFIER || t0 == lexer::TokenType::IDENTIFIER) {
+            return NodeType::LITERAL_EXPRESSION;
+        }
+        if (t0 == lexer::TokenType::IDENTIFIER) {
+            return NodeType::IDENTIFIER_EXPRESSION;
+        }
+    }
+    
+    if (tokens.back().type == lexer::TokenType::PUNCTUATION_SEMICOLON) {
+        return NodeType::EXPRESSION_STATEMENT;
+    }
+    
+    throw_parse_error(tokens, "Unable to determine AST Node Type");
 }
 
-/*
- * parseTokensToNode
- * 
- * ALGORITHM:
- * 1. Check if `tokens` is empty. If so, return `nullptr`.
- * 2. Call `determineNodeType(tokens)`.
- * 3. Use a switch statement on the returned `NodeType`.
- * 4. Instantiate the matching node class using `std::make_unique<...>(tokens, parent)`.
- * 5. Return the resulting `unique_ptr<Node>`.
- * ERROR DETECTION:
- * - If `determineNodeType` throws, catch the error (optional) or let it bubble up, ensuring line numbers are preserved.
- */
-std::unique_ptr<Node> parseTokensToNode(const std::vector<lexer::Token>& tokens, Node* parent) {
-    return nullptr;
+std::unique_ptr<Node> parseTokensToNode(const std::vector<lexer::Token>& raw_tokens, Node* parent) {
+    if (raw_tokens.empty()) return nullptr;
+    auto tokens = strip_parentheses(raw_tokens);
+    if (tokens.empty()) return nullptr;
+    
+    NodeType type = determineNodeType(tokens);
+    switch (type) {
+        case NodeType::PACKAGE_STATEMENT: return std::make_unique<PackageStatement>(tokens, parent);
+        case NodeType::ALIAS_STATEMENT: return std::make_unique<AliasStatement>(tokens, parent);
+        case NodeType::ENUM_DECLARATION: return std::make_unique<EnumDeclaration>(tokens, parent);
+        case NodeType::CLASS_DECLARATION: return std::make_unique<ClassDeclaration>(tokens, parent);
+        case NodeType::IF_STATEMENT: return std::make_unique<IfStatement>(tokens, parent);
+        case NodeType::FOR_STATEMENT: return std::make_unique<ForStatement>(tokens, parent);
+        case NodeType::WHILE_STATEMENT: return std::make_unique<WhileStatement>(tokens, parent);
+        case NodeType::SWITCH_STATEMENT: return std::make_unique<SwitchStatement>(tokens, parent);
+        case NodeType::CASE_STATEMENT: return std::make_unique<CaseStatement>(tokens, parent);
+        case NodeType::BREAK_STATEMENT: return std::make_unique<BreakStatement>(tokens, parent);
+        case NodeType::CONTINUE_STATEMENT: return std::make_unique<ContinueStatement>(tokens, parent);
+        case NodeType::RETURN_STATEMENT: return std::make_unique<ReturnStatement>(tokens, parent);
+        case NodeType::DO_WHILE_STATEMENT: return std::make_unique<DoWhileStatement>(tokens, parent);
+        case NodeType::METHOD_DECLARATION: return std::make_unique<MethodDeclaration>(tokens, parent);
+        case NodeType::CONSTRUCTOR_DECLARATION: return std::make_unique<ConstructorDeclaration>(tokens, parent);
+        case NodeType::BLOCK_STATEMENT: return std::make_unique<BlockStatement>(tokens, parent);
+        case NodeType::FIELD_DECLARATION: return std::make_unique<FieldDeclaration>(tokens, parent);
+        case NodeType::VARIABLE_DECLARATION: return std::make_unique<VariableDeclaration>(tokens, parent);
+        case NodeType::ASSIGNMENT_EXPRESSION: return std::make_unique<AssignmentExpression>(tokens, parent);
+        case NodeType::TERNARY_EXPRESSION: return std::make_unique<TernaryExpression>(tokens, parent);
+        case NodeType::BINARY_EXPRESSION: return std::make_unique<BinaryExpression>(tokens, parent);
+        case NodeType::UNARY_EXPRESSION: return std::make_unique<UnaryExpression>(tokens, parent);
+        case NodeType::CALL_EXPRESSION: return std::make_unique<CallExpression>(tokens, parent);
+        case NodeType::ARRAY_ACCESS_EXPRESSION: return std::make_unique<ArrayAccessExpression>(tokens, parent);
+        case NodeType::MEMBER_ACCESS_EXPRESSION: return std::make_unique<MemberAccessExpression>(tokens, parent);
+        case NodeType::NEW_INSTANCE_EXPRESSION: return std::make_unique<NewInstanceExpression>(tokens, parent);
+        case NodeType::ARRAY_CREATION_EXPRESSION: return std::make_unique<ArrayCreationExpression>(tokens, parent);
+        case NodeType::ARRAY_LITERAL_EXPRESSION: return std::make_unique<ArrayLiteralExpression>(tokens, parent);
+        case NodeType::CAST_EXPRESSION: return std::make_unique<CastExpression>(tokens, parent);
+        case NodeType::LITERAL_EXPRESSION: return std::make_unique<LiteralExpression>(tokens, parent);
+        case NodeType::IDENTIFIER_EXPRESSION: return std::make_unique<IdentifierExpression>(tokens, parent);
+        case NodeType::EXPRESSION_STATEMENT: return std::make_unique<ExpressionStatement>(tokens, parent);
+        default: throw_parse_error(tokens, "Unimplemented node type");
+    }
 }
 
 
@@ -149,427 +421,802 @@ std::unique_ptr<Node> parseTokensToNode(const std::vector<lexer::Token>& tokens,
 // Expression Nodes
 // ==========================================
 
-/*
- * LiteralExpression
- * 1. Set `this->token` to `tokens[0]`.
- * ERROR DETECTION:
- * - If token is not a NUMBER, STRING, or BOOL, throw "Expected literal value".
- */
-LiteralExpression::LiteralExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::LITERAL_EXPRESSION, parent) {}
+LiteralExpression::LiteralExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::LITERAL_EXPRESSION, parent) {
+    if (tokens.size() != 1) throw_parse_error(tokens, "Literal expression must be exactly one token");
+    token = tokens[0];
+}
 
-/*
- * IdentifierExpression
- * 1. Set `this->token` to `tokens[0]`.
- * ERROR DETECTION:
- * - If token is not an IDENTIFIER, throw "Expected identifier".
- */
-IdentifierExpression::IdentifierExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::IDENTIFIER_EXPRESSION, parent) {}
+IdentifierExpression::IdentifierExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::IDENTIFIER_EXPRESSION, parent) {
+    if (tokens.size() != 1 || tokens[0].type != lexer::TokenType::IDENTIFIER) throw_parse_error(tokens, "Identifier expression must be a single identifier token");
+    name = std::string(tokens[0].value.value_or(""));
+}
 
-/*
- * BinaryExpression
- * 1. Iterate RIGHT-TO-LEFT at depth 0 (tracking parens/braces).
- * 2. Identify the operator with the LOWEST precedence (e.g., `+` is lower than `*`).
- * 3. Set `this->op` to that token's type.
- * 4. Split tokens into `left_tokens` and `right_tokens`.
- * 5. Assign `this->left = parseTokensToNode(left_tokens, this)`.
- * 6. Assign `this->right = parseTokensToNode(right_tokens, this)`.
- * ERROR DETECTION:
- * - If `left_tokens` is empty, throw "Missing left operand for binary operator".
- * - If `right_tokens` is empty, throw "Missing right operand for binary operator".
- */
-BinaryExpression::BinaryExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::BINARY_EXPRESSION, parent) {}
-
-/*
- * UnaryExpression
- * 1. Check if `tokens[0]` is an operator (`!`, `-`, `++`, `--`). If so, `is_postfix = false`, `op = tokens[0].type`.
- * 2. Otherwise, check `tokens.back()`. If operator, `is_postfix = true`, `op = tokens.back().type`.
- * 3. Extract the remaining tokens (the operand).
- * 4. Assign `this->operand = parseTokensToNode(remaining_tokens, this)`.
- * ERROR DETECTION:
- * - If remaining operand tokens are empty, throw "Missing operand for unary operator".
- */
-UnaryExpression::UnaryExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::UNARY_EXPRESSION, parent) {}
-
-/*
- * AssignmentExpression
- * 1. Iterate LEFT-TO-RIGHT at depth 0.
- * 2. Find the FIRST `=` operator. (Left-to-right ensures proper right-associativity grouping).
- * 3. Split tokens into `target_tokens` (left of `=`) and `value_tokens` (right of `=`).
- * 4. `this->target = parseTokensToNode(target_tokens, this)`.
- * 5. `this->value = parseTokensToNode(value_tokens, this)`.
- * ERROR DETECTION:
- * - If `target_tokens` is empty, throw "Missing assignment target (L-Value)".
- * - If `value_tokens` is empty, throw "Missing expression value on right side of assignment".
- */
-AssignmentExpression::AssignmentExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::ASSIGNMENT_EXPRESSION, parent) {}
-
-/*
- * CallExpression
- * 1. Find the LAST `)` at depth 0.
- * 2. Traverse backwards to find the matching `(`.
- * 3. The tokens before `(` are the `callee`. `this->callee = parseTokensToNode(callee_tokens, this)`.
- * 4. The tokens inside `()` are the arguments.
- * 5. Split the argument tokens by `,` at depth 0.
- * 6. For each arg token sequence, call `parseTokensToNode()` and push to `this->arguments`.
- * ERROR DETECTION:
- * - If `callee_tokens` is empty, throw "Missing target for function call".
- * - If splitting by `,` results in an empty sequence between commas (e.g., `foo(a, , b)`), throw "Empty argument in function call".
- */
-CallExpression::CallExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::CALL_EXPRESSION, parent) {}
-
-/*
- * ArrayAccessExpression
- * 1. Find the LAST `]` at depth 0. Match it backwards to `[`.
- * 2. Tokens before `[` are the `array` target. Parse it.
- * 3. Tokens inside `[]` are the `index`. Parse it.
- * ERROR DETECTION:
- * - If `array` target tokens are empty, throw "Missing array target for index access".
- * - If `index` tokens are empty (e.g., `arr[]`), throw "Missing index expression in array access".
- */
-ArrayAccessExpression::ArrayAccessExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::ARRAY_ACCESS_EXPRESSION, parent) {}
-
-/*
- * MemberAccessExpression
- * 1. Find the LAST `.` at depth 0.
- * 2. The single token to the right of `.` is the `member_name`.
- * 3. The tokens to the left of `.` form the `object`. Parse it.
- * ERROR DETECTION:
- * - If tokens right of `.` do not form exactly one valid identifier, throw "Expected single identifier after '.'".
- * - If `object` tokens are empty, throw "Missing object reference before '.'".
- */
-MemberAccessExpression::MemberAccessExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::MEMBER_ACCESS_EXPRESSION, parent) {}
-
-/*
- * NewInstanceExpression
- * 1. `tokens[0]` is `KEYWORD_NEW`.
- * 2. Find the last `(...)`. The tokens before it (excluding `new`) are the `class_name`.
- * 3. Tokens inside `(...)` are split by `,` and parsed into `this->arguments`.
- * ERROR DETECTION:
- * - If `class_name` tokens are empty, throw "Missing class name after 'new'".
- * - If argument splitting reveals empty segments, throw "Empty argument in constructor call".
- */
-NewInstanceExpression::NewInstanceExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::NEW_INSTANCE_EXPRESSION, parent) {}
-
-/*
- * ArrayCreationExpression
- * 1. `tokens[0]` is `KEYWORD_NEW`.
- * 2. Find the `[...]`. Tokens before it (excluding `new`) are the `type_name`.
- * 3. Tokens inside `[...]` are parsed into `this->size`.
- * ERROR DETECTION:
- * - If `type_name` is empty, throw "Missing type for array creation".
- * - If `size` tokens are empty, throw "Array size expression cannot be empty".
- */
-ArrayCreationExpression::ArrayCreationExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::ARRAY_CREATION_EXPRESSION, parent) {}
-
-/*
- * ArrayLiteralExpression
- * 1. Verify `tokens[0]` is `{` and `tokens.back()` is `}`.
- * 2. Extract inner tokens, split by `,` at depth 0.
- * 3. Parse each segment and push to `this->elements`.
- * ERROR DETECTION:
- * - If segment between commas is empty (except trailing comma support, if language allows), throw "Empty element in array literal".
- */
-ArrayLiteralExpression::ArrayLiteralExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::ARRAY_LITERAL_EXPRESSION, parent) {}
-
-CastExpression::CastExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::CAST_EXPRESSION, parent) {}
+BinaryExpression::BinaryExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::BINARY_EXPRESSION, parent) {
+    auto getPrecedence = [](lexer::TokenType t) -> int {
+        switch (t) {
+            case lexer::TokenType::OPERATOR_LOGICAL_OR: return 1;
+            case lexer::TokenType::OPERATOR_LOGICAL_AND: return 2;
+            case lexer::TokenType::OPERATOR_EQUAL:
+            case lexer::TokenType::OPERATOR_NOT_EQUAL: return 6;
+            case lexer::TokenType::OPERATOR_LESS_THAN:
+            case lexer::TokenType::OPERATOR_LESS_EQUAL:
+            case lexer::TokenType::OPERATOR_GREATER_THAN:
+            case lexer::TokenType::OPERATOR_GREATER_EQUAL: return 7;
+            case lexer::TokenType::OPERATOR_PLUS:
+            case lexer::TokenType::OPERATOR_MINUS: return 9;
+            case lexer::TokenType::OPERATOR_MULTIPLY:
+            case lexer::TokenType::OPERATOR_DIVIDE:
+            case lexer::TokenType::OPERATOR_MODULO: return 10;
+            default: return 0;
+        }
+    };
+    int p = 0, b = 0, br = 0;
+    int min_prec = 100;
+    int min_idx = -1;
+    for (int i = tokens.size() - 1; i >= 0; i--) {
+        auto t = tokens[i].type;
+        if (t == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p--;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) b++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACE) b--;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) br++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) br--;
+        
+        if (p == 0 && b == 0 && br == 0) {
+            int prec = getPrecedence(t);
+            if (prec > 0 && prec < min_prec) {
+                min_prec = prec;
+                min_idx = i;
+            }
+        }
+    }
+    if (min_idx == -1) throw_parse_error(tokens, "Invalid binary expression");
+    op = tokens[min_idx].type;
+    std::vector<lexer::Token> left_tokens(tokens.begin(), tokens.begin() + min_idx);
+    std::vector<lexer::Token> right_tokens(tokens.begin() + min_idx + 1, tokens.end());
+    if (left_tokens.empty()) throw_parse_error(tokens, "Missing left operand");
+    if (right_tokens.empty()) throw_parse_error(tokens, "Missing right operand");
+    left = parseTokensToNode(left_tokens, this);
+    right = parseTokensToNode(right_tokens, this);
+}
+UnaryExpression::UnaryExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::UNARY_EXPRESSION, parent) {
+    auto t0 = tokens.front().type;
+    auto tb = tokens.back().type;
+    if (t0 == lexer::TokenType::OPERATOR_LOGICAL_NOT || t0 == lexer::TokenType::OPERATOR_MINUS ||
+        t0 == lexer::TokenType::OPERATOR_INCREMENT || t0 == lexer::TokenType::OPERATOR_DECREMENT) {
+        is_postfix = false;
+        op = t0;
+        std::vector<lexer::Token> operand_tokens(tokens.begin() + 1, tokens.end());
+        if (operand_tokens.empty()) throw_parse_error(tokens, "Missing operand for unary operator");
+        operand = parseTokensToNode(operand_tokens, this);
+    } else if (tb == lexer::TokenType::OPERATOR_INCREMENT || tb == lexer::TokenType::OPERATOR_DECREMENT) {
+        is_postfix = true;
+        op = tb;
+        std::vector<lexer::Token> operand_tokens(tokens.begin(), tokens.end() - 1);
+        if (operand_tokens.empty()) throw_parse_error(tokens, "Missing operand for unary operator");
+        operand = parseTokensToNode(operand_tokens, this);
+    } else {
+        throw_parse_error(tokens, "Invalid unary expression");
+    }
+}
+AssignmentExpression::AssignmentExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::ASSIGNMENT_EXPRESSION, parent) {
+    int p = 0, b = 0, br = 0;
+    int assign_idx = -1;
+    for (size_t i = 0; i < tokens.size(); i++) {
+        auto t = tokens[i].type;
+        if (t == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p++;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p--;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACE) b++;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) b--;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) br++;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) br--;
+        
+        if (p == 0 && b == 0 && br == 0 && t == lexer::TokenType::OPERATOR_ASSIGN) {
+            assign_idx = i;
+            break;
+        }
+    }
+    if (assign_idx == -1) throw_parse_error(tokens, "Invalid assignment expression");
+    std::vector<lexer::Token> target_tokens(tokens.begin(), tokens.begin() + assign_idx);
+    std::vector<lexer::Token> val_tokens(tokens.begin() + assign_idx + 1, tokens.end());
+    if (target_tokens.empty()) throw_parse_error(tokens, "Missing assignment target");
+    if (val_tokens.empty()) throw_parse_error(tokens, "Missing assignment value");
+    target = parseTokensToNode(target_tokens, this);
+    value = parseTokensToNode(val_tokens, this);
+}
+CallExpression::CallExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::CALL_EXPRESSION, parent) {
+    if (tokens.back().type != lexer::TokenType::PUNCTUATION_CLOSE_PAREN) throw_parse_error(tokens, "Expected ')' at end of call");
+    int p = 0;
+    int open_idx = -1;
+    for (int i = tokens.size() - 1; i >= 0; i--) {
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p++;
+        else if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p--;
+        if (p == 0) {
+            open_idx = i;
+            break;
+        }
+    }
+    if (open_idx <= 0) throw_parse_error(tokens, "Invalid call expression");
+    std::vector<lexer::Token> callee_tokens(tokens.begin(), tokens.begin() + open_idx);
+    callee = parseTokensToNode(callee_tokens, this);
+    
+    // Parse arguments
+    int depth = 0;
+    std::vector<lexer::Token> current_arg;
+    for (size_t i = open_idx + 1; i < tokens.size() - 1; i++) {
+        auto t = tokens[i].type;
+        if (t == lexer::TokenType::PUNCTUATION_OPEN_PAREN || t == lexer::TokenType::PUNCTUATION_OPEN_BRACE || t == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) depth++;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_PAREN || t == lexer::TokenType::PUNCTUATION_CLOSE_BRACE || t == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) depth--;
+        
+        if (depth == 0 && t == lexer::TokenType::PUNCTUATION_COMMA) {
+            if (current_arg.empty()) throw_parse_error(tokens[i], "Empty argument in function call");
+            arguments.push_back(parseTokensToNode(current_arg, this));
+            current_arg.clear();
+        } else {
+            current_arg.push_back(tokens[i]);
+        }
+    }
+    if (!current_arg.empty()) {
+        arguments.push_back(parseTokensToNode(current_arg, this));
+    }
+}
+ArrayAccessExpression::ArrayAccessExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::ARRAY_ACCESS_EXPRESSION, parent) {
+    if (tokens.back().type != lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) throw_parse_error(tokens, "Expected ']' at end of array access");
+    int br = 0;
+    int open_idx = -1;
+    for (int i = tokens.size() - 1; i >= 0; i--) {
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) br++;
+        else if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) br--;
+        if (br == 0) {
+            open_idx = i;
+            break;
+        }
+    }
+    if (open_idx <= 0) throw_parse_error(tokens, "Invalid array access");
+    std::vector<lexer::Token> arr_tokens(tokens.begin(), tokens.begin() + open_idx);
+    std::vector<lexer::Token> idx_tokens(tokens.begin() + open_idx + 1, tokens.end() - 1);
+    if (arr_tokens.empty()) throw_parse_error(tokens, "Missing array target");
+    if (idx_tokens.empty()) throw_parse_error(tokens, "Missing index expression");
+    array = parseTokensToNode(arr_tokens, this);
+    index = parseTokensToNode(idx_tokens, this);
+}
+MemberAccessExpression::MemberAccessExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::MEMBER_ACCESS_EXPRESSION, parent) {
+    int p = 0, b = 0, br = 0;
+    int dot_idx = -1;
+    for (int i = tokens.size() - 1; i >= 0; i--) {
+        auto t = tokens[i].type;
+        if (t == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p--;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) b++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACE) b--;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) br++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) br--;
+        
+        if (p == 0 && b == 0 && br == 0 && t == lexer::TokenType::PUNCTUATION_DOT) {
+            dot_idx = i;
+            break;
+        }
+    }
+    if (dot_idx == -1 || dot_idx == tokens.size() - 1) throw_parse_error(tokens, "Invalid member access");
+    if (dot_idx != tokens.size() - 2 || tokens.back().type != lexer::TokenType::IDENTIFIER) throw_parse_error(tokens.back(), "Expected single identifier after '.'");
+    
+    std::vector<lexer::Token> obj_tokens(tokens.begin(), tokens.begin() + dot_idx);
+    if (obj_tokens.empty()) throw_parse_error(tokens, "Missing object reference before '.'");
+    object = parseTokensToNode(obj_tokens, this);
+    member_name = std::string(tokens.back().value.value_or(""));
+}
+NewInstanceExpression::NewInstanceExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::NEW_INSTANCE_EXPRESSION, parent) {
+    int p = 0;
+    int open_idx = -1;
+    for (int i = tokens.size() - 1; i >= 0; i--) {
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p++;
+        else if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p--;
+        if (p == 0) {
+            open_idx = i;
+            break;
+        }
+    }
+    if (open_idx <= 1) throw_parse_error(tokens, "Invalid new instance syntax");
+    for (size_t i = 1; i < open_idx; i++) {
+        class_name += std::string(tokens[i].value.value_or("")) + (tokens[i].type == lexer::TokenType::PUNCTUATION_DOT ? "" : " ");
+    }
+    
+    // args inside open_idx
+    std::vector<lexer::Token> current_arg;
+    int depth = 0;
+    for (size_t i = open_idx + 1; i < tokens.size() - 1; i++) {
+        auto t = tokens[i].type;
+        if (t == lexer::TokenType::PUNCTUATION_OPEN_PAREN || t == lexer::TokenType::PUNCTUATION_OPEN_BRACE || t == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) depth++;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_PAREN || t == lexer::TokenType::PUNCTUATION_CLOSE_BRACE || t == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) depth--;
+        
+        if (depth == 0 && t == lexer::TokenType::PUNCTUATION_COMMA) {
+            if (current_arg.empty()) throw_parse_error(tokens[i], "Empty argument");
+            arguments.push_back(parseTokensToNode(current_arg, this));
+            current_arg.clear();
+        } else {
+            current_arg.push_back(tokens[i]);
+        }
+    }
+    if (!current_arg.empty()) arguments.push_back(parseTokensToNode(current_arg, this));
+}
+ArrayCreationExpression::ArrayCreationExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::ARRAY_CREATION_EXPRESSION, parent) {
+    if (tokens[0].type != lexer::TokenType::KEYWORD_NEW) throw_parse_error(tokens, "Expected 'new' for array creation");
+    int br = 0;
+    int open_idx = -1;
+    for (int i = tokens.size() - 1; i >= 0; i--) {
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) br++;
+        else if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) br--;
+        if (br == 0) {
+            open_idx = i;
+            break;
+        }
+    }
+    if (open_idx <= 1) throw_parse_error(tokens, "Invalid array creation syntax");
+    for (size_t i = 1; i < open_idx; i++) {
+        type_name += std::string(tokens[i].value.value_or("")) + (tokens[i].type == lexer::TokenType::PUNCTUATION_DOT ? "" : " ");
+    }
+    std::vector<lexer::Token> size_tokens(tokens.begin() + open_idx + 1, tokens.end() - 1);
+    if (size_tokens.empty()) throw_parse_error(tokens, "Array size expression cannot be empty");
+    size = parseTokensToNode(size_tokens, this);
+}
+ArrayLiteralExpression::ArrayLiteralExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::ARRAY_LITERAL_EXPRESSION, parent) {
+    if (tokens.front().type != lexer::TokenType::PUNCTUATION_OPEN_BRACE || tokens.back().type != lexer::TokenType::PUNCTUATION_CLOSE_BRACE) throw_parse_error(tokens, "Array literal must be enclosed in braces");
+    int depth = 0;
+    std::vector<lexer::Token> current_elem;
+    for (size_t i = 1; i < tokens.size() - 1; i++) {
+        auto t = tokens[i].type;
+        if (t == lexer::TokenType::PUNCTUATION_OPEN_PAREN || t == lexer::TokenType::PUNCTUATION_OPEN_BRACE || t == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) depth++;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_PAREN || t == lexer::TokenType::PUNCTUATION_CLOSE_BRACE || t == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) depth--;
+        
+        if (depth == 0 && t == lexer::TokenType::PUNCTUATION_COMMA) {
+            if (current_elem.empty()) throw_parse_error(tokens[i], "Empty element in array literal");
+            elements.push_back(parseTokensToNode(current_elem, this));
+            current_elem.clear();
+        } else {
+            current_elem.push_back(tokens[i]);
+        }
+    }
+    if (!current_elem.empty()) elements.push_back(parseTokensToNode(current_elem, this));
+}
+CastExpression::CastExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::CAST_EXPRESSION, parent) {
+    if (tokens[0].type != lexer::TokenType::PUNCTUATION_OPEN_PAREN) throw_parse_error(tokens, "Invalid cast syntax");
+    int p = 0;
+    size_t close_idx = 0;
+    for (size_t i = 0; i < tokens.size(); i++) {
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p++;
+        else if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p--;
+        if (p == 0) {
+            close_idx = i;
+            break;
+        }
+    }
+    for (size_t i = 1; i < close_idx; i++) {
+        target_type += std::string(tokens[i].value.value_or(""));
+    }
+    std::vector<lexer::Token> expr_tokens(tokens.begin() + close_idx + 1, tokens.end());
+    expression = parseTokensToNode(expr_tokens, this);
+}
 TernaryExpression::TernaryExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::TERNARY_EXPRESSION, parent) {}
-
 
 // ==========================================
 // Top-Level Statements
 // ==========================================
 
-/*
- * PackageStatement
- * 1. Skip `package`. Concatenate remaining identifiers/dots into `this->package_name`.
- * ERROR DETECTION:
- * - If no tokens after `package`, throw "Expected package name".
- * - If package name is malformed (e.g., consecutive dots), throw "Invalid package name format".
- */
-PackageStatement::PackageStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::PACKAGE_STATEMENT, parent) {}
-
-
-/*
- * AliasStatement
- * 1. Skip `alias`. `this->alias_name = tokens[1]`.
- * 2. Skip `=`. `this->target_type = tokens[3]`.
- * ERROR DETECTION:
- * - If missing `=`, throw "Expected '=' in alias declaration".
- * - If missing target type, throw "Expected target type after '='".
- */
-AliasStatement::AliasStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::ALIAS_STATEMENT, parent) {}
-
-/*
- * EnumDeclaration
- * 1. Extract modifiers (`public`, `internal`, etc.). Assign to `access_modifier`.
- * 2. Skip `enum`. Next token is `enum_name`.
- * 3. Extract tokens inside `{ ... }`.
- * 4. Split by `,` and push each identifier to `members`.
- * ERROR DETECTION:
- * - If missing `enum_name`, throw "Expected identifier for enum name".
- * - If block is missing or malformed, throw "Expected '{' for enum body".
- * - If any member is not a single identifier, throw "Enum members must be valid identifiers".
- */
-EnumDeclaration::EnumDeclaration(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::ENUM_DECLARATION, parent) {}
-
-/*
- * ClassDeclaration
- * 1. Extract modifiers up to `class`. Assign to `access_modifier`.
- * 2. Token after `class` is `class_name`.
- * 3. Extract tokens inside `{ ... }`.
- * 4. Use `divideTokensIntoStatements` to split the class body into distinct field/method declarations.
- * 5. For each statement, call `parseTokensToNode()` and push the result to `this->children`.
- * ERROR DETECTION:
- * - If `class_name` is missing, throw "Expected identifier for class name".
- * - If body is missing, throw "Expected '{' for class body".
- */
-ClassDeclaration::ClassDeclaration(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::CLASS_DECLARATION, parent) {}
-
+PackageStatement::PackageStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::PACKAGE_STATEMENT, parent) {
+    if (tokens.size() < 3) throw_parse_error(tokens, "Expected package name");
+    for (size_t i = 1; i < tokens.size(); i++) {
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_SEMICOLON) break;
+        package_name += std::string(tokens[i].value.value_or(""));
+    }
+}
+AliasStatement::AliasStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::ALIAS_STATEMENT, parent) {
+    if (tokens.size() < 4) throw_parse_error(tokens, "Invalid alias declaration syntax");
+    alias_name = std::string(tokens[1].value.value_or(""));
+    if (tokens[2].type != lexer::TokenType::OPERATOR_ASSIGN) throw_parse_error(tokens[2], "Expected '=' in alias declaration");
+    for (size_t i = 3; i < tokens.size(); i++) {
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_SEMICOLON) break;
+        target_type += std::string(tokens[i].value.value_or(""));
+    }
+}
+EnumDeclaration::EnumDeclaration(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::ENUM_DECLARATION, parent) {
+    size_t i = 0;
+    while (i < tokens.size() && tokens[i].type != lexer::TokenType::KEYWORD_ENUM) {
+        access_modifier = tokens[i].type;
+        i++;
+    }
+    i++;
+    if (i >= tokens.size() || tokens[i].type != lexer::TokenType::IDENTIFIER) throw_parse_error(tokens, "Expected identifier for enum name");
+    enum_name = std::string(tokens[i].value.value_or(""));
+    i++;
+    if (i >= tokens.size() || tokens[i].type != lexer::TokenType::PUNCTUATION_OPEN_BRACE) throw_parse_error(tokens, "Expected '{' for enum body");
+    
+    for (size_t j = i + 1; j < tokens.size(); j++) {
+        if (tokens[j].type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) break;
+        if (tokens[j].type == lexer::TokenType::IDENTIFIER) {
+            members.push_back(std::string(tokens[j].value.value_or("")));
+        } else if (tokens[j].type != lexer::TokenType::PUNCTUATION_COMMA) {
+            throw_parse_error(tokens[j], "Enum members must be valid identifiers separated by commas");
+        }
+    }
+}
+ClassDeclaration::ClassDeclaration(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::CLASS_DECLARATION, parent) {
+    size_t i = 0;
+    while (i < tokens.size() && tokens[i].type != lexer::TokenType::KEYWORD_CLASS) {
+        access_modifier = tokens[i].type;
+        i++;
+    }
+    i++;
+    if (i >= tokens.size() || tokens[i].type != lexer::TokenType::IDENTIFIER) throw_parse_error(tokens, "Expected identifier for class name");
+    class_name = std::string(tokens[i].value.value_or(""));
+    i++;
+    if (i >= tokens.size() || tokens[i].type != lexer::TokenType::PUNCTUATION_OPEN_BRACE) throw_parse_error(tokens, "Expected '{' for class body");
+    
+    std::vector<lexer::Token> body_tokens(tokens.begin() + i + 1, tokens.end() - 1);
+    auto statements = divideTokensIntoStatements(body_tokens);
+    for (const auto& stmt : statements) {
+        if (!stmt.empty()) children.push_back(parseTokensToNode(stmt, this));
+    }
+}
 
 // ==========================================
 // Class-Level Declarations
 // ==========================================
 
-/*
- * FieldDeclaration
- * 1. Extract modifiers (`public`, `static`, `const`). Set corresponding fields.
- * 2. Extract `type_name` and `field_name`.
- * 3. STRICT RULE: Iterate through `parent->children` to ensure no sibling shares this exact `field_name`. Throw duplicate error if found.
- * 4. If `=` exists, everything after it (up to `;`) is passed to `parseTokensToNode` as `initializer`.
- * ERROR DETECTION:
- * - If missing `type_name` or `field_name`, throw "Invalid field declaration syntax".
- * - If initializer tokens are empty but `=` is present, throw "Missing expression after '='".
- * - If parent is not a ClassDeclaration, throw "Fields must be declared inside a class".
- */
-FieldDeclaration::FieldDeclaration(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::FIELD_DECLARATION, parent) {}
-
-/*
- * ConstructorDeclaration
- * 1. Extract modifiers.
- * 2. Find `(...)`. Split contents by `,` at depth 0. For each segment, extract Type and Name. Push to `parameters`.
- * 3. Find `{...}`. Extract contents.
- * 4. Pass body contents to `parseTokensToNode()` (which should yield a BlockStatement). Push to `children`.
- * ERROR DETECTION:
- * - If constructor name does not match class name, throw "Constructor name must match class name".
- * - If parameter segment is malformed (missing type or name), throw "Invalid parameter syntax".
- * - If body `{...}` is missing, throw "Constructors must have a body".
- */
-ConstructorDeclaration::ConstructorDeclaration(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::CONSTRUCTOR_DECLARATION, parent) {}
-
-/*
- * MethodDeclaration
- * 1. Extract modifiers, set flags (`is_static`, `is_inline`, access modifiers).
- * 2. Type token before the identifier is `return_type`. The identifier before `(` is `method_name`.
- * 3. STRICT RULE: Check if `parent` is a `ClassDeclaration`. If not, call `throw_parse_error` because Solix methods MUST be inside a class.
- * 4. STRICT RULE: Iterate through `parent->children` to ensure no sibling shares this exact `method_name` (unless supporting overloading, in which case check signatures). Throw a duplicate identifier error if found.
- * 5. Parse parameters inside `(...)` just like Constructor.
- * 6. Parse body inside `{...}` into a BlockStatement, push to `children`.
- * ERROR DETECTION:
- * - If `return_type` or `method_name` are missing, throw "Invalid method declaration syntax".
- * - If body `{...}` is missing (unless in interface/abstract), throw "Method must have a body".
- * - If parameter segment is malformed, throw "Invalid parameter syntax".
- */
-MethodDeclaration::MethodDeclaration(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::METHOD_DECLARATION, parent) {}
-
+FieldDeclaration::FieldDeclaration(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::FIELD_DECLARATION, parent) {
+    size_t i = 0;
+    while (i < tokens.size() && (
+        tokens[i].type == lexer::TokenType::KEYWORD_PUBLIC ||
+        tokens[i].type == lexer::TokenType::KEYWORD_PRIVATE ||
+        tokens[i].type == lexer::TokenType::KEYWORD_PROTECTED ||
+        tokens[i].type == lexer::TokenType::KEYWORD_INTERNAL ||
+        tokens[i].type == lexer::TokenType::KEYWORD_STATIC ||
+        tokens[i].type == lexer::TokenType::KEYWORD_CONST)) {
+        if (tokens[i].type == lexer::TokenType::KEYWORD_STATIC) is_static = true;
+        else if (tokens[i].type == lexer::TokenType::KEYWORD_CONST) is_const = true;
+        else access_modifier = tokens[i].type;
+        i++;
+    }
+    
+    size_t type_start = i;
+    i = consumeType(tokens, i);
+    if (i == type_start || i >= tokens.size() || tokens[i].type != lexer::TokenType::IDENTIFIER) throw_parse_error(tokens, "Invalid field declaration syntax");
+    
+    for (size_t j = type_start; j < i; j++) type_name += std::string(tokens[j].value.value_or("")) + (tokens[j].type == lexer::TokenType::PUNCTUATION_DOT ? "" : " ");
+    field_name = std::string(tokens[i].value.value_or(""));
+    i++;
+    
+    if (i < tokens.size() && tokens[i].type == lexer::TokenType::OPERATOR_ASSIGN) {
+        if (i + 1 >= tokens.size() || tokens[i+1].type == lexer::TokenType::PUNCTUATION_SEMICOLON) throw_parse_error(tokens[i], "Expected expression after '='");
+        std::vector<lexer::Token> init_tokens(tokens.begin() + i + 1, tokens.end());
+        if (!init_tokens.empty() && init_tokens.back().type == lexer::TokenType::PUNCTUATION_SEMICOLON) init_tokens.pop_back();
+        initializer = parseTokensToNode(init_tokens, this);
+    }
+}
+ConstructorDeclaration::ConstructorDeclaration(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::CONSTRUCTOR_DECLARATION, parent) {
+    size_t i = 0;
+    while (i < tokens.size() && (
+        tokens[i].type == lexer::TokenType::KEYWORD_PUBLIC ||
+        tokens[i].type == lexer::TokenType::KEYWORD_PRIVATE ||
+        tokens[i].type == lexer::TokenType::KEYWORD_PROTECTED ||
+        tokens[i].type == lexer::TokenType::KEYWORD_INTERNAL)) {
+        access_modifier = tokens[i].type;
+        i++;
+    }
+    
+    i++; // skip name
+    if (i >= tokens.size() || tokens[i].type != lexer::TokenType::PUNCTUATION_OPEN_PAREN) throw_parse_error(tokens, "Expected '(' after constructor name");
+    
+    int p_depth = 0;
+    size_t param_end = i;
+    for (size_t j = i; j < tokens.size(); j++) {
+        if (tokens[j].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p_depth++;
+        else if (tokens[j].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p_depth--;
+        if (p_depth == 0) {
+            param_end = j;
+            break;
+        }
+    }
+    
+    if (param_end < tokens.size() - 1 && tokens[param_end + 1].type == lexer::TokenType::PUNCTUATION_OPEN_BRACE) {
+        std::vector<lexer::Token> body_tokens(tokens.begin() + param_end + 1, tokens.end());
+        children.push_back(parseTokensToNode(body_tokens, this));
+    }
+}
+MethodDeclaration::MethodDeclaration(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::METHOD_DECLARATION, parent) {
+    size_t i = 0;
+    while (i < tokens.size() && (
+        tokens[i].type == lexer::TokenType::KEYWORD_PUBLIC ||
+        tokens[i].type == lexer::TokenType::KEYWORD_PRIVATE ||
+        tokens[i].type == lexer::TokenType::KEYWORD_PROTECTED ||
+        tokens[i].type == lexer::TokenType::KEYWORD_INTERNAL ||
+        tokens[i].type == lexer::TokenType::KEYWORD_STATIC ||
+        tokens[i].type == lexer::TokenType::KEYWORD_CONST ||
+        tokens[i].type == lexer::TokenType::KEYWORD_INLINE)) {
+        if (tokens[i].type == lexer::TokenType::KEYWORD_STATIC) is_static = true;
+        else if (tokens[i].type == lexer::TokenType::KEYWORD_INLINE) is_inline = true;
+        else access_modifier = tokens[i].type;
+        i++;
+    }
+    
+    size_t type_start = i;
+    i = consumeType(tokens, i);
+    if (i == type_start || i >= tokens.size() || tokens[i].type != lexer::TokenType::IDENTIFIER) throw_parse_error(tokens, "Invalid method declaration syntax");
+    
+    for (size_t j = type_start; j < i; j++) return_type += std::string(tokens[j].value.value_or("")) + " ";
+    method_name = std::string(tokens[i].value.value_or(""));
+    i++;
+    
+    if (i >= tokens.size() || tokens[i].type != lexer::TokenType::PUNCTUATION_OPEN_PAREN) throw_parse_error(tokens, "Expected '(' after method name");
+    
+    int p_depth = 0;
+    size_t param_start = i + 1;
+    size_t param_end = i;
+    for (size_t j = i; j < tokens.size(); j++) {
+        if (tokens[j].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p_depth++;
+        else if (tokens[j].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p_depth--;
+        if (p_depth == 0) {
+            param_end = j;
+            break;
+        }
+    }
+    
+    if (param_end < tokens.size() - 1 && tokens[param_end + 1].type == lexer::TokenType::PUNCTUATION_OPEN_BRACE) {
+        std::vector<lexer::Token> body_tokens(tokens.begin() + param_end + 1, tokens.end());
+        children.push_back(parseTokensToNode(body_tokens, this));
+    }
+}
 
 // ==========================================
 // Control Flow & Statements
 // ==========================================
 
-/*
- * BlockStatement
- * 1. Ensure starts with `{` and ends with `}`. Strip them.
- * 2. Use `divideTokensIntoStatements` on inner tokens.
- * 3. Iterate through statement token vectors. Call `parseTokensToNode` on each.
- * 4. Push resulting nodes to `this->children`.
- * ERROR DETECTION:
- * - If not starting with `{` or not ending with `}`, throw "Block must be enclosed in braces".
- */
-BlockStatement::BlockStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::BLOCK_STATEMENT, parent) {}
-
-/*
- * IfStatement
- * 1. `tokens[0]` is `if`.
- * 2. Extract condition from the first `(...)`. Parse and assign to `condition`.
- * 3. Find the `then` body (could be a block `{...}` or a single statement up to `;`). Parse and assign to `then_branch`.
- * 4. If there are tokens remaining, check if they start with `else`.
- * 5. If `else` is followed immediately by `if`, extract everything from `if` to the end, parse it (it will become another IfStatement), and assign to `else_branch`.
- * 6. Otherwise, extract the `else` body (block or single statement), parse, and assign to `else_branch`.
- * ERROR DETECTION:
- * - If condition `(...)` is missing or empty, throw "Expected condition in if statement".
- * - If `then` branch is missing, throw "Expected body for if statement".
- * - If `else` keyword is present but no branch follows, throw "Expected body after else".
- */
-IfStatement::IfStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::IF_STATEMENT, parent) {}
-
-/*
- * ForStatement
- * 1. `tokens[0]` is `for`.
- * 2. Extract contents of first `(...)`.
- * 3. Split contents precisely by `;` at depth 0 into 3 parts: `init`, `cond`, `iter`.
- * 4. Parse each non-empty part and assign to `initialization`, `condition`, `iteration`.
- * 5. Extract the remaining tokens as the body (block or single statement). Parse and assign to `body`.
- * ERROR DETECTION:
- * - If `(...)` does not contain exactly two semicolons, throw "Invalid for-loop syntax: expected two semicolons".
- * - If body is missing, throw "Expected body for for-loop".
- */
-ForStatement::ForStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::FOR_STATEMENT, parent) {}
-
-/*
- * WhileStatement
- * 1. `tokens[0]` is `while`.
- * 2. Extract condition from `(...)`. Parse to `condition`.
- * 3. Extract body. Parse to `body`.
- * ERROR DETECTION:
- * - If condition `(...)` is missing or empty, throw "Expected condition in while statement".
- * - If body is missing, throw "Expected body for while statement".
- */
-WhileStatement::WhileStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::WHILE_STATEMENT, parent) {}
-
-/*
- * DoWhileStatement
- * 1. `tokens[0]` is `do`.
- * 2. Extract the block body. Parse to `body`.
- * 3. The token after the block is `while`. Extract condition from `(...)` after it. Parse to `condition`.
- * ERROR DETECTION:
- * - If `while` is missing after the block, throw "Expected 'while' after do block".
- * - If condition `(...)` is missing, throw "Expected condition in do-while statement".
- */
-DoWhileStatement::DoWhileStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::DO_WHILE_STATEMENT, parent) {}
-
-/*
- * SwitchStatement
- * 1. `tokens[0]` is `switch`.
- * 2. Extract condition from `(...)`. Parse to `condition`.
- * 3. Extract inner block `{...}`. Use `divideTokensIntoStatements` to split the inner block into case statements.
- * 4. Parse each case statement and push to `children`.
- * ERROR DETECTION:
- * - If condition is empty, throw "Expected condition in switch statement".
- * - If block `{}` is missing, throw "Expected block for switch statement".
- */
-SwitchStatement::SwitchStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::SWITCH_STATEMENT, parent) {}
-
-/*
- * CaseStatement
- * 1. Check if `tokens[0]` is `case` or `default`.
- * 2. If `case`, extract tokens between `case` and `:` as `case_value`. Parse it.
- * 3. The tokens after `:` are the body. Use `divideTokensIntoStatements` to split them.
- * 4. Parse each body statement and push to `children`.
- * ERROR DETECTION:
- * - If missing `:`, throw "Expected ':' after case or default".
- * - If `case` has no value before `:`, throw "Expected value for case".
- */
-CaseStatement::CaseStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::CASE_STATEMENT, parent) {}
-
-/*
- * VariableDeclaration
- * 1. Extract `type_name` and `var_name`.
- * 2. STRICT RULE: Iterate through `parent->children` to ensure no sibling shares this exact `var_name`. If found, throw a Duplicate Identifier error.
- * 3. If `=` is present, parse the right side (up to `;`) as `initializer`.
- * ERROR DETECTION:
- * - If `type_name` or `var_name` is missing, throw "Invalid variable declaration syntax".
- * - If `=` is present but right side is empty, throw "Expected expression after '='".
- */
-VariableDeclaration::VariableDeclaration(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::VARIABLE_DECLARATION, parent) {}
-
-/*
- * ExpressionStatement
- * 1. Strip the trailing `;`.
- * 2. Pass the remaining tokens to `parseTokensToNode`.
- * 3. Assign the resulting node to `expression`.
- * ERROR DETECTION:
- * - If trailing `;` is missing, throw "Expected ';' at end of expression statement".
- * - If tokens before `;` are empty, throw "Empty expression statement".
- */
-ExpressionStatement::ExpressionStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::EXPRESSION_STATEMENT, parent) {}
-
-/*
- * ReturnStatement
- * 1. Verify `tokens[0]` is `return`.
- * 2. If length > 2 (i.e. not just `return;`), extract tokens between `return` and `;`.
- * 3. Parse them and assign to `value`.
- * ERROR DETECTION:
- * - If missing trailing `;`, throw "Expected ';' at end of return statement".
- */
-ReturnStatement::ReturnStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::RETURN_STATEMENT, parent) {}
-
-/*
- * Break/Continue
- * 1. Verify token is `break` or `continue`. No children required.
- * ERROR DETECTION:
- * - If missing trailing `;`, throw "Expected ';' at end of statement".
- * - If not inside a loop (or switch for break), throw "Break/Continue outside of allowed control flow" (requires parent traversal check).
- */
-BreakStatement::BreakStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::BREAK_STATEMENT, parent) {}
-ContinueStatement::ContinueStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::CONTINUE_STATEMENT, parent) {}
-
+BlockStatement::BlockStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::BLOCK_STATEMENT, parent) {
+    if (tokens.front().type != lexer::TokenType::PUNCTUATION_OPEN_BRACE || tokens.back().type != lexer::TokenType::PUNCTUATION_CLOSE_BRACE) throw_parse_error(tokens, "Block must be enclosed in braces");
+    std::vector<lexer::Token> inner(tokens.begin() + 1, tokens.end() - 1);
+    auto statements = divideTokensIntoStatements(inner);
+    for (const auto& stmt : statements) {
+        if (!stmt.empty()) children.push_back(parseTokensToNode(stmt, this));
+    }
+}
+IfStatement::IfStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::IF_STATEMENT, parent) {
+    if (tokens.size() < 4) throw_parse_error(tokens, "Expected condition in if statement");
+    if (tokens[1].type != lexer::TokenType::PUNCTUATION_OPEN_PAREN) throw_parse_error(tokens[1], "Expected '(' after if");
+    
+    int p = 0;
+    size_t cond_end = 0;
+    for (size_t i = 1; i < tokens.size(); i++) {
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p++;
+        else if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p--;
+        if (p == 0) {
+            cond_end = i;
+            break;
+        }
+    }
+    std::vector<lexer::Token> cond_tokens(tokens.begin() + 2, tokens.begin() + cond_end);
+    if (cond_tokens.empty()) throw_parse_error(tokens, "Expected condition in if statement");
+    condition = parseTokensToNode(cond_tokens, this);
+    
+    size_t then_start = cond_end + 1;
+    if (then_start >= tokens.size()) throw_parse_error(tokens, "Expected body for if statement");
+    
+    size_t else_idx = tokens.size();
+    if (tokens[then_start].type == lexer::TokenType::PUNCTUATION_OPEN_BRACE) {
+        int b = 0;
+        for (size_t i = then_start; i < tokens.size(); i++) {
+            if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_BRACE) b++;
+            else if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) b--;
+            if (b == 0) {
+                else_idx = i + 1;
+                break;
+            }
+        }
+    } else {
+        for (size_t i = then_start; i < tokens.size(); i++) {
+            if (tokens[i].type == lexer::TokenType::KEYWORD_ELSE) {
+                else_idx = i;
+                break;
+            }
+        }
+    }
+    
+    std::vector<lexer::Token> then_tokens(tokens.begin() + then_start, tokens.begin() + else_idx);
+    if (then_tokens.empty()) throw_parse_error(tokens, "Expected body for if statement");
+    then_branch = parseTokensToNode(then_tokens, this);
+    
+    if (else_idx < tokens.size() && tokens[else_idx].type == lexer::TokenType::KEYWORD_ELSE) {
+        if (else_idx + 1 >= tokens.size()) throw_parse_error(tokens, "Expected body after else");
+        std::vector<lexer::Token> else_tokens(tokens.begin() + else_idx + 1, tokens.end());
+        else_branch = parseTokensToNode(else_tokens, this);
+    }
+}
+ForStatement::ForStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::FOR_STATEMENT, parent) {
+    if (tokens.size() < 4 || tokens[1].type != lexer::TokenType::PUNCTUATION_OPEN_PAREN) throw_parse_error(tokens, "Invalid for-loop syntax");
+    int p = 0;
+    size_t cond_end = 0;
+    for (size_t i = 1; i < tokens.size(); i++) {
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p++;
+        else if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p--;
+        if (p == 0) {
+            cond_end = i;
+            break;
+        }
+    }
+    
+    std::vector<lexer::Token> cond_tokens(tokens.begin() + 2, tokens.begin() + cond_end);
+    std::vector<std::vector<lexer::Token>> parts;
+    std::vector<lexer::Token> curr;
+    int inner_p = 0;
+    for (const auto& t : cond_tokens) {
+        if (t.type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) inner_p++;
+        else if (t.type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) inner_p--;
+        if (inner_p == 0 && t.type == lexer::TokenType::PUNCTUATION_SEMICOLON) {
+            parts.push_back(curr);
+            curr.clear();
+        } else {
+            curr.push_back(t);
+        }
+    }
+    parts.push_back(curr);
+    
+    if (parts.size() != 3) throw_parse_error(tokens, "Invalid for-loop syntax: expected two semicolons");
+    if (!parts[0].empty()) {
+        parts[0].push_back(lexer::Token{lexer::TokenType::PUNCTUATION_SEMICOLON, std::nullopt, std::nullopt, 0, 0});
+        initialization = parseTokensToNode(parts[0], this);
+    }
+    if (!parts[1].empty()) condition = parseTokensToNode(parts[1], this);
+    if (!parts[2].empty()) {
+        parts[2].push_back(lexer::Token{lexer::TokenType::PUNCTUATION_SEMICOLON, std::nullopt, std::nullopt, 0, 0});
+        iteration = parseTokensToNode(parts[2], this);
+    }
+    
+    if (cond_end + 1 >= tokens.size()) throw_parse_error(tokens, "Expected body for for-loop");
+    std::vector<lexer::Token> body_tokens(tokens.begin() + cond_end + 1, tokens.end());
+    body = parseTokensToNode(body_tokens, this);
+}
+WhileStatement::WhileStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::WHILE_STATEMENT, parent) {
+    if (tokens.size() < 4 || tokens[1].type != lexer::TokenType::PUNCTUATION_OPEN_PAREN) throw_parse_error(tokens, "Invalid while-loop syntax");
+    int p = 0;
+    size_t cond_end = 0;
+    for (size_t i = 1; i < tokens.size(); i++) {
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p++;
+        else if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p--;
+        if (p == 0) {
+            cond_end = i;
+            break;
+        }
+    }
+    std::vector<lexer::Token> cond_tokens(tokens.begin() + 2, tokens.begin() + cond_end);
+    if (cond_tokens.empty()) throw_parse_error(tokens, "Expected condition in while statement");
+    condition = parseTokensToNode(cond_tokens, this);
+    
+    if (cond_end + 1 >= tokens.size()) throw_parse_error(tokens, "Expected body for while statement");
+    std::vector<lexer::Token> body_tokens(tokens.begin() + cond_end + 1, tokens.end());
+    body = parseTokensToNode(body_tokens, this);
+}
+DoWhileStatement::DoWhileStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::DO_WHILE_STATEMENT, parent) {
+    if (tokens.size() < 5) throw_parse_error(tokens, "Invalid do-while syntax");
+    size_t while_idx = 0;
+    for (size_t i = tokens.size() - 1; i >= 0; i--) {
+        if (tokens[i].type == lexer::TokenType::KEYWORD_WHILE) {
+            while_idx = i;
+            break;
+        }
+    }
+    if (while_idx == 0 || while_idx >= tokens.size() - 1) throw_parse_error(tokens, "Expected 'while' after do block");
+    
+    std::vector<lexer::Token> body_tokens(tokens.begin() + 1, tokens.begin() + while_idx);
+    body = parseTokensToNode(body_tokens, this);
+    
+    std::vector<lexer::Token> cond_tokens(tokens.begin() + while_idx + 1, tokens.end());
+    if (cond_tokens.back().type == lexer::TokenType::PUNCTUATION_SEMICOLON) cond_tokens.pop_back();
+    condition = parseTokensToNode(cond_tokens, this);
+}
+SwitchStatement::SwitchStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::SWITCH_STATEMENT, parent) {
+    if (tokens.size() < 4 || tokens[1].type != lexer::TokenType::PUNCTUATION_OPEN_PAREN) throw_parse_error(tokens, "Invalid switch syntax");
+    int p = 0;
+    size_t cond_end = 0;
+    for (size_t i = 1; i < tokens.size(); i++) {
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p++;
+        else if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p--;
+        if (p == 0) {
+            cond_end = i;
+            break;
+        }
+    }
+    std::vector<lexer::Token> cond_tokens(tokens.begin() + 2, tokens.begin() + cond_end);
+    if (cond_tokens.empty()) throw_parse_error(tokens, "Expected condition in switch statement");
+    condition = parseTokensToNode(cond_tokens, this);
+    
+    if (cond_end + 1 >= tokens.size() || tokens[cond_end+1].type != lexer::TokenType::PUNCTUATION_OPEN_BRACE) throw_parse_error(tokens, "Expected block for switch statement");
+    
+    std::vector<lexer::Token> block_tokens(tokens.begin() + cond_end + 2, tokens.end() - 1);
+    std::vector<std::vector<lexer::Token>> case_stmts;
+    std::vector<lexer::Token> curr_case;
+    int b = 0;
+    for (const auto& t : block_tokens) {
+        if (t.type == lexer::TokenType::PUNCTUATION_OPEN_BRACE) b++;
+        else if (t.type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) b--;
+        if (b == 0 && (t.type == lexer::TokenType::KEYWORD_CASE || t.type == lexer::TokenType::KEYWORD_DEFAULT)) {
+            if (!curr_case.empty()) case_stmts.push_back(curr_case);
+            curr_case.clear();
+        }
+        curr_case.push_back(t);
+    }
+    if (!curr_case.empty()) case_stmts.push_back(curr_case);
+    
+    for (const auto& c : case_stmts) {
+        children.push_back(parseTokensToNode(c, this));
+    }
+}
+CaseStatement::CaseStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::CASE_STATEMENT, parent) {
+    if (tokens.front().type == lexer::TokenType::KEYWORD_DEFAULT) is_default = true;
+    size_t colon_idx = 0;
+    for (size_t i = 1; i < tokens.size(); i++) {
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_COLON) {
+            colon_idx = i;
+            break;
+        }
+    }
+    if (colon_idx == 0) throw_parse_error(tokens, "Expected ':' after case or default");
+    
+    if (!is_default) {
+        std::vector<lexer::Token> val_tokens(tokens.begin() + 1, tokens.begin() + colon_idx);
+        if (val_tokens.empty()) throw_parse_error(tokens, "Expected value for case");
+        case_value = parseTokensToNode(val_tokens, this);
+    }
+    
+    if (colon_idx + 1 < tokens.size()) {
+        std::vector<lexer::Token> body_tokens(tokens.begin() + colon_idx + 1, tokens.end());
+        auto stmts = divideTokensIntoStatements(body_tokens);
+        for (const auto& stmt : stmts) {
+            if (!stmt.empty()) children.push_back(parseTokensToNode(stmt, this));
+        }
+    }
+}
+VariableDeclaration::VariableDeclaration(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::VARIABLE_DECLARATION, parent) {
+    size_t i = consumeType(tokens, 0);
+    if (i == 0 || i >= tokens.size() || tokens[i].type != lexer::TokenType::IDENTIFIER) throw_parse_error(tokens, "Invalid variable declaration syntax");
+    for (size_t j = 0; j < i; j++) type_name += std::string(tokens[j].value.value_or("")) + (tokens[j].type == lexer::TokenType::PUNCTUATION_DOT ? "" : " ");
+    var_name = std::string(tokens[i].value.value_or(""));
+    i++;
+    if (i < tokens.size() && tokens[i].type == lexer::TokenType::OPERATOR_ASSIGN) {
+        if (i + 1 >= tokens.size() || tokens[i+1].type == lexer::TokenType::PUNCTUATION_SEMICOLON) throw_parse_error(tokens[i], "Expected expression after '='");
+        std::vector<lexer::Token> init_tokens(tokens.begin() + i + 1, tokens.end());
+        if (!init_tokens.empty() && init_tokens.back().type == lexer::TokenType::PUNCTUATION_SEMICOLON) init_tokens.pop_back();
+        initializer = parseTokensToNode(init_tokens, this);
+    }
+}
+ExpressionStatement::ExpressionStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::EXPRESSION_STATEMENT, parent) {
+    if (tokens.empty() || tokens.back().type != lexer::TokenType::PUNCTUATION_SEMICOLON) throw_parse_error(tokens, "Expected ';' at end of expression statement");
+    std::vector<lexer::Token> expr_tokens(tokens.begin(), tokens.end() - 1);
+    if (expr_tokens.empty()) throw_parse_error(tokens, "Empty expression statement");
+    expression = parseTokensToNode(expr_tokens, this);
+}
+ReturnStatement::ReturnStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::RETURN_STATEMENT, parent) {
+    if (tokens.empty() || tokens.back().type != lexer::TokenType::PUNCTUATION_SEMICOLON) throw_parse_error(tokens, "Expected ';' at end of return statement");
+    if (tokens.size() > 2) {
+        std::vector<lexer::Token> val_tokens(tokens.begin() + 1, tokens.end() - 1);
+        value = parseTokensToNode(val_tokens, this);
+    }
+}
+BreakStatement::BreakStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::BREAK_STATEMENT, parent) {
+    if (tokens.back().type != lexer::TokenType::PUNCTUATION_SEMICOLON) throw_parse_error(tokens, "Expected ';' at end of statement");
+}
+ContinueStatement::ContinueStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::CONTINUE_STATEMENT, parent) {
+    if (tokens.back().type != lexer::TokenType::PUNCTUATION_SEMICOLON) throw_parse_error(tokens, "Expected ';' at end of statement");
+}
 
 // ==========================================
 // AstTree & Helper Implementation
 // ==========================================
-
 AstTree::AstTree() {}
 
-/*
- * AstTree::resolveDeclaration
- * 
- * ALGORITHM:
- * 1. Take a `current_scope` pointer and a `name` string.
- * 2. Track a `previous_node` pointer (initially `nullptr`).
- * 3. Loop `while (current_scope != nullptr)`:
- *    a. If `current_scope` is a `BlockStatement`:
- *       - Loop through its `children`.
- *       - Stop searching if we reach a child where `child == previous_node` 
- *         (meaning we shouldn't resolve variables declared *after* our current line).
- *       - Check if the child is a VariableDeclaration. If its `var_name` == `name`, return it.
- *    b. If `current_scope` is a `MethodDeclaration` or `ConstructorDeclaration`:
- *       - Check its `parameters`. (We will need to ensure parameters can be queried by name).
- *    c. If `current_scope` is a `ClassDeclaration`:
- *       - Loop through ALL its `children` (order doesn't matter for classes).
- *       - Check FieldDeclarations and MethodDeclarations for a name match. Return if found.
- *    d. `previous_node = current_scope;`
- *    e. `current_scope = current_scope->parent;` // Move up to the next scope.
- * 4. If the loop finishes without returning, check the `symbols` unordered_map (global scope).
- *    - To check the global scope, we search the `symbols` map for the fully qualified name.
- *    - `auto it = symbols.find(name); if (it != symbols.end()) return it->second;`
- * 5. Return `nullptr` if not found anywhere.
- * ERROR DETECTION:
- * - If resolution is specifically required for compilation but returns nullptr, the calling site must throw "Undefined symbol: <name>".
- */
 const Node* AstTree::resolveDeclaration(const Node* current_scope, const std::string& name) const {
+    const Node* prev = nullptr;
+    const Node* curr = current_scope;
+    while (curr != nullptr) {
+        if (curr->node_type == NodeType::BLOCK_STATEMENT) {
+            auto block = static_cast<const BlockStatement*>(curr);
+            for (const auto& child : block->children) {
+                if (child.get() == prev) break; // Don't look ahead
+                if (child->node_type == NodeType::VARIABLE_DECLARATION) {
+                    auto var_decl = static_cast<const VariableDeclaration*>(child.get());
+                    if (var_decl->var_name == name) return var_decl;
+                }
+            }
+        } else if (curr->node_type == NodeType::CLASS_DECLARATION) {
+            auto class_decl = static_cast<const ClassDeclaration*>(curr);
+            for (const auto& child : class_decl->children) {
+                if (child->node_type == NodeType::FIELD_DECLARATION) {
+                    auto field_decl = static_cast<const FieldDeclaration*>(child.get());
+                    if (field_decl->field_name == name) return field_decl;
+                } else if (child->node_type == NodeType::METHOD_DECLARATION) {
+                    auto method_decl = static_cast<const MethodDeclaration*>(child.get());
+                    if (method_decl->method_name == name) return method_decl;
+                }
+            }
+        } else if (curr->node_type == NodeType::METHOD_DECLARATION) {
+            auto method_decl = static_cast<const MethodDeclaration*>(curr);
+            for (const auto& param : method_decl->parameters) {
+                if (param.name == name) return method_decl; // Ideally return a Parameter node, but we return the method for now
+            }
+        } else if (curr->node_type == NodeType::CONSTRUCTOR_DECLARATION) {
+            auto ctor_decl = static_cast<const ConstructorDeclaration*>(curr);
+            for (const auto& param : ctor_decl->parameters) {
+                if (param.name == name) return ctor_decl;
+            }
+        }
+        
+        prev = curr;
+        curr = curr->parent_node;
+    }
+    
+    auto it = symbols.find(name);
+    if (it != symbols.end()) return it->second;
+    
     return nullptr;
 }
 
-/*
- * generateUniqueSymbolName (Helper for AstTree)
- * ALGORITHM:
- * 1. Takes a Node and its name.
- * 2. Traverses up the `parent` pointers to build a fully qualified name string.
- * 3. Prepend the package name, class name, etc. separated by dots or colons (e.g., `math.utils.MathUtils.add`).
- * 4. For method overloads, append parameter types (e.g., `MathUtils.add(int32,int32)`).
- * 5. Return the resulting unique string.
- */
 
-/*
- * AstTree::include
- * 
- * ALGORITHM:
- * 1. Tokenize the source code using the lexer.
- * 2. Use `divideTokensIntoStatements` to split the top-level tokens.
- * 3. For each top-level statement vector, call `parseTokensToNode`.
- * 4. Push the resulting Node to the `nodes` vector.
- * 5. Recursively walk the newly parsed tree to find all Global Declarations:
- *    - `PackageStatement`, `ClassDeclaration`, `EnumDeclaration`, `AliasStatement`
- *    - `MethodDeclaration` (global or static methods)
- *    - `VariableDeclaration` or `FieldDeclaration` (if marked static/global)
- * 6. For each found declaration, generate a unique symbol key using `generateUniqueSymbolName`.
- * 7. Check if the unique key already exists in `symbols`. If it does, throw a "Duplicate Symbol" error.
- * 8. Otherwise, insert it into the `symbols` unordered_map for O(1) global resolution.
- * ERROR DETECTION:
- * - Check if the lexer threw any errors, bubble them up.
- * - Throw "Duplicate global symbol: <name>" if key insertion fails.
- */
-void AstTree::include(std::filesystem::path file_path) {}
-void AstTree::include(std::string_view source_code, std::optional<std::filesystem::path> file_path) {}
+static void populateSymbols(AstTree* tree, Node* root, std::string prefix) {
+    if (!root) return;
+    std::string my_prefix = prefix;
+    
+    if (root->node_type == NodeType::PACKAGE_STATEMENT) {
+        my_prefix = static_cast<PackageStatement*>(root)->package_name + ".";
+    } else if (root->node_type == NodeType::CLASS_DECLARATION) {
+        auto cls = static_cast<ClassDeclaration*>(root);
+        std::string full_name = prefix + cls->class_name;
+        if (tree->symbols.count(full_name)) throw std::runtime_error("Duplicate global symbol: " + full_name);
+        tree->symbols[full_name] = cls;
+        my_prefix = full_name + ".";
+    } else if (root->node_type == NodeType::ENUM_DECLARATION) {
+        auto enm = static_cast<EnumDeclaration*>(root);
+        std::string full_name = prefix + enm->enum_name;
+        if (tree->symbols.count(full_name)) throw std::runtime_error("Duplicate global symbol: " + full_name);
+        tree->symbols[full_name] = enm;
+    } else if (root->node_type == NodeType::ALIAS_STATEMENT) {
+        auto alias = static_cast<AliasStatement*>(root);
+        std::string full_name = prefix + alias->alias_name;
+        if (tree->symbols.count(full_name)) throw std::runtime_error("Duplicate global symbol: " + full_name);
+        tree->symbols[full_name] = alias;
+    }
+    
+    for (const auto& child : root->children) {
+        populateSymbols(tree, child.get(), my_prefix);
+    }
+}
+
+void AstTree::include(std::filesystem::path file_path) {
+    auto tokens = lexer::tokenize_file(file_path);
+    auto stmts = divideTokensIntoStatements(tokens);
+    std::string pkg_prefix = "";
+    for (const auto& stmt : stmts) {
+        if (!stmt.empty()) {
+            auto node = parseTokensToNode(stmt);
+            populateSymbols(this, node.get(), pkg_prefix);
+            if (node->node_type == NodeType::PACKAGE_STATEMENT) {
+                pkg_prefix = static_cast<PackageStatement*>(node.get())->package_name + ".";
+            }
+            nodes.push_back(std::move(node));
+        }
+    }
+}
+
+void AstTree::include(std::string_view source_code, std::optional<std::filesystem::path> file_path) {
+    auto tokens = lexer::tokenize(source_code);
+    auto stmts = divideTokensIntoStatements(tokens);
+    std::string pkg_prefix = "";
+    for (const auto& stmt : stmts) {
+        if (!stmt.empty()) {
+            auto node = parseTokensToNode(stmt);
+            populateSymbols(this, node.get(), pkg_prefix);
+            if (node->node_type == NodeType::PACKAGE_STATEMENT) {
+                pkg_prefix = static_cast<PackageStatement*>(node.get())->package_name + ".";
+            }
+            nodes.push_back(std::move(node));
+        }
+    }
+}
 
 } // namespace solix::parser
