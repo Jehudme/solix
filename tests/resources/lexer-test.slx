@@ -1,102 +1,138 @@
-// This is a single-line comment
+// ============================================================================
+// Solix Language - Comprehensive Parser Edge-Case & Rules Test
+// ============================================================================
 /*
-  This is a multi-line comment.
-  This file tests all tokens defined in solix::lexer::TokenType.
+    This file tests the absolute limits of the Solix Parser and Lexer.
+    It contains heavily nested structures, variable shadowing, access modifier
+    enforcement, complex expressions, and Java/C++-like OOP patterns.
 */
 
-package main.test;
+package com.solix.advanced.test;
 
-// Alias test
-alias IntAlias = int32;
+alias Matrix = array array float64;
+alias ID = uint64;
 
-// Enum test
-public enum State {
-    START,
-    STOP
+// Global Enum
+public enum ApplicationState {
+    INITIALIZING,
+    RUNNING,
+    CRASHED,
+    SHUTDOWN
 }
 
-// Class and access modifiers test
-internal class MathUtils {
-    private const float32 PI = 3.14159;
-    protected static string name = "Math Module";
+// Top-level Class
+public class Engine {
+    
+    // Field Declarations with various modifiers
+    private const string engineName = "Solix V8";
+    protected static int32 instanceCount = 0;
+    internal bool isRunning = false;
+    public float32 temperature = 25.0;
 
-    public inline int32 add(int32 a, int32 b) {
-        return a + b;
+    // Nested Class inside Class (C++/Java style)
+    private class CoreProcessor {
+        private ID coreId;
+        public array int32 cache = new array int32[1024];
+
+        // Constructor
+        public CoreProcessor(ID id) {
+            this.coreId = id;
+            Engine.instanceCount++;
+        }
+
+        // Nested Enum inside Class
+        public enum CoreStatus {
+            IDLE,
+            PROCESSING,
+            OVERHEATING
+        }
+
+        public CoreStatus currentStatus = CoreStatus.IDLE;
+
+        // Const method (enforcing modifiers)
+        public const inline void process(array int32 data) {
+            if (this.currentStatus == CoreStatus.OVERHEATING) {
+                return;
+            }
+            
+            // Variable shadowing test (Allowed in different scopes, blocked in same)
+            int32 temp = 0; // Outer scope temp
+            
+            for (int32 i = 0; i < 1024; i++) {
+                int32 temp = data[i] * 2; // Shadowing outer temp in block scope
+                
+                // Deeply nested control flow
+                if (temp > 100) {
+                    while (temp > 0) {
+                        temp--;
+                        if (temp == 50) break;
+                    }
+                } else if (temp < 0) {
+                    continue;
+                } else {
+                    this.cache[i] = temp;
+                }
+            }
+        }
     }
-}
 
-public class Main {
-    // Testing primitive types and basic tokens
-    static void testPrimitives() {
-        bool bVal = !true;
-        
-        int8 i8 = 1;
-        int16 i16 = 2;
-        int32 i32 = 3;
-        int64 i64 = 4;
-        
-        uint8 u8 = 5;
-        uint16 u16 = 6;
-        uint32 u32 = 7;
-        uint64 u64 = 8;
-        
-        float32 f32 = 9.0;
-        float64 f64 = 10.0;
-        
-        char c = 'C';
-        string s = "Hello Solix";
+    // Default constructor
+    public Engine() {
+        this.isRunning = true;
     }
 
+    // Method with complex arrays and multidimensional logic
+    public static Matrix createIdentityMatrix(int32 size) {
+        Matrix mat = new array array float64[size];
+        for (int32 i = 0; i < size; i++) {
+            mat[i] = new array float64[size];
+            for (int32 j = 0; j < size; j++) {
+                mat[i][j] = (i == j) ? 1.0 : 0.0; // Ternary operator
+            }
+        }
+        return mat;
+    }
+
+    // Main entry point - Testing complex expressions and precedence
     public static void main(array string args) {
-        IntAlias counter = 0;
-        MathUtils utils = new MathUtils();
+        ApplicationState state = ApplicationState.INITIALIZING;
+        
+        int32 x = 10;
+        int32 y = 20;
+        int32 z = 30;
 
-        // Testing operators: assign, arithmetic, and increment/decrement
-        counter = counter + 1;
-        counter = counter - 1;
-        counter = counter * 2;
-        counter = counter / 2;
-        counter = counter % 2;
-        counter++;
-        counter--;
+        // Operator precedence: should parse as x = (y + (z * 2)) - (10 / 5)
+        x = y + z * 2 - 10 / 5;
 
-        // Testing logical and relational operators
-        if (counter == 0 && counter != 1) {
-            counter++;
-        } else if (counter < 5 || counter > 10) {
-            counter--;
-        }
+        // Unary and Assignment right-associativity: should parse as x = (y = (!z))
+        bool flag = false;
+        bool result = flag = !true;
 
-        if (counter <= 2 && counter >= 0) {
-            // Testing arrays and punctuation [], .
-            array int32 nums = new array int32[5];
-            nums[0] = utils.add(10, 20);
-        }
+        // Array literal and postfix operators
+        array int32 numbers = { 1, 2, 3, 4, 5 };
+        numbers[0]++;
+        
+        // Chained member access and method calls
+        Engine myEngine = new Engine();
+        Engine.CoreProcessor proc = new Engine.CoreProcessor(12345);
+        proc.process(numbers);
 
-        // Testing loops: for, while, break, continue
-        for (int32 i = 0; i < 10; i++) {
-            if (i == 5) {
-                continue;
-            }
-            if (i == 8) {
+        // Casting and bitwise (if supported, using as generics/casts)
+        float64 casted = (float64) x;
+
+        switch (state) {
+            case ApplicationState.INITIALIZING:
+                state = ApplicationState.RUNNING;
                 break;
-            }
-        }
-
-        while (counter < 10) {
-            counter++;
-        }
-
-        // Testing switch, case, default, and colon
-        switch (counter) {
-            case 1:
-                counter = 10;
-                break;
+            case ApplicationState.CRASHED:
+            case ApplicationState.SHUTDOWN:
+                return;
             default:
-                counter = 0;
                 break;
         }
 
-        return;
+        do {
+            x++;
+        } while (x < 100);
     }
 }
