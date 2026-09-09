@@ -251,8 +251,11 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
     
     size_t after_type = consumeType(tokens, i);
     if (after_type > i && after_type < tokens.size() && tokens[after_type].type == lexer::TokenType::IDENTIFIER) {
-        if (i > 0) return NodeType::FIELD_DECLARATION;
-        // if no modifiers, could be field or var depending on parent, let's say VARIABLE_DECLARATION, and parent fixes it if needed
+        bool has_field_modifier = false;
+        for (size_t m = 0; m < i; m++) {
+            if (tokens[m].type != lexer::TokenType::KEYWORD_CONST) has_field_modifier = true;
+        }
+        if (has_field_modifier) return NodeType::FIELD_DECLARATION;
         return NodeType::VARIABLE_DECLARATION; 
     }
     
@@ -1093,9 +1096,14 @@ CaseStatement::CaseStatement(const std::vector<lexer::Token>& tokens, Node* pare
     }
 }
 VariableDeclaration::VariableDeclaration(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::VARIABLE_DECLARATION, parent) {
-    size_t i = consumeType(tokens, 0);
+    size_t start = 0;
+    while (start < tokens.size() && tokens[start].type == lexer::TokenType::KEYWORD_CONST) {
+        is_const = true;
+        start++;
+    }
+    size_t i = consumeType(tokens, start);
     if (i == 0 || i >= tokens.size() || tokens[i].type != lexer::TokenType::IDENTIFIER) throw_parse_error(tokens, "Invalid variable declaration syntax");
-    for (size_t j = 0; j < i; j++) type_name += std::string(tokens[j].value.value_or("")) + (tokens[j].type == lexer::TokenType::PUNCTUATION_DOT ? "" : " ");
+    for (size_t j = start; j < i; j++) type_name += std::string(tokens[j].value.value_or("")) + (tokens[j].type == lexer::TokenType::PUNCTUATION_DOT ? "" : " ");
     var_name = std::string(tokens[i].value.value_or(""));
     i++;
     if (i < tokens.size() && tokens[i].type == lexer::TokenType::OPERATOR_ASSIGN) {

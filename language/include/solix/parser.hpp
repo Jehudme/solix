@@ -319,6 +319,8 @@ struct CaseStatement : public Node {
 
 struct VariableDeclaration : public Node {
     std::string var_name;
+    bool is_const = false;
+
     std::string type_name;
     
     std::unique_ptr<Node> initializer; // optional
