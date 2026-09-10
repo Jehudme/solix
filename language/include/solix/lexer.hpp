@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <optional>
 #include <string_view>
+#include <string>
 #include <vector>
 
 namespace solix::lexer {
@@ -115,7 +116,7 @@ namespace solix::lexer {
 
   struct Token {
     TokenType type;
-    std::optional<std::string_view> value;
+    std::optional<std::string> value;
     std::optional<std::filesystem::path> path;
     size_t line;
     size_t column;
