@@ -4,10 +4,15 @@
 
 namespace solix::compiler {
 
-Compiler::Compiler() {}
+Compiler::Compiler() : current_chunk(nullptr) {}
 
-Chunk Compiler::compile(const parser::AstTree& tree) {
-    current_chunk = Chunk{};
+BytecodeProgram Compiler::compile(const parser::AstTree& tree) {
+    program = BytecodeProgram{};
+    
+    // Create the global / entry-point chunk
+    program.functions.push_back(Chunk{"__global__"});
+    current_chunk = &program.functions.back();
+    program.exports["__global__"] = 0;
     
     // Iterate over the global AST nodes
     for (const auto& node : tree.nodes) {
@@ -15,9 +20,9 @@ Chunk Compiler::compile(const parser::AstTree& tree) {
     }
     
     // Add a HALT instruction at the end of the global scope execution
-    current_chunk.writeOp(OpCode::HALT, 0); // 0 = unknown line for now
+    current_chunk->writeOp(OpCode::HALT, 0);
     
-    return current_chunk;
+    return program;
 }
 
 void Compiler::compileNode(parser::Node* node) {
@@ -25,7 +30,6 @@ void Compiler::compileNode(parser::Node* node) {
     
     // Dispatch to statement or expression compiler
     switch (node->node_type) {
-        // Statements
         case parser::NodeType::EXPRESSION_STATEMENT:
         case parser::NodeType::VARIABLE_DECLARATION:
         case parser::NodeType::BLOCK_STATEMENT:
@@ -38,7 +42,6 @@ void Compiler::compileNode(parser::Node* node) {
             compileStatement(node);
             break;
             
-        // Expressions
         case parser::NodeType::BINARY_EXPRESSION:
         case parser::NodeType::UNARY_EXPRESSION:
         case parser::NodeType::LITERAL_EXPRESSION:
@@ -55,8 +58,6 @@ void Compiler::compileNode(parser::Node* node) {
             compileExpression(node);
             break;
             
-        // Declarations (Classes, Methods, Packages, Enums, Aliases)
-        // Note: For now, we just skip these or handle them elsewhere
         case parser::NodeType::CLASS_DECLARATION:
         case parser::NodeType::METHOD_DECLARATION:
         case parser::NodeType::FIELD_DECLARATION:
@@ -64,7 +65,7 @@ void Compiler::compileNode(parser::Node* node) {
         case parser::NodeType::PACKAGE_STATEMENT:
         case parser::NodeType::ALIAS_STATEMENT:
         case parser::NodeType::CONSTRUCTOR_DECLARATION:
-            // TODO: Handle compiling methods into their own Chunks later
+            // TODO: Compile methods into their own slots in program.functions
             break;
             
         default:
