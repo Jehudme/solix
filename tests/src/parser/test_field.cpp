@@ -18,7 +18,7 @@ TEST_CASE("Parser: FieldDeclaration", "[parser][field]") {
         auto* field = dynamic_cast<parser::FieldDeclaration*>(cls->children[0].get());
         REQUIRE(field != nullptr);
         REQUIRE(field->access_modifier == lexer::TokenType::KEYWORD_PRIVATE);
-        REQUIRE(field->type_name == "int32 ");
+        REQUIRE(field->type_name == "int32");
         REQUIRE(field->field_name == "count");
         REQUIRE(field->initializer == nullptr);
     }
@@ -36,7 +36,7 @@ TEST_CASE("Parser: FieldDeclaration", "[parser][field]") {
         REQUIRE(field->access_modifier == lexer::TokenType::KEYWORD_PUBLIC);
         REQUIRE(field->is_static == true);
         REQUIRE(field->is_const == true);
-        REQUIRE(field->type_name == "float32 ");
+        REQUIRE(field->type_name == "float32");
         REQUIRE(field->field_name == "PI");
         REQUIRE(field->initializer != nullptr);
     }

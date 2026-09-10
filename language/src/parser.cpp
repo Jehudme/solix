@@ -112,12 +112,28 @@ std::vector<std::vector<lexer::Token>> divideTokensIntoStatements(const std::vec
     return statements;
 }
 
+std::string extractTypeName(const std::vector<lexer::Token>& tokens, size_t start, size_t end) {
+    std::string result = "";
+    for (size_t j = start; j < end; j++) {
+        std::string val = tokens[j].value.value_or("");
+        if (val == "[") {
+            result += "[]";
+            j++; // skip the closing ]
+        } else if (val == ".") {
+            if (!result.empty() && result.back() == ' ') result.pop_back();
+            result += ".";
+        } else {
+            if (!result.empty() && result.back() == '.') result += val;
+            else result += val + " ";
+        }
+    }
+    while (!result.empty() && result.back() == ' ') result.pop_back();
+    return result;
+}
+
 size_t consumeType(const std::vector<lexer::Token>& tokens, size_t start_index) {
     size_t i = start_index;
-    while (i < tokens.size() && tokens[i].type == lexer::TokenType::PRIMITIVE_ARRAY) {
-        i++;
-    }
-    if (i >= tokens.size()) throw_parse_error(tokens, "Expected type after 'array'");
+    if (i >= tokens.size()) return i;
     
     // Accept primitive types or identifiers
     if (tokens[i].type != lexer::TokenType::IDENTIFIER &&
@@ -806,7 +822,7 @@ FieldDeclaration::FieldDeclaration(const std::vector<lexer::Token>& tokens, Node
     i = consumeType(tokens, i);
     if (i == type_start || i >= tokens.size() || tokens[i].type != lexer::TokenType::IDENTIFIER) throw_parse_error(tokens, "Invalid field declaration syntax");
     
-    for (size_t j = type_start; j < i; j++) type_name += std::string(tokens[j].value.value_or("")) + (tokens[j].type == lexer::TokenType::PUNCTUATION_DOT ? "" : " ");
+    type_name = extractTypeName(tokens, type_start, i);
     field_name = std::string(tokens[i].value.value_or(""));
     i++;
     
@@ -884,7 +900,7 @@ MethodDeclaration::MethodDeclaration(const std::vector<lexer::Token>& tokens, No
     i = consumeType(tokens, i);
     if (i == type_start || i >= tokens.size() || tokens[i].type != lexer::TokenType::IDENTIFIER) throw_parse_error(tokens, "Invalid method declaration syntax");
     
-    for (size_t j = type_start; j < i; j++) return_type += std::string(tokens[j].value.value_or("")) + " ";
+    return_type = extractTypeName(tokens, type_start, i);
     method_name = std::string(tokens[i].value.value_or(""));
     i++;
     
@@ -1154,7 +1170,7 @@ VariableDeclaration::VariableDeclaration(const std::vector<lexer::Token>& tokens
     }
     size_t i = consumeType(tokens, start);
     if (i == 0 || i >= tokens.size() || tokens[i].type != lexer::TokenType::IDENTIFIER) throw_parse_error(tokens, "Invalid variable declaration syntax");
-    for (size_t j = start; j < i; j++) type_name += std::string(tokens[j].value.value_or("")) + (tokens[j].type == lexer::TokenType::PUNCTUATION_DOT ? "" : " ");
+    type_name = extractTypeName(tokens, start, i);
     var_name = std::string(tokens[i].value.value_or(""));
     i++;
     if (i < tokens.size() && tokens[i].type == lexer::TokenType::OPERATOR_ASSIGN) {

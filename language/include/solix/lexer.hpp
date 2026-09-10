@@ -36,7 +36,6 @@ namespace solix::lexer {
 
     PRIMITIVE_CHAR,
     PRIMITIVE_STRING,
-    PRIMITIVE_ARRAY,
 
     // Keywords
     KEYWORD_IF,

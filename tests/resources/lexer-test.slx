@@ -9,7 +9,7 @@
 
 package com.solix.advanced.test;
 
-alias Matrix = array array float64;
+alias Matrix = float64[][];
 alias ID = uint64;
 
 // Global Enum
@@ -32,7 +32,7 @@ public class Engine {
     // Nested Class inside Class (C++/Java style)
     private class CoreProcessor {
         private ID coreId;
-        public array int32 cache = new array int32[1024];
+        public int32[] cache = new int32[][1024];
 
         // Constructor
         public CoreProcessor(ID id) {
@@ -50,7 +50,7 @@ public class Engine {
         public CoreStatus currentStatus = CoreStatus.IDLE;
 
         // Const method (enforcing modifiers)
-        public const inline void process(array int32 data) {
+        public const inline void process(int32[] data) {
             if (this.currentStatus == CoreStatus.OVERHEATING) {
                 return;
             }
@@ -83,9 +83,9 @@ public class Engine {
 
     // Method with complex arrays and multidimensional logic
     public static Matrix createIdentityMatrix(int32 size) {
-        Matrix mat = new array array float64[size];
+        Matrix mat = new float64[][][size];
         for (int32 i = 0; i < size; i++) {
-            mat[i] = new array float64[size];
+            mat[i] = new float64[size];
             for (int32 j = 0; j < size; j++) {
                 mat[i][j] = (i == j) ? 1.0 : 0.0; // Ternary operator
             }
@@ -94,7 +94,7 @@ public class Engine {
     }
 
     // Main entry point - Testing complex expressions and precedence
-    public static void main(array string args) {
+    public static void main(string[] args) {
         ApplicationState state = ApplicationState.INITIALIZING;
         
         int32 x = 10;
@@ -109,7 +109,7 @@ public class Engine {
         bool result = flag = !true;
 
         // Array literal and postfix operators
-        array int32 numbers = { 1, 2, 3, 4, 5 };
+        int32[] numbers = { 1, 2, 3, 4, 5 };
         numbers[0]++;
         
         // Chained member access and method calls
