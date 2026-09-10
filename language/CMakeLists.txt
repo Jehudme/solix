@@ -13,7 +13,7 @@ add_library(solix_language
     src/lexer.cpp
     src/parser.cpp
     src/runtime.cpp
-    src/sementic.cpp
+    src/semantic.cpp
 )
 
 target_include_directories(solix_language
