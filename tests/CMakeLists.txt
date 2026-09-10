@@ -6,7 +6,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-file(GLOB_RECURSE TEST_SOURCES "src/lexer/*.cpp" "src/parser/*.cpp")
+file(GLOB_RECURSE TEST_SOURCES "src/lexer/*.cpp" "src/parser/*.cpp" "src/semantic/*.cpp")
 
 add_executable(solix_tests
     ${TEST_SOURCES}

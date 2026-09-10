@@ -842,6 +842,23 @@ ConstructorDeclaration::ConstructorDeclaration(const std::vector<lexer::Token>& 
         }
     }
     
+    size_t param_start = i + 1;
+    if (param_start < param_end) {
+        size_t s = param_start;
+        while (s < param_end) {
+            size_t e = s;
+            while (e < param_end && tokens[e].type != lexer::TokenType::PUNCTUATION_COMMA) e++;
+            if (e > s) {
+                if (tokens[e-1].type == lexer::TokenType::IDENTIFIER) {
+                    std::string p_name = std::string(tokens[e-1].value.value_or(""));
+                    std::string p_type = "";
+                    for (size_t t = s; t < e-1; t++) p_type += std::string(tokens[t].value.value_or("")) + " ";
+                    parameters.push_back({p_name, p_type});
+                }
+            }
+            s = e + 1;
+        }
+    }
     if (param_end < tokens.size() - 1 && tokens[param_end + 1].type == lexer::TokenType::PUNCTUATION_OPEN_BRACE) {
         std::vector<lexer::Token> body_tokens(tokens.begin() + param_end + 1, tokens.end());
         children.push_back(parseTokensToNode(body_tokens, this));
@@ -885,6 +902,22 @@ MethodDeclaration::MethodDeclaration(const std::vector<lexer::Token>& tokens, No
         }
     }
     
+    if (param_start < param_end) {
+        size_t s = param_start;
+        while (s < param_end) {
+            size_t e = s;
+            while (e < param_end && tokens[e].type != lexer::TokenType::PUNCTUATION_COMMA) e++;
+            if (e > s) {
+                if (tokens[e-1].type == lexer::TokenType::IDENTIFIER) {
+                    std::string p_name = std::string(tokens[e-1].value.value_or(""));
+                    std::string p_type = "";
+                    for (size_t t = s; t < e-1; t++) p_type += std::string(tokens[t].value.value_or("")) + " ";
+                    parameters.push_back({p_name, p_type});
+                }
+            }
+            s = e + 1;
+        }
+    }
     if (param_end < tokens.size() - 1 && tokens[param_end + 1].type == lexer::TokenType::PUNCTUATION_OPEN_BRACE) {
         std::vector<lexer::Token> body_tokens(tokens.begin() + param_end + 1, tokens.end());
         children.push_back(parseTokensToNode(body_tokens, this));
