@@ -346,6 +346,7 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
         }
         if (!found) throw std::runtime_error("Undefined member: " + mem->member_name);
         enforceAccessModifier(found, {});
+        mem->resolved_declaration = found;
         
         if (found->node_type == parser::NodeType::FIELD_DECLARATION) {
             auto f = static_cast<parser::FieldDeclaration*>(found);
