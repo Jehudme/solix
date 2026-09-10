@@ -205,14 +205,16 @@ namespace {
                             }
                             break;
                             
-                        case '+': add_token(match('+') ? TokenType::OPERATOR_INCREMENT : TokenType::OPERATOR_PLUS); break;
-                        case '-': add_token(match('-') ? TokenType::OPERATOR_DECREMENT : TokenType::OPERATOR_MINUS); break;
-                        case '*': add_token(TokenType::OPERATOR_MULTIPLY); break;
-                        case '%': add_token(TokenType::OPERATOR_MODULO); break;
+                        case '+': add_token(match('+') ? TokenType::OPERATOR_INCREMENT : (match('=') ? TokenType::OPERATOR_PLUS_ASSIGN : TokenType::OPERATOR_PLUS)); break;
+                        case '-': add_token(match('-') ? TokenType::OPERATOR_DECREMENT : (match('=') ? TokenType::OPERATOR_MINUS_ASSIGN : TokenType::OPERATOR_MINUS)); break;
+                        case '*': add_token(match('=') ? TokenType::OPERATOR_MULTIPLY_ASSIGN : TokenType::OPERATOR_MULTIPLY); break;
+                        case '%': add_token(match('=') ? TokenType::OPERATOR_MODULO_ASSIGN : TokenType::OPERATOR_MODULO); break;
                         
                         // Division or Comments
                         case '/':
-                            if (match('/')) {
+                            if (match('=')) {
+                                add_token(TokenType::OPERATOR_DIVIDE_ASSIGN);
+                            } else if (match('/')) {
                                 while (peek() != '\n' && !is_at_end()) advance();
                                 add_token(TokenType::COMMENT_SINGLE_LINE);
                             } else if (match('*')) {
