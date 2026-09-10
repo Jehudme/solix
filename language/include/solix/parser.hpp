@@ -69,9 +69,6 @@ struct Node {
     size_t line = 0;
     size_t column = 0;
 
-    // Fully qualified symbol name
-    std::string symbol_name;
-
     // Pointer back to the parent node
     Node* parent_node = nullptr;
     
