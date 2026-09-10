@@ -394,11 +394,21 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
 
     // Postfix Call and Array Access
     if (tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) {
-        if (t0 == lexer::TokenType::PUNCTUATION_OPEN_PAREN && tokens[1].type != lexer::TokenType::PUNCTUATION_CLOSE_PAREN) {
-            // Might be a cast (Type) expr
+        return NodeType::CALL_EXPRESSION;
+    }
+    
+    // Cast
+    if (t0 == lexer::TokenType::PUNCTUATION_OPEN_PAREN) {
+        int temp_p = 0;
+        int close_idx = -1;
+        for (size_t i=0; i<tokens.size(); i++) {
+            if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) temp_p++;
+            else if (tokens[i].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) temp_p--;
+            if (temp_p == 0) { close_idx = i; break; }
+        }
+        if (close_idx != -1 && close_idx < (int)tokens.size() - 1) {
             return NodeType::CAST_EXPRESSION;
         }
-        return NodeType::CALL_EXPRESSION;
     }
     if (tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) {
         return NodeType::ARRAY_ACCESS_EXPRESSION;

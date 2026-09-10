@@ -1,0 +1,138 @@
+// ============================================================================
+// Solix Language - Comprehensive Parser Edge-Case & Rules Test
+// ============================================================================
+/*
+    This file tests the absolute limits of the Solix Parser and Lexer.
+    It contains heavily nested structures, variable shadowing, access modifier
+    enforcement, complex expressions, and Java/C++-like OOP patterns.
+*/
+
+package com.solix.advanced.test;
+
+alias Matrix = float64[][];
+alias ID = uint64;
+
+// Global Enum
+public enum ApplicationState {
+    INITIALIZING,
+    RUNNING,
+    CRASHED,
+    SHUTDOWN
+}
+
+// Top-level Class
+public class Engine {
+    
+    // Field Declarations with various modifiers
+    private const string engineName = "Solix V8";
+    protected static int32 instanceCount = 0;
+    internal bool isRunning = false;
+    public float32 temperature = 25.0;
+
+    // Nested Class inside Class (C++/Java style)
+    private class CoreProcessor {
+        private ID coreId;
+        public int32[] cache = new int32[1024];
+
+        // Constructor
+        public CoreProcessor(ID id) {
+            this.coreId = id;
+            Engine.instanceCount++;
+        }
+
+        // Nested Enum inside Class
+        public enum CoreStatus {
+            IDLE,
+            PROCESSING,
+            OVERHEATING
+        }
+
+        public CoreStatus currentStatus = CoreStatus.IDLE;
+
+        // Const method (enforcing modifiers)
+        public const inline void process(int32[] data) {
+            if (this.currentStatus == CoreStatus.OVERHEATING) {
+                return;
+            }
+            
+            // Variable shadowing test (Allowed in different scopes, blocked in same)
+            int32 temp = 0; // Outer scope temp
+            
+            for (int32 i = 0; i < 1024; i++) {
+                int32 temp = data[i] * 2; // Shadowing outer temp in block scope
+                
+                // Deeply nested control flow
+                if (temp > 100) {
+                    while (temp > 0) {
+                        temp--;
+                        if (temp == 50) break;
+                    }
+                } else if (temp < 0) {
+                    continue;
+                } else {
+                    this.cache[i] = temp;
+                }
+            }
+        }
+    }
+
+    // Default constructor
+    public Engine() {
+        this.isRunning = true;
+    }
+
+    // Method with complex arrays and multidimensional logic
+    public static Matrix createIdentityMatrix(int32 size) {
+        Matrix mat = new float64[][][size];
+        for (int32 i = 0; i < size; i++) {
+            mat[i] = new float64[size];
+            for (int32 j = 0; j < size; j++) {
+                mat[i][j] = (i == j) ? 1.0 : 0.0; // Ternary operator
+            }
+        }
+        return mat;
+    }
+
+    // Main entry point - Testing complex expressions and precedence
+    public static void main(string[] args) {
+        ApplicationState state = ApplicationState.INITIALIZING;
+        
+        int32 x = 10;
+        int32 y = 20;
+        int32 z = 30;
+
+        // Operator precedence: should parse as x = (y + (z * 2)) - (10 / 5)
+        x = y + z * 2 - 10 / 5;
+
+        // Unary and Assignment right-associativity: should parse as x = (y = (!z))
+        bool flag = false;
+        bool result = flag = !true;
+
+        // Array literal and postfix operators
+        int32[] numbers = { 1, 2, 3, 4, 5 };
+        numbers[0]++;
+        
+        // Chained member access and method calls
+        Engine myEngine = new Engine();
+        Engine.CoreProcessor proc = new Engine.CoreProcessor(12345);
+        proc.process(numbers);
+
+        // Casting and bitwise (if supported, using as generics/casts)
+        float64 casted = (float64) x;
+
+        switch (state) {
+            case ApplicationState.INITIALIZING:
+                state = ApplicationState.RUNNING;
+                break;
+            case ApplicationState.CRASHED:
+            case ApplicationState.SHUTDOWN:
+                return;
+            default:
+                break;
+        }
+
+        do {
+            x++;
+        } while (x < 100);
+    }
+}
