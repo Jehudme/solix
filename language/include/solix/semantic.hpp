@@ -16,6 +16,8 @@ struct TypeInfo {
     std::string base_name;             // The core type (e.g., "int32" or "com.solix.Engine")
     int array_depth = 0;               // 0 for scalar, 1 for "array", 2 for "array array"
     bool is_primitive = false;         // True for int32, float64, bool, string, etc.
+    bool is_method = false;
+    parser::Node* method_ref = nullptr;
     parser::Node* class_ref = nullptr; // If it's a custom Class or Enum, this points directly to its declaration
     
     bool operator==(const TypeInfo& other) const {

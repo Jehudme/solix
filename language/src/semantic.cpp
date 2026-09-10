@@ -230,6 +230,15 @@ void SemanticAnalyzer::resolveAndCheck(parser::AstTree& tree, parser::Node* root
     } else if (root->node_type == parser::NodeType::EXPRESSION_STATEMENT) {
         auto expr_stmt = static_cast<parser::ExpressionStatement*>(root);
         if (expr_stmt->expression) evaluateExpression(tree, expr_stmt->expression.get());
+    } else if (root->node_type == parser::NodeType::RETURN_STATEMENT) {
+        auto ret_stmt = static_cast<parser::ReturnStatement*>(root);
+        if (ret_stmt->value) {
+            TypeInfo val_type = evaluateExpression(tree, ret_stmt->value.get());
+            if (current_method) {
+                TypeInfo expected_type = resolveType(tree, current_method->return_type, {});
+                if (val_type != expected_type) throw std::runtime_error("Return type mismatch");
+            }
+        }
     }
     
     if (is_scope_creator) popScope();
@@ -299,6 +308,9 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
             // Also handle fields
             if (decl->node_type == parser::NodeType::FIELD_DECLARATION) {
                 enforceAccessModifier(decl, {});
+            } else if (decl->node_type == parser::NodeType::METHOD_DECLARATION) {
+                result.is_method = true;
+                result.method_ref = decl;
             }
         }
     } else if (expr->node_type == parser::NodeType::BINARY_EXPRESSION) {
@@ -341,8 +353,8 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
             result = field_t;
         } else {
             auto m = static_cast<parser::MethodDeclaration*>(found);
-            TypeInfo ret_t = resolveType(tree, m->return_type, {});
-            result = ret_t;
+            result.is_method = true;
+            result.method_ref = m;
         }
     } else if (expr->node_type == parser::NodeType::ARRAY_ACCESS_EXPRESSION) {
         auto arr = static_cast<parser::ArrayAccessExpression*>(expr);
@@ -355,8 +367,42 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
     } else if (expr->node_type == parser::NodeType::CALL_EXPRESSION) {
         auto call = static_cast<parser::CallExpression*>(expr);
         TypeInfo target = evaluateExpression(tree, call->callee.get());
-        for (auto& arg : call->arguments) evaluateExpression(tree, arg.get());
-        result = target; // If target was method, it resolved to its return type
+        if (!target.is_method) throw std::runtime_error("Attempted to call a non-method");
+        auto m = static_cast<parser::MethodDeclaration*>(target.method_ref);
+        if (call->arguments.size() != m->parameters.size()) throw std::runtime_error("Argument count mismatch");
+        for (size_t i = 0; i < call->arguments.size(); i++) {
+            TypeInfo arg_t = evaluateExpression(tree, call->arguments[i].get());
+            TypeInfo param_t = resolveType(tree, m->parameters[i].type, {});
+            if (arg_t != param_t) throw std::runtime_error("Argument type mismatch");
+        }
+        result = resolveType(tree, m->return_type, {});
+    } else if (expr->node_type == parser::NodeType::UNARY_EXPRESSION) {
+        auto uny = static_cast<parser::UnaryExpression*>(expr);
+        result = evaluateExpression(tree, uny->operand.get());
+    } else if (expr->node_type == parser::NodeType::TERNARY_EXPRESSION) {
+        auto ter = static_cast<parser::TernaryExpression*>(expr);
+        evaluateExpression(tree, ter->condition.get());
+        result = evaluateExpression(tree, ter->true_branch.get());
+        evaluateExpression(tree, ter->false_branch.get());
+    } else if (expr->node_type == parser::NodeType::CAST_EXPRESSION) {
+        auto cst = static_cast<parser::CastExpression*>(expr);
+        evaluateExpression(tree, cst->expression.get());
+        result = resolveType(tree, cst->target_type, {});
+    } else if (expr->node_type == parser::NodeType::NEW_INSTANCE_EXPRESSION) {
+        auto inst = static_cast<parser::NewInstanceExpression*>(expr);
+        for (auto& arg : inst->arguments) evaluateExpression(tree, arg.get());
+        result = resolveType(tree, inst->class_name, {});
+    } else if (expr->node_type == parser::NodeType::ARRAY_CREATION_EXPRESSION) {
+        auto ac = static_cast<parser::ArrayCreationExpression*>(expr);
+        evaluateExpression(tree, ac->size.get());
+        result = resolveType(tree, ac->type_name, {});
+        result.array_depth++;
+    } else if (expr->node_type == parser::NodeType::ARRAY_LITERAL_EXPRESSION) {
+        auto al = static_cast<parser::ArrayLiteralExpression*>(expr);
+        if (!al->elements.empty()) {
+            result = evaluateExpression(tree, al->elements[0].get());
+            result.array_depth++;
+        }
     }
     
     expr->resolved_type = result.base_name;
