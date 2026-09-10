@@ -91,7 +91,8 @@ struct Node {
 // ==========================================
 
 struct AssignmentExpression : public Node {
-    std::unique_ptr<Node> target; // What is being assigned to (L-Value)
+    std::unique_ptr<Node> target;
+    Node* resolved_declaration = nullptr; // What is being assigned to (L-Value)
     std::unique_ptr<Node> value;  // The value being assigned
     
     AssignmentExpression(const std::vector<lexer::Token>& tokens, Node* parent = nullptr);
@@ -142,12 +143,14 @@ struct ArrayAccessExpression : public Node {
 struct MemberAccessExpression : public Node {
     std::unique_ptr<Node> object;
     std::string member_name; // e.g., 'add' in MathUtils.add()
+    Node* resolved_declaration = nullptr;
     
     MemberAccessExpression(const std::vector<lexer::Token>& tokens, Node* parent = nullptr);
 };
 
 struct NewInstanceExpression : public Node {
     std::string class_name;
+    Node* resolved_declaration = nullptr;
     std::vector<std::unique_ptr<Node>> arguments;
     
     NewInstanceExpression(const std::vector<lexer::Token>& tokens, Node* parent = nullptr);
@@ -211,6 +214,7 @@ struct EnumDeclaration : public Node {
 
 struct ClassDeclaration : public Node {
     std::string class_name;
+    Node* resolved_declaration = nullptr;
     lexer::TokenType access_modifier; // e.g., KEYWORD_INTERNAL
     
     // Note: Methods and fields will be stored in the 'children' vector
