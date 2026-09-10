@@ -20,7 +20,7 @@ TEST_CASE("Parser: MethodDeclaration", "[parser][method]") {
         REQUIRE(method->access_modifier == lexer::TokenType::KEYWORD_PUBLIC);
         REQUIRE(method->is_static == true);
         REQUIRE(method->is_inline == true);
-        REQUIRE(method->return_type == "int32 ");
+        REQUIRE(method->return_type == "int32");
         REQUIRE(method->method_name == "add");
         REQUIRE(method->children.size() == 1); // The BlockStatement
     }

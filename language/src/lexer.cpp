@@ -23,7 +23,6 @@ namespace {
         {"float64", TokenType::PRIMITIVE_FLOAT64},
         {"char", TokenType::PRIMITIVE_CHAR},
         {"string", TokenType::PRIMITIVE_STRING},
-        {"array", TokenType::PRIMITIVE_ARRAY},
         
         {"if", TokenType::KEYWORD_IF},
         {"else", TokenType::KEYWORD_ELSE},

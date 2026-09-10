@@ -54,7 +54,7 @@ public class Main {
         string s = "Hello Solix";
     }
 
-    public static void main(array string args) {
+    public static void main(string[] args) {
         IntAlias counter = 0;
         MathUtils utils = new MathUtils();
 
@@ -76,7 +76,7 @@ public class Main {
 
         if (counter <= 2 && counter >= 0) {
             // Testing arrays and punctuation [], .
-            array int32 nums = new array int32[5];
+            int32[] nums = new int32[][5];
             nums[0] = utils.add(10, 20);
         }
 

@@ -8,8 +8,8 @@ namespace semantic {
 
 std::string TypeInfo::to_string() const {
     std::string res = "";
-    for (int i = 0; i < array_depth; i++) res += "array ";
     res += base_name;
+    for (int i = 0; i < array_depth; i++) res += "[]";
     return res;
 }
 
@@ -248,9 +248,9 @@ TypeInfo SemanticAnalyzer::resolveType(parser::AstTree& tree, const std::string&
     TypeInfo info;
     std::string type_str = raw_type_name;
     
-    while (type_str.find("array ") == 0) {
+    while (type_str.length() >= 2 && type_str.substr(type_str.length() - 2) == "[]") {
         info.array_depth++;
-        type_str = type_str.substr(6);
+        type_str = type_str.substr(0, type_str.length() - 2);
     }
     
     while (!type_str.empty() && type_str.back() == ' ') type_str.pop_back();

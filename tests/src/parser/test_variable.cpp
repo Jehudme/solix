@@ -20,7 +20,7 @@ TEST_CASE("Parser: VariableDeclaration", "[parser][variable]") {
         
         auto* var = dynamic_cast<parser::VariableDeclaration*>(block->children[0].get());
         REQUIRE(var != nullptr);
-        REQUIRE(var->type_name == "int32 ");
+        REQUIRE(var->type_name == "int32");
         REQUIRE(var->var_name == "count");
         REQUIRE(var->initializer == nullptr);
     }
@@ -36,7 +36,7 @@ TEST_CASE("Parser: VariableDeclaration", "[parser][variable]") {
         
         auto* var = dynamic_cast<parser::VariableDeclaration*>(block->children[0].get());
         REQUIRE(var != nullptr);
-        REQUIRE(var->type_name == "float64 ");
+        REQUIRE(var->type_name == "float64");
         REQUIRE(var->var_name == "speed");
         REQUIRE(var->initializer != nullptr);
     }
@@ -53,7 +53,7 @@ TEST_CASE("Parser: VariableDeclaration", "[parser][variable]") {
         auto* var = dynamic_cast<parser::VariableDeclaration*>(block->children[0].get());
         REQUIRE(var != nullptr);
         REQUIRE(var->is_const == true);
-        REQUIRE(var->type_name == "int32 ");
+        REQUIRE(var->type_name == "int32");
     }
     
     SECTION("Error: Invalid Top-Level Variable") {
