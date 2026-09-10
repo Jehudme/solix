@@ -7,12 +7,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(spdlog)
 
 add_library(solix_language
-    src/ast.cpp
-    src/compiler.cpp
-    src/diagnostics.cpp
     src/lexer.cpp
     src/parser.cpp
-    src/runtime.cpp
     src/semantic.cpp
 )
 

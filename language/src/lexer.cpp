@@ -88,7 +88,7 @@ namespace {
         }
 
         void add_token(TokenType type) {
-            std::string_view text = source.substr(start_pos, current_pos - start_pos);
+            std::string text = std::string(source.substr(start_pos, current_pos - start_pos));
             tokens.push_back(Token{type, text, file_path, current_line, start_column});
         }
 
@@ -108,7 +108,7 @@ namespace {
             }
 
             if (is_at_end()) {
-                std::string_view text = source.substr(start_pos, current_pos - start_pos);
+                std::string text = std::string(source.substr(start_pos, current_pos - start_pos));
                 tokens.push_back(Token{TokenType::UNKNOWN_TOKEN, text, file_path, current_line, start_column});
                 return;
             }
@@ -132,7 +132,7 @@ namespace {
         void handle_identifier() {
             while (std::isalnum(peek()) || peek() == '_') advance();
 
-            std::string_view text = source.substr(start_pos, current_pos - start_pos);
+            std::string text = std::string(source.substr(start_pos, current_pos - start_pos));
             auto it = keywords.find(text);
             
             if (it != keywords.end()) {
@@ -193,14 +193,14 @@ namespace {
                         case '&': 
                             if (match('&')) add_token(TokenType::OPERATOR_LOGICAL_AND);
                             else {
-                                std::string_view text = source.substr(start_pos, current_pos - start_pos);
+                                std::string text = std::string(source.substr(start_pos, current_pos - start_pos));
                                 tokens.push_back(Token{TokenType::UNKNOWN_TOKEN, text, file_path, current_line, start_column});
                             }
                             break;
                         case '|': 
                             if (match('|')) add_token(TokenType::OPERATOR_LOGICAL_OR);
                             else {
-                                std::string_view text = source.substr(start_pos, current_pos - start_pos);
+                                std::string text = std::string(source.substr(start_pos, current_pos - start_pos));
                                 tokens.push_back(Token{TokenType::UNKNOWN_TOKEN, text, file_path, current_line, start_column});
                             }
                             break;
@@ -235,7 +235,7 @@ namespace {
                             break;
                             
                         default: {
-                            std::string_view text = source.substr(start_pos, current_pos - start_pos);
+                            std::string text = std::string(source.substr(start_pos, current_pos - start_pos));
                             tokens.push_back(Token{TokenType::UNKNOWN_TOKEN, text, file_path, current_line, start_column});
                             break;
                         }
@@ -256,16 +256,11 @@ std::vector<Token> tokenize(std::string_view source) {
 }
 
 std::vector<Token> tokenize_file(const std::filesystem::path& path) {
-    // Note: Since Tokens hold std::string_view to avoid copying strings, the underlying 
-    // source text must outlive the tokens. For a robust compiler, you should read the file 
-    // into a centralized `SourceManager`. For now, we load it into a static string so the 
-    // views do not dangle.
-    static std::string file_content; 
     std::ifstream file(path);
     if (file) {
         std::ostringstream ss;
         ss << file.rdbuf();
-        file_content = ss.str();
+        std::string file_content = ss.str();
         LexerContext context(file_content, path);
         return context.tokenize();
     }
