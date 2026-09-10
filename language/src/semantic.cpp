@@ -353,15 +353,15 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
             TypeInfo field_type_info = resolveType(tree, field_declaration->type_name, {});
             result = field_type_info;
         } else {
-            auto m = static_cast<parser::MethodDeclaration*>(found_member);
+            auto method_declaration = static_cast<parser::MethodDeclaration*>(found_member);
             result.is_method = true;
-            result.method_ref = m;
+            result.method_ref = method_declaration;
         }
     } else if (expr->node_type == parser::NodeType::ARRAY_ACCESS_EXPRESSION) {
-        auto arr = static_cast<parser::ArrayAccessExpression*>(expr);
-        TypeInfo target = evaluateExpression(tree, arr->array.get());
+        auto array_access_expr = static_cast<parser::ArrayAccessExpression*>(expr);
+        TypeInfo target = evaluateExpression(tree, array_access_expr->array.get());
         if (target.array_depth == 0) throw std::runtime_error("Cannot index into non-array type");
-        TypeInfo index = evaluateExpression(tree, arr->index.get());
+        TypeInfo index = evaluateExpression(tree, array_access_expr->index.get());
         if (index.base_name != "int32") throw std::runtime_error("Array index must be int32");
         result = target;
         result.array_depth--;
@@ -369,14 +369,14 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
         auto call = static_cast<parser::CallExpression*>(expr);
         TypeInfo target = evaluateExpression(tree, call->callee.get());
         if (!target.is_method) throw std::runtime_error("Attempted to call a non-method");
-        auto m = static_cast<parser::MethodDeclaration*>(target.method_ref);
-        if (call->arguments.size() != m->parameters.size()) throw std::runtime_error("Argument count mismatch");
+        auto method_declaration = static_cast<parser::MethodDeclaration*>(target.method_ref);
+        if (call->arguments.size() != method_declaration->parameters.size()) throw std::runtime_error("Argument count mismatch");
         for (size_t index = 0; index < call->arguments.size(); index++) {
-            TypeInfo arg_t = evaluateExpression(tree, call->arguments[index].get());
-            TypeInfo param_t = resolveType(tree, m->parameters[index].type, {});
-            if (arg_t != param_t) throw std::runtime_error("Argument type mismatch");
+            TypeInfo argument_type = evaluateExpression(tree, call->arguments[index].get());
+            TypeInfo parameter_type_info = resolveType(tree, method_declaration->parameters[index].type, {});
+            if (argument_type != parameter_type_info) throw std::runtime_error("Argument type mismatch");
         }
-        result = resolveType(tree, m->return_type, {});
+        result = resolveType(tree, method_declaration->return_type, {});
     } else if (expr->node_type == parser::NodeType::UNARY_EXPRESSION) {
         auto uny = static_cast<parser::UnaryExpression*>(expr);
         result = evaluateExpression(tree, uny->operand.get());
