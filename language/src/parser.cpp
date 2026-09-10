@@ -115,11 +115,11 @@ std::vector<std::vector<lexer::Token>> divideTokensIntoStatements(const std::vec
 
 std::string extractTypeName(const std::vector<lexer::Token>& tokens, size_t start, size_t end) {
     std::string result = "";
-    for (size_t j = start; j < end; j++) {
-        std::string val = tokens[j].value.value_or("");
+    for (size_t lookup_index = start; lookup_index < end; lookup_index++) {
+        std::string val = tokens[lookup_index].value.value_or("");
         if (val == "[") {
             result += "[]";
-            j++; // skip the closing ]
+            lookup_index++; // skip the closing ]
         } else if (val == ".") {
             if (!result.empty() && result.back() == ' ') result.pop_back();
             result += ".";
@@ -339,11 +339,10 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
             case lexer::TokenType::OPERATOR_LOGICAL_AND: return 2;
             
             
-            
             case lexer::TokenType::OPERATOR_EQUAL:
             case lexer::TokenType::OPERATOR_NOT_EQUAL: return 6;
             case lexer::TokenType::OPERATOR_LESS_THAN:
-                        case lexer::TokenType::OPERATOR_GREATER_THAN:
+            case lexer::TokenType::OPERATOR_GREATER_THAN:
             
                         
             case lexer::TokenType::OPERATOR_PLUS:
@@ -873,12 +872,12 @@ EnumDeclaration::EnumDeclaration(const std::vector<lexer::Token>& tokens, Node* 
     index++;
     if (index >= tokens.size() || tokens[index].type != lexer::TokenType::PUNCTUATION_OPEN_BRACE) throw_parse_error(tokens, "Expected '{' for enum body");
     
-    for (size_t j = index + 1; j < tokens.size(); j++) {
-        if (tokens[j].type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) break;
-        if (tokens[j].type == lexer::TokenType::IDENTIFIER) {
-            members.push_back(std::string(tokens[j].value.value_or("")));
-        } else if (tokens[j].type != lexer::TokenType::PUNCTUATION_COMMA) {
-            throw_parse_error(tokens[j], "Enum members must be valid identifiers separated by commas");
+    for (size_t lookup_index = index + 1; lookup_index < tokens.size(); lookup_index++) {
+        if (tokens[lookup_index].type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) break;
+        if (tokens[lookup_index].type == lexer::TokenType::IDENTIFIER) {
+            members.push_back(std::string(tokens[lookup_index].value.value_or("")));
+        } else if (tokens[lookup_index].type != lexer::TokenType::PUNCTUATION_COMMA) {
+            throw_parse_error(tokens[lookup_index], "Enum members must be valid identifiers separated by commas");
         }
     }
 }
@@ -963,11 +962,11 @@ ConstructorDeclaration::ConstructorDeclaration(const std::vector<lexer::Token>& 
     
     int p_depth = 0;
     size_t param_end = index;
-    for (size_t j = index; j < tokens.size(); j++) {
-        if (tokens[j].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p_depth++;
-        else if (tokens[j].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p_depth--;
+    for (size_t lookup_index = index; lookup_index < tokens.size(); lookup_index++) {
+        if (tokens[lookup_index].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p_depth++;
+        else if (tokens[lookup_index].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p_depth--;
         if (p_depth == 0) {
-            param_end = j;
+            param_end = lookup_index;
             break;
         }
     }
@@ -1023,11 +1022,11 @@ MethodDeclaration::MethodDeclaration(const std::vector<lexer::Token>& tokens, No
     int p_depth = 0;
     size_t param_start = index + 1;
     size_t param_end = index;
-    for (size_t j = index; j < tokens.size(); j++) {
-        if (tokens[j].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p_depth++;
-        else if (tokens[j].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p_depth--;
+    for (size_t lookup_index = index; lookup_index < tokens.size(); lookup_index++) {
+        if (tokens[lookup_index].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p_depth++;
+        else if (tokens[lookup_index].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p_depth--;
         if (p_depth == 0) {
-            param_end = j;
+            param_end = lookup_index;
             break;
         }
     }
@@ -1247,8 +1246,8 @@ SwitchStatement::SwitchStatement(const std::vector<lexer::Token>& tokens, Node* 
     }
     if (!curr_case.empty()) case_stmts.push_back(curr_case);
     
-    for (const auto& c : case_stmts) {
-        children.push_back(parseTokensToNode(c, this));
+    for (const auto& child_tokens : case_stmts) {
+        children.push_back(parseTokensToNode(child_tokens, this));
     }
 }
 CaseStatement::CaseStatement(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::CASE_STATEMENT, parent) {
