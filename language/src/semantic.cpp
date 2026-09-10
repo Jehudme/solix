@@ -263,16 +263,25 @@ TypeInfo SemanticAnalyzer::resolveType(parser::AstTree& tree, const std::string&
         info.base_name = type_str;
         info.is_primitive = true;
     } else {
+        parser::Node* symbol = nullptr;
         std::string full_name = current_package + type_str;
         if (tree.symbols.count(full_name)) {
-            info.class_ref = tree.symbols[full_name];
+            symbol = tree.symbols[full_name];
             info.base_name = full_name;
         } else if (tree.symbols.count(type_str)) {
-            info.class_ref = tree.symbols[type_str];
+            symbol = tree.symbols[type_str];
             info.base_name = type_str;
         } else {
             throw std::runtime_error("Undefined type: " + type_str);
         }
+
+        if (symbol->node_type == parser::NodeType::ALIAS_STATEMENT) {
+            auto alias = static_cast<parser::AliasStatement*>(symbol);
+            TypeInfo resolved = resolveType(tree, alias->target_type, tokens);
+            resolved.array_depth += info.array_depth;
+            return resolved;
+        }
+        info.class_ref = symbol;
     }
     return info;
 }
