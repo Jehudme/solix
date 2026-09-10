@@ -10,6 +10,7 @@ add_library(solix_language
     src/lexer.cpp
     src/parser.cpp
     src/semantic.cpp
+    src/compiler.cpp
     
 )
 
