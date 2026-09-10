@@ -7,23 +7,23 @@ namespace solix {
 namespace semantic {
 
 std::string TypeInfo::to_string() const {
-    std::string res = "";
-    res += base_name;
-    for (int i = 0; i < array_depth; i++) res += "[]";
-    return res;
+    std::string result_string = "";
+    result_string += base_name;
+    for (int index = 0; index < array_depth; index++) result_string += "[]";
+    return result_string;
 }
 
 static std::string generate_uuid() {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_int_distribution<> dis(0, 15);
-    std::stringstream ss;
-    ss << "<";
-    for (int i = 0; i < 8; i++) {
-        ss << std::hex << dis(gen);
+    static std::random_device random_device_obj;
+    static std::mt19937 random_generator(random_device_obj());
+    static std::uniform_int_distribution<> uniform_distribution(0, 15);
+    std::stringstream string_stream;
+    string_stream << "<";
+    for (int index = 0; index < 8; index++) {
+        string_stream << std::hex << uniform_distribution(random_generator);
     }
-    ss << ">";
-    return ss.str();
+    string_stream << ">";
+    return string_stream.str();
 }
 
 void SemanticAnalyzer::pushScope() {
@@ -46,9 +46,9 @@ void SemanticAnalyzer::declareLocal(const std::string& name, parser::Node* node,
 
 parser::Node* SemanticAnalyzer::lookupSymbol(parser::AstTree& tree, const std::string& name) {
     // 1. Check local scopes bottom-up
-    for (auto it = scope_stack.rbegin(); it != scope_stack.rend(); ++it) {
-        if (it->symbols.count(name)) {
-            return it->symbols.at(name);
+    for (auto iterator = scope_stack.rbegin(); iterator != scope_stack.rend(); ++iterator) {
+        if (iterator->symbols.count(name)) {
+            return iterator->symbols.at(name);
         }
     }
     // 2. Check current class fields
@@ -61,7 +61,7 @@ parser::Node* SemanticAnalyzer::lookupSymbol(parser::AstTree& tree, const std::s
         }
     }
     // 3. Check global symbols (Assuming the name might be fully qualified, but locals/fields are just names)
-    // For now, if we don't find it, we return nullptr. We can improve global lookups later.
+    // For now, if we don't find iterator, we return nullptr. We can improve global lookups later.
     return nullptr;
 }
 
@@ -75,10 +75,10 @@ void SemanticAnalyzer::analyze(parser::AstTree& tree) {
     // Pass 1: Global Outline
     for (const auto& node : tree.nodes) {
         if (node->node_type == parser::NodeType::PACKAGE_STATEMENT) {
-            auto pkg = static_cast<parser::PackageStatement*>(node.get());
-            current_package = pkg->package_name + ".";
-            pkg->symbol_name = pkg->package_name;
-            tree.symbols[pkg->symbol_name] = pkg;
+            auto package_statement = static_cast<parser::PackageStatement*>(node.get());
+            current_package = package_statement->package_name + ".";
+            package_statement->symbol_name = package_statement->package_name;
+            tree.symbols[package_statement->symbol_name] = package_statement;
         } else {
             registerGlobalSymbols(tree, node.get(), current_package);
         }
@@ -95,16 +95,16 @@ void SemanticAnalyzer::registerGlobalSymbols(parser::AstTree& tree, parser::Node
     std::string my_prefix = prefix;
     
     if (root->node_type == parser::NodeType::PACKAGE_STATEMENT) {
-        auto pkg = static_cast<parser::PackageStatement*>(root);
-        current_package = pkg->package_name + ".";
-        pkg->symbol_name = pkg->package_name;
-        tree.symbols[pkg->symbol_name] = pkg;
+        auto package_statement = static_cast<parser::PackageStatement*>(root);
+        current_package = package_statement->package_name + ".";
+        package_statement->symbol_name = package_statement->package_name;
+        tree.symbols[package_statement->symbol_name] = package_statement;
     } else if (root->node_type == parser::NodeType::CLASS_DECLARATION) {
-        auto cls = static_cast<parser::ClassDeclaration*>(root);
-        std::string full_name = prefix + cls->class_name;
+        auto class_declaration = static_cast<parser::ClassDeclaration*>(root);
+        std::string full_name = prefix + class_declaration->class_name;
         if (tree.symbols.count(full_name)) throw std::runtime_error("Duplicate global symbol: " + full_name);
-        cls->symbol_name = full_name;
-        tree.symbols[full_name] = cls;
+        class_declaration->symbol_name = full_name;
+        tree.symbols[full_name] = class_declaration;
         my_prefix = full_name + ".";
     } else if (root->node_type == parser::NodeType::ENUM_DECLARATION) {
         auto enm = static_cast<parser::EnumDeclaration*>(root);
@@ -139,7 +139,7 @@ void SemanticAnalyzer::registerGlobalSymbols(parser::AstTree& tree, parser::Node
         my_prefix = prefix + "constructor.";
     }
     
-    // Only go into children if it's a structural class/enum node! (Do not enter method bodies in pass 1)
+    // Only go into children if iterator's a structural class/enum node! (Do not enter method bodies in pass 1)
     if (root->node_type == parser::NodeType::CLASS_DECLARATION || root->node_type == parser::NodeType::ENUM_DECLARATION) {
         for (const auto& child : root->children) {
             registerGlobalSymbols(tree, child.get(), my_prefix);
@@ -169,21 +169,21 @@ void SemanticAnalyzer::resolveAndCheck(parser::AstTree& tree, parser::Node* root
             declareLocal(param.name, root, {});
         }
     } else if (root->node_type == parser::NodeType::VARIABLE_DECLARATION) {
-        auto var = static_cast<parser::VariableDeclaration*>(root);
-        declareLocal(var->var_name, root, {});
+        auto variable_declaration = static_cast<parser::VariableDeclaration*>(root);
+        declareLocal(variable_declaration->var_name, root, {});
         
-        // Generate UUID for local var
-        var->symbol_name = current_package + (current_class ? current_class->class_name + "." : "") + var->var_name + generate_uuid();
-        tree.symbols[var->symbol_name] = var;
+        // Generate UUID for local variable_declaration
+        variable_declaration->symbol_name = current_package + (current_class ? current_class->class_name + "." : "") + variable_declaration->var_name + generate_uuid();
+        tree.symbols[variable_declaration->symbol_name] = variable_declaration;
         
-        TypeInfo t_info = resolveType(tree, var->type_name, {});
-        var->resolved_type = t_info.base_name;
-        var->resolved_array_depth = t_info.array_depth;
+        TypeInfo type_info_result = resolveType(tree, variable_declaration->type_name, {});
+        variable_declaration->resolved_type = type_info_result.base_name;
+        variable_declaration->resolved_array_depth = type_info_result.array_depth;
         
-        // If it has an initializer, check it
-        if (var->initializer) {
-            TypeInfo init_type = evaluateExpression(tree, var->initializer.get());
-            if (init_type.base_name != var->resolved_type || init_type.array_depth != var->resolved_array_depth) {
+        // If iterator has an initializer, check iterator
+        if (variable_declaration->initializer) {
+            TypeInfo initializer_type = evaluateExpression(tree, variable_declaration->initializer.get());
+            if (initializer_type.base_name != variable_declaration->resolved_type || initializer_type.array_depth != variable_declaration->resolved_array_depth) {
                 throw std::runtime_error("Type mismatch in assignment");
             }
         }
@@ -291,69 +291,69 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
         else if (lit->token.type == lexer::TokenType::IDENTIFIER && (lit->token.value == "true" || lit->token.value == "false")) result.base_name = "bool";
         result.is_primitive = true;
     } else if (expr->node_type == parser::NodeType::IDENTIFIER_EXPRESSION) {
-        auto ident = static_cast<parser::IdentifierExpression*>(expr);
-        if (ident->name == "true" || ident->name == "false") {
+        auto identifier_expr = static_cast<parser::IdentifierExpression*>(expr);
+        if (identifier_expr->name == "true" || identifier_expr->name == "false") {
             result.base_name = "bool";
             result.is_primitive = true;
-        } else if (ident->name == "this") {
+        } else if (identifier_expr->name == "this") {
             if (!current_class) throw std::runtime_error("Cannot use 'this' outside of a class");
             result.base_name = current_package + current_class->class_name;
             result.class_ref = current_class;
         } else {
-            parser::Node* decl = lookupSymbol(tree, ident->name);
-            if (!decl) throw std::runtime_error("Undefined variable: " + ident->name);
-            ident->resolved_declaration = decl;
-            result.base_name = decl->resolved_type;
-            result.array_depth = decl->resolved_array_depth;
+            parser::Node* declaration_node = lookupSymbol(tree, identifier_expr->name);
+            if (!declaration_node) throw std::runtime_error("Undefined variable: " + identifier_expr->name);
+            identifier_expr->resolved_declaration = declaration_node;
+            result.base_name = declaration_node->resolved_type;
+            result.array_depth = declaration_node->resolved_array_depth;
             // Also handle fields
-            if (decl->node_type == parser::NodeType::FIELD_DECLARATION) {
-                enforceAccessModifier(decl, {});
-            } else if (decl->node_type == parser::NodeType::METHOD_DECLARATION) {
+            if (declaration_node->node_type == parser::NodeType::FIELD_DECLARATION) {
+                enforceAccessModifier(declaration_node, {});
+            } else if (declaration_node->node_type == parser::NodeType::METHOD_DECLARATION) {
                 result.is_method = true;
-                result.method_ref = decl;
+                result.method_ref = declaration_node;
             }
         }
     } else if (expr->node_type == parser::NodeType::BINARY_EXPRESSION) {
-        auto bin = static_cast<parser::BinaryExpression*>(expr);
-        TypeInfo left = evaluateExpression(tree, bin->left.get());
-        TypeInfo right = evaluateExpression(tree, bin->right.get());
+        auto binary_expr = static_cast<parser::BinaryExpression*>(expr);
+        TypeInfo left = evaluateExpression(tree, binary_expr->left.get());
+        TypeInfo right = evaluateExpression(tree, binary_expr->right.get());
         if (left.base_name == "float64" || right.base_name == "float64") result.base_name = "float64";
         else result.base_name = "int32";
         result.is_primitive = true;
     } else if (expr->node_type == parser::NodeType::ASSIGNMENT_EXPRESSION) {
-        auto assign = static_cast<parser::AssignmentExpression*>(expr);
-        enforceLValue(assign->target.get(), {});
-        TypeInfo target = evaluateExpression(tree, assign->target.get());
-        TypeInfo val = evaluateExpression(tree, assign->value.get());
+        auto assignment_expr = static_cast<parser::AssignmentExpression*>(expr);
+        enforceLValue(assignment_expr->target.get(), {});
+        TypeInfo target = evaluateExpression(tree, assignment_expr->target.get());
+        TypeInfo val = evaluateExpression(tree, assignment_expr->value.get());
         if (target.base_name != val.base_name || target.array_depth != val.array_depth) {
             throw std::runtime_error("Type mismatch in assignment");
         }
         result = target;
     } else if (expr->node_type == parser::NodeType::MEMBER_ACCESS_EXPRESSION) {
-        auto mem = static_cast<parser::MemberAccessExpression*>(expr);
-        TypeInfo obj = evaluateExpression(tree, mem->object.get());
-        if (obj.is_primitive || !tree.symbols.count(obj.base_name)) throw std::runtime_error("Cannot access member on primitive or undefined type");
-        auto cls = static_cast<parser::ClassDeclaration*>(tree.symbols[obj.base_name]);
-        parser::Node* found = nullptr;
-        for (const auto& child : cls->children) {
+        auto member_access_expr = static_cast<parser::MemberAccessExpression*>(expr);
+        TypeInfo object_type_info = evaluateExpression(tree, member_access_expr->object.get());
+        if (object_type_info.is_primitive || !tree.symbols.count(object_type_info.base_name)) throw std::runtime_error("Cannot access member on primitive or undefined type");
+        auto class_declaration = static_cast<parser::ClassDeclaration*>(tree.symbols[object_type_info.base_name]);
+        parser::Node* found_member = nullptr;
+        for (const auto& child : class_declaration->children) {
             if (child->node_type == parser::NodeType::FIELD_DECLARATION) {
                 auto field = static_cast<parser::FieldDeclaration*>(child.get());
-                if (field->field_name == mem->member_name) { found = field; break; }
+                if (field->field_name == member_access_expr->member_name) { found_member = field; break; }
             } else if (child->node_type == parser::NodeType::METHOD_DECLARATION) {
                 auto method = static_cast<parser::MethodDeclaration*>(child.get());
-                if (method->method_name == mem->member_name) { found = method; break; }
+                if (method->method_name == member_access_expr->member_name) { found_member = method; break; }
             }
         }
-        if (!found) throw std::runtime_error("Undefined member: " + mem->member_name);
-        enforceAccessModifier(found, {});
-        mem->resolved_declaration = found;
+        if (!found_member) throw std::runtime_error("Undefined member: " + member_access_expr->member_name);
+        enforceAccessModifier(found_member, {});
+        member_access_expr->resolved_declaration = found_member;
         
-        if (found->node_type == parser::NodeType::FIELD_DECLARATION) {
-            auto f = static_cast<parser::FieldDeclaration*>(found);
-            TypeInfo field_t = resolveType(tree, f->type_name, {});
-            result = field_t;
+        if (found_member->node_type == parser::NodeType::FIELD_DECLARATION) {
+            auto field_declaration = static_cast<parser::FieldDeclaration*>(found_member);
+            TypeInfo field_type_info = resolveType(tree, field_declaration->type_name, {});
+            result = field_type_info;
         } else {
-            auto m = static_cast<parser::MethodDeclaration*>(found);
+            auto m = static_cast<parser::MethodDeclaration*>(found_member);
             result.is_method = true;
             result.method_ref = m;
         }
@@ -371,9 +371,9 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
         if (!target.is_method) throw std::runtime_error("Attempted to call a non-method");
         auto m = static_cast<parser::MethodDeclaration*>(target.method_ref);
         if (call->arguments.size() != m->parameters.size()) throw std::runtime_error("Argument count mismatch");
-        for (size_t i = 0; i < call->arguments.size(); i++) {
-            TypeInfo arg_t = evaluateExpression(tree, call->arguments[i].get());
-            TypeInfo param_t = resolveType(tree, m->parameters[i].type, {});
+        for (size_t index = 0; index < call->arguments.size(); index++) {
+            TypeInfo arg_t = evaluateExpression(tree, call->arguments[index].get());
+            TypeInfo param_t = resolveType(tree, m->parameters[index].type, {});
             if (arg_t != param_t) throw std::runtime_error("Argument type mismatch");
         }
         result = resolveType(tree, m->return_type, {});
@@ -399,9 +399,9 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
         result = resolveType(tree, ac->type_name, {});
         result.array_depth++;
     } else if (expr->node_type == parser::NodeType::ARRAY_LITERAL_EXPRESSION) {
-        auto al = static_cast<parser::ArrayLiteralExpression*>(expr);
-        if (!al->elements.empty()) {
-            result = evaluateExpression(tree, al->elements[0].get());
+        auto array_literal = static_cast<parser::ArrayLiteralExpression*>(expr);
+        if (!array_literal->elements.empty()) {
+            result = evaluateExpression(tree, array_literal->elements[0].get());
             result.array_depth++;
         }
     }

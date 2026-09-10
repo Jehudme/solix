@@ -133,10 +133,10 @@ namespace {
             while (std::isalnum(peek()) || peek() == '_') advance();
 
             std::string text = std::string(source.substr(start_pos, current_pos - start_pos));
-            auto it = keywords.find(text);
+            auto keyword_iterator = keywords.find(text);
             
-            if (it != keywords.end()) {
-                add_token(it->second); // It's a keyword
+            if (keyword_iterator != keywords.end()) {
+                add_token(keyword_iterator->second); // It's a keyword
             } else {
                 add_token(TokenType::IDENTIFIER); // It's a regular identifier
             }
@@ -149,11 +149,11 @@ namespace {
         std::vector<Token> tokenize() {
             while (!is_at_end()) {
                 // Handle whitespace manually to keep track of lines and columns accurately
-                char c = peek();
-                if (c == ' ' || c == '\r' || c == '\t') {
+                char current_character = peek();
+                if (current_character == ' ' || current_character == '\r' || current_character == '\t') {
                     advance();
                     continue;
-                } else if (c == '\n') {
+                } else if (current_character == '\n') {
                     current_pos++;
                     current_line++;
                     current_column = 1;
@@ -162,16 +162,16 @@ namespace {
 
                 start_pos = current_pos;
                 start_column = current_column;
-                c = advance();
+                current_character = advance();
 
-                if (std::isalpha(c) || c == '_') {
+                if (std::isalpha(current_character) || current_character == '_') {
                     handle_identifier();
-                } else if (std::isdigit(c)) {
+                } else if (std::isdigit(current_character)) {
                     handle_number();
-                } else if (c == '"' || c == '\'') {
+                } else if (current_character == '"' || current_character == '\'') {
                     handle_string();
                 } else {
-                    switch (c) {
+                    switch (current_character) {
                         // Punctuation
                         case '(': add_token(TokenType::PUNCTUATION_OPEN_PAREN); break;
                         case ')': add_token(TokenType::PUNCTUATION_CLOSE_PAREN); break;
@@ -261,9 +261,9 @@ std::vector<Token> tokenize(std::string_view source) {
 std::vector<Token> tokenize_file(const std::filesystem::path& path) {
     std::ifstream file(path);
     if (file) {
-        std::ostringstream ss;
-        ss << file.rdbuf();
-        std::string file_content = ss.str();
+        std::ostringstream string_stream;
+        string_stream << file.rdbuf();
+        std::string file_content = string_stream.str();
         LexerContext context(file_content, path);
         return context.tokenize();
     }
