@@ -42,6 +42,7 @@ namespace solix::lexer {
     KEYWORD_ELSE,
     KEYWORD_FOR,
     KEYWORD_WHILE,
+    KEYWORD_DO,
     KEYWORD_RETURN,
     KEYWORD_BREAK,
     KEYWORD_CONTINUE,
@@ -71,6 +72,7 @@ namespace solix::lexer {
 
     // Operators
     OPERATOR_ASSIGN,
+    OPERATOR_QUESTION,
 
     OPERATOR_PLUS,
     OPERATOR_MINUS,

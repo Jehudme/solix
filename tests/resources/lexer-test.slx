@@ -32,7 +32,7 @@ public class Engine {
     // Nested Class inside Class (C++/Java style)
     private class CoreProcessor {
         private ID coreId;
-        public int32[] cache = new int32[][1024];
+        public int32[] cache = new int32[1024];
 
         // Constructor
         public CoreProcessor(ID id) {

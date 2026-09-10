@@ -93,7 +93,8 @@ std::vector<std::vector<lexer::Token>> divideTokensIntoStatements(const std::vec
                 if (i + 1 < tokens.size()) {
                     auto next_type = tokens[i+1].type;
                     if (next_type == lexer::TokenType::KEYWORD_ELSE || 
-                        (next_type == lexer::TokenType::KEYWORD_WHILE && current.front().type == lexer::TokenType::IDENTIFIER)) {
+                        (next_type == lexer::TokenType::KEYWORD_WHILE && current.front().type == lexer::TokenType::KEYWORD_DO) ||
+                        next_type == lexer::TokenType::PUNCTUATION_SEMICOLON) {
                         split = false;
                     }
                 }
@@ -162,6 +163,14 @@ size_t consumeType(const std::vector<lexer::Token>& tokens, size_t start_index) 
         }
         i++;
     }
+    
+    // Check for array brackets
+    while (i + 1 < tokens.size() && 
+           tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_BRACKET && 
+           tokens[i+1].type == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) {
+        i += 2;
+    }
+    
     return i;
 }
 
@@ -198,7 +207,7 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
     if (t0 == lexer::TokenType::KEYWORD_BREAK) return NodeType::BREAK_STATEMENT;
     if (t0 == lexer::TokenType::KEYWORD_CONTINUE) return NodeType::CONTINUE_STATEMENT;
     if (t0 == lexer::TokenType::KEYWORD_RETURN) return NodeType::RETURN_STATEMENT;
-    if (t0 == lexer::TokenType::IDENTIFIER && tokens.size() > 1 && tokens[0].value.value_or("") == "do" && tokens[1].type == lexer::TokenType::PUNCTUATION_OPEN_BRACE) return NodeType::DO_WHILE_STATEMENT;
+    if (t0 == lexer::TokenType::KEYWORD_DO) return NodeType::DO_WHILE_STATEMENT;
     
     // Methods / Constructors
     if (tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) {
@@ -245,8 +254,34 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
         }
     }
     
-    // Block
+    // Block vs Array Literal
     if (tokens[0].type == lexer::TokenType::PUNCTUATION_OPEN_BRACE && tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) {
+        bool is_array_literal = false;
+        bool has_semi = false;
+        int d = 0;
+        for (const auto& tk : tokens) {
+            if (tk.type == lexer::TokenType::PUNCTUATION_OPEN_BRACE || tk.type == lexer::TokenType::PUNCTUATION_OPEN_BRACKET || tk.type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) d++;
+            else if (tk.type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE || tk.type == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET || tk.type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) d--;
+            else if (d == 1 && tk.type == lexer::TokenType::PUNCTUATION_COMMA) {
+                is_array_literal = true;
+            } else if (d == 1 && tk.type == lexer::TokenType::PUNCTUATION_SEMICOLON) {
+                has_semi = true;
+            }
+        }
+        if (is_array_literal || !has_semi) {
+            // Also check for empty block vs empty array literal... heuristic: no semi, usually array literal unless it's empty
+            // Wait, { } can be an empty block (e.g. while(true) {}). Let's say if it has no semi and no comma, it's a block if empty, array literal if not empty?
+            // Actually, if it has no semi, it's probably an array literal like {1} or {1,2}
+            // But if it contains keywords like return, it's a block.
+            bool has_statement_keyword = false;
+            for (const auto& tk : tokens) {
+                if (tk.type == lexer::TokenType::KEYWORD_RETURN || tk.type == lexer::TokenType::KEYWORD_IF || tk.type == lexer::TokenType::KEYWORD_FOR || tk.type == lexer::TokenType::KEYWORD_WHILE) {
+                    has_statement_keyword = true; break;
+                }
+            }
+            if (has_statement_keyword || (tokens.size() <= 2)) return NodeType::BLOCK_STATEMENT;
+            return NodeType::ARRAY_LITERAL_EXPRESSION;
+        }
         return NodeType::BLOCK_STATEMENT;
     }
     
@@ -352,6 +387,12 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
     }
     
     // Postfix Call and Array Access
+    if (t0 == lexer::TokenType::KEYWORD_NEW) {
+        if (tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) return NodeType::ARRAY_CREATION_EXPRESSION;
+        return NodeType::NEW_INSTANCE_EXPRESSION;
+    }
+
+    // Postfix Call and Array Access
     if (tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) {
         if (t0 == lexer::TokenType::PUNCTUATION_OPEN_PAREN && tokens[1].type != lexer::TokenType::PUNCTUATION_CLOSE_PAREN) {
             // Might be a cast (Type) expr
@@ -374,19 +415,28 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
         else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) br++;
         else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) br--;
         
+        if (p == 0 && b == 0 && br == 0 && t == lexer::TokenType::OPERATOR_QUESTION) {
+            return NodeType::TERNARY_EXPRESSION;
+        }
+    }
+
+    // Member Access (RIGHT TO LEFT)
+    p = 0; b = 0; br = 0;
+    for (int i = tokens.size() - 1; i >= 0; i--) {
+        auto t = tokens[i].type;
+        if (t == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p--;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) b++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACE) b--;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) br++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) br--;
+        
         if (p == 0 && b == 0 && br == 0 && t == lexer::TokenType::PUNCTUATION_DOT) {
             return NodeType::MEMBER_ACCESS_EXPRESSION;
         }
     }
     
-    if (t0 == lexer::TokenType::KEYWORD_NEW) {
-        if (tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) return NodeType::ARRAY_CREATION_EXPRESSION;
-        return NodeType::NEW_INSTANCE_EXPRESSION;
-    }
-    
-    if (t0 == lexer::TokenType::PUNCTUATION_OPEN_BRACE && tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) {
-        return NodeType::ARRAY_LITERAL_EXPRESSION;
-    }
+
     
     if (tokens.size() == 1) {
         if (t0 == lexer::TokenType::NUMBER || t0 == lexer::TokenType::STRING) return NodeType::LITERAL_EXPRESSION;
@@ -395,6 +445,7 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
     
 
     
+
     throw_parse_error(tokens, "Unable to determine AST Node Type");
 }
 
@@ -679,9 +730,17 @@ ArrayCreationExpression::ArrayCreationExpression(const std::vector<lexer::Token>
         }
     }
     if (open_idx <= 1) throw_parse_error(tokens, "Invalid array creation syntax");
-    for (size_t i = 1; i < open_idx; i++) {
-        type_name += std::string(tokens[i].value.value_or("")) + (tokens[i].type == lexer::TokenType::PUNCTUATION_DOT ? "" : " ");
+    type_name = extractTypeName(tokens, 1, open_idx);
+    
+    // Count trailing empty brackets for multidimensional array initialization like new int32[5][]
+    for (int i = tokens.size() - 2; i > open_idx; i -= 2) {
+        if (tokens[i].type == lexer::TokenType::PUNCTUATION_OPEN_BRACKET && tokens[i+1].type == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) {
+            type_name += "[]";
+        } else {
+            break;
+        }
     }
+    
     std::vector<lexer::Token> size_tokens(tokens.begin() + open_idx + 1, tokens.end() - 1);
     if (size_tokens.empty()) throw_parse_error(tokens, "Array size expression cannot be empty");
     size = parseTokensToNode(size_tokens, this);
@@ -689,6 +748,7 @@ ArrayCreationExpression::ArrayCreationExpression(const std::vector<lexer::Token>
 ArrayLiteralExpression::ArrayLiteralExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::ARRAY_LITERAL_EXPRESSION, parent) {
     if (tokens.front().type != lexer::TokenType::PUNCTUATION_OPEN_BRACE || tokens.back().type != lexer::TokenType::PUNCTUATION_CLOSE_BRACE) throw_parse_error(tokens, "Array literal must be enclosed in braces");
     int depth = 0;
+
     std::vector<lexer::Token> current_elem;
     for (size_t i = 1; i < tokens.size() - 1; i++) {
         auto t = tokens[i].type;
@@ -718,13 +778,57 @@ CastExpression::CastExpression(const std::vector<lexer::Token>& tokens, Node* pa
             break;
         }
     }
-    for (size_t i = 1; i < close_idx; i++) {
-        target_type += std::string(tokens[i].value.value_or(""));
-    }
+    target_type = extractTypeName(tokens, 1, close_idx);
     std::vector<lexer::Token> expr_tokens(tokens.begin() + close_idx + 1, tokens.end());
     expression = parseTokensToNode(expr_tokens, this);
 }
-TernaryExpression::TernaryExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::TERNARY_EXPRESSION, parent) {}
+TernaryExpression::TernaryExpression(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::TERNARY_EXPRESSION, parent) {
+    int p = 0, b = 0, br = 0;
+    int q_idx = -1;
+    for (int i = tokens.size() - 1; i >= 0; i--) {
+        auto t = tokens[i].type;
+        if (t == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p--;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) b++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACE) b--;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) br++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) br--;
+        
+        if (p == 0 && b == 0 && br == 0 && t == lexer::TokenType::OPERATOR_QUESTION) {
+            q_idx = i;
+            break;
+        }
+    }
+    
+    if (q_idx == -1) throw_parse_error(tokens, "Invalid ternary expression syntax");
+    
+    int colon_idx = -1;
+    p = 0; b = 0; br = 0;
+    for (int i = q_idx + 1; i < tokens.size(); i++) {
+        auto t = tokens[i].type;
+        if (t == lexer::TokenType::PUNCTUATION_OPEN_PAREN) p++;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) p--;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACE) b++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACE) b--;
+        else if (t == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) br++;
+        else if (t == lexer::TokenType::PUNCTUATION_OPEN_BRACKET) br--;
+        
+        if (p == 0 && b == 0 && br == 0 && t == lexer::TokenType::PUNCTUATION_COLON) {
+            colon_idx = i;
+            break;
+        }
+    }
+    
+    if (colon_idx == -1) throw_parse_error(tokens, "Expected ':' in ternary expression");
+    
+    std::vector<lexer::Token> cond_tokens(tokens.begin(), tokens.begin() + q_idx);
+    std::vector<lexer::Token> true_tokens(tokens.begin() + q_idx + 1, tokens.begin() + colon_idx);
+    std::vector<lexer::Token> false_tokens(tokens.begin() + colon_idx + 1, tokens.end());
+    
+    condition = parseTokensToNode(cond_tokens, this);
+    true_branch = parseTokensToNode(true_tokens, this);
+    false_branch = parseTokensToNode(false_tokens, this);
+}
 
 // ==========================================
 // Top-Level Statements
@@ -1256,7 +1360,11 @@ const Node* AstTree::resolveDeclaration(const Node* current_scope, const std::st
 
 void AstTree::include(std::filesystem::path file_path) {
     auto tokens = lexer::tokenize_file(file_path);
-    auto stmts = divideTokensIntoStatements(tokens);
+    std::vector<lexer::Token> clean_tokens;
+    for (const auto& t : tokens) {
+        if (t.type != lexer::TokenType::COMMENT_SINGLE_LINE && t.type != lexer::TokenType::COMMENT_MULTI_LINE) clean_tokens.push_back(t);
+    }
+    auto stmts = divideTokensIntoStatements(clean_tokens);
     
     std::string pkg_prefix = "";
     bool has_package = false;
@@ -1285,7 +1393,11 @@ void AstTree::include(std::filesystem::path file_path) {
 
 void AstTree::include(std::string_view source_code, std::optional<std::filesystem::path> file_path) {
     auto tokens = lexer::tokenize(source_code);
-    auto stmts = divideTokensIntoStatements(tokens);
+    std::vector<lexer::Token> clean_tokens;
+    for (const auto& t : tokens) {
+        if (t.type != lexer::TokenType::COMMENT_SINGLE_LINE && t.type != lexer::TokenType::COMMENT_MULTI_LINE) clean_tokens.push_back(t);
+    }
+    auto stmts = divideTokensIntoStatements(clean_tokens);
     
     std::string pkg_prefix = "";
     bool has_package = false;
