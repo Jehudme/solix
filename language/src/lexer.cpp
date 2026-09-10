@@ -28,6 +28,7 @@ namespace {
         {"else", TokenType::KEYWORD_ELSE},
         {"for", TokenType::KEYWORD_FOR},
         {"while", TokenType::KEYWORD_WHILE},
+        {"do", TokenType::KEYWORD_DO},
         {"return", TokenType::KEYWORD_RETURN},
         {"break", TokenType::KEYWORD_BREAK},
         {"continue", TokenType::KEYWORD_CONTINUE},
@@ -182,6 +183,7 @@ namespace {
                         case ',': add_token(TokenType::PUNCTUATION_COMMA); break;
                         case '.': add_token(TokenType::PUNCTUATION_DOT); break;
                         case ':': add_token(TokenType::PUNCTUATION_COLON); break;
+                        case '?': add_token(TokenType::OPERATOR_QUESTION); break;
                         
                         // Operators (1 or 2 characters)
                         case '=': add_token(match('=') ? TokenType::OPERATOR_EQUAL : TokenType::OPERATOR_ASSIGN); break;
