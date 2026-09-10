@@ -69,6 +69,12 @@ struct Node {
     size_t line = 0;
     size_t column = 0;
 
+    // --- Semantic Analyzer Resolved Data ---
+    std::string resolved_type;
+    int resolved_array_depth = 0;
+    Node* resolved_declaration = nullptr;
+    std::string symbol_name;
+
     // Pointer back to the parent node
     Node* parent_node = nullptr;
     
