@@ -246,7 +246,11 @@ TypeInfo SemanticAnalyzer::resolveType(parser::AstTree& tree, const std::string&
     
     while (!type_str.empty() && type_str.back() == ' ') type_str.pop_back();
     
-    if (type_str == "int32" || type_str == "float64" || type_str == "bool" || type_str == "string") {
+    if (type_str == "void" || type_str == "bool" || 
+        type_str == "int8" || type_str == "int16" || type_str == "int32" || type_str == "int64" ||
+        type_str == "uint8" || type_str == "uint16" || type_str == "uint32" || type_str == "uint64" ||
+        type_str == "float32" || type_str == "float64" || 
+        type_str == "char" || type_str == "string") {
         info.base_name = type_str;
         info.is_primitive = true;
     } else {
