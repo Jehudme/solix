@@ -337,14 +337,12 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
         switch (current_token_type) {
             case lexer::TokenType::OPERATOR_LOGICAL_OR: return 1;
             case lexer::TokenType::OPERATOR_LOGICAL_AND: return 2;
-            
-            
             case lexer::TokenType::OPERATOR_EQUAL:
             case lexer::TokenType::OPERATOR_NOT_EQUAL: return 6;
             case lexer::TokenType::OPERATOR_LESS_THAN:
+            case lexer::TokenType::OPERATOR_LESS_EQUAL:
             case lexer::TokenType::OPERATOR_GREATER_THAN:
-            
-                        
+            case lexer::TokenType::OPERATOR_GREATER_EQUAL: return 7;
             case lexer::TokenType::OPERATOR_PLUS:
             case lexer::TokenType::OPERATOR_MINUS: return 9;
             case lexer::TokenType::OPERATOR_MULTIPLY:
