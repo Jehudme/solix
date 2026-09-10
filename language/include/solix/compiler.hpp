@@ -5,6 +5,7 @@
 #include <string>
 #include <cstdint>
 #include <variant>
+#include <unordered_map>
 
 namespace solix::compiler {
 
@@ -34,8 +35,8 @@ enum class OpCode : uint8_t {
     JUMP_IF_FALSE,  // Jump if the top of the stack is false
     
     // Function / Methods
-    CALL,           // Calls a Solix function
-    CALL_NATIVE,    // Calls a C++ FFI native function
+    CALL,           // Calls a Solix function by integer index
+    CALL_NATIVE,    // Calls a C++ FFI native function by integer index
     RETURN,         // Returns from a function
     
     // Objects & Arrays
@@ -56,51 +57,62 @@ enum class OpCode : uint8_t {
 // ==========================================
 // Constant Pool Data Types
 // ==========================================
-// The constant pool stores literals that appear in the source code.
-// Strings, big numbers, etc., live here.
 using ConstantValue = std::variant<int64_t, double, std::string, bool>;
 
 // ==========================================
 // Bytecode Chunk
 // ==========================================
-// A "Chunk" represents a sequence of bytecode. Usually, every method
-// has its own chunk. The main global scope will also have a chunk.
+// A Chunk represents a single compiled method/function
 struct Chunk {
+    std::string name;                     // Method name for debugging
     std::vector<uint8_t> code;            // The raw bytecode instructions
-    std::vector<ConstantValue> constants; // The constant pool
+    std::vector<ConstantValue> constants; // The constant pool for this chunk
     std::vector<int> lines;               // Line numbers for debugging/stack traces
     
-    // Appends a constant to the pool and returns its index
     int addConstant(ConstantValue value) {
         constants.push_back(value);
         return constants.size() - 1;
     }
     
-    // Writes a raw byte to the chunk
     void writeByte(uint8_t byte, int line) {
         code.push_back(byte);
         lines.push_back(line);
     }
     
-    // Writes an OpCode to the chunk
     void writeOp(OpCode op, int line) {
         writeByte(static_cast<uint8_t>(op), line);
     }
+    
+    void writeInt(int32_t value, int line) {
+        writeByte((value >> 24) & 0xFF, line);
+        writeByte((value >> 16) & 0xFF, line);
+        writeByte((value >> 8) & 0xFF, line);
+        writeByte(value & 0xFF, line);
+    }
+};
+
+// ==========================================
+// Compiled Program
+// ==========================================
+// The final output of the Compiler.
+struct BytecodeProgram {
+    std::vector<Chunk> functions;                 // Fast O(1) jump array for methods
+    std::unordered_map<std::string, int> exports; // Only used once at startup to find "main"
 };
 
 // ==========================================
 // Compiler
 // ==========================================
-// Translates the parsed and semantically-checked AstTree into bytecode Chunks.
 class Compiler {
 public:
     Compiler();
     
-    // Compiles the AST into an executable Bytecode Chunk
-    Chunk compile(const parser::AstTree& tree);
+    // Compiles the AST into an executable Bytecode Program
+    BytecodeProgram compile(const parser::AstTree& tree);
 
 private:
-    Chunk current_chunk;
+    BytecodeProgram program;
+    Chunk* current_chunk;
     
     // AST Visitors
     void compileNode(parser::Node* node);
