@@ -13,45 +13,18 @@ namespace solix::compiler {
 // Instruction Set Architecture (Bytecode)
 // ==========================================
 enum class OpCode : uint8_t {
-    // Constants
-    PUSH_CONST,     // Pushes a value from the constant pool onto the stack
-    PUSH_TRUE,      // Pushes boolean true
-    PUSH_FALSE,     // Pushes boolean false
-    PUSH_NULL,      // Pushes a null reference
-    
-    // Arithmetic
+    PUSH_CONST, PUSH_TRUE, PUSH_FALSE, PUSH_NULL,
     ADD, SUBTRACT, MULTIPLY, DIVIDE, MODULO,
-    
-    // Comparison / Logic
     EQUAL, NOT_EQUAL, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL,
     LOGICAL_NOT, NEGATE,
-    
-    // Variables
-    GET_LOCAL, SET_LOCAL,     // Stack variables
-    GET_GLOBAL, SET_GLOBAL,   // Global/Static variables
-    
-    // Control Flow
-    JUMP,           // Unconditional jump
-    JUMP_IF_FALSE,  // Jump if the top of the stack is false
-    
-    // Function / Methods
-    CALL,           // Calls a Solix function by integer index
-    CALL_NATIVE,    // Calls a C++ FFI native function by integer index
-    RETURN,         // Returns from a function
-    
-    // Objects & Arrays
-    NEW_INSTANCE,   // Creates a new class instance on the heap
-    NEW_ARRAY,      // Creates a new array on the heap
-    GET_PROPERTY,   // Gets a member field of a class
-    SET_PROPERTY,   // Sets a member field of a class
-    GET_ARRAY,      // Gets a value from an array index
-    SET_ARRAY,      // Sets a value at an array index
-    
-    // Stack manipulation
-    POP,            // Discards the top value on the stack
-    
-    // System
-    HALT            // Ends execution
+    GET_LOCAL, SET_LOCAL,
+    GET_GLOBAL, SET_GLOBAL,
+    JUMP, JUMP_IF_FALSE,
+    CALL, CALL_NATIVE, RETURN,
+    NEW_INSTANCE, NEW_ARRAY,
+    GET_PROPERTY, SET_PROPERTY,
+    GET_ARRAY, SET_ARRAY,
+    POP, HALT
 };
 
 // ==========================================
@@ -62,12 +35,12 @@ using ConstantValue = std::variant<int64_t, double, std::string, bool>;
 // ==========================================
 // Bytecode Chunk
 // ==========================================
-// A Chunk represents a single compiled method/function
 struct Chunk {
     std::string name;                     // Method name for debugging
+    int max_local_slots = 0;              // Size of the Call Frame for this function
     std::vector<uint8_t> code;            // The raw bytecode instructions
     std::vector<ConstantValue> constants; // The constant pool for this chunk
-    std::vector<int> lines;               // Line numbers for debugging/stack traces
+    std::vector<int> lines;               // Line numbers for debugging
     
     int addConstant(ConstantValue value) {
         constants.push_back(value);
@@ -94,10 +67,10 @@ struct Chunk {
 // ==========================================
 // Compiled Program
 // ==========================================
-// The final output of the Compiler.
 struct BytecodeProgram {
     std::vector<Chunk> functions;                 // Fast O(1) jump array for methods
     std::unordered_map<std::string, int> exports; // Only used once at startup to find "main"
+    int global_variable_count = 0;                // How many slots to reserve at Memory Pool indices 1 to N
 };
 
 // ==========================================
@@ -106,14 +79,31 @@ struct BytecodeProgram {
 class Compiler {
 public:
     Compiler();
-    
-    // Compiles the AST into an executable Bytecode Program
     BytecodeProgram compile(const parser::AstTree& tree);
 
 private:
     BytecodeProgram program;
     Chunk* current_chunk;
     
+    // Global Tracker
+    std::unordered_map<std::string, int> global_variables;
+    
+    // Local Scope Tracker for the current function
+    struct Local {
+        std::string name;
+        int depth;
+    };
+    std::vector<Local> locals;
+    int scope_depth;
+    
+    void beginScope();
+    void endScope();
+    int addLocal(const std::string& name);
+    int resolveLocal(const std::string& name);
+    
+    int registerGlobal(const std::string& name);
+    int resolveGlobal(const std::string& name);
+
     // AST Visitors
     void compileNode(parser::Node* node);
     void compileExpression(parser::Node* expr);
