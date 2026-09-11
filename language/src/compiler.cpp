@@ -4,10 +4,11 @@
 
 namespace solix::compiler {
 
-Compiler::Compiler() : current_chunk(nullptr) {}
+Compiler::Compiler() : current_chunk(nullptr), scope_depth(0) {}
 
 BytecodeProgram Compiler::compile(const parser::AstTree& tree) {
     program = BytecodeProgram{};
+    global_variables.clear();
     
     // Create the global / entry-point chunk
     program.functions.push_back(Chunk{"__global__"});
@@ -22,7 +23,54 @@ BytecodeProgram Compiler::compile(const parser::AstTree& tree) {
     // Add a HALT instruction at the end of the global scope execution
     current_chunk->writeOp(OpCode::HALT, 0);
     
+    program.global_variable_count = global_variables.size();
+    
     return program;
+}
+
+void Compiler::beginScope() {
+    scope_depth++;
+}
+
+void Compiler::endScope() {
+    scope_depth--;
+    // Pop all variables declared in the scope that just ended
+    while (!locals.empty() && locals.back().depth > scope_depth) {
+        current_chunk->writeOp(OpCode::POP, 0); // Drop the value from the VM stack
+        locals.pop_back();
+    }
+}
+
+int Compiler::addLocal(const std::string& name) {
+    locals.push_back(Local{name, scope_depth});
+    if (locals.size() > current_chunk->max_local_slots) {
+        current_chunk->max_local_slots = locals.size();
+    }
+    return locals.size() - 1;
+}
+
+int Compiler::resolveLocal(const std::string& name) {
+    // Search backward to find the innermost declaration
+    for (int i = locals.size() - 1; i >= 0; i--) {
+        if (locals[i].name == name) {
+            return i;
+        }
+    }
+    return -1; // Not found (must be a global or field)
+}
+
+int Compiler::registerGlobal(const std::string& name) {
+    if (global_variables.count(name)) return global_variables[name];
+    // +1 because index 0 is reserved for NULL in the VM Memory Pool!
+    int index = global_variables.size() + 1; 
+    global_variables[name] = index;
+    return index;
+}
+
+int Compiler::resolveGlobal(const std::string& name) {
+    auto it = global_variables.find(name);
+    if (it != global_variables.end()) return it->second;
+    return -1;
 }
 
 void Compiler::compileNode(parser::Node* node) {
