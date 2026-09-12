@@ -430,6 +430,27 @@ void Compiler::compileNode(parser::Node* node) {
         while (current && current->node_type != parser::NodeType::METHOD_DECLARATION && current->node_type != parser::NodeType::CONSTRUCTOR_DECLARATION) {
             current = current->parent_node;
         }
+        
+        if (current && current->node_type == parser::NodeType::METHOD_DECLARATION) {
+            auto method = static_cast<parser::MethodDeclaration*>(current);
+            
+            std::string t = method->return_type;
+            while (!t.empty() && t.back() == ' ') t.pop_back();
+            bool is_array = t.length() >= 2 && t.substr(t.length()-2) == "[]";
+            
+            if (is_array || (t != "void" && t != "bool" && 
+                t != "int8" && t != "int16" && 
+                t != "int32" && t != "int64" &&
+                t != "uint8" && t != "uint16" && 
+                t != "uint32" && t != "uint64" &&
+                t != "float32" && t != "float64" &&
+                t != "char")) {
+                // It's a reference type! We must retain it before cleanup!
+                emitByte(static_cast<uint8_t>(OpCode::DUP));
+                emitByte(static_cast<uint8_t>(OpCode::INC_REF));
+            }
+        }
+        
         if (current) emitCleanupForNode(current);
         
         emitByte(static_cast<uint8_t>(OpCode::RETURN));
@@ -786,6 +807,15 @@ std::string Compiler::disassemble(const std::vector<uint8_t>& bcode) const {
                 ss << "PUSH_CONST_I32 " << val << "\n";
                 break;
             }
+            case OpCode::PUSH_CONST_F64: {
+                uint64_t val = ((uint64_t)bcode[i] << 56) | ((uint64_t)bcode[i+1] << 48) | ((uint64_t)bcode[i+2] << 40) | ((uint64_t)bcode[i+3] << 32) |
+                               ((uint64_t)bcode[i+4] << 24) | ((uint64_t)bcode[i+5] << 16) | ((uint64_t)bcode[i+6] << 8) | (uint64_t)bcode[i+7];
+                i += 8;
+                double dval;
+                std::memcpy(&dval, &val, sizeof(double));
+                ss << "PUSH_CONST_F64 " << dval << "\n";
+                break;
+            }
             case OpCode::SET_LOCAL: {
                 uint32_t val = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
                 i += 4;
@@ -873,6 +903,14 @@ std::string Compiler::disassemble(const std::vector<uint8_t>& bcode) const {
             case OpCode::POP: ss << "POP\n"; break;
             case OpCode::INC_REF: ss << "INC_REF\n"; break;
             case OpCode::DEC_REF: ss << "DEC_REF\n"; break;
+            case OpCode::PUSH_CONST_STRING: {
+                uint32_t len = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                i += 4;
+                std::string s((const char*)&bcode[i], len);
+                i += len;
+                ss << "PUSH_CONST_STRING \"" << s << "\"\n";
+                break;
+            }
             default: ss << "UNKNOWN (" << static_cast<int>(op) << ")\n"; break;
         }
     }
