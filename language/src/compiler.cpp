@@ -195,6 +195,27 @@ void Compiler::compileClass(parser::ClassDeclaration* class_node) {
     }
 }
 
+
+void Compiler::emitCleanupForNode(parser::Node* node) {
+    if (!node) return;
+    if (node->node_type == parser::NodeType::METHOD_DECLARATION) {
+        auto method = static_cast<parser::MethodDeclaration*>(node);
+        for (const auto& param : method->parameters) emitCleanupForNode(param.get());
+    } else if (node->node_type == parser::NodeType::CONSTRUCTOR_DECLARATION) {
+        auto ctor = static_cast<parser::ConstructorDeclaration*>(node);
+        for (const auto& param : ctor->parameters) emitCleanupForNode(param.get());
+    } else if (node->node_type == parser::NodeType::VARIABLE_DECLARATION) {
+        auto var = static_cast<parser::VariableDeclaration*>(node);
+        if (var->is_reference_type) {
+            emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+            emitInt32(var->memory_index);
+            emitByte(static_cast<uint8_t>(OpCode::DEC_REF));
+        }
+    }
+    for (const auto& child : node->children) {
+        emitCleanupForNode(child.get());
+    }
+}
 void Compiler::compileFunction(parser::Node* function_node) {
     function_ips[function_node] = bytecode.size();
     
@@ -206,6 +227,7 @@ void Compiler::compileFunction(parser::Node* function_node) {
         for (const auto& child : ctor->children) compileNode(child.get());
     }
     
+    emitCleanupForNode(function_node);
     emitByte(static_cast<uint8_t>(OpCode::RETURN));
 }
 
@@ -352,6 +374,13 @@ void Compiler::compileNode(parser::Node* node) {
         if (ret_stmt->value) {
             compileExpression(ret_stmt->value.get());
         }
+        
+        parser::Node* current = node;
+        while (current && current->node_type != parser::NodeType::METHOD_DECLARATION && current->node_type != parser::NodeType::CONSTRUCTOR_DECLARATION) {
+            current = current->parent_node;
+        }
+        if (current) emitCleanupForNode(current);
+        
         emitByte(static_cast<uint8_t>(OpCode::RETURN));
     }
     // ... Implement If, While, Do-While, etc. if required
@@ -386,8 +415,27 @@ void Compiler::compileExpression(parser::Node* expr) {
             emitByte(static_cast<uint8_t>(OpCode::LOGICAL_NOT));
         } else if (uny->op == lexer::TokenType::OPERATOR_MINUS) {
             emitByte(static_cast<uint8_t>(OpCode::NEGATE));
-        } else {
-            // Ignore
+        } else if (uny->op == lexer::TokenType::OPERATOR_INCREMENT) {
+            emitByte(static_cast<uint8_t>(OpCode::INC));
+            // We'll write it back if it's an identifier
+            if (uny->operand->node_type == parser::NodeType::IDENTIFIER_EXPRESSION) {
+                auto ident = static_cast<parser::IdentifierExpression*>(uny->operand.get());
+                if (ident->resolved_declaration->node_type == parser::NodeType::VARIABLE_DECLARATION) {
+                    emitByte(static_cast<uint8_t>(OpCode::DUP));
+                    emitByte(static_cast<uint8_t>(OpCode::SET_LOCAL));
+                    emitInt32(static_cast<parser::VariableDeclaration*>(ident->resolved_declaration)->memory_index);
+                }
+            }
+        } else if (uny->op == lexer::TokenType::OPERATOR_DECREMENT) {
+            emitByte(static_cast<uint8_t>(OpCode::DEC));
+            if (uny->operand->node_type == parser::NodeType::IDENTIFIER_EXPRESSION) {
+                auto ident = static_cast<parser::IdentifierExpression*>(uny->operand.get());
+                if (ident->resolved_declaration->node_type == parser::NodeType::VARIABLE_DECLARATION) {
+                    emitByte(static_cast<uint8_t>(OpCode::DUP));
+                    emitByte(static_cast<uint8_t>(OpCode::SET_LOCAL));
+                    emitInt32(static_cast<parser::VariableDeclaration*>(ident->resolved_declaration)->memory_index);
+                }
+            }
         }
     }
     else if (expr->node_type == parser::NodeType::CAST_EXPRESSION) {
@@ -570,6 +618,8 @@ std::string Compiler::disassemble(const std::vector<uint8_t>& bcode) const {
             case OpCode::PUSH_NULL: ss << "PUSH_NULL\n"; break;
             case OpCode::LOGICAL_NOT: ss << "LOGICAL_NOT\n"; break;
             case OpCode::NEGATE: ss << "NEGATE\n"; break;
+            case OpCode::INC: ss << "INC\n"; break;
+            case OpCode::DEC: ss << "DEC\n"; break;
             case OpCode::GET_ARRAY: ss << "GET_ARRAY\n"; break;
             case OpCode::SET_ARRAY: ss << "SET_ARRAY\n"; break;
             case OpCode::ALLOC_STATIC: ss << "ALLOC_STATIC\n"; break;
