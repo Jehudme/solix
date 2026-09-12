@@ -115,6 +115,8 @@ void SemanticAnalyzer::analyze(parser::AstTree& tree) {
         parser::Node* symbol = pair.second;
         if (symbol->node_type == parser::NodeType::FIELD_DECLARATION) {
             auto field = static_cast<parser::FieldDeclaration*>(symbol);
+            TypeInfo type_info = resolveType(tree, field->type_name, {});
+            if (!type_info.is_primitive) field->is_reference_type = true;
             if (field->is_static) {
                 field->memory_index = staticVariableIndex++;
             }
@@ -130,6 +132,8 @@ void SemanticAnalyzer::analyze(parser::AstTree& tree) {
             for (const auto& child : class_decl->children) {
                 if (child->node_type == parser::NodeType::FIELD_DECLARATION) {
                     auto field = static_cast<parser::FieldDeclaration*>(child.get());
+                    TypeInfo type_info = resolveType(tree, field->type_name, {});
+                    if (!type_info.is_primitive) field->is_reference_type = true;
                     if (!field->is_static) {
                         field->memory_index = field_offset++;
                     }
@@ -437,6 +441,13 @@ TypeInfo SemanticAnalyzer::resolveType(parser::AstTree& tree, const std::string&
 }
 
 TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Node* expr) {
+    if (!expr) return TypeInfo();
+    TypeInfo result = evaluateExpressionInternal(tree, expr);
+    expr->expr_is_reference_type = !result.is_primitive;
+    return result;
+}
+
+TypeInfo SemanticAnalyzer::evaluateExpressionInternal(parser::AstTree& tree, parser::Node* expr) {
     TypeInfo result;
     if (!expr) return result;
     
@@ -448,7 +459,8 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
             result.is_primitive = true;
         }
         else if (lit->token.type == lexer::TokenType::STRING) {
-            result.base_name = "string";
+            result.base_name = "char";
+            result.array_depth = 1;
             result.is_primitive = false;
         }
         else if (lit->token.type == lexer::TokenType::IDENTIFIER && (lit->token.value == "true" || lit->token.value == "false")) {

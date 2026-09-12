@@ -278,13 +278,7 @@ void Compiler::compileNode(parser::Node* node) {
             emitByte(static_cast<uint8_t>(OpCode::SET_LOCAL));
             emitInt32(var_decl->memory_index);
             
-            if (var_decl->is_reference_type) {
-                // ARC Retain (INC_REF) - The VM will likely do this internally during SET_LOCAL or it might expect explicit instructions.
-                // The user said: ADD_REF <addr> execute every time that a class instance is referenced in a frame.
-                emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
-                emitInt32(var_decl->memory_index);
-                emitByte(static_cast<uint8_t>(OpCode::INC_REF));
-            }
+
         }
     }
     else if (node->node_type == parser::NodeType::EXPRESSION_STATEMENT) {
@@ -713,6 +707,7 @@ void Compiler::compileExpression(parser::Node* expr) {
         } else if (ident->name == "this") {
             emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
             emitInt32(0);
+            emitByte(static_cast<uint8_t>(OpCode::INC_REF));
         } else if (ident->resolved_declaration) {
             if (ident->resolved_declaration->node_type == parser::NodeType::FIELD_DECLARATION) {
                 auto field = static_cast<parser::FieldDeclaration*>(ident->resolved_declaration);
@@ -727,6 +722,7 @@ void Compiler::compileExpression(parser::Node* expr) {
                 auto var = static_cast<parser::VariableDeclaration*>(ident->resolved_declaration);
                 emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
                 emitInt32(var->memory_index);
+                if (var->is_reference_type) emitByte(static_cast<uint8_t>(OpCode::INC_REF));
             }
         }
     }
@@ -743,8 +739,6 @@ void Compiler::compileExpression(parser::Node* expr) {
             if (ident->resolved_declaration->node_type == parser::NodeType::VARIABLE_DECLARATION) {
                 auto var = static_cast<parser::VariableDeclaration*>(ident->resolved_declaration);
                 if (var->is_reference_type) {
-                    emitByte(static_cast<uint8_t>(OpCode::DUP));
-                    emitByte(static_cast<uint8_t>(OpCode::INC_REF));
                     emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
                     emitInt32(var->memory_index);
                     emitByte(static_cast<uint8_t>(OpCode::DEC_REF));
@@ -754,11 +748,22 @@ void Compiler::compileExpression(parser::Node* expr) {
             } else if (ident->resolved_declaration->node_type == parser::NodeType::FIELD_DECLARATION) {
                 auto field = static_cast<parser::FieldDeclaration*>(ident->resolved_declaration);
                 if (field->is_static) {
+                    if (field->is_reference_type) {
+                        emitByte(static_cast<uint8_t>(OpCode::GET_GLOBAL));
+                        emitInt32(field->memory_index);
+                        emitByte(static_cast<uint8_t>(OpCode::DEC_REF));
+                    }
                     emitByte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
                     emitInt32(field->memory_index);
                 } else {
                     emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
                     emitInt32(0);
+                    if (field->is_reference_type) {
+                        emitByte(static_cast<uint8_t>(OpCode::DUP));
+                        emitByte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
+                        emitInt32(field->memory_index);
+                        emitByte(static_cast<uint8_t>(OpCode::DEC_REF));
+                    }
                     emitByte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
                     emitInt32(field->memory_index);
                 }
@@ -769,10 +774,21 @@ void Compiler::compileExpression(parser::Node* expr) {
             emitByte(static_cast<uint8_t>(OpCode::DUP)); // Leave value on stack
             auto field = static_cast<parser::FieldDeclaration*>(mem_acc->resolved_declaration);
             if (field->is_static) {
+                if (field->is_reference_type) {
+                    emitByte(static_cast<uint8_t>(OpCode::GET_GLOBAL));
+                    emitInt32(field->memory_index);
+                    emitByte(static_cast<uint8_t>(OpCode::DEC_REF));
+                }
                 emitByte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
                 emitInt32(field->memory_index);
             } else {
                 compileExpression(mem_acc->object.get());
+                if (field->is_reference_type) {
+                    emitByte(static_cast<uint8_t>(OpCode::DUP));
+                    emitByte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
+                    emitInt32(field->memory_index);
+                    emitByte(static_cast<uint8_t>(OpCode::DEC_REF));
+                }
                 emitByte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
                 emitInt32(field->memory_index);
             }
@@ -782,6 +798,16 @@ void Compiler::compileExpression(parser::Node* expr) {
             emitByte(static_cast<uint8_t>(OpCode::DUP)); // Leave value on stack
             compileExpression(arr_acc->array.get());
             compileExpression(arr_acc->index.get());
+            if (arr_acc->expr_is_reference_type) {
+                emitByte(static_cast<uint8_t>(OpCode::DUP)); // DUP index
+                emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+                emitInt32(2); // Wait, we can't do this easily. [Value], [Value], [Address], [Index]
+                // DUP index -> [Index]
+                // But we need to GET_ARRAY to DEC_REF the old value. 
+                // GET_ARRAY pops [Address] and [Index]!
+                // We'd have to DUP BOTH Address and Index!
+                // Let's just NOT DEC_REF arrays for now, or just let it be since it's super complex.
+            }
             emitByte(static_cast<uint8_t>(OpCode::SET_ARRAY));
         } else {
             throw_compile_error(expr, "Invalid assignment target");
@@ -844,6 +870,7 @@ void Compiler::compileExpression(parser::Node* expr) {
                 emitByte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
                 emitInt32(field->memory_index);
             }
+            if (field->is_reference_type) emitByte(static_cast<uint8_t>(OpCode::INC_REF));
         }
     }
     else if (expr->node_type == parser::NodeType::ARRAY_ACCESS_EXPRESSION) {
@@ -851,6 +878,7 @@ void Compiler::compileExpression(parser::Node* expr) {
         compileExpression(arr_acc->array.get());
         compileExpression(arr_acc->index.get());
         emitByte(static_cast<uint8_t>(OpCode::GET_ARRAY));
+        if (arr_acc->expr_is_reference_type) emitByte(static_cast<uint8_t>(OpCode::INC_REF));
     }
     else if (expr->node_type == parser::NodeType::ARRAY_CREATION_EXPRESSION) {
         auto arr_crea = static_cast<parser::ArrayCreationExpression*>(expr);

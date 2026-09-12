@@ -80,6 +80,7 @@ struct Node {
 
     // Pointer back to the parent node
     Node* parent_node = nullptr;
+    bool expr_is_reference_type = false;
     
     // Child nodes (used by blocks, classes, functions, etc.)
     std::vector<std::unique_ptr<Node>> children;
@@ -139,6 +140,7 @@ struct CallExpression : public Node {
 struct ArrayAccessExpression : public Node {
     std::unique_ptr<Node> array;
     std::unique_ptr<Node> index;
+    bool is_reference_type = false;
     
     ArrayAccessExpression(const std::vector<lexer::Token>& tokens, Node* parent = nullptr);
 };
@@ -236,6 +238,7 @@ struct FieldDeclaration : public Node {
     lexer::TokenType access_modifier; // e.g., KEYWORD_PRIVATE
     bool is_static = false;
     bool is_const = false;
+    bool is_reference_type = false;
     
     std::unique_ptr<Node> initializer; // The value assigned
     
