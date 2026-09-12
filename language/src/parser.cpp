@@ -275,7 +275,7 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
             // But if it contains keywords like return, it'start_index a block.
             bool has_statement_keyword = false;
             for (const auto& tk : tokens) {
-                if (tk.type == lexer::TokenType::KEYWORD_RETURN || tk.type == lexer::TokenType::KEYWORD_IF || tk.type == lexer::TokenType::KEYWORD_FOR || tk.type == lexer::TokenType::KEYWORD_WHILE) {
+                if (tk.type >= lexer::TokenType::KEYWORD_IF && tk.type <= lexer::TokenType::KEYWORD_DEFAULT) {
                     has_statement_keyword = true; break;
                 }
             }
