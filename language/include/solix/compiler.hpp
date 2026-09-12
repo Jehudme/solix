@@ -4,8 +4,8 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include <variant>
 #include <cstdint>
+#include <cstring>
 
 namespace solix {
 namespace compiler {
@@ -15,7 +15,11 @@ namespace compiler {
 // ==========================================
 enum class OpCode : uint8_t {
     // Stack & Constants
-    PUSH_CONST, PUSH_TRUE, PUSH_FALSE, PUSH_NULL, POP, DUP,
+    PUSH_CONST_I8, PUSH_CONST_I16, PUSH_CONST_I32, PUSH_CONST_I64,
+    PUSH_CONST_U8, PUSH_CONST_U16, PUSH_CONST_U32, PUSH_CONST_U64,
+    PUSH_CONST_F32, PUSH_CONST_F64,
+    PUSH_CONST_STRING,
+    PUSH_TRUE, PUSH_FALSE, PUSH_NULL, POP, DUP,
     
     // Arithmetic & Logic
     ADD, SUBTRACT, MULTIPLY, DIVIDE, MODULO,
@@ -37,8 +41,10 @@ enum class OpCode : uint8_t {
     // GC (ARC)
     ADD_REF, REMOVE_REF,
     
-    // Type Conversion
-    CONVERT_F64,
+    // Type Conversions
+    CONV_I8, CONV_I16, CONV_I32, CONV_I64,
+    CONV_U8, CONV_U16, CONV_U32, CONV_U64,
+    CONV_F32, CONV_F64,
     
     // Functions
     CALL, CALL_NATIVE, RETURN,
@@ -48,16 +54,10 @@ enum class OpCode : uint8_t {
 };
 
 // ==========================================
-// Constant Pool Data Types
-// ==========================================
-using ConstantValue = std::variant<int64_t, double, std::string, bool>;
-
-// ==========================================
 // The Flattened Executable Program
 // ==========================================
 struct BytecodeProgram {
     std::vector<uint8_t> flat_bytecode;
-    std::vector<ConstantValue> constants;
 };
 
 // ==========================================
@@ -76,14 +76,15 @@ private:
     // Linker Phase patches: Map from <Byte_Index_Of_0xFFFFFFFF_Hole> to <Function_Node>
     std::vector<std::pair<size_t, parser::Node*>> linker_patches;
 
-    // Helper to add a constant and return its index
-    uint32_t emitConstant(const ConstantValue& value);
-    
     // Helper to emit a raw byte
     void emitByte(uint8_t byte);
     
-    // Helper to emit an integer (like 32-bit offset)
-    void emitInt(uint32_t value);
+    // Helpers to emit raw data values into the flat bytecode
+    void emitInt32(uint32_t value);
+    void emitInt64(uint64_t value);
+    void emitFloat32(float value);
+    void emitFloat64(double value);
+    void emitString(const std::string& value);
     
     // Linker
     void applyLinkerPatches();
