@@ -1,0 +1,543 @@
+Start testing: Sep 12 03:00 EDT
+----------------------------------------------------------
+1/27 Testing: Compiler: Boot Sequence & Main Call
+1/27 Test: Compiler: Boot Sequence & Main Call
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Compiler: Boot Sequence & Main Call"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Compiler: Boot Sequence & Main Call" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Compiler: Boot Sequence & Main Call"
+Randomness seeded to: 400775751
+===============================================================================
+All tests passed (5 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Compiler: Boot Sequence & Main Call" end time: Sep 12 03:00 EDT
+"Compiler: Boot Sequence & Main Call" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/27 Testing: Compiler: Complex test.asm.slx Compilation
+2/27 Test: Compiler: Complex test.asm.slx Compilation
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Compiler: Complex test.asm.slx Compilation"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Compiler: Complex test.asm.slx Compilation" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Compiler: Complex test.asm.slx Compilation"
+Randomness seeded to: 200711061
+===============================================================================
+All tests passed (2 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Compiler: Complex test.asm.slx Compilation" end time: Sep 12 03:00 EDT
+"Compiler: Complex test.asm.slx Compilation" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/27 Testing: Lexer - Identifiers Exhaustive
+3/27 Test: Lexer - Identifiers Exhaustive
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Lexer - Identifiers Exhaustive"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Lexer - Identifiers Exhaustive" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Lexer - Identifiers Exhaustive"
+Randomness seeded to: 2755983279
+===============================================================================
+All tests passed (16 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Lexer - Identifiers Exhaustive" end time: Sep 12 03:00 EDT
+"Lexer - Identifiers Exhaustive" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/27 Testing: Lexer - Integration Test
+4/27 Test: Lexer - Integration Test
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Lexer - Integration Test"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Lexer - Integration Test" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Lexer - Integration Test"
+Randomness seeded to: 1741042914
+===============================================================================
+All tests passed (350 assertions in 1 test case)
+
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"Lexer - Integration Test" end time: Sep 12 03:00 EDT
+"Lexer - Integration Test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/27 Testing: Lexer - Keywords Exhaustive
+5/27 Test: Lexer - Keywords Exhaustive
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Lexer - Keywords Exhaustive"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Lexer - Keywords Exhaustive" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Lexer - Keywords Exhaustive"
+Randomness seeded to: 367276029
+===============================================================================
+All tests passed (49 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Lexer - Keywords Exhaustive" end time: Sep 12 03:00 EDT
+"Lexer - Keywords Exhaustive" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/27 Testing: Lexer - Literals Exhaustive
+6/27 Test: Lexer - Literals Exhaustive
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Lexer - Literals Exhaustive"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Lexer - Literals Exhaustive" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Lexer - Literals Exhaustive"
+Randomness seeded to: 1262011960
+===============================================================================
+All tests passed (22 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Lexer - Literals Exhaustive" end time: Sep 12 03:00 EDT
+"Lexer - Literals Exhaustive" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/27 Testing: Lexer - Operators Exhaustive
+7/27 Test: Lexer - Operators Exhaustive
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Lexer - Operators Exhaustive"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Lexer - Operators Exhaustive" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Lexer - Operators Exhaustive"
+Randomness seeded to: 4080802578
+===============================================================================
+All tests passed (29 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Lexer - Operators Exhaustive" end time: Sep 12 03:00 EDT
+"Lexer - Operators Exhaustive" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/27 Testing: Lexer - Primitives Exhaustive
+8/27 Test: Lexer - Primitives Exhaustive
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Lexer - Primitives Exhaustive"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Lexer - Primitives Exhaustive" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Lexer - Primitives Exhaustive"
+Randomness seeded to: 171323622
+===============================================================================
+All tests passed (53 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Lexer - Primitives Exhaustive" end time: Sep 12 03:00 EDT
+"Lexer - Primitives Exhaustive" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/27 Testing: Lexer - Punctuations Exhaustive
+9/27 Test: Lexer - Punctuations Exhaustive
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Lexer - Punctuations Exhaustive"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Lexer - Punctuations Exhaustive" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Lexer - Punctuations Exhaustive"
+Randomness seeded to: 2243342374
+===============================================================================
+All tests passed (11 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Lexer - Punctuations Exhaustive" end time: Sep 12 03:00 EDT
+"Lexer - Punctuations Exhaustive" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/27 Testing: Lexer - Unknowns and Errors Exhaustive
+10/27 Test: Lexer - Unknowns and Errors Exhaustive
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Lexer - Unknowns and Errors Exhaustive"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Lexer - Unknowns and Errors Exhaustive" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Lexer - Unknowns and Errors Exhaustive"
+Randomness seeded to: 2998991267
+===============================================================================
+All tests passed (22 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Lexer - Unknowns and Errors Exhaustive" end time: Sep 12 03:00 EDT
+"Lexer - Unknowns and Errors Exhaustive" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/27 Testing: Parser: AliasStatement
+11/27 Test: Parser: AliasStatement
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Parser: AliasStatement"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Parser: AliasStatement" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Parser: AliasStatement"
+Randomness seeded to: 2359733955
+===============================================================================
+All tests passed (12 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Parser: AliasStatement" end time: Sep 12 03:00 EDT
+"Parser: AliasStatement" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/27 Testing: Parser: AssignmentExpression
+12/27 Test: Parser: AssignmentExpression
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Parser: AssignmentExpression"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Parser: AssignmentExpression" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Parser: AssignmentExpression"
+Randomness seeded to: 2193281059
+===============================================================================
+All tests passed (12 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Parser: AssignmentExpression" end time: Sep 12 03:00 EDT
+"Parser: AssignmentExpression" time elapsed: 00:00:00
+----------------------------------------------------------
+
+13/27 Testing: Parser: ClassDeclaration
+13/27 Test: Parser: ClassDeclaration
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Parser: ClassDeclaration"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Parser: ClassDeclaration" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Parser: ClassDeclaration"
+Randomness seeded to: 2309585024
+===============================================================================
+All tests passed (8 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Parser: ClassDeclaration" end time: Sep 12 03:00 EDT
+"Parser: ClassDeclaration" time elapsed: 00:00:00
+----------------------------------------------------------
+
+14/27 Testing: Parser: ControlFlow
+14/27 Test: Parser: ControlFlow
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Parser: ControlFlow"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Parser: ControlFlow" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Parser: ControlFlow"
+Randomness seeded to: 949120865
+===============================================================================
+All tests passed (16 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Parser: ControlFlow" end time: Sep 12 03:00 EDT
+"Parser: ControlFlow" time elapsed: 00:00:00
+----------------------------------------------------------
+
+15/27 Testing: Parser: EnumDeclaration
+15/27 Test: Parser: EnumDeclaration
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Parser: EnumDeclaration"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Parser: EnumDeclaration" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Parser: EnumDeclaration"
+Randomness seeded to: 1486970920
+===============================================================================
+All tests passed (16 assertions in 1 test case)
+
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"Parser: EnumDeclaration" end time: Sep 12 03:00 EDT
+"Parser: EnumDeclaration" time elapsed: 00:00:00
+----------------------------------------------------------
+
+16/27 Testing: Parser: Expression
+16/27 Test: Parser: Expression
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Parser: Expression"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Parser: Expression" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Parser: Expression"
+Randomness seeded to: 2003384591
+===============================================================================
+All tests passed (18 assertions in 1 test case)
+
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"Parser: Expression" end time: Sep 12 03:00 EDT
+"Parser: Expression" time elapsed: 00:00:00
+----------------------------------------------------------
+
+17/27 Testing: Parser: FieldDeclaration
+17/27 Test: Parser: FieldDeclaration
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Parser: FieldDeclaration"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Parser: FieldDeclaration" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Parser: FieldDeclaration"
+Randomness seeded to: 2622823011
+===============================================================================
+All tests passed (18 assertions in 1 test case)
+
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"Parser: FieldDeclaration" end time: Sep 12 03:00 EDT
+"Parser: FieldDeclaration" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/27 Testing: Parser: MethodDeclaration
+18/27 Test: Parser: MethodDeclaration
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Parser: MethodDeclaration"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Parser: MethodDeclaration" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Parser: MethodDeclaration"
+Randomness seeded to: 33236196
+===============================================================================
+All tests passed (17 assertions in 1 test case)
+
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"Parser: MethodDeclaration" end time: Sep 12 03:00 EDT
+"Parser: MethodDeclaration" time elapsed: 00:00:00
+----------------------------------------------------------
+
+19/27 Testing: Parser: PackageStatement
+19/27 Test: Parser: PackageStatement
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Parser: PackageStatement"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Parser: PackageStatement" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Parser: PackageStatement"
+Randomness seeded to: 1181882241
+===============================================================================
+All tests passed (10 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Parser: PackageStatement" end time: Sep 12 03:00 EDT
+"Parser: PackageStatement" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/27 Testing: Parser: Package Rules
+20/27 Test: Parser: Package Rules
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Parser: Package Rules"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Parser: Package Rules" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Parser: Package Rules"
+Randomness seeded to: 550322744
+===============================================================================
+All tests passed (2 assertions in 1 test case)
+
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"Parser: Package Rules" end time: Sep 12 03:00 EDT
+"Parser: Package Rules" time elapsed: 00:00:00
+----------------------------------------------------------
+
+21/27 Testing: Parser: Structural Modifiers Rules
+21/27 Test: Parser: Structural Modifiers Rules
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Parser: Structural Modifiers Rules"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Parser: Structural Modifiers Rules" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Parser: Structural Modifiers Rules"
+Randomness seeded to: 1816181038
+===============================================================================
+All tests passed (4 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Parser: Structural Modifiers Rules" end time: Sep 12 03:00 EDT
+"Parser: Structural Modifiers Rules" time elapsed: 00:00:00
+----------------------------------------------------------
+
+22/27 Testing: Parser: VariableDeclaration
+22/27 Test: Parser: VariableDeclaration
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Parser: VariableDeclaration"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Parser: VariableDeclaration" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Parser: VariableDeclaration"
+Randomness seeded to: 2510630992
+===============================================================================
+All tests passed (18 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Parser: VariableDeclaration" end time: Sep 12 03:00 EDT
+"Parser: VariableDeclaration" time elapsed: 00:00:00
+----------------------------------------------------------
+
+23/27 Testing: Semantic: Control Flow Limits (Pass 3)
+23/27 Test: Semantic: Control Flow Limits (Pass 3)
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Semantic: Control Flow Limits (Pass 3)"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Semantic: Control Flow Limits (Pass 3)" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Semantic: Control Flow Limits (Pass 3)"
+Randomness seeded to: 2508439671
+===============================================================================
+All tests passed (3 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Semantic: Control Flow Limits (Pass 3)" end time: Sep 12 03:00 EDT
+"Semantic: Control Flow Limits (Pass 3)" time elapsed: 00:00:00
+----------------------------------------------------------
+
+24/27 Testing: Semantic: Deep OOP Resolution
+24/27 Test: Semantic: Deep OOP Resolution
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Semantic: Deep OOP Resolution"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Semantic: Deep OOP Resolution" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Semantic: Deep OOP Resolution"
+Randomness seeded to: 128715135
+===============================================================================
+All tests passed (6 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Semantic: Deep OOP Resolution" end time: Sep 12 03:00 EDT
+"Semantic: Deep OOP Resolution" time elapsed: 00:00:00
+----------------------------------------------------------
+
+25/27 Testing: Semantic: Global Symbol Registration (Pass 1)
+25/27 Test: Semantic: Global Symbol Registration (Pass 1)
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Semantic: Global Symbol Registration (Pass 1)"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Semantic: Global Symbol Registration (Pass 1)" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Semantic: Global Symbol Registration (Pass 1)"
+Randomness seeded to: 3868418202
+===============================================================================
+All tests passed (8 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Semantic: Global Symbol Registration (Pass 1)" end time: Sep 12 03:00 EDT
+"Semantic: Global Symbol Registration (Pass 1)" time elapsed: 00:00:00
+----------------------------------------------------------
+
+26/27 Testing: Semantic: Local Scoping & Shadowing (Pass 2)
+26/27 Test: Semantic: Local Scoping & Shadowing (Pass 2)
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Semantic: Local Scoping & Shadowing (Pass 2)"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Semantic: Local Scoping & Shadowing (Pass 2)" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Semantic: Local Scoping & Shadowing (Pass 2)"
+Randomness seeded to: 2190509674
+===============================================================================
+All tests passed (4 assertions in 1 test case)
+
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"Semantic: Local Scoping & Shadowing (Pass 2)" end time: Sep 12 03:00 EDT
+"Semantic: Local Scoping & Shadowing (Pass 2)" time elapsed: 00:00:00
+----------------------------------------------------------
+
+27/27 Testing: Semantic: Type Resolution (Pass 2)
+27/27 Test: Semantic: Type Resolution (Pass 2)
+Command: "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests" "Semantic: Type Resolution (Pass 2)"
+Directory: /home/jehud/Projects/enigma/out/Debug/tests
+"Semantic: Type Resolution (Pass 2)" start time: Sep 12 03:00 EDT
+Output:
+----------------------------------------------------------
+Filters: "Semantic: Type Resolution (Pass 2)"
+Randomness seeded to: 3437360491
+===============================================================================
+All tests passed (5 assertions in 1 test case)
+
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"Semantic: Type Resolution (Pass 2)" end time: Sep 12 03:00 EDT
+"Semantic: Type Resolution (Pass 2)" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Sep 12 03:00 EDT

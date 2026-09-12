@@ -1,2 +1,2 @@
-/usr/bin/ar qc libsolix_language.a CMakeFiles/solix_language.dir/src/ast.cpp.o CMakeFiles/solix_language.dir/src/compiler.cpp.o CMakeFiles/solix_language.dir/src/diagnostics.cpp.o CMakeFiles/solix_language.dir/src/lexer.cpp.o CMakeFiles/solix_language.dir/src/parser.cpp.o CMakeFiles/solix_language.dir/src/runtime.cpp.o CMakeFiles/solix_language.dir/src/sementic.cpp.o
+/usr/bin/ar qc libsolix_language.a CMakeFiles/solix_language.dir/src/lexer.cpp.o CMakeFiles/solix_language.dir/src/parser.cpp.o CMakeFiles/solix_language.dir/src/semantic.cpp.o CMakeFiles/solix_language.dir/src/compiler.cpp.o
 /usr/bin/ranlib libsolix_language.a

@@ -1,24 +1,6 @@
 [
 {
   "directory": "/home/jehud/Projects/enigma/out/Debug/language",
-  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_language.dir/src/ast.cpp.o -c /home/jehud/Projects/enigma/language/src/ast.cpp",
-  "file": "/home/jehud/Projects/enigma/language/src/ast.cpp",
-  "output": "language/CMakeFiles/solix_language.dir/src/ast.cpp.o"
-},
-{
-  "directory": "/home/jehud/Projects/enigma/out/Debug/language",
-  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_language.dir/src/compiler.cpp.o -c /home/jehud/Projects/enigma/language/src/compiler.cpp",
-  "file": "/home/jehud/Projects/enigma/language/src/compiler.cpp",
-  "output": "language/CMakeFiles/solix_language.dir/src/compiler.cpp.o"
-},
-{
-  "directory": "/home/jehud/Projects/enigma/out/Debug/language",
-  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_language.dir/src/diagnostics.cpp.o -c /home/jehud/Projects/enigma/language/src/diagnostics.cpp",
-  "file": "/home/jehud/Projects/enigma/language/src/diagnostics.cpp",
-  "output": "language/CMakeFiles/solix_language.dir/src/diagnostics.cpp.o"
-},
-{
-  "directory": "/home/jehud/Projects/enigma/out/Debug/language",
   "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_language.dir/src/lexer.cpp.o -c /home/jehud/Projects/enigma/language/src/lexer.cpp",
   "file": "/home/jehud/Projects/enigma/language/src/lexer.cpp",
   "output": "language/CMakeFiles/solix_language.dir/src/lexer.cpp.o"
@@ -31,15 +13,15 @@
 },
 {
   "directory": "/home/jehud/Projects/enigma/out/Debug/language",
-  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_language.dir/src/runtime.cpp.o -c /home/jehud/Projects/enigma/language/src/runtime.cpp",
-  "file": "/home/jehud/Projects/enigma/language/src/runtime.cpp",
-  "output": "language/CMakeFiles/solix_language.dir/src/runtime.cpp.o"
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_language.dir/src/semantic.cpp.o -c /home/jehud/Projects/enigma/language/src/semantic.cpp",
+  "file": "/home/jehud/Projects/enigma/language/src/semantic.cpp",
+  "output": "language/CMakeFiles/solix_language.dir/src/semantic.cpp.o"
 },
 {
   "directory": "/home/jehud/Projects/enigma/out/Debug/language",
-  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_language.dir/src/sementic.cpp.o -c /home/jehud/Projects/enigma/language/src/sementic.cpp",
-  "file": "/home/jehud/Projects/enigma/language/src/sementic.cpp",
-  "output": "language/CMakeFiles/solix_language.dir/src/sementic.cpp.o"
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_language.dir/src/compiler.cpp.o -c /home/jehud/Projects/enigma/language/src/compiler.cpp",
+  "file": "/home/jehud/Projects/enigma/language/src/compiler.cpp",
+  "output": "language/CMakeFiles/solix_language.dir/src/compiler.cpp.o"
 },
 {
   "directory": "/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-build",
@@ -103,9 +85,153 @@
 },
 {
   "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
-  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/main.cpp.o -c /home/jehud/Projects/enigma/tests/src/main.cpp",
-  "file": "/home/jehud/Projects/enigma/tests/src/main.cpp",
-  "output": "tests/CMakeFiles/solix_tests.dir/src/main.cpp.o"
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.o -c /home/jehud/Projects/enigma/tests/src/compiler/test_compiler.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/compiler/test_compiler.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/identifiers.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/lexer/identifiers.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/integration.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/lexer/integration.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/keywords.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/lexer/keywords.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/literals.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/lexer/literals.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/operators.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/lexer/operators.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/primitives.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/lexer/primitives.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/punctuations.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/lexer/punctuations.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/unknows.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/lexer/unknows.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_alias.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/parser/test_alias.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_assignment.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/parser/test_assignment.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_class.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/parser/test_class.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_control_flow.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/parser/test_control_flow.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_enum.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/parser/test_enum.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_expression.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/parser/test_expression.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_field.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/parser/test_field.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_method.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/parser/test_method.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_package.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/parser/test_package.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_rule_modifiers.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/parser/test_rule_modifiers.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_variable.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/parser/test_variable.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.o -c /home/jehud/Projects/enigma/tests/src/semantic/test_control_flow.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/semantic/test_control_flow.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.o -c /home/jehud/Projects/enigma/tests/src/semantic/test_deep_oop.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/semantic/test_deep_oop.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.o -c /home/jehud/Projects/enigma/tests/src/semantic/test_global_pass.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/semantic/test_global_pass.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.o -c /home/jehud/Projects/enigma/tests/src/semantic/test_scoping.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/semantic/test_scoping.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.o"
+},
+{
+  "directory": "/home/jehud/Projects/enigma/out/Debug/tests",
+  "command": "/usr/bin/c++ -DSPDLOG_COMPILED_LIB -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/src/catch2/.. -I/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/generated-includes -I/home/jehud/Projects/enigma/language/include -I/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include -g -std=c++20 -o CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.o -c /home/jehud/Projects/enigma/tests/src/semantic/test_type_resolution.cpp",
+  "file": "/home/jehud/Projects/enigma/tests/src/semantic/test_type_resolution.cpp",
+  "output": "tests/CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.o"
 },
 {
   "directory": "/home/jehud/Projects/enigma/out/Debug/_deps/catch2-build/src",

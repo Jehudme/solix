@@ -84,7 +84,8 @@ private:
     
     // Compilation passes
     void compileBootSequence(std::string_view entry_point);
-    void compileFunction(parser::Node* function_node);
+    void compileClass(parser::ClassDeclaration* class_node);
+  void compileFunction(parser::Node* function_node);
 
     void compileNode(parser::Node* node);
     void compileExpression(parser::Node* expr);

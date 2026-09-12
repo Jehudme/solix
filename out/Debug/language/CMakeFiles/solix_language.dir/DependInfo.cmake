@@ -8,13 +8,10 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/jehud/Projects/enigma/language/src/ast.cpp" "language/CMakeFiles/solix_language.dir/src/ast.cpp.o" "gcc" "language/CMakeFiles/solix_language.dir/src/ast.cpp.o.d"
   "/home/jehud/Projects/enigma/language/src/compiler.cpp" "language/CMakeFiles/solix_language.dir/src/compiler.cpp.o" "gcc" "language/CMakeFiles/solix_language.dir/src/compiler.cpp.o.d"
-  "/home/jehud/Projects/enigma/language/src/diagnostics.cpp" "language/CMakeFiles/solix_language.dir/src/diagnostics.cpp.o" "gcc" "language/CMakeFiles/solix_language.dir/src/diagnostics.cpp.o.d"
   "/home/jehud/Projects/enigma/language/src/lexer.cpp" "language/CMakeFiles/solix_language.dir/src/lexer.cpp.o" "gcc" "language/CMakeFiles/solix_language.dir/src/lexer.cpp.o.d"
   "/home/jehud/Projects/enigma/language/src/parser.cpp" "language/CMakeFiles/solix_language.dir/src/parser.cpp.o" "gcc" "language/CMakeFiles/solix_language.dir/src/parser.cpp.o.d"
-  "/home/jehud/Projects/enigma/language/src/runtime.cpp" "language/CMakeFiles/solix_language.dir/src/runtime.cpp.o" "gcc" "language/CMakeFiles/solix_language.dir/src/runtime.cpp.o.d"
-  "/home/jehud/Projects/enigma/language/src/sementic.cpp" "language/CMakeFiles/solix_language.dir/src/sementic.cpp.o" "gcc" "language/CMakeFiles/solix_language.dir/src/sementic.cpp.o.d"
+  "/home/jehud/Projects/enigma/language/src/semantic.cpp" "language/CMakeFiles/solix_language.dir/src/semantic.cpp.o" "gcc" "language/CMakeFiles/solix_language.dir/src/semantic.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

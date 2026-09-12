@@ -1,9 +1,8 @@
 {
-	"archive" : {},
 	"artifacts" : 
 	[
 		{
-			"path" : "language/libsolix_language.a"
+			"path" : "launcher/solix_launcher"
 		}
 	],
 	"backtrace" : 1,
@@ -11,12 +10,12 @@
 	{
 		"commands" : 
 		[
-			"add_library",
-			"target_link_libraries",
-			"target_include_directories"
+			"add_executable",
+			"target_link_libraries"
 		],
 		"files" : 
 		[
+			"launcher/CMakeLists.txt",
 			"language/CMakeLists.txt"
 		],
 		"nodes" : 
@@ -33,14 +32,17 @@
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 25,
+				"line" : 15,
 				"parent" : 0
 			},
 			{
-				"command" : 2,
-				"file" : 0,
-				"line" : 19,
-				"parent" : 0
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 23,
+				"parent" : 3
 			}
 		]
 	},
@@ -53,7 +55,11 @@
 	[
 		{
 			"backtrace" : 2,
-			"id" : "spdlog::@eb35cfce7893ccfeff1e"
+			"id" : "solix_language::@d1788509683f2c7c8374"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "CLI11::@05510ae26949e066d1d5"
 		}
 	],
 	"compileGroups" : 
@@ -75,12 +81,17 @@
 			"includes" : 
 			[
 				{
-					"backtrace" : 3,
+					"backtrace" : 2,
 					"path" : "/home/jehud/Projects/enigma/language/include"
 				},
 				{
 					"backtrace" : 2,
 					"path" : "/home/jehud/Projects/enigma/out/Debug/_deps/spdlog-src/include"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/home/jehud/Projects/enigma/out/Debug/_deps/cli11-src/include"
 				}
 			],
 			"language" : "CXX",
@@ -96,11 +107,7 @@
 			[
 				0,
 				1,
-				2,
-				3,
-				4,
-				5,
-				6
+				2
 			]
 		}
 	],
@@ -108,37 +115,56 @@
 	[
 		{
 			"backtrace" : 2,
-			"id" : "spdlog::@eb35cfce7893ccfeff1e"
-		}
-	],
-	"id" : "solix_language::@d1788509683f2c7c8374",
-	"interfaceCompileDependencies" : 
-	[
+			"id" : "solix_language::@d1788509683f2c7c8374"
+		},
 		{
 			"backtrace" : 2,
 			"id" : "spdlog::@eb35cfce7893ccfeff1e"
-		}
-	],
-	"interfaceLinkLibraries" : 
-	[
+		},
 		{
 			"backtrace" : 2,
-			"id" : "spdlog::@eb35cfce7893ccfeff1e"
+			"id" : "CLI11::@05510ae26949e066d1d5"
 		}
 	],
+	"id" : "solix_launcher::@86771e3ded6ecd1208c9",
+	"link" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "-g",
+				"role" : "flags"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "../language/libsolix_language.a",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "../_deps/spdlog-build/libspdlogd.a",
+				"role" : "libraries"
+			}
+		],
+		"language" : "CXX"
+	},
 	"linkLibraries" : 
 	[
 		{
 			"backtrace" : 2,
-			"id" : "spdlog::@eb35cfce7893ccfeff1e"
+			"id" : "solix_language::@d1788509683f2c7c8374"
+		},
+		{
+			"backtrace" : 2,
+			"id" : "CLI11::@05510ae26949e066d1d5"
 		}
 	],
-	"name" : "solix_language",
-	"nameOnDisk" : "libsolix_language.a",
+	"name" : "solix_launcher",
+	"nameOnDisk" : "solix_launcher",
 	"paths" : 
 	{
-		"build" : "language",
-		"source" : "language"
+		"build" : "launcher",
+		"source" : "launcher"
 	},
 	"sourceGroups" : 
 	[
@@ -148,11 +174,7 @@
 			[
 				0,
 				1,
-				2,
-				3,
-				4,
-				5,
-				6
+				2
 			]
 		}
 	],
@@ -165,7 +187,7 @@
 				1
 			],
 			"compileGroupIndex" : 0,
-			"path" : "language/src/ast.cpp",
+			"path" : "launcher/src/main.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{
@@ -175,7 +197,7 @@
 				1
 			],
 			"compileGroupIndex" : 0,
-			"path" : "language/src/compiler.cpp",
+			"path" : "launcher/src/commands/compile.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{
@@ -185,49 +207,9 @@
 				1
 			],
 			"compileGroupIndex" : 0,
-			"path" : "language/src/diagnostics.cpp",
-			"sourceGroupIndex" : 0
-		},
-		{
-			"backtrace" : 1,
-			"backtraces" : 
-			[
-				1
-			],
-			"compileGroupIndex" : 0,
-			"path" : "language/src/lexer.cpp",
-			"sourceGroupIndex" : 0
-		},
-		{
-			"backtrace" : 1,
-			"backtraces" : 
-			[
-				1
-			],
-			"compileGroupIndex" : 0,
-			"path" : "language/src/parser.cpp",
-			"sourceGroupIndex" : 0
-		},
-		{
-			"backtrace" : 1,
-			"backtraces" : 
-			[
-				1
-			],
-			"compileGroupIndex" : 0,
-			"path" : "language/src/runtime.cpp",
-			"sourceGroupIndex" : 0
-		},
-		{
-			"backtrace" : 1,
-			"backtraces" : 
-			[
-				1
-			],
-			"compileGroupIndex" : 0,
-			"path" : "language/src/sementic.cpp",
+			"path" : "launcher/src/commands/execute.cpp",
 			"sourceGroupIndex" : 0
 		}
 	],
-	"type" : "STATIC_LIBRARY"
+	"type" : "EXECUTABLE"
 }

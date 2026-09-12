@@ -140,30 +140,6 @@ solix_language/fast:
 	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/build
 .PHONY : solix_language/fast
 
-src/ast.o: src/ast.cpp.o
-.PHONY : src/ast.o
-
-# target to build an object file
-src/ast.cpp.o:
-	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/ast.cpp.o
-.PHONY : src/ast.cpp.o
-
-src/ast.i: src/ast.cpp.i
-.PHONY : src/ast.i
-
-# target to preprocess a source file
-src/ast.cpp.i:
-	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/ast.cpp.i
-.PHONY : src/ast.cpp.i
-
-src/ast.s: src/ast.cpp.s
-.PHONY : src/ast.s
-
-# target to generate assembly for a file
-src/ast.cpp.s:
-	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/ast.cpp.s
-.PHONY : src/ast.cpp.s
-
 src/compiler.o: src/compiler.cpp.o
 .PHONY : src/compiler.o
 
@@ -187,30 +163,6 @@ src/compiler.s: src/compiler.cpp.s
 src/compiler.cpp.s:
 	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/compiler.cpp.s
 .PHONY : src/compiler.cpp.s
-
-src/diagnostics.o: src/diagnostics.cpp.o
-.PHONY : src/diagnostics.o
-
-# target to build an object file
-src/diagnostics.cpp.o:
-	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/diagnostics.cpp.o
-.PHONY : src/diagnostics.cpp.o
-
-src/diagnostics.i: src/diagnostics.cpp.i
-.PHONY : src/diagnostics.i
-
-# target to preprocess a source file
-src/diagnostics.cpp.i:
-	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/diagnostics.cpp.i
-.PHONY : src/diagnostics.cpp.i
-
-src/diagnostics.s: src/diagnostics.cpp.s
-.PHONY : src/diagnostics.s
-
-# target to generate assembly for a file
-src/diagnostics.cpp.s:
-	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/diagnostics.cpp.s
-.PHONY : src/diagnostics.cpp.s
 
 src/lexer.o: src/lexer.cpp.o
 .PHONY : src/lexer.o
@@ -260,53 +212,29 @@ src/parser.cpp.s:
 	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/parser.cpp.s
 .PHONY : src/parser.cpp.s
 
-src/runtime.o: src/runtime.cpp.o
-.PHONY : src/runtime.o
+src/semantic.o: src/semantic.cpp.o
+.PHONY : src/semantic.o
 
 # target to build an object file
-src/runtime.cpp.o:
-	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/runtime.cpp.o
-.PHONY : src/runtime.cpp.o
+src/semantic.cpp.o:
+	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/semantic.cpp.o
+.PHONY : src/semantic.cpp.o
 
-src/runtime.i: src/runtime.cpp.i
-.PHONY : src/runtime.i
-
-# target to preprocess a source file
-src/runtime.cpp.i:
-	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/runtime.cpp.i
-.PHONY : src/runtime.cpp.i
-
-src/runtime.s: src/runtime.cpp.s
-.PHONY : src/runtime.s
-
-# target to generate assembly for a file
-src/runtime.cpp.s:
-	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/runtime.cpp.s
-.PHONY : src/runtime.cpp.s
-
-src/sementic.o: src/sementic.cpp.o
-.PHONY : src/sementic.o
-
-# target to build an object file
-src/sementic.cpp.o:
-	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/sementic.cpp.o
-.PHONY : src/sementic.cpp.o
-
-src/sementic.i: src/sementic.cpp.i
-.PHONY : src/sementic.i
+src/semantic.i: src/semantic.cpp.i
+.PHONY : src/semantic.i
 
 # target to preprocess a source file
-src/sementic.cpp.i:
-	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/sementic.cpp.i
-.PHONY : src/sementic.cpp.i
+src/semantic.cpp.i:
+	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/semantic.cpp.i
+.PHONY : src/semantic.cpp.i
 
-src/sementic.s: src/sementic.cpp.s
-.PHONY : src/sementic.s
+src/semantic.s: src/semantic.cpp.s
+.PHONY : src/semantic.s
 
 # target to generate assembly for a file
-src/sementic.cpp.s:
-	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/sementic.cpp.s
-.PHONY : src/sementic.cpp.s
+src/semantic.cpp.s:
+	cd /home/jehud/Projects/enigma/out/Debug && $(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/src/semantic.cpp.s
+.PHONY : src/semantic.cpp.s
 
 # Help Target
 help:
@@ -318,27 +246,18 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... test"
 	@echo "... solix_language"
-	@echo "... src/ast.o"
-	@echo "... src/ast.i"
-	@echo "... src/ast.s"
 	@echo "... src/compiler.o"
 	@echo "... src/compiler.i"
 	@echo "... src/compiler.s"
-	@echo "... src/diagnostics.o"
-	@echo "... src/diagnostics.i"
-	@echo "... src/diagnostics.s"
 	@echo "... src/lexer.o"
 	@echo "... src/lexer.i"
 	@echo "... src/lexer.s"
 	@echo "... src/parser.o"
 	@echo "... src/parser.i"
 	@echo "... src/parser.s"
-	@echo "... src/runtime.o"
-	@echo "... src/runtime.i"
-	@echo "... src/runtime.s"
-	@echo "... src/sementic.o"
-	@echo "... src/sementic.i"
-	@echo "... src/sementic.s"
+	@echo "... src/semantic.o"
+	@echo "... src/semantic.i"
+	@echo "... src/semantic.s"
 .PHONY : help
 
 

@@ -72,28 +72,412 @@ include tests/CMakeFiles/solix_tests.dir/flags.make
 tests/CMakeFiles/solix_tests.dir/codegen:
 .PHONY : tests/CMakeFiles/solix_tests.dir/codegen
 
-tests/CMakeFiles/solix_tests.dir/src/main.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
-tests/CMakeFiles/solix_tests.dir/src/main.cpp.o: /home/jehud/Projects/enigma/tests/src/main.cpp
-tests/CMakeFiles/solix_tests.dir/src/main.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/main.cpp.o"
-	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/main.cpp.o -MF CMakeFiles/solix_tests.dir/src/main.cpp.o.d -o CMakeFiles/solix_tests.dir/src/main.cpp.o -c /home/jehud/Projects/enigma/tests/src/main.cpp
+tests/CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.o: /home/jehud/Projects/enigma/tests/src/compiler/test_compiler.cpp
+tests/CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.o -MF CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.o.d -o CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.o -c /home/jehud/Projects/enigma/tests/src/compiler/test_compiler.cpp
 
-tests/CMakeFiles/solix_tests.dir/src/main.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/main.cpp.i"
-	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/main.cpp > CMakeFiles/solix_tests.dir/src/main.cpp.i
+tests/CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/compiler/test_compiler.cpp > CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.i
 
-tests/CMakeFiles/solix_tests.dir/src/main.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/main.cpp.s"
-	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/main.cpp -o CMakeFiles/solix_tests.dir/src/main.cpp.s
+tests/CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/compiler/test_compiler.cpp -o CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.o: /home/jehud/Projects/enigma/tests/src/lexer/identifiers.cpp
+tests/CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.o -MF CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.o.d -o CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/identifiers.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/lexer/identifiers.cpp > CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/lexer/identifiers.cpp -o CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.o: /home/jehud/Projects/enigma/tests/src/lexer/integration.cpp
+tests/CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.o -MF CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.o.d -o CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/integration.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/lexer/integration.cpp > CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/lexer/integration.cpp -o CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.o: /home/jehud/Projects/enigma/tests/src/lexer/keywords.cpp
+tests/CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.o -MF CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.o.d -o CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/keywords.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/lexer/keywords.cpp > CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/lexer/keywords.cpp -o CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.o: /home/jehud/Projects/enigma/tests/src/lexer/literals.cpp
+tests/CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.o -MF CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.o.d -o CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/literals.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/lexer/literals.cpp > CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/lexer/literals.cpp -o CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.o: /home/jehud/Projects/enigma/tests/src/lexer/operators.cpp
+tests/CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.o -MF CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.o.d -o CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/operators.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/lexer/operators.cpp > CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/lexer/operators.cpp -o CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.o: /home/jehud/Projects/enigma/tests/src/lexer/primitives.cpp
+tests/CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.o -MF CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.o.d -o CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/primitives.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/lexer/primitives.cpp > CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/lexer/primitives.cpp -o CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.o: /home/jehud/Projects/enigma/tests/src/lexer/punctuations.cpp
+tests/CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.o -MF CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.o.d -o CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/punctuations.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/lexer/punctuations.cpp > CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/lexer/punctuations.cpp -o CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.o: /home/jehud/Projects/enigma/tests/src/lexer/unknows.cpp
+tests/CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.o -MF CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.o.d -o CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.o -c /home/jehud/Projects/enigma/tests/src/lexer/unknows.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/lexer/unknows.cpp > CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/lexer/unknows.cpp -o CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.o: /home/jehud/Projects/enigma/tests/src/parser/test_alias.cpp
+tests/CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.o -MF CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.o.d -o CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_alias.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/parser/test_alias.cpp > CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/parser/test_alias.cpp -o CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.o: /home/jehud/Projects/enigma/tests/src/parser/test_assignment.cpp
+tests/CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.o -MF CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.o.d -o CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_assignment.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/parser/test_assignment.cpp > CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/parser/test_assignment.cpp -o CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.o: /home/jehud/Projects/enigma/tests/src/parser/test_class.cpp
+tests/CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.o -MF CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.o.d -o CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_class.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/parser/test_class.cpp > CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/parser/test_class.cpp -o CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.o: /home/jehud/Projects/enigma/tests/src/parser/test_control_flow.cpp
+tests/CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.o -MF CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.o.d -o CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_control_flow.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/parser/test_control_flow.cpp > CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/parser/test_control_flow.cpp -o CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.o: /home/jehud/Projects/enigma/tests/src/parser/test_enum.cpp
+tests/CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.o -MF CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.o.d -o CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_enum.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/parser/test_enum.cpp > CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/parser/test_enum.cpp -o CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.o: /home/jehud/Projects/enigma/tests/src/parser/test_expression.cpp
+tests/CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.o -MF CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.o.d -o CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_expression.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/parser/test_expression.cpp > CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/parser/test_expression.cpp -o CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.o: /home/jehud/Projects/enigma/tests/src/parser/test_field.cpp
+tests/CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.o -MF CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.o.d -o CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_field.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/parser/test_field.cpp > CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/parser/test_field.cpp -o CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.o: /home/jehud/Projects/enigma/tests/src/parser/test_method.cpp
+tests/CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.o -MF CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.o.d -o CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_method.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/parser/test_method.cpp > CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/parser/test_method.cpp -o CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.o: /home/jehud/Projects/enigma/tests/src/parser/test_package.cpp
+tests/CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.o -MF CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.o.d -o CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_package.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/parser/test_package.cpp > CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/parser/test_package.cpp -o CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.o: /home/jehud/Projects/enigma/tests/src/parser/test_rule_modifiers.cpp
+tests/CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.o -MF CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.o.d -o CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_rule_modifiers.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/parser/test_rule_modifiers.cpp > CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/parser/test_rule_modifiers.cpp -o CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.o: /home/jehud/Projects/enigma/tests/src/parser/test_variable.cpp
+tests/CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.o -MF CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.o.d -o CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.o -c /home/jehud/Projects/enigma/tests/src/parser/test_variable.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/parser/test_variable.cpp > CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/parser/test_variable.cpp -o CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.o: /home/jehud/Projects/enigma/tests/src/semantic/test_control_flow.cpp
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.o -MF CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.o.d -o CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.o -c /home/jehud/Projects/enigma/tests/src/semantic/test_control_flow.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/semantic/test_control_flow.cpp > CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/semantic/test_control_flow.cpp -o CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.o: /home/jehud/Projects/enigma/tests/src/semantic/test_deep_oop.cpp
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.o -MF CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.o.d -o CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.o -c /home/jehud/Projects/enigma/tests/src/semantic/test_deep_oop.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/semantic/test_deep_oop.cpp > CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/semantic/test_deep_oop.cpp -o CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.o: /home/jehud/Projects/enigma/tests/src/semantic/test_global_pass.cpp
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_23) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.o -MF CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.o.d -o CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.o -c /home/jehud/Projects/enigma/tests/src/semantic/test_global_pass.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/semantic/test_global_pass.cpp > CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/semantic/test_global_pass.cpp -o CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.o: /home/jehud/Projects/enigma/tests/src/semantic/test_scoping.cpp
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_24) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.o -MF CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.o.d -o CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.o -c /home/jehud/Projects/enigma/tests/src/semantic/test_scoping.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/semantic/test_scoping.cpp > CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/semantic/test_scoping.cpp -o CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.s
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.o: tests/CMakeFiles/solix_tests.dir/flags.make
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.o: /home/jehud/Projects/enigma/tests/src/semantic/test_type_resolution.cpp
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.o: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_25) "Building CXX object tests/CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT tests/CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.o -MF CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.o.d -o CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.o -c /home/jehud/Projects/enigma/tests/src/semantic/test_type_resolution.cpp
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/tests/src/semantic/test_type_resolution.cpp > CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.i
+
+tests/CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/tests/src/semantic/test_type_resolution.cpp -o CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.s
 
 # Object files for target solix_tests
 solix_tests_OBJECTS = \
-"CMakeFiles/solix_tests.dir/src/main.cpp.o"
+"CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.o" \
+"CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.o"
 
 # External object files for target solix_tests
 solix_tests_EXTERNAL_OBJECTS =
 
-tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/main.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/compiler/test_compiler.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/lexer/identifiers.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/lexer/integration.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/lexer/keywords.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/lexer/literals.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/lexer/operators.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/lexer/primitives.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/lexer/punctuations.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/lexer/unknows.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/parser/test_alias.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/parser/test_assignment.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/parser/test_class.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/parser/test_control_flow.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/parser/test_enum.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/parser/test_expression.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/parser/test_field.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/parser/test_method.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/parser/test_package.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/parser/test_rule_modifiers.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/parser/test_variable.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/semantic/test_control_flow.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/semantic/test_deep_oop.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/semantic/test_global_pass.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/semantic/test_scoping.cpp.o
+tests/solix_tests: tests/CMakeFiles/solix_tests.dir/src/semantic/test_type_resolution.cpp.o
 tests/solix_tests: tests/CMakeFiles/solix_tests.dir/build.make
 tests/solix_tests: tests/CMakeFiles/solix_tests.dir/compiler_depend.ts
 tests/solix_tests: _deps/catch2-build/src/libCatch2Maind.a
@@ -101,7 +485,7 @@ tests/solix_tests: language/libsolix_language.a
 tests/solix_tests: _deps/catch2-build/src/libCatch2d.a
 tests/solix_tests: _deps/spdlog-build/libspdlogd.a
 tests/solix_tests: tests/CMakeFiles/solix_tests.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable solix_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_26) "Linking CXX executable solix_tests"
 	cd /home/jehud/Projects/enigma/out/Debug/tests && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/solix_tests.dir/link.txt --verbose=$(VERBOSE)
 	cd /home/jehud/Projects/enigma/out/Debug/tests && /usr/bin/cmake -D TEST_TARGET=solix_tests -D TEST_EXECUTABLE=/home/jehud/Projects/enigma/out/Debug/tests/solix_tests -D TEST_EXECUTOR= -D TEST_WORKING_DIR=/home/jehud/Projects/enigma/out/Debug/tests -D TEST_SPEC= -D TEST_EXTRA_ARGS= -D TEST_PROPERTIES= -D TEST_PREFIX= -D TEST_SUFFIX= -D TEST_LIST=solix_tests_TESTS -D TEST_REPORTER= -D TEST_OUTPUT_DIR= -D TEST_OUTPUT_PREFIX= -D TEST_OUTPUT_SUFFIX= -D TEST_DL_PATHS= -D CTEST_FILE=/home/jehud/Projects/enigma/out/Debug/tests/solix_tests-b12d07c_tests.cmake -P /home/jehud/Projects/enigma/out/Debug/_deps/catch2-src/extras/CatchAddTests.cmake
 

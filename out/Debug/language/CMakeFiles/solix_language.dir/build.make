@@ -72,52 +72,10 @@ include language/CMakeFiles/solix_language.dir/flags.make
 language/CMakeFiles/solix_language.dir/codegen:
 .PHONY : language/CMakeFiles/solix_language.dir/codegen
 
-language/CMakeFiles/solix_language.dir/src/ast.cpp.o: language/CMakeFiles/solix_language.dir/flags.make
-language/CMakeFiles/solix_language.dir/src/ast.cpp.o: /home/jehud/Projects/enigma/language/src/ast.cpp
-language/CMakeFiles/solix_language.dir/src/ast.cpp.o: language/CMakeFiles/solix_language.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object language/CMakeFiles/solix_language.dir/src/ast.cpp.o"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT language/CMakeFiles/solix_language.dir/src/ast.cpp.o -MF CMakeFiles/solix_language.dir/src/ast.cpp.o.d -o CMakeFiles/solix_language.dir/src/ast.cpp.o -c /home/jehud/Projects/enigma/language/src/ast.cpp
-
-language/CMakeFiles/solix_language.dir/src/ast.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_language.dir/src/ast.cpp.i"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/language/src/ast.cpp > CMakeFiles/solix_language.dir/src/ast.cpp.i
-
-language/CMakeFiles/solix_language.dir/src/ast.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_language.dir/src/ast.cpp.s"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/language/src/ast.cpp -o CMakeFiles/solix_language.dir/src/ast.cpp.s
-
-language/CMakeFiles/solix_language.dir/src/compiler.cpp.o: language/CMakeFiles/solix_language.dir/flags.make
-language/CMakeFiles/solix_language.dir/src/compiler.cpp.o: /home/jehud/Projects/enigma/language/src/compiler.cpp
-language/CMakeFiles/solix_language.dir/src/compiler.cpp.o: language/CMakeFiles/solix_language.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object language/CMakeFiles/solix_language.dir/src/compiler.cpp.o"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT language/CMakeFiles/solix_language.dir/src/compiler.cpp.o -MF CMakeFiles/solix_language.dir/src/compiler.cpp.o.d -o CMakeFiles/solix_language.dir/src/compiler.cpp.o -c /home/jehud/Projects/enigma/language/src/compiler.cpp
-
-language/CMakeFiles/solix_language.dir/src/compiler.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_language.dir/src/compiler.cpp.i"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/language/src/compiler.cpp > CMakeFiles/solix_language.dir/src/compiler.cpp.i
-
-language/CMakeFiles/solix_language.dir/src/compiler.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_language.dir/src/compiler.cpp.s"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/language/src/compiler.cpp -o CMakeFiles/solix_language.dir/src/compiler.cpp.s
-
-language/CMakeFiles/solix_language.dir/src/diagnostics.cpp.o: language/CMakeFiles/solix_language.dir/flags.make
-language/CMakeFiles/solix_language.dir/src/diagnostics.cpp.o: /home/jehud/Projects/enigma/language/src/diagnostics.cpp
-language/CMakeFiles/solix_language.dir/src/diagnostics.cpp.o: language/CMakeFiles/solix_language.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object language/CMakeFiles/solix_language.dir/src/diagnostics.cpp.o"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT language/CMakeFiles/solix_language.dir/src/diagnostics.cpp.o -MF CMakeFiles/solix_language.dir/src/diagnostics.cpp.o.d -o CMakeFiles/solix_language.dir/src/diagnostics.cpp.o -c /home/jehud/Projects/enigma/language/src/diagnostics.cpp
-
-language/CMakeFiles/solix_language.dir/src/diagnostics.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_language.dir/src/diagnostics.cpp.i"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/language/src/diagnostics.cpp > CMakeFiles/solix_language.dir/src/diagnostics.cpp.i
-
-language/CMakeFiles/solix_language.dir/src/diagnostics.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_language.dir/src/diagnostics.cpp.s"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/language/src/diagnostics.cpp -o CMakeFiles/solix_language.dir/src/diagnostics.cpp.s
-
 language/CMakeFiles/solix_language.dir/src/lexer.cpp.o: language/CMakeFiles/solix_language.dir/flags.make
 language/CMakeFiles/solix_language.dir/src/lexer.cpp.o: /home/jehud/Projects/enigma/language/src/lexer.cpp
 language/CMakeFiles/solix_language.dir/src/lexer.cpp.o: language/CMakeFiles/solix_language.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object language/CMakeFiles/solix_language.dir/src/lexer.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object language/CMakeFiles/solix_language.dir/src/lexer.cpp.o"
 	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT language/CMakeFiles/solix_language.dir/src/lexer.cpp.o -MF CMakeFiles/solix_language.dir/src/lexer.cpp.o.d -o CMakeFiles/solix_language.dir/src/lexer.cpp.o -c /home/jehud/Projects/enigma/language/src/lexer.cpp
 
 language/CMakeFiles/solix_language.dir/src/lexer.cpp.i: cmake_force
@@ -131,7 +89,7 @@ language/CMakeFiles/solix_language.dir/src/lexer.cpp.s: cmake_force
 language/CMakeFiles/solix_language.dir/src/parser.cpp.o: language/CMakeFiles/solix_language.dir/flags.make
 language/CMakeFiles/solix_language.dir/src/parser.cpp.o: /home/jehud/Projects/enigma/language/src/parser.cpp
 language/CMakeFiles/solix_language.dir/src/parser.cpp.o: language/CMakeFiles/solix_language.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object language/CMakeFiles/solix_language.dir/src/parser.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object language/CMakeFiles/solix_language.dir/src/parser.cpp.o"
 	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT language/CMakeFiles/solix_language.dir/src/parser.cpp.o -MF CMakeFiles/solix_language.dir/src/parser.cpp.o.d -o CMakeFiles/solix_language.dir/src/parser.cpp.o -c /home/jehud/Projects/enigma/language/src/parser.cpp
 
 language/CMakeFiles/solix_language.dir/src/parser.cpp.i: cmake_force
@@ -142,57 +100,51 @@ language/CMakeFiles/solix_language.dir/src/parser.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_language.dir/src/parser.cpp.s"
 	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/language/src/parser.cpp -o CMakeFiles/solix_language.dir/src/parser.cpp.s
 
-language/CMakeFiles/solix_language.dir/src/runtime.cpp.o: language/CMakeFiles/solix_language.dir/flags.make
-language/CMakeFiles/solix_language.dir/src/runtime.cpp.o: /home/jehud/Projects/enigma/language/src/runtime.cpp
-language/CMakeFiles/solix_language.dir/src/runtime.cpp.o: language/CMakeFiles/solix_language.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object language/CMakeFiles/solix_language.dir/src/runtime.cpp.o"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT language/CMakeFiles/solix_language.dir/src/runtime.cpp.o -MF CMakeFiles/solix_language.dir/src/runtime.cpp.o.d -o CMakeFiles/solix_language.dir/src/runtime.cpp.o -c /home/jehud/Projects/enigma/language/src/runtime.cpp
+language/CMakeFiles/solix_language.dir/src/semantic.cpp.o: language/CMakeFiles/solix_language.dir/flags.make
+language/CMakeFiles/solix_language.dir/src/semantic.cpp.o: /home/jehud/Projects/enigma/language/src/semantic.cpp
+language/CMakeFiles/solix_language.dir/src/semantic.cpp.o: language/CMakeFiles/solix_language.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object language/CMakeFiles/solix_language.dir/src/semantic.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT language/CMakeFiles/solix_language.dir/src/semantic.cpp.o -MF CMakeFiles/solix_language.dir/src/semantic.cpp.o.d -o CMakeFiles/solix_language.dir/src/semantic.cpp.o -c /home/jehud/Projects/enigma/language/src/semantic.cpp
 
-language/CMakeFiles/solix_language.dir/src/runtime.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_language.dir/src/runtime.cpp.i"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/language/src/runtime.cpp > CMakeFiles/solix_language.dir/src/runtime.cpp.i
+language/CMakeFiles/solix_language.dir/src/semantic.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_language.dir/src/semantic.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/language/src/semantic.cpp > CMakeFiles/solix_language.dir/src/semantic.cpp.i
 
-language/CMakeFiles/solix_language.dir/src/runtime.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_language.dir/src/runtime.cpp.s"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/language/src/runtime.cpp -o CMakeFiles/solix_language.dir/src/runtime.cpp.s
+language/CMakeFiles/solix_language.dir/src/semantic.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_language.dir/src/semantic.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/language/src/semantic.cpp -o CMakeFiles/solix_language.dir/src/semantic.cpp.s
 
-language/CMakeFiles/solix_language.dir/src/sementic.cpp.o: language/CMakeFiles/solix_language.dir/flags.make
-language/CMakeFiles/solix_language.dir/src/sementic.cpp.o: /home/jehud/Projects/enigma/language/src/sementic.cpp
-language/CMakeFiles/solix_language.dir/src/sementic.cpp.o: language/CMakeFiles/solix_language.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object language/CMakeFiles/solix_language.dir/src/sementic.cpp.o"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT language/CMakeFiles/solix_language.dir/src/sementic.cpp.o -MF CMakeFiles/solix_language.dir/src/sementic.cpp.o.d -o CMakeFiles/solix_language.dir/src/sementic.cpp.o -c /home/jehud/Projects/enigma/language/src/sementic.cpp
+language/CMakeFiles/solix_language.dir/src/compiler.cpp.o: language/CMakeFiles/solix_language.dir/flags.make
+language/CMakeFiles/solix_language.dir/src/compiler.cpp.o: /home/jehud/Projects/enigma/language/src/compiler.cpp
+language/CMakeFiles/solix_language.dir/src/compiler.cpp.o: language/CMakeFiles/solix_language.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object language/CMakeFiles/solix_language.dir/src/compiler.cpp.o"
+	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT language/CMakeFiles/solix_language.dir/src/compiler.cpp.o -MF CMakeFiles/solix_language.dir/src/compiler.cpp.o.d -o CMakeFiles/solix_language.dir/src/compiler.cpp.o -c /home/jehud/Projects/enigma/language/src/compiler.cpp
 
-language/CMakeFiles/solix_language.dir/src/sementic.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_language.dir/src/sementic.cpp.i"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/language/src/sementic.cpp > CMakeFiles/solix_language.dir/src/sementic.cpp.i
+language/CMakeFiles/solix_language.dir/src/compiler.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/solix_language.dir/src/compiler.cpp.i"
+	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/jehud/Projects/enigma/language/src/compiler.cpp > CMakeFiles/solix_language.dir/src/compiler.cpp.i
 
-language/CMakeFiles/solix_language.dir/src/sementic.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_language.dir/src/sementic.cpp.s"
-	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/language/src/sementic.cpp -o CMakeFiles/solix_language.dir/src/sementic.cpp.s
+language/CMakeFiles/solix_language.dir/src/compiler.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/solix_language.dir/src/compiler.cpp.s"
+	cd /home/jehud/Projects/enigma/out/Debug/language && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/jehud/Projects/enigma/language/src/compiler.cpp -o CMakeFiles/solix_language.dir/src/compiler.cpp.s
 
 # Object files for target solix_language
 solix_language_OBJECTS = \
-"CMakeFiles/solix_language.dir/src/ast.cpp.o" \
-"CMakeFiles/solix_language.dir/src/compiler.cpp.o" \
-"CMakeFiles/solix_language.dir/src/diagnostics.cpp.o" \
 "CMakeFiles/solix_language.dir/src/lexer.cpp.o" \
 "CMakeFiles/solix_language.dir/src/parser.cpp.o" \
-"CMakeFiles/solix_language.dir/src/runtime.cpp.o" \
-"CMakeFiles/solix_language.dir/src/sementic.cpp.o"
+"CMakeFiles/solix_language.dir/src/semantic.cpp.o" \
+"CMakeFiles/solix_language.dir/src/compiler.cpp.o"
 
 # External object files for target solix_language
 solix_language_EXTERNAL_OBJECTS =
 
-language/libsolix_language.a: language/CMakeFiles/solix_language.dir/src/ast.cpp.o
-language/libsolix_language.a: language/CMakeFiles/solix_language.dir/src/compiler.cpp.o
-language/libsolix_language.a: language/CMakeFiles/solix_language.dir/src/diagnostics.cpp.o
 language/libsolix_language.a: language/CMakeFiles/solix_language.dir/src/lexer.cpp.o
 language/libsolix_language.a: language/CMakeFiles/solix_language.dir/src/parser.cpp.o
-language/libsolix_language.a: language/CMakeFiles/solix_language.dir/src/runtime.cpp.o
-language/libsolix_language.a: language/CMakeFiles/solix_language.dir/src/sementic.cpp.o
+language/libsolix_language.a: language/CMakeFiles/solix_language.dir/src/semantic.cpp.o
+language/libsolix_language.a: language/CMakeFiles/solix_language.dir/src/compiler.cpp.o
 language/libsolix_language.a: language/CMakeFiles/solix_language.dir/build.make
 language/libsolix_language.a: language/CMakeFiles/solix_language.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX static library libsolix_language.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX static library libsolix_language.a"
 	cd /home/jehud/Projects/enigma/out/Debug/language && $(CMAKE_COMMAND) -P CMakeFiles/solix_language.dir/cmake_clean_target.cmake
 	cd /home/jehud/Projects/enigma/out/Debug/language && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/solix_language.dir/link.txt --verbose=$(VERBOSE)
 

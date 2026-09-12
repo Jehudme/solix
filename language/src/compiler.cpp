@@ -90,13 +90,7 @@ std::vector<uint8_t> Compiler::compile(std::string_view source_code, std::string
     // 5. Compile all methods/functions
     for (const auto& node : ast_tree.nodes) {
         if (node->node_type == parser::NodeType::CLASS_DECLARATION) {
-            auto class_decl = static_cast<parser::ClassDeclaration*>(node.get());
-            for (const auto& child : class_decl->children) {
-                if (child->node_type == parser::NodeType::METHOD_DECLARATION || 
-                    child->node_type == parser::NodeType::CONSTRUCTOR_DECLARATION) {
-                    compileFunction(child.get());
-                }
-            }
+            compileClass(static_cast<parser::ClassDeclaration*>(node.get()));
         }
     }
     
@@ -190,6 +184,17 @@ void Compiler::compileBootSequence(std::string_view entry_point) {
     emitByte(static_cast<uint8_t>(OpCode::HALT));
 }
 
+void Compiler::compileClass(parser::ClassDeclaration* class_node) {
+    for (const auto& child : class_node->children) {
+        if (child->node_type == parser::NodeType::METHOD_DECLARATION || 
+            child->node_type == parser::NodeType::CONSTRUCTOR_DECLARATION) {
+            compileFunction(child.get());
+        } else if (child->node_type == parser::NodeType::CLASS_DECLARATION) {
+            compileClass(static_cast<parser::ClassDeclaration*>(child.get()));
+        }
+    }
+}
+
 void Compiler::compileFunction(parser::Node* function_node) {
     function_ips[function_node] = bytecode.size();
     
@@ -232,6 +237,115 @@ void Compiler::compileNode(parser::Node* node) {
         auto expr_stmt = static_cast<parser::ExpressionStatement*>(node);
         compileExpression(expr_stmt->expression.get());
         emitByte(static_cast<uint8_t>(OpCode::POP));
+    }
+    else if (node->node_type == parser::NodeType::IF_STATEMENT) {
+        auto if_stmt = static_cast<parser::IfStatement*>(node);
+        compileExpression(if_stmt->condition.get());
+        emitByte(static_cast<uint8_t>(OpCode::JUMP_IF_FALSE));
+        uint32_t patch_ip = bytecode.size();
+        emitInt32(0xFFFFFFFF);
+        
+        compileNode(if_stmt->then_branch.get());
+        
+        if (if_stmt->else_branch) {
+            emitByte(static_cast<uint8_t>(OpCode::JUMP));
+            uint32_t jump_end_ip = bytecode.size();
+            emitInt32(0xFFFFFFFF);
+            
+            uint32_t else_start = bytecode.size();
+            bytecode[patch_ip] = (else_start >> 24) & 0xFF;
+            bytecode[patch_ip+1] = (else_start >> 16) & 0xFF;
+            bytecode[patch_ip+2] = (else_start >> 8) & 0xFF;
+            bytecode[patch_ip+3] = else_start & 0xFF;
+            
+            compileNode(if_stmt->else_branch.get());
+            
+            uint32_t end_ip = bytecode.size();
+            bytecode[jump_end_ip] = (end_ip >> 24) & 0xFF;
+            bytecode[jump_end_ip+1] = (end_ip >> 16) & 0xFF;
+            bytecode[jump_end_ip+2] = (end_ip >> 8) & 0xFF;
+            bytecode[jump_end_ip+3] = end_ip & 0xFF;
+        } else {
+            uint32_t end_ip = bytecode.size();
+            bytecode[patch_ip] = (end_ip >> 24) & 0xFF;
+            bytecode[patch_ip+1] = (end_ip >> 16) & 0xFF;
+            bytecode[patch_ip+2] = (end_ip >> 8) & 0xFF;
+            bytecode[patch_ip+3] = end_ip & 0xFF;
+        }
+    }
+    else if (node->node_type == parser::NodeType::WHILE_STATEMENT) {
+        auto while_stmt = static_cast<parser::WhileStatement*>(node);
+        uint32_t start_ip = bytecode.size();
+        compileExpression(while_stmt->condition.get());
+        emitByte(static_cast<uint8_t>(OpCode::JUMP_IF_FALSE));
+        uint32_t patch_ip = bytecode.size();
+        emitInt32(0xFFFFFFFF);
+        
+        compileNode(while_stmt->body.get());
+        
+        emitByte(static_cast<uint8_t>(OpCode::JUMP));
+        emitInt32(start_ip);
+        
+        uint32_t end_ip = bytecode.size();
+        bytecode[patch_ip] = (end_ip >> 24) & 0xFF;
+            bytecode[patch_ip+1] = (end_ip >> 16) & 0xFF;
+            bytecode[patch_ip+2] = (end_ip >> 8) & 0xFF;
+            bytecode[patch_ip+3] = end_ip & 0xFF;
+    }
+    else if (node->node_type == parser::NodeType::DO_WHILE_STATEMENT) {
+        auto do_while_stmt = static_cast<parser::DoWhileStatement*>(node);
+        uint32_t start_ip = bytecode.size();
+        
+        compileNode(do_while_stmt->body.get());
+        compileExpression(do_while_stmt->condition.get());
+        
+        emitByte(static_cast<uint8_t>(OpCode::JUMP_IF_FALSE));
+        uint32_t patch_ip = bytecode.size();
+        emitInt32(0xFFFFFFFF);
+        
+        emitByte(static_cast<uint8_t>(OpCode::JUMP));
+        emitInt32(start_ip);
+        
+        uint32_t end_ip = bytecode.size();
+        bytecode[patch_ip] = (end_ip >> 24) & 0xFF;
+            bytecode[patch_ip+1] = (end_ip >> 16) & 0xFF;
+            bytecode[patch_ip+2] = (end_ip >> 8) & 0xFF;
+            bytecode[patch_ip+3] = end_ip & 0xFF;
+    }
+    else if (node->node_type == parser::NodeType::FOR_STATEMENT) {
+        auto for_stmt = static_cast<parser::ForStatement*>(node);
+        if (for_stmt->initialization) {
+            compileNode(for_stmt->initialization.get());
+        }
+        
+        uint32_t start_ip = bytecode.size();
+        
+        uint32_t patch_ip = 0;
+        bool has_condition = for_stmt->condition != nullptr;
+        if (has_condition) {
+            compileExpression(for_stmt->condition.get());
+            emitByte(static_cast<uint8_t>(OpCode::JUMP_IF_FALSE));
+            patch_ip = bytecode.size();
+            emitInt32(0xFFFFFFFF);
+        }
+        
+        compileNode(for_stmt->body.get());
+        
+        if (for_stmt->iteration) {
+            compileExpression(for_stmt->iteration.get());
+            emitByte(static_cast<uint8_t>(OpCode::POP));
+        }
+        
+        emitByte(static_cast<uint8_t>(OpCode::JUMP));
+        emitInt32(start_ip);
+        
+        if (has_condition) {
+            uint32_t end_ip = bytecode.size();
+            bytecode[patch_ip] = (end_ip >> 24) & 0xFF;
+            bytecode[patch_ip+1] = (end_ip >> 16) & 0xFF;
+            bytecode[patch_ip+2] = (end_ip >> 8) & 0xFF;
+            bytecode[patch_ip+3] = end_ip & 0xFF;
+        }
     }
     else if (node->node_type == parser::NodeType::RETURN_STATEMENT) {
         auto ret_stmt = static_cast<parser::ReturnStatement*>(node);
@@ -416,14 +530,66 @@ std::string Compiler::disassemble(const std::vector<uint8_t>& bcode) const {
                 ss << "GET_LOCAL " << val << "\n";
                 break;
             }
+            case OpCode::GET_GLOBAL: {
+                uint32_t val = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                i += 4;
+                ss << "GET_GLOBAL " << val << "\n";
+                break;
+            }
             case OpCode::SET_GLOBAL: {
                 uint32_t val = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
                 i += 4;
                 ss << "SET_GLOBAL " << val << "\n";
                 break;
             }
+            case OpCode::GET_PROPERTY: {
+                uint32_t val = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                i += 4;
+                ss << "GET_PROPERTY " << val << "\n";
+                break;
+            }
+            case OpCode::SET_PROPERTY: {
+                uint32_t val = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                i += 4;
+                ss << "SET_PROPERTY " << val << "\n";
+                break;
+            }
             case OpCode::ALLOC_STATIC: ss << "ALLOC_STATIC\n"; break;
+            case OpCode::SUBTRACT: ss << "SUBTRACT\n"; break;
+            case OpCode::MULTIPLY: ss << "MULTIPLY\n"; break;
+            case OpCode::DIVIDE: ss << "DIVIDE\n"; break;
+            case OpCode::MODULO: ss << "MODULO\n"; break;
+            case OpCode::EQUAL: ss << "EQUAL\n"; break;
+            case OpCode::NOT_EQUAL: ss << "NOT_EQUAL\n"; break;
+            case OpCode::LESS: ss << "LESS\n"; break;
+            case OpCode::LESS_EQUAL: ss << "LESS_EQUAL\n"; break;
+            case OpCode::GREATER: ss << "GREATER\n"; break;
+            case OpCode::GREATER_EQUAL: ss << "GREATER_EQUAL\n"; break;
+            case OpCode::CONV_I8: ss << "CONV_I8\n"; break;
+            case OpCode::CONV_I16: ss << "CONV_I16\n"; break;
+            case OpCode::CONV_I32: ss << "CONV_I32\n"; break;
+            case OpCode::CONV_I64: ss << "CONV_I64\n"; break;
+            case OpCode::CONV_U8: ss << "CONV_U8\n"; break;
+            case OpCode::CONV_U16: ss << "CONV_U16\n"; break;
+            case OpCode::CONV_U32: ss << "CONV_U32\n"; break;
+            case OpCode::CONV_U64: ss << "CONV_U64\n"; break;
+            case OpCode::CONV_F32: ss << "CONV_F32\n"; break;
+            case OpCode::CONV_F64: ss << "CONV_F64\n"; break;
+            case OpCode::ALLOC_DYNAMIC: ss << "ALLOC_DYNAMIC\n"; break;
+            case OpCode::DUP: ss << "DUP\n"; break;
             case OpCode::HALT: ss << "HALT\n"; break;
+            case OpCode::JUMP: {
+                uint32_t jump_ip = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                ss << "JUMP " << jump_ip << "\n";
+                i += 4;
+                break;
+            }
+            case OpCode::JUMP_IF_FALSE: {
+                uint32_t jump_ip = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                ss << "JUMP_IF_FALSE " << jump_ip << "\n";
+                i += 4;
+                break;
+            }
             case OpCode::CALL: ss << "CALL\n"; break;
             case OpCode::RETURN: ss << "RETURN\n"; break;
             case OpCode::ADD: ss << "ADD\n"; break;

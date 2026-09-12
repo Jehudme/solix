@@ -280,12 +280,12 @@ tests/clean: _deps/catch2-build/clean
 language/CMakeFiles/solix_language.dir/all: _deps/spdlog-build/CMakeFiles/spdlog.dir/all
 	$(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/depend
 	$(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=84,85,86,87,88,89 "Built target solix_language"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=72,73,74,75 "Built target solix_language"
 .PHONY : language/CMakeFiles/solix_language.dir/all
 
 # Build rule for subdir invocation for target.
 language/CMakeFiles/solix_language.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 13
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 10
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 language/CMakeFiles/solix_language.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 0
 .PHONY : language/CMakeFiles/solix_language.dir/rule
@@ -297,7 +297,7 @@ solix_language: language/CMakeFiles/solix_language.dir/rule
 # codegen rule for target.
 language/CMakeFiles/solix_language.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f language/CMakeFiles/solix_language.dir/build.make language/CMakeFiles/solix_language.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=84,85,86,87,88,89 "Finished codegen for target solix_language"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=72,73,74,75 "Finished codegen for target solix_language"
 .PHONY : language/CMakeFiles/solix_language.dir/codegen
 
 # clean rule for target.
@@ -312,12 +312,12 @@ language/CMakeFiles/solix_language.dir/clean:
 _deps/spdlog-build/CMakeFiles/spdlog.dir/all:
 	$(MAKE) $(MAKESILENT) -f _deps/spdlog-build/CMakeFiles/spdlog.dir/build.make _deps/spdlog-build/CMakeFiles/spdlog.dir/depend
 	$(MAKE) $(MAKESILENT) -f _deps/spdlog-build/CMakeFiles/spdlog.dir/build.make _deps/spdlog-build/CMakeFiles/spdlog.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=94,95,96,97,98,99,100 "Built target spdlog"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=95,96,97,98,99,100 "Built target spdlog"
 .PHONY : _deps/spdlog-build/CMakeFiles/spdlog.dir/all
 
 # Build rule for subdir invocation for target.
 _deps/spdlog-build/CMakeFiles/spdlog.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 7
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 6
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 _deps/spdlog-build/CMakeFiles/spdlog.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 0
 .PHONY : _deps/spdlog-build/CMakeFiles/spdlog.dir/rule
@@ -329,7 +329,7 @@ spdlog: _deps/spdlog-build/CMakeFiles/spdlog.dir/rule
 # codegen rule for target.
 _deps/spdlog-build/CMakeFiles/spdlog.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f _deps/spdlog-build/CMakeFiles/spdlog.dir/build.make _deps/spdlog-build/CMakeFiles/spdlog.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=94,95,96,97,98,99,100 "Finished codegen for target spdlog"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=95,96,97,98,99,100 "Finished codegen for target spdlog"
 .PHONY : _deps/spdlog-build/CMakeFiles/spdlog.dir/codegen
 
 # clean rule for target.
@@ -346,12 +346,12 @@ launcher/CMakeFiles/solix_launcher.dir/all: _deps/spdlog-build/CMakeFiles/spdlog
 launcher/CMakeFiles/solix_launcher.dir/all: _deps/cli11-build/src/CMakeFiles/CLI11.dir/all
 	$(MAKE) $(MAKESILENT) -f launcher/CMakeFiles/solix_launcher.dir/build.make launcher/CMakeFiles/solix_launcher.dir/depend
 	$(MAKE) $(MAKESILENT) -f launcher/CMakeFiles/solix_launcher.dir/build.make launcher/CMakeFiles/solix_launcher.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=90,91,92 "Built target solix_launcher"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=76,77 "Built target solix_launcher"
 .PHONY : launcher/CMakeFiles/solix_launcher.dir/all
 
 # Build rule for subdir invocation for target.
 launcher/CMakeFiles/solix_launcher.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 16
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 12
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 launcher/CMakeFiles/solix_launcher.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 0
 .PHONY : launcher/CMakeFiles/solix_launcher.dir/rule
@@ -363,7 +363,7 @@ solix_launcher: launcher/CMakeFiles/solix_launcher.dir/rule
 # codegen rule for target.
 launcher/CMakeFiles/solix_launcher.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f launcher/CMakeFiles/solix_launcher.dir/build.make launcher/CMakeFiles/solix_launcher.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=90,91,92 "Finished codegen for target solix_launcher"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=76,77 "Finished codegen for target solix_launcher"
 .PHONY : launcher/CMakeFiles/solix_launcher.dir/codegen
 
 # clean rule for target.
@@ -413,12 +413,12 @@ tests/CMakeFiles/solix_tests.dir/all: _deps/catch2-build/src/CMakeFiles/Catch2.d
 tests/CMakeFiles/solix_tests.dir/all: _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/all
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/solix_tests.dir/build.make tests/CMakeFiles/solix_tests.dir/depend
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/solix_tests.dir/build.make tests/CMakeFiles/solix_tests.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=93 "Built target solix_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94 "Built target solix_tests"
 .PHONY : tests/CMakeFiles/solix_tests.dir/all
 
 # Build rule for subdir invocation for target.
 tests/CMakeFiles/solix_tests.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 97
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 98
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/solix_tests.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 0
 .PHONY : tests/CMakeFiles/solix_tests.dir/rule
@@ -430,7 +430,7 @@ solix_tests: tests/CMakeFiles/solix_tests.dir/rule
 # codegen rule for target.
 tests/CMakeFiles/solix_tests.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/solix_tests.dir/build.make tests/CMakeFiles/solix_tests.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=93 "Finished codegen for target solix_tests"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94 "Finished codegen for target solix_tests"
 .PHONY : tests/CMakeFiles/solix_tests.dir/codegen
 
 # clean rule for target.
@@ -445,12 +445,12 @@ tests/CMakeFiles/solix_tests.dir/clean:
 _deps/catch2-build/src/CMakeFiles/Catch2.dir/all:
 	$(MAKE) $(MAKESILENT) -f _deps/catch2-build/src/CMakeFiles/Catch2.dir/build.make _deps/catch2-build/src/CMakeFiles/Catch2.dir/depend
 	$(MAKE) $(MAKESILENT) -f _deps/catch2-build/src/CMakeFiles/Catch2.dir/build.make _deps/catch2-build/src/CMakeFiles/Catch2.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81 "Built target Catch2"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70 "Built target Catch2"
 .PHONY : _deps/catch2-build/src/CMakeFiles/Catch2.dir/all
 
 # Build rule for subdir invocation for target.
 _deps/catch2-build/src/CMakeFiles/Catch2.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 81
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 70
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 _deps/catch2-build/src/CMakeFiles/Catch2.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 0
 .PHONY : _deps/catch2-build/src/CMakeFiles/Catch2.dir/rule
@@ -462,7 +462,7 @@ Catch2: _deps/catch2-build/src/CMakeFiles/Catch2.dir/rule
 # codegen rule for target.
 _deps/catch2-build/src/CMakeFiles/Catch2.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f _deps/catch2-build/src/CMakeFiles/Catch2.dir/build.make _deps/catch2-build/src/CMakeFiles/Catch2.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81 "Finished codegen for target Catch2"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70 "Finished codegen for target Catch2"
 .PHONY : _deps/catch2-build/src/CMakeFiles/Catch2.dir/codegen
 
 # clean rule for target.
@@ -477,12 +477,12 @@ _deps/catch2-build/src/CMakeFiles/Catch2.dir/clean:
 _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/all: _deps/catch2-build/src/CMakeFiles/Catch2.dir/all
 	$(MAKE) $(MAKESILENT) -f _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/build.make _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/depend
 	$(MAKE) $(MAKESILENT) -f _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/build.make _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=82,83 "Built target Catch2WithMain"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=71 "Built target Catch2WithMain"
 .PHONY : _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/all
 
 # Build rule for subdir invocation for target.
 _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 83
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 71
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/jehud/Projects/enigma/out/Debug/CMakeFiles 0
 .PHONY : _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/rule
@@ -494,7 +494,7 @@ Catch2WithMain: _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/rule
 # codegen rule for target.
 _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/build.make _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=82,83 "Finished codegen for target Catch2WithMain"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/jehud/Projects/enigma/out/Debug/CMakeFiles --progress-num=71 "Finished codegen for target Catch2WithMain"
 .PHONY : _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/codegen
 
 # clean rule for target.
