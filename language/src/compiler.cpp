@@ -379,6 +379,17 @@ void Compiler::compileExpression(parser::Node* expr) {
             default: throw std::runtime_error("Unsupported binary operator in compiler");
         }
     }
+    else if (expr->node_type == parser::NodeType::UNARY_EXPRESSION) {
+        auto uny = static_cast<parser::UnaryExpression*>(expr);
+        compileExpression(uny->operand.get());
+        if (uny->op == lexer::TokenType::OPERATOR_LOGICAL_NOT) {
+            emitByte(static_cast<uint8_t>(OpCode::LOGICAL_NOT));
+        } else if (uny->op == lexer::TokenType::OPERATOR_MINUS) {
+            emitByte(static_cast<uint8_t>(OpCode::NEGATE));
+        } else {
+            // Ignore
+        }
+    }
     else if (expr->node_type == parser::NodeType::CAST_EXPRESSION) {
         auto cast_expr = static_cast<parser::CastExpression*>(expr);
         compileExpression(cast_expr->expression.get());
