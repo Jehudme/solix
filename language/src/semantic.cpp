@@ -259,9 +259,12 @@ TypeInfo SemanticAnalyzer::resolveType(parser::AstTree& tree, const std::string&
         type_str == "int8" || type_str == "int16" || type_str == "int32" || type_str == "int64" ||
         type_str == "uint8" || type_str == "uint16" || type_str == "uint32" || type_str == "uint64" ||
         type_str == "float32" || type_str == "float64" || 
-        type_str == "char" || type_str == "string") {
+        type_str == "char") {
         info.base_name = type_str;
         info.is_primitive = true;
+    } else if (type_str == "string") {
+        info.base_name = type_str;
+        info.is_primitive = false;
     } else {
         parser::Node* symbol = nullptr;
         std::string full_name = current_package + type_str;
@@ -295,15 +298,24 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
         if (lit->token.type == lexer::TokenType::NUMBER) {
             if (lit->token.value.value_or("").find('.') != std::string::npos) result.base_name = "float64";
             else result.base_name = "int32";
+            result.is_primitive = true;
         }
-        else if (lit->token.type == lexer::TokenType::STRING) result.base_name = "string";
-        else if (lit->token.type == lexer::TokenType::IDENTIFIER && (lit->token.value == "true" || lit->token.value == "false")) result.base_name = "bool";
-        result.is_primitive = true;
+        else if (lit->token.type == lexer::TokenType::STRING) {
+            result.base_name = "string";
+            result.is_primitive = false;
+        }
+        else if (lit->token.type == lexer::TokenType::IDENTIFIER && (lit->token.value == "true" || lit->token.value == "false")) {
+            result.base_name = "bool";
+            result.is_primitive = true;
+        }
     } else if (expr->node_type == parser::NodeType::IDENTIFIER_EXPRESSION) {
         auto identifier_expr = static_cast<parser::IdentifierExpression*>(expr);
         if (identifier_expr->name == "true" || identifier_expr->name == "false") {
             result.base_name = "bool";
             result.is_primitive = true;
+        } else if (identifier_expr->name == "null") {
+            result.base_name = "null";
+            result.is_primitive = false;
         } else if (identifier_expr->name == "this") {
             if (!current_class) throw std::runtime_error("Cannot use 'this' outside of a class");
             result.base_name = current_package + current_class->class_name;
@@ -412,6 +424,14 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
         if (!array_literal->elements.empty()) {
             result = evaluateExpression(tree, array_literal->elements[0].get());
             result.array_depth++;
+            
+            // Type-check remaining elements
+            for (size_t i = 1; i < array_literal->elements.size(); i++) {
+                TypeInfo element_type = evaluateExpression(tree, array_literal->elements[i].get());
+                if (element_type.base_name != result.base_name || element_type.array_depth != result.array_depth - 1) {
+                    throw std::runtime_error("Array literal elements must have consistent types");
+                }
+            }
         }
     }
     
