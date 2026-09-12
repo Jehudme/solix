@@ -7,6 +7,18 @@
 namespace solix {
 namespace semantic {
 
+[[noreturn]] static void throw_semantic_error(parser::Node* node, const std::string& msg) {
+    std::string err = "[Semantic Error] ";
+    if (node) {
+        if (!node->file_path.empty()) {
+            err += node->file_path.string() + ":";
+        }
+        err += std::to_string(node->line) + ":" + std::to_string(node->column) + " - ";
+    }
+    err += msg;
+    throw std::runtime_error(err);
+}
+
 std::string TypeInfo::to_string() const {
     std::string result_string = "";
     result_string += base_name;
@@ -40,7 +52,7 @@ void SemanticAnalyzer::popScope() {
 void SemanticAnalyzer::declareLocal(const std::string& name, parser::Node* node, const std::vector<lexer::Token>& tokens) {
     if (scope_stack.empty()) return;
     if (scope_stack.back().symbols.count(name)) {
-        throw std::runtime_error("Duplicate local variable in same scope: " + name);
+        throw_semantic_error(node, "Duplicate local variable in same scope: " + name);
     }
     scope_stack.back().symbols[name] = node;
 }
@@ -151,27 +163,27 @@ void SemanticAnalyzer::registerGlobalSymbols(parser::AstTree& tree, parser::Node
     } else if (root->node_type == parser::NodeType::CLASS_DECLARATION) {
         auto class_declaration = static_cast<parser::ClassDeclaration*>(root);
         std::string full_name = prefix + class_declaration->class_name;
-        if (tree.symbols.count(full_name)) throw std::runtime_error("Duplicate global symbol: " + full_name);
+        if (tree.symbols.count(full_name)) throw_semantic_error(root, "Duplicate global symbol: " + full_name);
         class_declaration->symbol_name = full_name;
         tree.symbols[full_name] = class_declaration;
         my_prefix = full_name + ".";
     } else if (root->node_type == parser::NodeType::ENUM_DECLARATION) {
         auto enm = static_cast<parser::EnumDeclaration*>(root);
         std::string full_name = prefix + enm->enum_name;
-        if (tree.symbols.count(full_name)) throw std::runtime_error("Duplicate global symbol: " + full_name);
+        if (tree.symbols.count(full_name)) throw_semantic_error(root, "Duplicate global symbol: " + full_name);
         enm->symbol_name = full_name;
         tree.symbols[full_name] = enm;
         my_prefix = full_name + ".";
     } else if (root->node_type == parser::NodeType::ALIAS_STATEMENT) {
         auto alias = static_cast<parser::AliasStatement*>(root);
         std::string full_name = prefix + alias->alias_name;
-        if (tree.symbols.count(full_name)) throw std::runtime_error("Duplicate global symbol: " + full_name);
+        if (tree.symbols.count(full_name)) throw_semantic_error(root, "Duplicate global symbol: " + full_name);
         alias->symbol_name = full_name;
         tree.symbols[full_name] = alias;
     } else if (root->node_type == parser::NodeType::FIELD_DECLARATION) {
         auto field = static_cast<parser::FieldDeclaration*>(root);
         std::string full_name = prefix + field->field_name;
-        if (tree.symbols.count(full_name)) throw std::runtime_error("Duplicate field symbol: " + full_name);
+        if (tree.symbols.count(full_name)) throw_semantic_error(root, "Duplicate field symbol: " + full_name);
         field->symbol_name = full_name;
         tree.symbols[full_name] = field;
     } else if (root->node_type == parser::NodeType::METHOD_DECLARATION) {
@@ -232,6 +244,10 @@ void SemanticAnalyzer::resolveAndCheck(parser::AstTree& tree, parser::Node* root
             param->resolved_array_depth = type_info.array_depth;
             declareLocal(param->var_name, param.get(), {});
         }
+    } else if (root->node_type == parser::NodeType::BREAK_STATEMENT || root->node_type == parser::NodeType::CONTINUE_STATEMENT) {
+        if (loop_depth <= 0) {
+            throw_semantic_error(root, "break or continue statement outside of loop");
+        }
     } else if (root->node_type == parser::NodeType::VARIABLE_DECLARATION) {
         auto variable_declaration = static_cast<parser::VariableDeclaration*>(root);
         variable_declaration->memory_index = localVariableIndex++;
@@ -251,7 +267,7 @@ void SemanticAnalyzer::resolveAndCheck(parser::AstTree& tree, parser::Node* root
         if (variable_declaration->initializer) {
             TypeInfo initializer_type = evaluateExpression(tree, variable_declaration->initializer.get());
             if (initializer_type.base_name != variable_declaration->resolved_type || initializer_type.array_depth != variable_declaration->resolved_array_depth) {
-                throw std::runtime_error("Type mismatch in assignment for variable " + variable_declaration->var_name + ": expected " + variable_declaration->resolved_type + " (array_depth: " + std::to_string(variable_declaration->resolved_array_depth) + "), got " + initializer_type.base_name + " (array_depth: " + std::to_string(initializer_type.array_depth) + ")");
+                throw_semantic_error(variable_declaration, "Type mismatch in assignment for variable " + variable_declaration->var_name + ": expected " + variable_declaration->resolved_type + " (array_depth: " + std::to_string(variable_declaration->resolved_array_depth) + "), got " + initializer_type.base_name + " (array_depth: " + std::to_string(initializer_type.array_depth) + ")");
             }
         }
     } else if (root->node_type == parser::NodeType::FOR_STATEMENT) {
@@ -295,7 +311,7 @@ void SemanticAnalyzer::resolveAndCheck(parser::AstTree& tree, parser::Node* root
             TypeInfo val_type = evaluateExpression(tree, return_stmt->value.get());
             if (current_method) {
                 TypeInfo expected_type = resolveType(tree, current_method->return_type, {});
-                if (val_type != expected_type) throw std::runtime_error("Return type mismatch");
+                if (val_type != expected_type) throw_semantic_error(return_statement, "Return type mismatch");
             }
         }
     }
@@ -319,6 +335,24 @@ void SemanticAnalyzer::resolveAndCheck(parser::AstTree& tree, parser::Node* root
         }
     }
     
+    } else if (root->node_type == parser::NodeType::LITERAL_EXPRESSION ||
+               root->node_type == parser::NodeType::IDENTIFIER_EXPRESSION ||
+               root->node_type == parser::NodeType::BINARY_EXPRESSION ||
+               root->node_type == parser::NodeType::ASSIGNMENT_EXPRESSION ||
+               root->node_type == parser::NodeType::MEMBER_ACCESS_EXPRESSION ||
+               root->node_type == parser::NodeType::ARRAY_ACCESS_EXPRESSION ||
+               root->node_type == parser::NodeType::CALL_EXPRESSION ||
+               root->node_type == parser::NodeType::UNARY_EXPRESSION ||
+               root->node_type == parser::NodeType::TERNARY_EXPRESSION ||
+               root->node_type == parser::NodeType::CAST_EXPRESSION ||
+               root->node_type == parser::NodeType::NEW_INSTANCE_EXPRESSION ||
+               root->node_type == parser::NodeType::ARRAY_CREATION_EXPRESSION ||
+               root->node_type == parser::NodeType::ARRAY_LITERAL_EXPRESSION ||
+               root->node_type == parser::NodeType::PACKAGE_STATEMENT) {
+        // Handled elsewhere or safe to ignore here
+    } else {
+        throw_semantic_error(root, "Unhandled AST node type in semantic analyzer: " + std::to_string(static_cast<int>(root->node_type)));
+    }
     if (is_scope_creator) popScope();
     
     current_class = previous_class;
@@ -361,7 +395,7 @@ TypeInfo SemanticAnalyzer::resolveType(parser::AstTree& tree, const std::string&
             symbol = tree.symbols[type_str];
             info.base_name = type_str;
         } else {
-            throw std::runtime_error("Undefined type: " + type_str + " (raw: " + raw_type_name + "), class_relative: " + class_relative + ", current_package: " + current_package);
+            throw_semantic_error(nullptr, "Undefined type: " + type_str + " (raw: " + raw_type_name + "), class_relative: " + class_relative + ", current_package: " + current_package);
         }
 
         if (symbol->node_type == parser::NodeType::ALIAS_STATEMENT) {
@@ -403,15 +437,15 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
             result.base_name = "null";
             result.is_primitive = false;
         } else if (identifier_expr->name == "this") {
-            if (!current_class) throw std::runtime_error("'this' used outside of class");
+            if (!current_class) throw_semantic_error(expr, "'this' used outside of class");
             result.base_name = current_class->symbol_name;
             result.class_ref = current_class;
             if (result.base_name == "com.solix.advanced.test.CoreProcessor") {
-                throw std::runtime_error("Wait! this is evaluating to com.solix.advanced.test.CoreProcessor! class_name: " + current_class->class_name);
+                throw_semantic_error(expr, "Wait! this is evaluating to com.solix.advanced.test.CoreProcessor! class_name: " + current_class->class_name);
             }
         } else {
             parser::Node* declaration_node = lookupSymbol(tree, identifier_expr->name);
-            if (!declaration_node) throw std::runtime_error("Undefined variable: " + identifier_expr->name);
+            if (!declaration_node) throw_semantic_error(identifier_expr, "Undefined variable: " + identifier_expr->name);
             identifier_expr->resolved_declaration = declaration_node;
             
             if (declaration_node->node_type == parser::NodeType::CLASS_DECLARATION) {
@@ -447,7 +481,7 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
         TypeInfo target = evaluateExpression(tree, assignment_expr->target.get());
         TypeInfo val = evaluateExpression(tree, assignment_expr->value.get());
         if (target.base_name != val.base_name || target.array_depth != val.array_depth) {
-            throw std::runtime_error("Type mismatch in assignment: expected " + target.base_name + " (depth " + std::to_string(target.array_depth) + "), got " + val.base_name + " (depth " + std::to_string(val.array_depth) + ")");
+            throw_semantic_error(expr, "Type mismatch in assignment: expected " + target.base_name + " (depth " + std::to_string(target.array_depth) + "), got " + val.base_name + " (depth " + std::to_string(val.array_depth) + ")");
         }
         result = target;
     } else if (expr->node_type == parser::NodeType::MEMBER_ACCESS_EXPRESSION) {
@@ -459,9 +493,9 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
             std::string obj_type = object_type_info.is_primitive ? "primitive" : "undefined type";
             if (member_access_expr->object->node_type == parser::NodeType::IDENTIFIER_EXPRESSION) {
                 auto ident = static_cast<parser::IdentifierExpression*>(member_access_expr->object.get());
-                throw std::runtime_error("Cannot access member on primitive or undefined type: " + object_type_info.base_name + " (" + obj_type + ") for ident: " + ident->name + ". Node type of ident decl: " + (ident->resolved_declaration ? std::to_string(static_cast<int>(ident->resolved_declaration->node_type)) : "null"));
+                throw_semantic_error(expr, "Cannot access member on primitive or undefined type: " + object_type_info.base_name + " (" + obj_type + ") for ident: " + ident->name + ". Node type of ident decl: " + (ident->resolved_declaration ? std::to_string(static_cast<int>(ident->resolved_declaration->node_type)) : "null"));
             }
-            throw std::runtime_error("Cannot access member on primitive or undefined type: " + object_type_info.base_name + " (" + obj_type + ").");
+            throw_semantic_error(expr, "Cannot access member on primitive or undefined type: " + object_type_info.base_name + " (" + obj_type + ").");
         }
         
         parser::Node* target_declaration = tree.symbols[object_type_info.base_name];
@@ -472,7 +506,7 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
             for (size_t i = 0; i < enum_decl->members.size(); i++) {
                 if (enum_decl->members[i] == member_access_expr->member_name) { e_val = i; break; }
             }
-            if (e_val == -1) throw std::runtime_error("Undefined enum member: " + member_access_expr->member_name);
+            if (e_val == -1) throw_semantic_error(member_access_expr, "Undefined enum member: " + member_access_expr->member_name);
             member_access_expr->resolved_declaration = enum_decl;
             member_access_expr->enum_value = e_val;
             result = object_type_info; // Resolves to the enum type itself
@@ -488,7 +522,7 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
                     if (method->method_name == member_access_expr->member_name) { found_member = method; break; }
                 }
             }
-            if (!found_member) throw std::runtime_error("Undefined member: " + member_access_expr->member_name);
+            if (!found_member) throw_semantic_error(member_access_expr, "Undefined member: " + member_access_expr->member_name);
             enforceAccessModifier(found_member, {});
             member_access_expr->resolved_declaration = found_member;
             
@@ -502,27 +536,27 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
                 result.method_ref = method_declaration;
             }
         } else {
-            throw std::runtime_error("Cannot access member on non-class/non-enum type");
+            throw_semantic_error(expr, "Cannot access member on non-class/non-enum type");
         }
     } else if (expr->node_type == parser::NodeType::ARRAY_ACCESS_EXPRESSION) {
         auto array_access_expr = static_cast<parser::ArrayAccessExpression*>(expr);
         TypeInfo target = evaluateExpression(tree, array_access_expr->array.get());
-        if (target.array_depth == 0) throw std::runtime_error("Cannot index into non-array type");
+        if (target.array_depth == 0) throw_semantic_error(expr, "Cannot index into non-array type");
         TypeInfo index = evaluateExpression(tree, array_access_expr->index.get());
-        if (index.base_name != "int32") throw std::runtime_error("Array index must be int32");
+        if (index.base_name != "int32") throw_semantic_error(expr, "Array index must be int32");
         result = target;
         result.array_depth--;
     } else if (expr->node_type == parser::NodeType::CALL_EXPRESSION) {
         auto call = static_cast<parser::CallExpression*>(expr);
         TypeInfo target = evaluateExpression(tree, call->callee.get());
-        if (!target.is_method) throw std::runtime_error("Attempted to call a non-method");
+        if (!target.is_method) throw_semantic_error(expr, "Attempted to call a non-method");
         auto method_declaration = static_cast<parser::MethodDeclaration*>(target.method_ref);
         call->resolved_declaration = method_declaration;
-        if (call->arguments.size() != method_declaration->parameters.size()) throw std::runtime_error("Argument count mismatch");
+        if (call->arguments.size() != method_declaration->parameters.size()) throw_semantic_error(expr, "Argument count mismatch");
         for (size_t index = 0; index < call->arguments.size(); index++) {
             TypeInfo argument_type = evaluateExpression(tree, call->arguments[index].get());
             TypeInfo parameter_type_info = resolveType(tree, method_declaration->parameters[index]->type_name, {});
-            if (argument_type != parameter_type_info) throw std::runtime_error("Argument type mismatch");
+            if (argument_type != parameter_type_info) throw_semantic_error(expr, "Argument type mismatch");
         }
         result = resolveType(tree, method_declaration->return_type, {});
     } else if (expr->node_type == parser::NodeType::UNARY_EXPRESSION) {
@@ -558,7 +592,7 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
                 }
             }
             if (!inst->resolved_constructor && inst->arguments.size() > 0) {
-                throw std::runtime_error("No matching constructor found for " + inst->class_name);
+                throw_semantic_error(inst, "No matching constructor found for " + inst->class_name);
             }
         }
     } else if (expr->node_type == parser::NodeType::ARRAY_CREATION_EXPRESSION) {
@@ -576,7 +610,7 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
             for (size_t i = 1; i < array_literal->elements.size(); i++) {
                 TypeInfo element_type = evaluateExpression(tree, array_literal->elements[i].get());
                 if (element_type.base_name != result.base_name || element_type.array_depth != result.array_depth - 1) {
-                    throw std::runtime_error("Array literal elements must have consistent types");
+                    throw_semantic_error(expr, "Array literal elements must have consistent types");
                 }
             }
         }
@@ -600,7 +634,7 @@ void SemanticAnalyzer::enforceAccessModifier(parser::Node* target_node, const st
     }
     
     if (access == lexer::TokenType::KEYWORD_PRIVATE) {
-        if (current_class != owner_class) throw std::runtime_error("Cannot access private member outside its class");
+        if (current_class != owner_class) throw_semantic_error(nullptr, "Cannot access private member outside its class");
     }
 }
 
@@ -608,7 +642,7 @@ void SemanticAnalyzer::enforceLValue(parser::Node* expr, const std::vector<lexer
     if (expr->node_type != parser::NodeType::IDENTIFIER_EXPRESSION &&
         expr->node_type != parser::NodeType::ARRAY_ACCESS_EXPRESSION &&
         expr->node_type != parser::NodeType::MEMBER_ACCESS_EXPRESSION) {
-        throw std::runtime_error("Invalid assignment target (must be an L-Value)");
+        throw_semantic_error(nullptr, "Invalid assignment target (must be an L-Value)");
     }
 }
 
