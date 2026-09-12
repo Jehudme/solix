@@ -83,10 +83,15 @@ void Compiler::applyLinkerPatches() {
     }
 }
 
-std::vector<uint8_t> Compiler::compile(std::string_view source_code, std::string_view entry_point) {
-    // 1. Lex and Parse
-    ast_tree = parser::AstTree();
-    ast_tree.include(source_code);
+void Compiler::include(std::string_view source_code, std::optional<std::filesystem::path> path) {
+    ast_tree.include(source_code, path);
+}
+
+void Compiler::include(std::filesystem::path path) {
+    ast_tree.include(path);
+}
+
+std::vector<uint8_t> Compiler::compile(std::string_view entry_point) {
     
     // 2. Semantic Analysis
     semantic::SemanticAnalyzer analyzer;

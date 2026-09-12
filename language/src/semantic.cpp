@@ -96,7 +96,15 @@ void SemanticAnalyzer::analyze(parser::AstTree& tree) {
     current_package = "";
     
     // Pass 1: Global Outline
+    std::string current_file = "";
+    
     for (const auto& node : tree.nodes) {
+        // Prevent package leakage between different files
+        if (node->file_path.string() != current_file) {
+            current_file = node->file_path.string();
+            current_package = "";
+        }
+        
         if (node->node_type == parser::NodeType::PACKAGE_STATEMENT) {
             auto package_statement = static_cast<parser::PackageStatement*>(node.get());
             current_package = package_statement->package_name + ".";

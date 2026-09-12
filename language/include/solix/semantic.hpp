@@ -90,6 +90,7 @@ private:
     // Type Resolution & AST Decoration
     TypeInfo resolveType(parser::AstTree& tree, const std::string& raw_type_name, const std::vector<lexer::Token>& tokens);
     TypeInfo evaluateExpression(parser::AstTree& tree, parser::Node* expr);
+    TypeInfo evaluateExpressionInternal(parser::AstTree& tree, parser::Node* expr);
 
     // OOP Rule Enforcement
     void enforceAccessModifier(parser::Node* target_node, const std::vector<lexer::Token>& tokens);

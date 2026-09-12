@@ -66,6 +66,7 @@ public class Engine {
         ApplicationState state = ApplicationState.INITIALIZING;
         char[] greeting = "hello world";
         char[] greeting2 = greeting;
+        Console.printHelloWorld();
         
         int32 enumToInt = (int32) ApplicationState.CRASHED;
         float64 intToFloat = (float64) enumToInt;

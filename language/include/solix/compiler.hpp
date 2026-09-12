@@ -59,7 +59,13 @@ enum class OpCode : uint8_t {
 // ==========================================
 class Compiler {
 public:
-  std::vector<uint8_t> compile(std::string_view source_code, std::string_view entry_point);
+  // TODO: Include the source code in the ast tree for compilation.
+  void include(std::string_view source_code, std::optional<std::filesystem::path> path = std::nullopt);
+  // TODO: Extract the source code from the file then include it in the ast tree for compilation.
+  void include(std::filesystem::path path);
+
+  // TODO: Update this function, we should run the semantic analysis before compiling the AST to bytecode.
+  std::vector<uint8_t> compile(std::string_view entry_point);
   std::string disassemble(const std::vector<uint8_t>& bytecode) const; // Write the assembly representation of the bytecode for debugging purposes
 
 private:
@@ -85,7 +91,7 @@ private:
     // Compilation passes
     void compileBootSequence(std::string_view entry_point);
     void compileClass(parser::ClassDeclaration* class_node);
-  void compileFunction(parser::Node* function_node);
+    void compileFunction(parser::Node* function_node);
 
     void compileNode(parser::Node* node);
     void compileExpression(parser::Node* expr);
