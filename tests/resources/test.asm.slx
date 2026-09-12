@@ -1,0 +1,379 @@
+// ============================================================================
+// Solix Bytecode Assembly - test.slx
+// Architecture: Single Flat Array, IP-based Calls, ARC Garbage Collection
+// ============================================================================
+
+// Memory Pool Layout:
+// 0: Reserved for NULL
+// 1: Engine.instanceCount (Global Static)
+
+// ----------------------------------------------------------------------------
+// [IP_BOOT]: VM Startup Routine
+// ----------------------------------------------------------------------------
+ALLOC_STATIC 1       // Carve out Global Index 1
+PUSH_CONST 0
+SET_GLOBAL 1         // instanceCount = 0
+
+// Call main(args)
+PUSH_CONST 0         // Arg 1: args = null (for now)
+PUSH_CONST <IP_main> // Destination Address in flat byte array
+PUSH_CONST 11        // main() frame size
+PUSH_CONST 1         // Argument count
+CALL
+
+HALT                 // End program
+
+// ----------------------------------------------------------------------------
+// [IP_Engine_ctor]: Engine() Constructor
+// Frame Size: 1 (this)
+// ----------------------------------------------------------------------------
+<IP_Engine_ctor>:
+GET_LOCAL 0          // Load 'this'
+PUSH_TRUE            
+SET_PROPERTY 0       // this.isRunning = true
+RETURN
+
+// ----------------------------------------------------------------------------
+// [IP_CoreProcessor_ctor]: CoreProcessor(ID id)
+// Frame Size: 2 (this, id)
+// ----------------------------------------------------------------------------
+<IP_CoreProcessor_ctor>:
+GET_LOCAL 0          // this
+GET_LOCAL 1          // id
+SET_PROPERTY 0       // this.coreId = id
+
+GET_GLOBAL 1         // Engine.instanceCount
+DUP
+PUSH_CONST 1
+ADD
+SET_GLOBAL 1         // Engine.instanceCount++
+
+// Field int32[] cache = new int32[1024];
+GET_LOCAL 0          // this
+PUSH_CONST 1024
+ALLOC_DYNAMIC        // allocate array (Ref=1)
+SET_PROPERTY 1       // this.cache = array
+
+// Field CoreStatus currentStatus = IDLE (0);
+GET_LOCAL 0
+PUSH_CONST 0
+SET_PROPERTY 2
+
+RETURN
+
+// ----------------------------------------------------------------------------
+// [IP_CoreProcessor_process]: process(int32[] data)
+// Frame Size: 5 (this, data, outer_temp, i, inner_temp)
+// ----------------------------------------------------------------------------
+<IP_CoreProcessor_process>:
+GET_LOCAL 0
+GET_PROPERTY 2       // this.currentStatus
+PUSH_CONST 2         // OVERHEATING (2)
+EQUAL
+JUMP_IF_FALSE <skip_return>
+
+// Early return ARC cleanup
+GET_LOCAL 1          // 'data' (Array Reference)
+REMOVE_REF
+RETURN
+
+<skip_return>:
+PUSH_CONST 0
+SET_LOCAL 2          // outer_temp = 0
+
+PUSH_CONST 0
+SET_LOCAL 3          // i = 0
+
+<loop_cond>:
+GET_LOCAL 3
+PUSH_CONST 1024
+LESS
+JUMP_IF_FALSE <loop_end>
+
+// inner_temp = data[i] * 2
+GET_LOCAL 1
+GET_LOCAL 3
+GET_ARRAY
+PUSH_CONST 2
+MUL
+SET_LOCAL 4
+
+GET_LOCAL 4
+PUSH_CONST 100
+GREATER
+JUMP_IF_FALSE <else_if>
+
+<while_cond>:
+GET_LOCAL 4
+PUSH_CONST 0
+GREATER
+JUMP_IF_FALSE <if_end>
+
+// temp--
+GET_LOCAL 4
+PUSH_CONST 1
+SUB
+SET_LOCAL 4
+
+GET_LOCAL 4
+PUSH_CONST 50
+EQUAL
+JUMP_IF_TRUE <if_end> // break
+
+JUMP <while_cond>
+
+<else_if>:
+GET_LOCAL 4
+PUSH_CONST 0
+LESS
+JUMP_IF_FALSE <else>
+JUMP <loop_step>     // continue
+
+<else>:
+GET_LOCAL 0          // this
+GET_PROPERTY 1       // this.cache
+GET_LOCAL 3          // i
+GET_LOCAL 4          // inner_temp
+SET_ARRAY
+
+<if_end>:
+<loop_step>:
+GET_LOCAL 3
+PUSH_CONST 1
+ADD
+SET_LOCAL 3          // i++
+JUMP <loop_cond>
+
+<loop_end>:
+// Final ARC Cleanup
+GET_LOCAL 1          // 'data'
+REMOVE_REF
+RETURN
+
+// ----------------------------------------------------------------------------
+// [IP_createIdentityMatrix]: Engine.createIdentityMatrix(int32 size)
+// Frame Size: 4 (size, mat, i, j)
+// ----------------------------------------------------------------------------
+<IP_createIdentityMatrix>:
+GET_LOCAL 0          // size
+ALLOC_DYNAMIC        // allocate outer array (Matrix)
+SET_LOCAL 1          // mat = new float64[][][size]
+
+PUSH_CONST 0
+SET_LOCAL 2          // i = 0
+<outer_loop>:
+GET_LOCAL 2
+GET_LOCAL 0
+LESS
+JUMP_IF_FALSE <outer_end>
+
+GET_LOCAL 1          // mat
+GET_LOCAL 2          // i
+GET_LOCAL 0          // size
+ALLOC_DYNAMIC        // new float64[size]
+DUP                  
+SET_ARRAY            // mat[i] = new float64[size]
+
+PUSH_CONST 0
+SET_LOCAL 3          // j = 0
+<inner_loop>:
+GET_LOCAL 3
+GET_LOCAL 0
+LESS
+JUMP_IF_FALSE <inner_end>
+
+GET_LOCAL 1
+GET_LOCAL 2
+GET_ARRAY            // push mat[i]
+GET_LOCAL 3          // push j
+
+// Ternary (i == j) ? 1.0 : 0.0
+GET_LOCAL 2
+GET_LOCAL 3
+EQUAL
+JUMP_IF_FALSE <ternary_false>
+PUSH_CONST 1.0
+JUMP <ternary_end>
+<ternary_false>:
+PUSH_CONST 0.0
+<ternary_end>:
+
+SET_ARRAY            // mat[i][j] = (ternary)
+
+GET_LOCAL 3
+PUSH_CONST 1
+ADD
+SET_LOCAL 3
+JUMP <inner_loop>
+
+<inner_end>:
+GET_LOCAL 2
+PUSH_CONST 1
+ADD
+SET_LOCAL 2
+JUMP <outer_loop>
+
+<outer_end>:
+GET_LOCAL 1          // return mat
+// ARC Cleanup? Wait, if we return `mat`, we do NOT REMOVE_REF it, because we are passing ownership to the caller!
+RETURN
+
+
+// ----------------------------------------------------------------------------
+// [IP_main]: main(string[] args)
+// Frame Size: 12
+// ----------------------------------------------------------------------------
+<IP_main>:
+PUSH_CONST 0
+SET_LOCAL 1          // state = INITIALIZING
+
+PUSH_CONST 10
+SET_LOCAL 2          // x = 10
+PUSH_CONST 20
+SET_LOCAL 3          // y = 20
+PUSH_CONST 30
+SET_LOCAL 4          // z = 30
+
+// x = y + z * 2 - 10 / 5
+GET_LOCAL 3
+GET_LOCAL 4
+PUSH_CONST 2
+MUL
+ADD
+PUSH_CONST 10
+PUSH_CONST 5
+DIV
+SUB
+SET_LOCAL 2
+
+PUSH_FALSE
+SET_LOCAL 5          // flag = false
+PUSH_TRUE
+LOGICAL_NOT
+DUP
+SET_LOCAL 5
+SET_LOCAL 6          // result = flag = !true
+
+// numbers = {1, 2, 3, 4, 5}
+PUSH_CONST 5
+ALLOC_DYNAMIC
+// array initialization omitted...
+SET_LOCAL 7          // numbers
+
+// numbers[0]++
+GET_LOCAL 7
+PUSH_CONST 0
+GET_ARRAY
+PUSH_CONST 1
+ADD
+GET_LOCAL 7
+PUSH_CONST 0
+SET_ARRAY
+
+// myEngine = new Engine()
+PUSH_CONST 2
+ALLOC_DYNAMIC
+DUP                  // One copy for the variable, one for the CALL 'this'
+PUSH_CONST <IP_Engine_ctor>
+PUSH_CONST 1         // Frame size
+PUSH_CONST 1         // Arg count
+CALL
+SET_LOCAL 8          // myEngine
+
+// proc = new CoreProcessor(12345)
+PUSH_CONST 3
+ALLOC_DYNAMIC
+DUP                  // Keep copy for local variable
+PUSH_CONST 12345     // Arg 2 (id)
+// Arg 1 (this) is already on stack from DUP
+PUSH_CONST <IP_CoreProcessor_ctor>
+PUSH_CONST 2         // Frame size
+PUSH_CONST 2         // Arg count
+CALL
+SET_LOCAL 9          // proc
+
+// proc.process(numbers)
+GET_LOCAL 9          // Arg 1: this
+GET_LOCAL 7          // Arg 2: numbers
+ADD_REF              // Passing numbers by ref, increase count!
+PUSH_CONST <IP_CoreProcessor_process>
+PUSH_CONST 5         // Frame size
+PUSH_CONST 2         // Arg count
+CALL
+
+// complexCall = Engine.createIdentityMatrix(x)[0][0] + (int32) proc.cache[0]
+GET_LOCAL 2          // Arg 1: x
+PUSH_CONST <IP_createIdentityMatrix>
+PUSH_CONST 4         // Frame size
+PUSH_CONST 1         // Arg count
+CALL                 // Returns Address of Matrix
+PUSH_CONST 0         // [0]
+GET_ARRAY
+PUSH_CONST 0         // [0]
+GET_ARRAY            // Pushes float64 from matrix
+GET_LOCAL 9          // proc
+GET_PROPERTY 1       // cache
+PUSH_CONST 0         
+GET_ARRAY            // proc.cache[0] (int32)
+// Implicit float64 conversion
+CONVERT_F64
+ADD
+SET_LOCAL 10         // complexCall
+
+// switch (state)
+GET_LOCAL 1
+DUP
+PUSH_CONST 0
+EQUAL
+JUMP_IF_FALSE <case_crashed>
+POP
+PUSH_CONST 1
+SET_LOCAL 1          // state = RUNNING
+JUMP <switch_end>
+
+<case_crashed>:
+DUP
+PUSH_CONST 2
+EQUAL
+JUMP_IF_FALSE <case_shutdown>
+
+<case_shutdown>:
+DUP
+PUSH_CONST 3
+EQUAL
+JUMP_IF_FALSE <switch_end>
+POP
+// EARLY RETURN ARC CLEANUP
+GET_LOCAL 0          // args
+REMOVE_REF
+GET_LOCAL 7          // numbers
+REMOVE_REF
+GET_LOCAL 8          // myEngine
+REMOVE_REF
+GET_LOCAL 9          // proc
+REMOVE_REF
+RETURN
+
+<switch_end>:
+POP
+
+<do_while_loop>:
+GET_LOCAL 2
+PUSH_CONST 1
+ADD
+SET_LOCAL 2
+GET_LOCAL 2
+PUSH_CONST 100
+LESS
+JUMP_IF_TRUE <do_while_loop>
+
+// END OF MAIN ARC CLEANUP
+GET_LOCAL 0          // args
+REMOVE_REF
+GET_LOCAL 7          // numbers
+REMOVE_REF
+GET_LOCAL 8          // myEngine
+REMOVE_REF
+GET_LOCAL 9          // proc
+REMOVE_REF
+RETURN
