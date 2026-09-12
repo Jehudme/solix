@@ -84,6 +84,19 @@ void SemanticAnalyzer::analyze(parser::AstTree& tree) {
         }
     }
     
+    // Pass 1.5: Global & Static Memory Indexing
+    staticVariableIndex = 1;
+    for (const auto& pair : tree.symbols) {
+        parser::Node* symbol = pair.second;
+        if (symbol->node_type == parser::NodeType::FIELD_DECLARATION) {
+            auto field = static_cast<parser::FieldDeclaration*>(symbol);
+            if (field->is_static) {
+                field->memory_index = staticVariableIndex++;
+            }
+        }
+        // Future: package-level variables would also be indexed here
+    }
+    
     // Pass 2: Deep Dive
     for (const auto& node : tree.nodes) {
         resolveAndCheck(tree, node.get());
@@ -160,16 +173,27 @@ void SemanticAnalyzer::resolveAndCheck(parser::AstTree& tree, parser::Node* root
         current_class = static_cast<parser::ClassDeclaration*>(root);
     } else if (root->node_type == parser::NodeType::METHOD_DECLARATION) {
         current_method = static_cast<parser::MethodDeclaration*>(root);
+        localVariableIndex = current_method->is_static ? 0 : 1;
         for (const auto& param : current_method->parameters) {
-            declareLocal(param.name, root, {});
+            param->memory_index = localVariableIndex++;
+            TypeInfo type_info = resolveType(tree, param->type_name, {});
+            if (!type_info.is_primitive) param->is_reference_type = true;
+            declareLocal(param->var_name, param.get(), {});
         }
     } else if (root->node_type == parser::NodeType::CONSTRUCTOR_DECLARATION) {
         auto ctor = static_cast<parser::ConstructorDeclaration*>(root);
+        localVariableIndex = 1; // Constructors always have 'this' at index 0
         for (const auto& param : ctor->parameters) {
-            declareLocal(param.name, root, {});
+            param->memory_index = localVariableIndex++;
+            TypeInfo type_info = resolveType(tree, param->type_name, {});
+            if (!type_info.is_primitive) param->is_reference_type = true;
+            declareLocal(param->var_name, param.get(), {});
         }
     } else if (root->node_type == parser::NodeType::VARIABLE_DECLARATION) {
         auto variable_declaration = static_cast<parser::VariableDeclaration*>(root);
+        variable_declaration->memory_index = localVariableIndex++;
+        TypeInfo type_info = resolveType(tree, variable_declaration->type_name, {});
+        if (!type_info.is_primitive) variable_declaration->is_reference_type = true;
         declareLocal(variable_declaration->var_name, root, {});
         
         // Generate UUID for local variable_declaration
@@ -239,6 +263,14 @@ void SemanticAnalyzer::resolveAndCheck(parser::AstTree& tree, parser::Node* root
                 if (val_type != expected_type) throw std::runtime_error("Return type mismatch");
             }
         }
+    }
+    
+    if (root->node_type == parser::NodeType::METHOD_DECLARATION) {
+        auto method = static_cast<parser::MethodDeclaration*>(root);
+        method->frame_size = localVariableIndex;
+    } else if (root->node_type == parser::NodeType::CONSTRUCTOR_DECLARATION) {
+        auto ctor = static_cast<parser::ConstructorDeclaration*>(root);
+        ctor->frame_size = localVariableIndex;
     }
     
     if (is_scope_creator) popScope();
