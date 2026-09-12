@@ -84,8 +84,10 @@ void SemanticAnalyzer::analyze(parser::AstTree& tree) {
         }
     }
     
-    // Pass 1.5: Global & Static Memory Indexing
+    // Pass 1.5: Global & Static Memory Indexing & Class Offsets
     staticVariableIndex = 1;
+    
+    // First, map all static fields and package globals
     for (const auto& pair : tree.symbols) {
         parser::Node* symbol = pair.second;
         if (symbol->node_type == parser::NodeType::FIELD_DECLARATION) {
@@ -94,7 +96,31 @@ void SemanticAnalyzer::analyze(parser::AstTree& tree) {
                 field->memory_index = staticVariableIndex++;
             }
         }
-        // Future: package-level variables would also be indexed here
+    }
+    
+    // Second, calculate instance_size and field offsets for every class
+    for (const auto& pair : tree.symbols) {
+        parser::Node* symbol = pair.second;
+        if (symbol->node_type == parser::NodeType::CLASS_DECLARATION) {
+            auto class_decl = static_cast<parser::ClassDeclaration*>(symbol);
+            int field_offset = 0;
+            for (const auto& child : class_decl->children) {
+                if (child->node_type == parser::NodeType::FIELD_DECLARATION) {
+                    auto field = static_cast<parser::FieldDeclaration*>(child.get());
+                    if (!field->is_static) {
+                        field->memory_index = field_offset++;
+                    }
+                }
+            }
+            class_decl->instance_size = field_offset;
+        } else if (symbol->node_type == parser::NodeType::ENUM_DECLARATION) {
+            // Assign integer values to enum members
+            auto enum_decl = static_cast<parser::EnumDeclaration*>(symbol);
+            for (size_t i = 0; i < enum_decl->members.size(); i++) {
+                // We'll store these in the tree symbols or resolve them later, but the enum members are just strings.
+                // It's handled dynamically during member access resolution.
+            }
+        }
     }
     
     // Pass 2: Deep Dive
@@ -386,29 +412,46 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
         auto member_access_expr = static_cast<parser::MemberAccessExpression*>(expr);
         TypeInfo object_type_info = evaluateExpression(tree, member_access_expr->object.get());
         if (object_type_info.is_primitive || !tree.symbols.count(object_type_info.base_name)) throw std::runtime_error("Cannot access member on primitive or undefined type");
-        auto class_declaration = static_cast<parser::ClassDeclaration*>(tree.symbols[object_type_info.base_name]);
-        parser::Node* found_member = nullptr;
-        for (const auto& child : class_declaration->children) {
-            if (child->node_type == parser::NodeType::FIELD_DECLARATION) {
-                auto field = static_cast<parser::FieldDeclaration*>(child.get());
-                if (field->field_name == member_access_expr->member_name) { found_member = field; break; }
-            } else if (child->node_type == parser::NodeType::METHOD_DECLARATION) {
-                auto method = static_cast<parser::MethodDeclaration*>(child.get());
-                if (method->method_name == member_access_expr->member_name) { found_member = method; break; }
-            }
-        }
-        if (!found_member) throw std::runtime_error("Undefined member: " + member_access_expr->member_name);
-        enforceAccessModifier(found_member, {});
-        member_access_expr->resolved_declaration = found_member;
         
-        if (found_member->node_type == parser::NodeType::FIELD_DECLARATION) {
-            auto field_declaration = static_cast<parser::FieldDeclaration*>(found_member);
-            TypeInfo field_type_info = resolveType(tree, field_declaration->type_name, {});
-            result = field_type_info;
+        parser::Node* target_declaration = tree.symbols[object_type_info.base_name];
+        
+        if (target_declaration->node_type == parser::NodeType::ENUM_DECLARATION) {
+            auto enum_decl = static_cast<parser::EnumDeclaration*>(target_declaration);
+            int e_val = -1;
+            for (size_t i = 0; i < enum_decl->members.size(); i++) {
+                if (enum_decl->members[i] == member_access_expr->member_name) { e_val = i; break; }
+            }
+            if (e_val == -1) throw std::runtime_error("Undefined enum member: " + member_access_expr->member_name);
+            member_access_expr->resolved_declaration = enum_decl;
+            member_access_expr->enum_value = e_val;
+            result = object_type_info; // Resolves to the enum type itself
+        } else if (target_declaration->node_type == parser::NodeType::CLASS_DECLARATION) {
+            auto class_declaration = static_cast<parser::ClassDeclaration*>(target_declaration);
+            parser::Node* found_member = nullptr;
+            for (const auto& child : class_declaration->children) {
+                if (child->node_type == parser::NodeType::FIELD_DECLARATION) {
+                    auto field = static_cast<parser::FieldDeclaration*>(child.get());
+                    if (field->field_name == member_access_expr->member_name) { found_member = field; break; }
+                } else if (child->node_type == parser::NodeType::METHOD_DECLARATION) {
+                    auto method = static_cast<parser::MethodDeclaration*>(child.get());
+                    if (method->method_name == member_access_expr->member_name) { found_member = method; break; }
+                }
+            }
+            if (!found_member) throw std::runtime_error("Undefined member: " + member_access_expr->member_name);
+            enforceAccessModifier(found_member, {});
+            member_access_expr->resolved_declaration = found_member;
+            
+            if (found_member->node_type == parser::NodeType::FIELD_DECLARATION) {
+                auto field_declaration = static_cast<parser::FieldDeclaration*>(found_member);
+                TypeInfo field_type_info = resolveType(tree, field_declaration->type_name, {});
+                result = field_type_info;
+            } else {
+                auto method_declaration = static_cast<parser::MethodDeclaration*>(found_member);
+                result.is_method = true;
+                result.method_ref = method_declaration;
+            }
         } else {
-            auto method_declaration = static_cast<parser::MethodDeclaration*>(found_member);
-            result.is_method = true;
-            result.method_ref = method_declaration;
+            throw std::runtime_error("Cannot access member on non-class/non-enum type");
         }
     } else if (expr->node_type == parser::NodeType::ARRAY_ACCESS_EXPRESSION) {
         auto array_access_expr = static_cast<parser::ArrayAccessExpression*>(expr);
@@ -446,6 +489,26 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
         auto inst = static_cast<parser::NewInstanceExpression*>(expr);
         for (auto& arg : inst->arguments) evaluateExpression(tree, arg.get());
         result = resolveType(tree, inst->class_name, {});
+        
+        parser::Node* class_node = tree.symbols[result.base_name];
+        inst->resolved_declaration = class_node;
+        
+        if (class_node && class_node->node_type == parser::NodeType::CLASS_DECLARATION) {
+            auto class_decl = static_cast<parser::ClassDeclaration*>(class_node);
+            for (const auto& child : class_decl->children) {
+                if (child->node_type == parser::NodeType::CONSTRUCTOR_DECLARATION) {
+                    auto ctor = static_cast<parser::ConstructorDeclaration*>(child.get());
+                    // Very basic signature matching (arg count)
+                    if (ctor->parameters.size() == inst->arguments.size()) {
+                        inst->resolved_constructor = ctor;
+                        break;
+                    }
+                }
+            }
+            if (!inst->resolved_constructor && inst->arguments.size() > 0) {
+                throw std::runtime_error("No matching constructor found for " + inst->class_name);
+            }
+        }
     } else if (expr->node_type == parser::NodeType::ARRAY_CREATION_EXPRESSION) {
         auto ac = static_cast<parser::ArrayCreationExpression*>(expr);
         evaluateExpression(tree, ac->size.get());
