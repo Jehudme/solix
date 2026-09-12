@@ -637,9 +637,10 @@ void Compiler::compileExpression(parser::Node* expr) {
             emitByte(static_cast<uint8_t>(OpCode::LOGICAL_NOT));
         } else if (uny->op == lexer::TokenType::OPERATOR_MINUS) {
             emitByte(static_cast<uint8_t>(OpCode::NEGATE));
-        } else if (uny->op == lexer::TokenType::OPERATOR_INCREMENT) {
-            emitByte(static_cast<uint8_t>(OpCode::INC));
-            // We'll write it back if it's an identifier
+        } else if (uny->op == lexer::TokenType::OPERATOR_INCREMENT || uny->op == lexer::TokenType::OPERATOR_DECREMENT) {
+            uint8_t opc = (uny->op == lexer::TokenType::OPERATOR_INCREMENT) ? static_cast<uint8_t>(OpCode::INC) : static_cast<uint8_t>(OpCode::DEC);
+            emitByte(opc);
+            
             if (uny->operand->node_type == parser::NodeType::IDENTIFIER_EXPRESSION) {
                 auto ident = static_cast<parser::IdentifierExpression*>(uny->operand.get());
                 if (ident->resolved_declaration->node_type == parser::NodeType::VARIABLE_DECLARATION) {
@@ -647,16 +648,24 @@ void Compiler::compileExpression(parser::Node* expr) {
                     emitByte(static_cast<uint8_t>(OpCode::SET_LOCAL));
                     emitInt32(static_cast<parser::VariableDeclaration*>(ident->resolved_declaration)->memory_index);
                 }
-            }
-        } else if (uny->op == lexer::TokenType::OPERATOR_DECREMENT) {
-            emitByte(static_cast<uint8_t>(OpCode::DEC));
-            if (uny->operand->node_type == parser::NodeType::IDENTIFIER_EXPRESSION) {
-                auto ident = static_cast<parser::IdentifierExpression*>(uny->operand.get());
-                if (ident->resolved_declaration->node_type == parser::NodeType::VARIABLE_DECLARATION) {
-                    emitByte(static_cast<uint8_t>(OpCode::DUP));
-                    emitByte(static_cast<uint8_t>(OpCode::SET_LOCAL));
-                    emitInt32(static_cast<parser::VariableDeclaration*>(ident->resolved_declaration)->memory_index);
+            } else if (uny->operand->node_type == parser::NodeType::MEMBER_ACCESS_EXPRESSION) {
+                auto mem = static_cast<parser::MemberAccessExpression*>(uny->operand.get());
+                auto field = static_cast<parser::FieldDeclaration*>(mem->resolved_declaration);
+                emitByte(static_cast<uint8_t>(OpCode::DUP));
+                if (field->is_static) {
+                    emitByte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
+                    emitInt32(field->memory_index);
+                } else {
+                    compileExpression(mem->object.get());
+                    emitByte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
+                    emitInt32(field->memory_index);
                 }
+            } else if (uny->operand->node_type == parser::NodeType::ARRAY_ACCESS_EXPRESSION) {
+                auto arr = static_cast<parser::ArrayAccessExpression*>(uny->operand.get());
+                emitByte(static_cast<uint8_t>(OpCode::DUP));
+                compileExpression(arr->array.get());
+                compileExpression(arr->index.get());
+                emitByte(static_cast<uint8_t>(OpCode::SET_ARRAY));
             }
         }
     }
@@ -701,6 +710,9 @@ void Compiler::compileExpression(parser::Node* expr) {
             emitByte(static_cast<uint8_t>(OpCode::PUSH_FALSE));
         } else if (ident->name == "null") {
             emitByte(static_cast<uint8_t>(OpCode::PUSH_NULL));
+        } else if (ident->name == "this") {
+            emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+            emitInt32(0);
         } else if (ident->resolved_declaration) {
             if (ident->resolved_declaration->node_type == parser::NodeType::FIELD_DECLARATION) {
                 auto field = static_cast<parser::FieldDeclaration*>(ident->resolved_declaration);
@@ -755,10 +767,15 @@ void Compiler::compileExpression(parser::Node* expr) {
             auto mem_acc = static_cast<parser::MemberAccessExpression*>(assign->target.get());
             compileExpression(assign->value.get());
             emitByte(static_cast<uint8_t>(OpCode::DUP)); // Leave value on stack
-            compileExpression(mem_acc->object.get());
             auto field = static_cast<parser::FieldDeclaration*>(mem_acc->resolved_declaration);
-            emitByte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
-            emitInt32(field->memory_index);
+            if (field->is_static) {
+                emitByte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
+                emitInt32(field->memory_index);
+            } else {
+                compileExpression(mem_acc->object.get());
+                emitByte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
+                emitInt32(field->memory_index);
+            }
         } else if (assign->target->node_type == parser::NodeType::ARRAY_ACCESS_EXPRESSION) {
             auto arr_acc = static_cast<parser::ArrayAccessExpression*>(assign->target.get());
             compileExpression(assign->value.get());
@@ -818,10 +835,15 @@ void Compiler::compileExpression(parser::Node* expr) {
             emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
             emitInt32(mem_acc->enum_value);
         } else {
-            compileExpression(mem_acc->object.get());
             auto field = static_cast<parser::FieldDeclaration*>(mem_acc->resolved_declaration);
-            emitByte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
-            emitInt32(field->memory_index);
+            if (field->is_static) {
+                emitByte(static_cast<uint8_t>(OpCode::GET_GLOBAL));
+                emitInt32(field->memory_index);
+            } else {
+                compileExpression(mem_acc->object.get());
+                emitByte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
+                emitInt32(field->memory_index);
+            }
         }
     }
     else if (expr->node_type == parser::NodeType::ARRAY_ACCESS_EXPRESSION) {
