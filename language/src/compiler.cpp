@@ -554,6 +554,13 @@ std::string Compiler::disassemble(const std::vector<uint8_t>& bcode) const {
                 ss << "SET_PROPERTY " << val << "\n";
                 break;
             }
+            case OpCode::PUSH_TRUE: ss << "PUSH_TRUE\n"; break;
+            case OpCode::PUSH_FALSE: ss << "PUSH_FALSE\n"; break;
+            case OpCode::PUSH_NULL: ss << "PUSH_NULL\n"; break;
+            case OpCode::LOGICAL_NOT: ss << "LOGICAL_NOT\n"; break;
+            case OpCode::NEGATE: ss << "NEGATE\n"; break;
+            case OpCode::GET_ARRAY: ss << "GET_ARRAY\n"; break;
+            case OpCode::SET_ARRAY: ss << "SET_ARRAY\n"; break;
             case OpCode::ALLOC_STATIC: ss << "ALLOC_STATIC\n"; break;
             case OpCode::SUBTRACT: ss << "SUBTRACT\n"; break;
             case OpCode::MULTIPLY: ss << "MULTIPLY\n"; break;
