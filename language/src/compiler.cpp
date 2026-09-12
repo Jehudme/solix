@@ -461,44 +461,72 @@ void Compiler::compileNode(parser::Node* node) {
         
         loop_break_patches.push_back(std::vector<uint32_t>());
         
-        std::vector<uint32_t> next_case_patches;
+        std::vector<uint32_t> case_body_jumps;
+        uint32_t default_body_jump = 0xFFFFFFFF;
+        
+        // Phase 1: Compile all condition checks
+        for (const auto& child : switch_stmt->children) {
+            auto case_stmt = static_cast<parser::CaseStatement*>(child.get());
+            if (!case_stmt->is_default) {
+                emitByte(static_cast<uint8_t>(OpCode::DUP));
+                compileExpression(case_stmt->case_value.get());
+                emitByte(static_cast<uint8_t>(OpCode::EQUAL));
+                emitByte(static_cast<uint8_t>(OpCode::JUMP_IF_TRUE));
+                case_body_jumps.push_back(bytecode.size());
+                emitInt32(0xFFFFFFFF);
+            } else {
+                emitByte(static_cast<uint8_t>(OpCode::JUMP));
+                default_body_jump = bytecode.size();
+                emitInt32(0xFFFFFFFF);
+                case_body_jumps.push_back(0xFFFFFFFF);
+            }
+        }
+        
+        uint32_t end_jump_if_no_match = 0xFFFFFFFF;
+        if (default_body_jump == 0xFFFFFFFF) {
+            emitByte(static_cast<uint8_t>(OpCode::JUMP));
+            end_jump_if_no_match = bytecode.size();
+            emitInt32(0xFFFFFFFF);
+        }
+        
+        // Phase 2: Compile all bodies
+        int case_idx = 0;
         for (const auto& child : switch_stmt->children) {
             auto case_stmt = static_cast<parser::CaseStatement*>(child.get());
             
-            for (uint32_t patch_ip : next_case_patches) {
-                uint32_t current_ip = bytecode.size();
+            uint32_t current_ip = bytecode.size();
+            if (case_stmt->is_default) {
+                if (default_body_jump != 0xFFFFFFFF) {
+                    bytecode[default_body_jump] = (current_ip >> 24) & 0xFF;
+                    bytecode[default_body_jump+1] = (current_ip >> 16) & 0xFF;
+                    bytecode[default_body_jump+2] = (current_ip >> 8) & 0xFF;
+                    bytecode[default_body_jump+3] = current_ip & 0xFF;
+                }
+            } else {
+                uint32_t patch_ip = case_body_jumps[case_idx];
                 bytecode[patch_ip] = (current_ip >> 24) & 0xFF;
                 bytecode[patch_ip+1] = (current_ip >> 16) & 0xFF;
                 bytecode[patch_ip+2] = (current_ip >> 8) & 0xFF;
                 bytecode[patch_ip+3] = current_ip & 0xFF;
             }
-            next_case_patches.clear();
-            
-            if (!case_stmt->is_default) {
-                emitByte(static_cast<uint8_t>(OpCode::DUP));
-                compileExpression(case_stmt->case_value.get());
-                emitByte(static_cast<uint8_t>(OpCode::EQUAL));
-                emitByte(static_cast<uint8_t>(OpCode::JUMP_IF_FALSE));
-                next_case_patches.push_back(bytecode.size());
-                emitInt32(0xFFFFFFFF);
-            }
             
             for (const auto& stmt : case_stmt->children) {
                 compileNode(stmt.get());
             }
+            case_idx++;
         }
         
-        for (uint32_t patch_ip : next_case_patches) {
-            uint32_t current_ip = bytecode.size();
-            bytecode[patch_ip] = (current_ip >> 24) & 0xFF;
-            bytecode[patch_ip+1] = (current_ip >> 16) & 0xFF;
-            bytecode[patch_ip+2] = (current_ip >> 8) & 0xFF;
-            bytecode[patch_ip+3] = current_ip & 0xFF;
+        if (end_jump_if_no_match != 0xFFFFFFFF) {
+            uint32_t end_ip = bytecode.size();
+            bytecode[end_jump_if_no_match] = (end_ip >> 24) & 0xFF;
+            bytecode[end_jump_if_no_match+1] = (end_ip >> 16) & 0xFF;
+            bytecode[end_jump_if_no_match+2] = (end_ip >> 8) & 0xFF;
+            bytecode[end_jump_if_no_match+3] = end_ip & 0xFF;
         }
-        
-        emitByte(static_cast<uint8_t>(OpCode::POP)); 
         
         uint32_t end_ip = bytecode.size();
+        emitByte(static_cast<uint8_t>(OpCode::POP)); 
+        
         for (uint32_t break_patch : loop_break_patches.back()) {
             bytecode[break_patch] = (end_ip >> 24) & 0xFF;
             bytecode[break_patch+1] = (end_ip >> 16) & 0xFF;
@@ -894,6 +922,12 @@ std::string Compiler::disassemble(const std::vector<uint8_t>& bcode) const {
             case OpCode::JUMP_IF_FALSE: {
                 uint32_t jump_ip = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
                 ss << "JUMP_IF_FALSE " << jump_ip << "\n";
+                i += 4;
+                break;
+            }
+            case OpCode::JUMP_IF_TRUE: {
+                uint32_t jump_ip = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                ss << "JUMP_IF_TRUE " << jump_ip << "\n";
                 i += 4;
                 break;
             }
