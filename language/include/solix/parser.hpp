@@ -74,6 +74,7 @@ struct Node {
     int resolved_array_depth = 0;
     Node* resolved_declaration = nullptr;
     std::string symbol_name;
+    int memory_index = -1; // The frame slot, global index, or field offset
 
     // Pointer back to the parent node
     Node* parent_node = nullptr;
@@ -144,6 +145,7 @@ struct MemberAccessExpression : public Node {
     std::unique_ptr<Node> object;
     std::string member_name; // e.g., 'add' in MathUtils.add()
     Node* resolved_declaration = nullptr;
+    int enum_value = -1;
     
     MemberAccessExpression(const std::vector<lexer::Token>& tokens, Node* parent = nullptr);
 };
@@ -151,6 +153,7 @@ struct MemberAccessExpression : public Node {
 struct NewInstanceExpression : public Node {
     std::string class_name;
     Node* resolved_declaration = nullptr;
+    Node* resolved_constructor = nullptr;
     std::vector<std::unique_ptr<Node>> arguments;
     
     NewInstanceExpression(const std::vector<lexer::Token>& tokens, Node* parent = nullptr);
@@ -216,6 +219,7 @@ struct ClassDeclaration : public Node {
     std::string class_name;
     Node* resolved_declaration = nullptr;
     lexer::TokenType access_modifier; // e.g., KEYWORD_INTERNAL
+    int instance_size = 0;
     
     // Note: Methods and fields will be stored in the 'children' vector
     ClassDeclaration(const std::vector<lexer::Token>& tokens, Node* parent = nullptr);
@@ -261,6 +265,7 @@ struct MethodDeclaration : public Node {
         std::string type;
     };
     std::vector<Parameter> parameters;
+    int frame_size = 0; // Number of local variables inside this method
     
     // Note: The method body (BlockStatement) will be stored in 'children'
     MethodDeclaration(const std::vector<lexer::Token>& tokens, Node* parent = nullptr);
@@ -330,6 +335,7 @@ struct CaseStatement : public Node {
 struct VariableDeclaration : public Node {
     std::string var_name;
     bool is_const = false;
+    bool is_reference_type = false;
 
     std::string type_name;
     
