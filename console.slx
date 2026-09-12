@@ -1,0 +1,7 @@
+package com.solix.advanced.test;
+
+public class Console {
+    public static void printHelloWorld() {
+        int32 cross_file_test = 999;
+    }
+}
