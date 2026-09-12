@@ -1,6 +1,7 @@
 #pragma once
 
 #include "solix/parser.hpp"
+#include <string_view>
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -39,7 +40,7 @@ enum class OpCode : uint8_t {
     GET_ARRAY, SET_ARRAY,
     
     // GC (ARC)
-    ADD_REF, REMOVE_REF,
+    INC_REF, DEC_REF,
     
     // Type Conversions
     CONV_I8, CONV_I16, CONV_I32, CONV_I64,
@@ -54,22 +55,14 @@ enum class OpCode : uint8_t {
 };
 
 // ==========================================
-// The Flattened Executable Program
-// ==========================================
-struct BytecodeProgram {
-    std::vector<uint8_t> flat_bytecode;
-};
-
-// ==========================================
 // The Core Compiler
 // ==========================================
 class Compiler {
 public:
-    BytecodeProgram compile(parser::AstTree& ast);
+  std::vector<uint8_t> compile(std::string_view source_code, std::string_view entry_point);
+  std::string disassemble(const std::vector<uint8_t>& bytecode) const; // Write the assembly representation of the bytecode for debugging purposes
 
 private:
-    BytecodeProgram program;
-    
     // Track where functions start in the flat bytecode array
     std::unordered_map<parser::Node*, uint32_t> function_ips;
     
@@ -90,8 +83,17 @@ private:
     void applyLinkerPatches();
     
     // Compilation passes
+    void compileBootSequence(std::string_view entry_point);
+    void compileFunction(parser::Node* function_node);
+
     void compileNode(parser::Node* node);
     void compileExpression(parser::Node* expr);
+
+    // Current bytecode being generated
+    std::vector<uint8_t> bytecode;
+    
+    // Current AST being compiled
+    parser::AstTree ast_tree;
 };
 
 } // namespace compiler

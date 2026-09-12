@@ -1,31 +1,35 @@
 #include "solix/compiler.hpp"
+#include "solix/lexer.hpp"
+#include "solix/parser.hpp"
+#include "solix/semantic.hpp"
 #include <stdexcept>
 #include <iostream>
 #include <cstring>
+#include <sstream>
 
 namespace solix {
 namespace compiler {
 
 void Compiler::emitByte(uint8_t byte) {
-    program.flat_bytecode.push_back(byte);
+    bytecode.push_back(byte);
 }
 
 void Compiler::emitInt32(uint32_t value) {
-    program.flat_bytecode.push_back((value >> 24) & 0xFF);
-    program.flat_bytecode.push_back((value >> 16) & 0xFF);
-    program.flat_bytecode.push_back((value >> 8) & 0xFF);
-    program.flat_bytecode.push_back(value & 0xFF);
+    bytecode.push_back((value >> 24) & 0xFF);
+    bytecode.push_back((value >> 16) & 0xFF);
+    bytecode.push_back((value >> 8) & 0xFF);
+    bytecode.push_back(value & 0xFF);
 }
 
 void Compiler::emitInt64(uint64_t value) {
-    program.flat_bytecode.push_back((value >> 56) & 0xFF);
-    program.flat_bytecode.push_back((value >> 48) & 0xFF);
-    program.flat_bytecode.push_back((value >> 40) & 0xFF);
-    program.flat_bytecode.push_back((value >> 32) & 0xFF);
-    program.flat_bytecode.push_back((value >> 24) & 0xFF);
-    program.flat_bytecode.push_back((value >> 16) & 0xFF);
-    program.flat_bytecode.push_back((value >> 8) & 0xFF);
-    program.flat_bytecode.push_back(value & 0xFF);
+    bytecode.push_back((value >> 56) & 0xFF);
+    bytecode.push_back((value >> 48) & 0xFF);
+    bytecode.push_back((value >> 40) & 0xFF);
+    bytecode.push_back((value >> 32) & 0xFF);
+    bytecode.push_back((value >> 24) & 0xFF);
+    bytecode.push_back((value >> 16) & 0xFF);
+    bytecode.push_back((value >> 8) & 0xFF);
+    bytecode.push_back(value & 0xFF);
 }
 
 void Compiler::emitFloat32(float value) {
@@ -59,61 +63,151 @@ void Compiler::applyLinkerPatches() {
         uint32_t target_ip = function_ips[target_func];
         
         // Overwrite the 0xFFFFFFFF hole
-        program.flat_bytecode[hole_index] = (target_ip >> 24) & 0xFF;
-        program.flat_bytecode[hole_index + 1] = (target_ip >> 16) & 0xFF;
-        program.flat_bytecode[hole_index + 2] = (target_ip >> 8) & 0xFF;
-        program.flat_bytecode[hole_index + 3] = target_ip & 0xFF;
+        bytecode[hole_index] = (target_ip >> 24) & 0xFF;
+        bytecode[hole_index + 1] = (target_ip >> 16) & 0xFF;
+        bytecode[hole_index + 2] = (target_ip >> 8) & 0xFF;
+        bytecode[hole_index + 3] = target_ip & 0xFF;
     }
 }
 
-BytecodeProgram Compiler::compile(parser::AstTree& ast) {
-    program = BytecodeProgram{};
+std::vector<uint8_t> Compiler::compile(std::string_view source_code, std::string_view entry_point) {
+    // 1. Lex and Parse
+    ast_tree = parser::AstTree();
+    ast_tree.include(source_code);
+    
+    // 2. Semantic Analysis
+    semantic::SemanticAnalyzer analyzer;
+    analyzer.analyze(ast_tree);
+    
+    // 3. Setup compiler state
+    bytecode.clear();
     function_ips.clear();
     linker_patches.clear();
 
-    // 1. Compile all classes and functions
-    for (const auto& node : ast.nodes) {
+    // 4. Compile boot sequence
+    compileBootSequence(entry_point);
+    
+    // 5. Compile all methods/functions
+    for (const auto& node : ast_tree.nodes) {
         if (node->node_type == parser::NodeType::CLASS_DECLARATION) {
             auto class_decl = static_cast<parser::ClassDeclaration*>(node.get());
             for (const auto& child : class_decl->children) {
                 if (child->node_type == parser::NodeType::METHOD_DECLARATION || 
                     child->node_type == parser::NodeType::CONSTRUCTOR_DECLARATION) {
-                    compileNode(child.get());
+                    compileFunction(child.get());
                 }
             }
-        } else if (node->node_type == parser::NodeType::METHOD_DECLARATION) {
-            compileNode(node.get());
         }
     }
     
-    // 2. Link
+    // 6. Link function calls
     applyLinkerPatches();
     
-    return std::move(program);
+    return std::move(bytecode);
+}
+
+void Compiler::compileBootSequence(std::string_view entry_point) {
+    // Collect all static fields to know how much memory to allocate
+    uint32_t static_count = 0;
+    std::vector<parser::FieldDeclaration*> static_fields;
+    
+    for (const auto& node : ast_tree.nodes) {
+        if (node->node_type == parser::NodeType::CLASS_DECLARATION) {
+            auto class_decl = static_cast<parser::ClassDeclaration*>(node.get());
+            for (const auto& child : class_decl->children) {
+                if (child->node_type == parser::NodeType::FIELD_DECLARATION) {
+                    auto field = static_cast<parser::FieldDeclaration*>(child.get());
+                    if (field->is_static) {
+                        static_count++;
+                        static_fields.push_back(field);
+                    }
+                }
+            }
+        }
+    }
+    
+    // Allocate global memory (+1 because memory_index starts at 1, 0 is null)
+    emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    uint32_t total_globals = 1; 
+    for (auto* field : static_fields) {
+        if (field->memory_index >= total_globals) {
+            total_globals = field->memory_index + 1;
+        }
+    }
+    emitInt32(total_globals);
+    emitByte(static_cast<uint8_t>(OpCode::ALLOC_STATIC));
+    
+    // Assign global variables
+    for (auto* field : static_fields) {
+        if (field->initializer) {
+            compileExpression(field->initializer.get());
+            emitByte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
+            emitInt32(field->memory_index);
+        }
+    }
+    
+    // Call entry point
+    if (!entry_point.empty()) {
+        parser::MethodDeclaration* entry_method = nullptr;
+        for (const auto& node : ast_tree.nodes) {
+            if (node->node_type == parser::NodeType::CLASS_DECLARATION) {
+                auto class_decl = static_cast<parser::ClassDeclaration*>(node.get());
+                for (const auto& child : class_decl->children) {
+                    if (child->node_type == parser::NodeType::METHOD_DECLARATION) {
+                        auto method = static_cast<parser::MethodDeclaration*>(child.get());
+                        if (method->method_name == entry_point) {
+                            entry_method = method;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (!entry_method) {
+            throw std::runtime_error("Entry point not found: " + std::string(entry_point));
+        }
+        if (!entry_method->is_static) {
+            throw std::runtime_error("Entry point must be static");
+        }
+        
+        // PUSH IP Placeholder
+        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+        linker_patches.push_back(std::make_pair(bytecode.size(), entry_method));
+        emitInt32(0xFFFFFFFF);
+        
+        // Push Frame Size
+        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+        emitInt32(entry_method->frame_size);
+        
+        // Push Arg Count (0 arguments for main)
+        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+        emitInt32(0);
+        
+        emitByte(static_cast<uint8_t>(OpCode::CALL));
+    }
+    
+    emitByte(static_cast<uint8_t>(OpCode::HALT));
+}
+
+void Compiler::compileFunction(parser::Node* function_node) {
+    function_ips[function_node] = bytecode.size();
+    
+    if (function_node->node_type == parser::NodeType::METHOD_DECLARATION) {
+        auto method = static_cast<parser::MethodDeclaration*>(function_node);
+        for (const auto& child : method->children) compileNode(child.get());
+    } else if (function_node->node_type == parser::NodeType::CONSTRUCTOR_DECLARATION) {
+        auto ctor = static_cast<parser::ConstructorDeclaration*>(function_node);
+        for (const auto& child : ctor->children) compileNode(child.get());
+    }
+    
+    emitByte(static_cast<uint8_t>(OpCode::RETURN));
 }
 
 void Compiler::compileNode(parser::Node* node) {
     if (!node) return;
     
-    if (node->node_type == parser::NodeType::METHOD_DECLARATION) {
-        auto method = static_cast<parser::MethodDeclaration*>(node);
-        function_ips[node] = program.flat_bytecode.size();
-        
-        for (const auto& child : method->children) {
-            compileNode(child.get());
-        }
-        emitByte(static_cast<uint8_t>(OpCode::RETURN));
-    }
-    else if (node->node_type == parser::NodeType::CONSTRUCTOR_DECLARATION) {
-        auto ctor = static_cast<parser::ConstructorDeclaration*>(node);
-        function_ips[node] = program.flat_bytecode.size();
-        
-        for (const auto& child : ctor->children) {
-            compileNode(child.get());
-        }
-        emitByte(static_cast<uint8_t>(OpCode::RETURN));
-    }
-    else if (node->node_type == parser::NodeType::BLOCK_STATEMENT) {
+    if (node->node_type == parser::NodeType::BLOCK_STATEMENT) {
         for (const auto& child : node->children) {
             compileNode(child.get());
         }
@@ -124,18 +218,29 @@ void Compiler::compileNode(parser::Node* node) {
             compileExpression(var_decl->initializer.get());
             emitByte(static_cast<uint8_t>(OpCode::SET_LOCAL));
             emitInt32(var_decl->memory_index);
+            
+            if (var_decl->is_reference_type) {
+                // ARC Retain (INC_REF) - The VM will likely do this internally during SET_LOCAL or it might expect explicit instructions.
+                // The user said: ADD_REF <addr> execute every time that a class instance is referenced in a frame.
+                emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+                emitInt32(var_decl->memory_index);
+                emitByte(static_cast<uint8_t>(OpCode::INC_REF));
+            }
         }
     }
     else if (node->node_type == parser::NodeType::EXPRESSION_STATEMENT) {
-        compileExpression(node->children[0].get());
+        auto expr_stmt = static_cast<parser::ExpressionStatement*>(node);
+        compileExpression(expr_stmt->expression.get());
         emitByte(static_cast<uint8_t>(OpCode::POP));
     }
     else if (node->node_type == parser::NodeType::RETURN_STATEMENT) {
-        if (!node->children.empty()) {
-            compileExpression(node->children[0].get());
+        auto ret_stmt = static_cast<parser::ReturnStatement*>(node);
+        if (ret_stmt->value) {
+            compileExpression(ret_stmt->value.get());
         }
         emitByte(static_cast<uint8_t>(OpCode::RETURN));
     }
+    // ... Implement If, While, Do-While, etc. if required
 }
 
 void Compiler::compileExpression(parser::Node* expr) {
@@ -182,24 +287,26 @@ void Compiler::compileExpression(parser::Node* expr) {
         if (lit->token.type == lexer::TokenType::NUMBER) {
             std::string val_str = lit->token.value.value_or("0");
             if (val_str.find('.') != std::string::npos) {
-                // By default emit float64
                 emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_F64));
                 emitFloat64(std::stod(val_str));
             } else {
-                // By default emit int32
                 emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
                 emitInt32(static_cast<uint32_t>(std::stoll(val_str)));
             }
         } else if (lit->token.type == lexer::TokenType::STRING) {
             emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_STRING));
             emitString(lit->token.value.value_or(""));
-        } else if (lit->token.type == lexer::TokenType::IDENTIFIER && lit->token.value == "null") {
-            emitByte(static_cast<uint8_t>(OpCode::PUSH_NULL));
         }
     }
     else if (expr->node_type == parser::NodeType::IDENTIFIER_EXPRESSION) {
         auto ident = static_cast<parser::IdentifierExpression*>(expr);
-        if (ident->resolved_declaration) {
+        if (ident->name == "true") {
+            emitByte(static_cast<uint8_t>(OpCode::PUSH_TRUE));
+        } else if (ident->name == "false") {
+            emitByte(static_cast<uint8_t>(OpCode::PUSH_FALSE));
+        } else if (ident->name == "null") {
+            emitByte(static_cast<uint8_t>(OpCode::PUSH_NULL));
+        } else if (ident->resolved_declaration) {
             if (ident->resolved_declaration->node_type == parser::NodeType::FIELD_DECLARATION) {
                 auto field = static_cast<parser::FieldDeclaration*>(ident->resolved_declaration);
                 if (field->is_static) {
@@ -224,6 +331,16 @@ void Compiler::compileExpression(parser::Node* expr) {
             auto ident = static_cast<parser::IdentifierExpression*>(assign->target.get());
             if (ident->resolved_declaration->node_type == parser::NodeType::VARIABLE_DECLARATION) {
                 auto var = static_cast<parser::VariableDeclaration*>(ident->resolved_declaration);
+                
+                if (var->is_reference_type) {
+                    emitByte(static_cast<uint8_t>(OpCode::DUP));
+                    emitByte(static_cast<uint8_t>(OpCode::INC_REF));
+                    
+                    emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+                    emitInt32(var->memory_index);
+                    emitByte(static_cast<uint8_t>(OpCode::DEC_REF));
+                }
+                
                 emitByte(static_cast<uint8_t>(OpCode::SET_LOCAL));
                 emitInt32(var->memory_index);
             }
@@ -235,7 +352,7 @@ void Compiler::compileExpression(parser::Node* expr) {
         auto target_method = static_cast<parser::MethodDeclaration*>(call->resolved_declaration);
         
         emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-        linker_patches.push_back(std::make_pair(program.flat_bytecode.size(), target_method));
+        linker_patches.push_back(std::make_pair(bytecode.size(), target_method));
         emitInt32(0xFFFFFFFF);
         
         emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
@@ -260,7 +377,7 @@ void Compiler::compileExpression(parser::Node* expr) {
         auto ctor = static_cast<parser::ConstructorDeclaration*>(inst->resolved_constructor);
         
         emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-        linker_patches.push_back(std::make_pair(program.flat_bytecode.size(), ctor));
+        linker_patches.push_back(std::make_pair(bytecode.size(), ctor));
         emitInt32(0xFFFFFFFF);
         
         emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
@@ -271,6 +388,52 @@ void Compiler::compileExpression(parser::Node* expr) {
         
         emitByte(static_cast<uint8_t>(OpCode::CALL));
     }
+}
+
+// Simple Disassembler for debugging
+std::string Compiler::disassemble(const std::vector<uint8_t>& bcode) const {
+    std::stringstream ss;
+    size_t i = 0;
+    while (i < bcode.size()) {
+        ss << i << ": ";
+        OpCode op = static_cast<OpCode>(bcode[i++]);
+        switch (op) {
+            case OpCode::PUSH_CONST_I32: {
+                uint32_t val = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                i += 4;
+                ss << "PUSH_CONST_I32 " << val << "\n";
+                break;
+            }
+            case OpCode::SET_LOCAL: {
+                uint32_t val = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                i += 4;
+                ss << "SET_LOCAL " << val << "\n";
+                break;
+            }
+            case OpCode::GET_LOCAL: {
+                uint32_t val = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                i += 4;
+                ss << "GET_LOCAL " << val << "\n";
+                break;
+            }
+            case OpCode::SET_GLOBAL: {
+                uint32_t val = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                i += 4;
+                ss << "SET_GLOBAL " << val << "\n";
+                break;
+            }
+            case OpCode::ALLOC_STATIC: ss << "ALLOC_STATIC\n"; break;
+            case OpCode::HALT: ss << "HALT\n"; break;
+            case OpCode::CALL: ss << "CALL\n"; break;
+            case OpCode::RETURN: ss << "RETURN\n"; break;
+            case OpCode::ADD: ss << "ADD\n"; break;
+            case OpCode::POP: ss << "POP\n"; break;
+            case OpCode::INC_REF: ss << "INC_REF\n"; break;
+            case OpCode::DEC_REF: ss << "DEC_REF\n"; break;
+            default: ss << "UNKNOWN (" << static_cast<int>(op) << ")\n"; break;
+        }
+    }
+    return ss.str();
 }
 
 } // namespace compiler
