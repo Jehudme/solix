@@ -94,17 +94,27 @@ namespace {
 
         void handle_string() {
             char quote_type = source[start_pos];
+            std::string parsed_string;
             while (peek() != quote_type && !is_at_end()) {
                 if (peek() == '\\' && peek_next() != '\0') {
                     advance(); // Consume the backslash
-                    advance(); // Consume the escaped character
+                    char escaped = advance(); // Consume the escaped character
+                    switch (escaped) {
+                        case 'n': parsed_string += '\n'; break;
+                        case 'r': parsed_string += '\r'; break;
+                        case 't': parsed_string += '\t'; break;
+                        case '\\': parsed_string += '\\'; break;
+                        case '"': parsed_string += '"'; break;
+                        case '\'': parsed_string += '\''; break;
+                        default: parsed_string += escaped; break;
+                    }
                     continue;
                 }
                 if (peek() == '\n') {
                     current_line++;
                     current_column = 0; // will be 1 after advance()
                 }
-                advance();
+                parsed_string += advance();
             }
 
             if (is_at_end()) {
@@ -114,7 +124,7 @@ namespace {
             }
 
             advance(); // Consume the closing quote
-            add_token(TokenType::STRING);
+            tokens.push_back(Token{TokenType::STRING, parsed_string, file_path, current_line, start_column});
         }
 
         void handle_number() {
