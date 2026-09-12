@@ -131,6 +131,9 @@ public class Engine {
                 break;
         }
 
+        // Deeply nested function calls test: a = fn1(fn2(arg1)) + fn3(arg2)
+        int32 complexCall = Engine.createIdentityMatrix(x)[0][0] + (int32) proc.cache[0];
+
         do {
             x++;
         } while (x < 100);
