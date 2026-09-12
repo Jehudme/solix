@@ -3,28 +3,48 @@
 #include "solix/parser.hpp"
 #include <vector>
 #include <string>
-#include <cstdint>
-#include <variant>
 #include <unordered_map>
+#include <variant>
+#include <cstdint>
 
-namespace solix::compiler {
+namespace solix {
+namespace compiler {
 
 // ==========================================
-// Instruction Set Architecture (Bytecode)
+// Virtual Machine Instruction Set
 // ==========================================
 enum class OpCode : uint8_t {
-    PUSH_CONST, PUSH_TRUE, PUSH_FALSE, PUSH_NULL,
+    // Stack & Constants
+    PUSH_CONST, PUSH_TRUE, PUSH_FALSE, PUSH_NULL, POP, DUP,
+    
+    // Arithmetic & Logic
     ADD, SUBTRACT, MULTIPLY, DIVIDE, MODULO,
     EQUAL, NOT_EQUAL, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL,
     LOGICAL_NOT, NEGATE,
+    
+    // Variables
     GET_LOCAL, SET_LOCAL,
     GET_GLOBAL, SET_GLOBAL,
-    JUMP, JUMP_IF_FALSE,
-    CALL, CALL_NATIVE, RETURN,
-    NEW_INSTANCE, NEW_ARRAY,
+    
+    // Control Flow
+    JUMP, JUMP_IF_FALSE, JUMP_IF_TRUE,
+    
+    // Heap Memory & Arrays
+    ALLOC_STATIC, ALLOC_DYNAMIC,
     GET_PROPERTY, SET_PROPERTY,
     GET_ARRAY, SET_ARRAY,
-    POP, HALT
+    
+    // GC (ARC)
+    ADD_REF, REMOVE_REF,
+    
+    // Type Conversion
+    CONVERT_F64,
+    
+    // Functions
+    CALL, CALL_NATIVE, RETURN,
+    
+    // End
+    HALT
 };
 
 // ==========================================
@@ -33,81 +53,45 @@ enum class OpCode : uint8_t {
 using ConstantValue = std::variant<int64_t, double, std::string, bool>;
 
 // ==========================================
-// Bytecode Chunk
-// ==========================================
-struct Chunk {
-    std::string name;                     // Method name for debugging
-    int max_local_slots = 0;              // Size of the Call Frame for this function
-    std::vector<uint8_t> code;            // The raw bytecode instructions
-    std::vector<ConstantValue> constants; // The constant pool for this chunk
-    std::vector<int> lines;               // Line numbers for debugging
-    
-    int addConstant(ConstantValue value) {
-        constants.push_back(value);
-        return constants.size() - 1;
-    }
-    
-    void writeByte(uint8_t byte, int line) {
-        code.push_back(byte);
-        lines.push_back(line);
-    }
-    
-    void writeOp(OpCode op, int line) {
-        writeByte(static_cast<uint8_t>(op), line);
-    }
-    
-    void writeInt(int32_t value, int line) {
-        writeByte((value >> 24) & 0xFF, line);
-        writeByte((value >> 16) & 0xFF, line);
-        writeByte((value >> 8) & 0xFF, line);
-        writeByte(value & 0xFF, line);
-    }
-};
-
-// ==========================================
-// Compiled Program
+// The Flattened Executable Program
 // ==========================================
 struct BytecodeProgram {
-    std::vector<Chunk> functions;                 // Fast O(1) jump array for methods
-    std::unordered_map<std::string, int> exports; // Only used once at startup to find "main"
-    int global_variable_count = 0;                // How many slots to reserve at Memory Pool indices 1 to N
+    std::vector<uint8_t> flat_bytecode;
+    std::vector<ConstantValue> constants;
 };
 
 // ==========================================
-// Compiler
+// The Core Compiler
 // ==========================================
 class Compiler {
 public:
-    Compiler();
-    BytecodeProgram compile(const parser::AstTree& tree);
+    BytecodeProgram compile(parser::AstTree& ast);
 
 private:
     BytecodeProgram program;
-    Chunk* current_chunk;
     
-    // Global Tracker
-    std::unordered_map<std::string, int> global_variables;
+    // Track where functions start in the flat bytecode array
+    std::unordered_map<parser::Node*, uint32_t> function_ips;
     
-    // Local Scope Tracker for the current function
-    struct Local {
-        std::string name;
-        int depth;
-    };
-    std::vector<Local> locals;
-    int scope_depth;
-    
-    void beginScope();
-    void endScope();
-    int addLocal(const std::string& name);
-    int resolveLocal(const std::string& name);
-    
-    int registerGlobal(const std::string& name);
-    int resolveGlobal(const std::string& name);
+    // Linker Phase patches: Map from <Byte_Index_Of_0xFFFFFFFF_Hole> to <Function_Node>
+    std::vector<std::pair<size_t, parser::Node*>> linker_patches;
 
-    // AST Visitors
+    // Helper to add a constant and return its index
+    uint32_t emitConstant(const ConstantValue& value);
+    
+    // Helper to emit a raw byte
+    void emitByte(uint8_t byte);
+    
+    // Helper to emit an integer (like 32-bit offset)
+    void emitInt(uint32_t value);
+    
+    // Linker
+    void applyLinkerPatches();
+    
+    // Compilation passes
     void compileNode(parser::Node* node);
     void compileExpression(parser::Node* expr);
-    void compileStatement(parser::Node* stmt);
 };
 
-} // namespace solix::compiler
+} // namespace compiler
+} // namespace solix
