@@ -51,6 +51,10 @@ private:
     // Tracks nested block scopes for variable shadowing and lifecycle
     std::vector<Scope> scope_stack;
     
+    // Memory Index Trackers for the Compiler
+    int staticVariableIndex = 1;                        // Starts at 1 (0 is reserved for null)
+    int localVariableIndex = 0;                         // Resets per method call
+    
     // Context flags to enforce structural rules
     int loop_depth = 0;                                 // >0 means we are inside a loop (break/continue are valid)
     parser::ClassDeclaration* current_class = nullptr;  // Tracks the 'this' context and visibility boundaries

@@ -980,7 +980,12 @@ ConstructorDeclaration::ConstructorDeclaration(const std::vector<lexer::Token>& 
                     std::string p_name = std::string(tokens[end_index-1].value.value_or(""));
                     std::string p_type = "";
                     for (size_t current_token_type = start_index; current_token_type < end_index-1; current_token_type++) p_type += std::string(tokens[current_token_type].value.value_or("")) + " ";
-                    parameters.push_back({p_name, p_type});
+                    // Trim trailing space
+                    if (!p_type.empty() && p_type.back() == ' ') p_type.pop_back();
+                    auto var_decl = std::make_unique<VariableDeclaration>(std::vector<lexer::Token>(), this);
+                    var_decl->var_name = p_name;
+                    var_decl->type_name = p_type;
+                    parameters.push_back(std::move(var_decl));
                 }
             }
             start_index = end_index + 1;
@@ -1039,7 +1044,12 @@ MethodDeclaration::MethodDeclaration(const std::vector<lexer::Token>& tokens, No
                     std::string p_name = std::string(tokens[end_index-1].value.value_or(""));
                     std::string p_type = "";
                     for (size_t current_token_type = start_index; current_token_type < end_index-1; current_token_type++) p_type += std::string(tokens[current_token_type].value.value_or("")) + " ";
-                    parameters.push_back({p_name, p_type});
+                    // Trim trailing space
+                    if (!p_type.empty() && p_type.back() == ' ') p_type.pop_back();
+                    auto var_decl = std::make_unique<VariableDeclaration>(std::vector<lexer::Token>(), this);
+                    var_decl->var_name = p_name;
+                    var_decl->type_name = p_type;
+                    parameters.push_back(std::move(var_decl));
                 }
             }
             start_index = end_index + 1;

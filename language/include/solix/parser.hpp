@@ -242,29 +242,21 @@ struct FieldDeclaration : public Node {
 
 struct ConstructorDeclaration : public Node {
     lexer::TokenType access_modifier;
-    
-    struct Parameter {
-        std::string name;
-        std::string type;
-    };
-    std::vector<Parameter> parameters;
+    std::string class_name;
+    std::vector<std::unique_ptr<VariableDeclaration>> parameters;
+    int frame_size = 0; // Number of local variables inside this constructor
     
     // Note: The constructor body (BlockStatement) will be stored in 'children'
     ConstructorDeclaration(const std::vector<lexer::Token>& tokens, Node* parent = nullptr);
 };
 
 struct MethodDeclaration : public Node {
-    std::string method_name;
-    std::string return_type;
     lexer::TokenType access_modifier;
     bool is_static = false;
     bool is_inline = false;
-    
-    struct Parameter {
-        std::string name;
-        std::string type;
-    };
-    std::vector<Parameter> parameters;
+    std::string return_type;
+    std::string method_name;
+    std::vector<std::unique_ptr<VariableDeclaration>> parameters;
     int frame_size = 0; // Number of local variables inside this method
     
     // Note: The method body (BlockStatement) will be stored in 'children'
