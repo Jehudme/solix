@@ -469,7 +469,7 @@ TypeInfo SemanticAnalyzer::evaluateExpression(parser::AstTree& tree, parser::Nod
         if (call->arguments.size() != method_declaration->parameters.size()) throw std::runtime_error("Argument count mismatch");
         for (size_t index = 0; index < call->arguments.size(); index++) {
             TypeInfo argument_type = evaluateExpression(tree, call->arguments[index].get());
-            TypeInfo parameter_type_info = resolveType(tree, method_declaration->parameters[index].type, {});
+            TypeInfo parameter_type_info = resolveType(tree, method_declaration->parameters[index]->type_name, {});
             if (argument_type != parameter_type_info) throw std::runtime_error("Argument type mismatch");
         }
         result = resolveType(tree, method_declaration->return_type, {});
