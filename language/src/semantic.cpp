@@ -417,6 +417,13 @@ TypeInfo SemanticAnalyzer::resolveType(parser::AstTree& tree, const std::string&
         } else {
             throw_semantic_error(nullptr, "Undefined type: " + type_str + " (raw: " + raw_type_name + "), class_relative: " + class_relative + ", current_package: " + current_package);
         }
+        
+        if (symbol && symbol->node_type == parser::NodeType::ENUM_DECLARATION) {
+            info.is_primitive = (info.array_depth == 0);
+        } else if (symbol && symbol->node_type == parser::NodeType::ALIAS_STATEMENT) {
+            // Assume primitive aliases for now (like uint64)
+            info.is_primitive = (info.array_depth == 0);
+        }
 
         if (symbol->node_type == parser::NodeType::ALIAS_STATEMENT) {
             auto alias = static_cast<parser::AliasStatement*>(symbol);
