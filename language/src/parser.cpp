@@ -395,16 +395,19 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
     }
     
     // Cast
-    if (first_token_type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) {
+    if (tokens[0].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) {
         int temporary_parentheses_depth = 0;
         int closing_parenthesis_index = -1;
-        for (size_t index=0; index<tokens.size(); index++) {
+        for (size_t index = 0; index < tokens.size(); index++) {
             if (tokens[index].type == lexer::TokenType::PUNCTUATION_OPEN_PAREN) temporary_parentheses_depth++;
             else if (tokens[index].type == lexer::TokenType::PUNCTUATION_CLOSE_PAREN) temporary_parentheses_depth--;
             if (temporary_parentheses_depth == 0) { closing_parenthesis_index = index; break; }
         }
         if (closing_parenthesis_index != -1 && closing_parenthesis_index < (int)tokens.size() - 1) {
-            return NodeType::CAST_EXPRESSION;
+            size_t type_end = consumeType(tokens, 1);
+            if (type_end == closing_parenthesis_index) {
+                return NodeType::CAST_EXPRESSION;
+            }
         }
     }
     if (tokens.back().type == lexer::TokenType::PUNCTUATION_CLOSE_BRACKET) {

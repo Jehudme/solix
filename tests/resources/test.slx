@@ -83,7 +83,7 @@ public class Engine {
 
     // Method with complex arrays and multidimensional logic
     public static Matrix createIdentityMatrix(int32 size) {
-        Matrix mat = new float64[][][size];
+        Matrix mat = new float64[][size];
         for (int32 i = 0; i < size; i++) {
             mat[i] = new float64[size];
             for (int32 j = 0; j < size; j++) {
@@ -132,7 +132,7 @@ public class Engine {
         }
 
         // Deeply nested function calls test: a = fn1(fn2(arg1)) + fn3(arg2)
-        int32 complexCall = Engine.createIdentityMatrix(x)[0][0] + (int32) proc.cache[0];
+        float64 complexCall = Engine.createIdentityMatrix(x)[0][0] + (float64) proc.cache[0];
 
         do {
             x++;
