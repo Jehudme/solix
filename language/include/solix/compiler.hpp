@@ -96,6 +96,8 @@ private:
     
     // Current AST being compiled
     parser::AstTree ast_tree;
+    std::vector<std::vector<uint32_t>> loop_break_patches;
+    std::vector<std::vector<uint32_t>> loop_continue_patches;
 };
 
 } // namespace compiler
