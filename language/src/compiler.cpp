@@ -211,22 +211,40 @@ void Compiler::compileClass(parser::ClassDeclaration* class_node) {
 
 void Compiler::emitCleanupForNode(parser::Node* node) {
     if (!node) return;
+    
+    // Clean up parameters if it's a method/ctor
     if (node->node_type == parser::NodeType::METHOD_DECLARATION) {
         auto method = static_cast<parser::MethodDeclaration*>(node);
-        for (const auto& param : method->parameters) emitCleanupForNode(param.get());
+        for (const auto& param : method->parameters) {
+            auto var = static_cast<parser::VariableDeclaration*>(param.get());
+            if (var->is_reference_type) {
+                emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+                emitInt32(var->memory_index);
+                emitByte(static_cast<uint8_t>(OpCode::DEC_REF));
+            }
+        }
     } else if (node->node_type == parser::NodeType::CONSTRUCTOR_DECLARATION) {
         auto ctor = static_cast<parser::ConstructorDeclaration*>(node);
-        for (const auto& param : ctor->parameters) emitCleanupForNode(param.get());
-    } else if (node->node_type == parser::NodeType::VARIABLE_DECLARATION) {
-        auto var = static_cast<parser::VariableDeclaration*>(node);
-        if (var->is_reference_type) {
-            emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
-            emitInt32(var->memory_index);
-            emitByte(static_cast<uint8_t>(OpCode::DEC_REF));
+        for (const auto& param : ctor->parameters) {
+            auto var = static_cast<parser::VariableDeclaration*>(param.get());
+            if (var->is_reference_type) {
+                emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+                emitInt32(var->memory_index);
+                emitByte(static_cast<uint8_t>(OpCode::DEC_REF));
+            }
         }
     }
+    
+    // Only clean up direct child variable declarations!
     for (const auto& child : node->children) {
-        emitCleanupForNode(child.get());
+        if (child->node_type == parser::NodeType::VARIABLE_DECLARATION) {
+            auto var = static_cast<parser::VariableDeclaration*>(child.get());
+            if (var->is_reference_type) {
+                emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+                emitInt32(var->memory_index);
+                emitByte(static_cast<uint8_t>(OpCode::DEC_REF));
+            }
+        }
     }
 }
 void Compiler::compileFunction(parser::Node* function_node) {
@@ -251,6 +269,7 @@ void Compiler::compileNode(parser::Node* node) {
         for (const auto& child : node->children) {
             compileNode(child.get());
         }
+        emitCleanupForNode(node);
     }
     else if (node->node_type == parser::NodeType::VARIABLE_DECLARATION) {
         auto var_decl = static_cast<parser::VariableDeclaration*>(node);
@@ -451,7 +470,15 @@ void Compiler::compileNode(parser::Node* node) {
             }
         }
         
-        if (current) emitCleanupForNode(current);
+        parser::Node* cleanup_cursor = node->parent_node;
+        while (cleanup_cursor) {
+            emitCleanupForNode(cleanup_cursor);
+            if (cleanup_cursor->node_type == parser::NodeType::METHOD_DECLARATION || 
+                cleanup_cursor->node_type == parser::NodeType::CONSTRUCTOR_DECLARATION) {
+                break;
+            }
+            cleanup_cursor = cleanup_cursor->parent_node;
+        }
         
         emitByte(static_cast<uint8_t>(OpCode::RETURN));
     }
@@ -537,12 +564,37 @@ void Compiler::compileNode(parser::Node* node) {
     }
     else if (node->node_type == parser::NodeType::BREAK_STATEMENT) {
         if (loop_break_patches.empty()) throw_compile_error(node, "Break statement outside of loop or switch");
+        
+        parser::Node* cleanup_cursor = node->parent_node;
+        while (cleanup_cursor) {
+            if (cleanup_cursor->node_type == parser::NodeType::WHILE_STATEMENT ||
+                cleanup_cursor->node_type == parser::NodeType::DO_WHILE_STATEMENT ||
+                cleanup_cursor->node_type == parser::NodeType::FOR_STATEMENT ||
+                cleanup_cursor->node_type == parser::NodeType::SWITCH_STATEMENT) {
+                break;
+            }
+            emitCleanupForNode(cleanup_cursor);
+            cleanup_cursor = cleanup_cursor->parent_node;
+        }
+        
         emitByte(static_cast<uint8_t>(OpCode::JUMP));
         loop_break_patches.back().push_back(bytecode.size());
         emitInt32(0xFFFFFFFF);
     }
     else if (node->node_type == parser::NodeType::CONTINUE_STATEMENT) {
         if (loop_continue_patches.empty()) throw_compile_error(node, "Continue statement outside of loop");
+        
+        parser::Node* cleanup_cursor = node->parent_node;
+        while (cleanup_cursor) {
+            if (cleanup_cursor->node_type == parser::NodeType::WHILE_STATEMENT ||
+                cleanup_cursor->node_type == parser::NodeType::DO_WHILE_STATEMENT ||
+                cleanup_cursor->node_type == parser::NodeType::FOR_STATEMENT) {
+                break;
+            }
+            emitCleanupForNode(cleanup_cursor);
+            cleanup_cursor = cleanup_cursor->parent_node;
+        }
+        
         emitByte(static_cast<uint8_t>(OpCode::JUMP));
         loop_continue_patches.back().push_back(bytecode.size());
         emitInt32(0xFFFFFFFF);
@@ -671,6 +723,10 @@ void Compiler::compileExpression(parser::Node* expr) {
         
         if (assign->target->node_type == parser::NodeType::IDENTIFIER_EXPRESSION) {
             compileExpression(assign->value.get());
+            
+            // Assignment is an expression, so it must leave the assigned value on the stack!
+            emitByte(static_cast<uint8_t>(OpCode::DUP));
+            
             auto ident = static_cast<parser::IdentifierExpression*>(assign->target.get());
             if (ident->resolved_declaration->node_type == parser::NodeType::VARIABLE_DECLARATION) {
                 auto var = static_cast<parser::VariableDeclaration*>(ident->resolved_declaration);
@@ -698,6 +754,7 @@ void Compiler::compileExpression(parser::Node* expr) {
         } else if (assign->target->node_type == parser::NodeType::MEMBER_ACCESS_EXPRESSION) {
             auto mem_acc = static_cast<parser::MemberAccessExpression*>(assign->target.get());
             compileExpression(assign->value.get());
+            emitByte(static_cast<uint8_t>(OpCode::DUP)); // Leave value on stack
             compileExpression(mem_acc->object.get());
             auto field = static_cast<parser::FieldDeclaration*>(mem_acc->resolved_declaration);
             emitByte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
@@ -705,6 +762,7 @@ void Compiler::compileExpression(parser::Node* expr) {
         } else if (assign->target->node_type == parser::NodeType::ARRAY_ACCESS_EXPRESSION) {
             auto arr_acc = static_cast<parser::ArrayAccessExpression*>(assign->target.get());
             compileExpression(assign->value.get());
+            emitByte(static_cast<uint8_t>(OpCode::DUP)); // Leave value on stack
             compileExpression(arr_acc->array.get());
             compileExpression(arr_acc->index.get());
             emitByte(static_cast<uint8_t>(OpCode::SET_ARRAY));
