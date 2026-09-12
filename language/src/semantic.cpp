@@ -343,7 +343,7 @@ TypeInfo SemanticAnalyzer::resolveType(parser::AstTree& tree, const std::string&
         type_str == "float32" || type_str == "float64" || 
         type_str == "char") {
         info.base_name = type_str;
-        info.is_primitive = true;
+        info.is_primitive = (info.array_depth == 0);
     } else if (type_str == "string") {
         info.base_name = type_str;
         info.is_primitive = false;
