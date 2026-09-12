@@ -19,6 +19,7 @@ namespace semantic {
     throw std::runtime_error(err);
 }
 
+
 std::string TypeInfo::to_string() const {
     std::string result_string = "";
     result_string += base_name;
@@ -244,10 +245,6 @@ void SemanticAnalyzer::resolveAndCheck(parser::AstTree& tree, parser::Node* root
             param->resolved_array_depth = type_info.array_depth;
             declareLocal(param->var_name, param.get(), {});
         }
-    } else if (root->node_type == parser::NodeType::BREAK_STATEMENT || root->node_type == parser::NodeType::CONTINUE_STATEMENT) {
-        if (loop_depth <= 0) {
-            throw_semantic_error(root, "break or continue statement outside of loop");
-        }
     } else if (root->node_type == parser::NodeType::VARIABLE_DECLARATION) {
         auto variable_declaration = static_cast<parser::VariableDeclaration*>(root);
         variable_declaration->memory_index = localVariableIndex++;
@@ -274,15 +271,21 @@ void SemanticAnalyzer::resolveAndCheck(parser::AstTree& tree, parser::Node* root
         auto for_statement = static_cast<parser::ForStatement*>(root);
         if (for_statement->initialization) resolveAndCheck(tree, for_statement->initialization.get());
         if (for_statement->condition) evaluateExpression(tree, for_statement->condition.get());
-        if (for_statement->iteration) evaluateExpression(tree, for_statement->iteration.get());
+        if (for_statement->iteration) resolveAndCheck(tree, for_statement->iteration.get());
+        loop_depth++;
         if (for_statement->body) resolveAndCheck(tree, for_statement->body.get());
+        loop_depth--;
     } else if (root->node_type == parser::NodeType::WHILE_STATEMENT) {
         auto while_statement = static_cast<parser::WhileStatement*>(root);
         evaluateExpression(tree, while_statement->condition.get());
+        loop_depth++;
         if (while_statement->body) resolveAndCheck(tree, while_statement->body.get());
+        loop_depth--;
     } else if (root->node_type == parser::NodeType::DO_WHILE_STATEMENT) {
         auto do_while_statement = static_cast<parser::DoWhileStatement*>(root);
+        loop_depth++;
         if (do_while_statement->body) resolveAndCheck(tree, do_while_statement->body.get());
+        loop_depth--;
         evaluateExpression(tree, do_while_statement->condition.get());
     } else if (root->node_type == parser::NodeType::IF_STATEMENT) {
         auto if_statement = static_cast<parser::IfStatement*>(root);
@@ -303,6 +306,10 @@ void SemanticAnalyzer::resolveAndCheck(parser::AstTree& tree, parser::Node* root
             }
         }
         loop_depth--;
+        } else if (root->node_type == parser::NodeType::BREAK_STATEMENT || root->node_type == parser::NodeType::CONTINUE_STATEMENT) {
+        if (loop_depth <= 0) {
+            throw_semantic_error(root, "break/continue statement outside of loop");
+        }
     } else if (root->node_type == parser::NodeType::EXPRESSION_STATEMENT) {
         evaluateExpression(tree, static_cast<parser::ExpressionStatement*>(root)->expression.get());
     } else if (root->node_type == parser::NodeType::RETURN_STATEMENT) {
@@ -311,9 +318,40 @@ void SemanticAnalyzer::resolveAndCheck(parser::AstTree& tree, parser::Node* root
             TypeInfo val_type = evaluateExpression(tree, return_stmt->value.get());
             if (current_method) {
                 TypeInfo expected_type = resolveType(tree, current_method->return_type, {});
-                if (val_type != expected_type) throw_semantic_error(return_statement, "Return type mismatch");
+                if (val_type != expected_type) throw_semantic_error(return_stmt, "Return type mismatch");
             }
         }
+    } else if (root->node_type == parser::NodeType::LITERAL_EXPRESSION ||
+               root->node_type == parser::NodeType::IDENTIFIER_EXPRESSION ||
+               root->node_type == parser::NodeType::BINARY_EXPRESSION ||
+               root->node_type == parser::NodeType::ASSIGNMENT_EXPRESSION ||
+               root->node_type == parser::NodeType::MEMBER_ACCESS_EXPRESSION ||
+               root->node_type == parser::NodeType::ARRAY_ACCESS_EXPRESSION ||
+               root->node_type == parser::NodeType::CALL_EXPRESSION ||
+               root->node_type == parser::NodeType::UNARY_EXPRESSION ||
+               root->node_type == parser::NodeType::TERNARY_EXPRESSION ||
+               root->node_type == parser::NodeType::CAST_EXPRESSION ||
+               root->node_type == parser::NodeType::NEW_INSTANCE_EXPRESSION ||
+               root->node_type == parser::NodeType::ARRAY_CREATION_EXPRESSION ||
+               root->node_type == parser::NodeType::ARRAY_LITERAL_EXPRESSION ||
+               root->node_type == parser::NodeType::PACKAGE_STATEMENT ||
+               root->node_type == parser::NodeType::BLOCK_STATEMENT ||
+               root->node_type == parser::NodeType::FIELD_DECLARATION ||
+               root->node_type == parser::NodeType::CLASS_DECLARATION ||
+               root->node_type == parser::NodeType::METHOD_DECLARATION ||
+               root->node_type == parser::NodeType::CONSTRUCTOR_DECLARATION ||
+               root->node_type == parser::NodeType::ENUM_DECLARATION ||
+               root->node_type == parser::NodeType::ALIAS_STATEMENT ||
+               root->node_type == parser::NodeType::FOR_STATEMENT ||
+               root->node_type == parser::NodeType::WHILE_STATEMENT ||
+               root->node_type == parser::NodeType::DO_WHILE_STATEMENT ||
+               root->node_type == parser::NodeType::IF_STATEMENT ||
+               root->node_type == parser::NodeType::SWITCH_STATEMENT ||
+               root->node_type == parser::NodeType::CASE_STATEMENT ||
+               root->node_type == parser::NodeType::VARIABLE_DECLARATION) {
+        // Handled elsewhere or safe to ignore here
+    } else {
+        throw_semantic_error(root, "Unhandled AST node type in semantic analyzer: " + std::to_string(static_cast<int>(root->node_type)));
     }
     
     if (root->node_type == parser::NodeType::METHOD_DECLARATION) {
@@ -335,24 +373,6 @@ void SemanticAnalyzer::resolveAndCheck(parser::AstTree& tree, parser::Node* root
         }
     }
     
-    } else if (root->node_type == parser::NodeType::LITERAL_EXPRESSION ||
-               root->node_type == parser::NodeType::IDENTIFIER_EXPRESSION ||
-               root->node_type == parser::NodeType::BINARY_EXPRESSION ||
-               root->node_type == parser::NodeType::ASSIGNMENT_EXPRESSION ||
-               root->node_type == parser::NodeType::MEMBER_ACCESS_EXPRESSION ||
-               root->node_type == parser::NodeType::ARRAY_ACCESS_EXPRESSION ||
-               root->node_type == parser::NodeType::CALL_EXPRESSION ||
-               root->node_type == parser::NodeType::UNARY_EXPRESSION ||
-               root->node_type == parser::NodeType::TERNARY_EXPRESSION ||
-               root->node_type == parser::NodeType::CAST_EXPRESSION ||
-               root->node_type == parser::NodeType::NEW_INSTANCE_EXPRESSION ||
-               root->node_type == parser::NodeType::ARRAY_CREATION_EXPRESSION ||
-               root->node_type == parser::NodeType::ARRAY_LITERAL_EXPRESSION ||
-               root->node_type == parser::NodeType::PACKAGE_STATEMENT) {
-        // Handled elsewhere or safe to ignore here
-    } else {
-        throw_semantic_error(root, "Unhandled AST node type in semantic analyzer: " + std::to_string(static_cast<int>(root->node_type)));
-    }
     if (is_scope_creator) popScope();
     
     current_class = previous_class;

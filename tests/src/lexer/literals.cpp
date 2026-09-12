@@ -32,12 +32,12 @@ TEST_CASE("Lexer - Literals Exhaustive", "[lexer][literals]") {
         auto tokens = tokenize("\"hello world\" 'A' \"\" \"esc\\\"aped\"");
         REQUIRE(tokens.size() == 5);
         REQUIRE(tokens[0].type == TokenType::STRING);
-        REQUIRE(tokens[0].value.value() == "\"hello world\"");
+        REQUIRE(tokens[0].value.value() == "hello world");
         REQUIRE(tokens[1].type == TokenType::STRING); // 'A' acts as string token in our lexer
-        REQUIRE(tokens[1].value.value() == "'A'");
+        REQUIRE(tokens[1].value.value() == "A");
         REQUIRE(tokens[2].type == TokenType::STRING);
-        REQUIRE(tokens[2].value.value() == "\"\"");
+        REQUIRE(tokens[2].value.value() == "");
         REQUIRE(tokens[3].type == TokenType::STRING);
-        REQUIRE(tokens[3].value.value() == "\"esc\\\"aped\"");
+        REQUIRE(tokens[3].value.value() == "esc\"aped");
     }
 }

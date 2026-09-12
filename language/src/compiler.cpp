@@ -10,6 +10,19 @@
 namespace solix {
 namespace compiler {
 
+[[noreturn]] static void throw_compile_error(parser::Node* node, const std::string& msg) {
+    std::string err = "[Compiler Error] ";
+    if (node) {
+        if (!node->file_path.empty()) {
+            err += node->file_path.string() + ":";
+        }
+        err += std::to_string(node->line) + ":" + std::to_string(node->column) + " - ";
+    }
+    err += msg;
+    throw std::runtime_error(err);
+}
+
+
 void Compiler::emitByte(uint8_t byte) {
     bytecode.push_back(byte);
 }
@@ -57,7 +70,7 @@ void Compiler::applyLinkerPatches() {
         parser::Node* target_func = patch.second;
         
         if (function_ips.find(target_func) == function_ips.end()) {
-            throw std::runtime_error("Linker Error: Unresolved function call!");
+            throw_compile_error(nullptr, "Linker Error: Unresolved function call!");
         }
         
         uint32_t target_ip = function_ips[target_func];
@@ -159,10 +172,10 @@ void Compiler::compileBootSequence(std::string_view entry_point) {
         }
         
         if (!entry_method) {
-            throw std::runtime_error("Entry point not found: " + std::string(entry_point));
+            throw_compile_error(nullptr, "Entry point not found: " + std::string(entry_point));
         }
         if (!entry_method->is_static) {
-            throw std::runtime_error("Entry point must be static");
+            throw_compile_error(nullptr, "Entry point must be static");
         }
         
         // PUSH IP Placeholder
@@ -303,16 +316,36 @@ void Compiler::compileNode(parser::Node* node) {
         uint32_t patch_ip = bytecode.size();
         emitInt32(0xFFFFFFFF);
         
+        loop_break_patches.push_back(std::vector<uint32_t>());
+        loop_continue_patches.push_back(std::vector<uint32_t>());
+        
         compileNode(while_stmt->body.get());
+        
+        uint32_t continue_ip = start_ip;
+        for (uint32_t cont_patch : loop_continue_patches.back()) {
+            bytecode[cont_patch] = (continue_ip >> 24) & 0xFF;
+            bytecode[cont_patch+1] = (continue_ip >> 16) & 0xFF;
+            bytecode[cont_patch+2] = (continue_ip >> 8) & 0xFF;
+            bytecode[cont_patch+3] = continue_ip & 0xFF;
+        }
+        loop_continue_patches.pop_back();
         
         emitByte(static_cast<uint8_t>(OpCode::JUMP));
         emitInt32(start_ip);
         
         uint32_t end_ip = bytecode.size();
         bytecode[patch_ip] = (end_ip >> 24) & 0xFF;
-            bytecode[patch_ip+1] = (end_ip >> 16) & 0xFF;
-            bytecode[patch_ip+2] = (end_ip >> 8) & 0xFF;
-            bytecode[patch_ip+3] = end_ip & 0xFF;
+        bytecode[patch_ip+1] = (end_ip >> 16) & 0xFF;
+        bytecode[patch_ip+2] = (end_ip >> 8) & 0xFF;
+        bytecode[patch_ip+3] = end_ip & 0xFF;
+        
+        for (uint32_t break_patch : loop_break_patches.back()) {
+            bytecode[break_patch] = (end_ip >> 24) & 0xFF;
+            bytecode[break_patch+1] = (end_ip >> 16) & 0xFF;
+            bytecode[break_patch+2] = (end_ip >> 8) & 0xFF;
+            bytecode[break_patch+3] = end_ip & 0xFF;
+        }
+        loop_break_patches.pop_back();
     }
     else if (node->node_type == parser::NodeType::DO_WHILE_STATEMENT) {
         auto do_while_stmt = static_cast<parser::DoWhileStatement*>(node);
@@ -351,23 +384,41 @@ void Compiler::compileNode(parser::Node* node) {
             emitInt32(0xFFFFFFFF);
         }
         
+        loop_break_patches.push_back(std::vector<uint32_t>());
+        loop_continue_patches.push_back(std::vector<uint32_t>());
+        
         compileNode(for_stmt->body.get());
         
+        uint32_t continue_ip = bytecode.size();
+        for (uint32_t cont_patch : loop_continue_patches.back()) {
+            bytecode[cont_patch] = (continue_ip >> 24) & 0xFF;
+            bytecode[cont_patch+1] = (continue_ip >> 16) & 0xFF;
+            bytecode[cont_patch+2] = (continue_ip >> 8) & 0xFF;
+            bytecode[cont_patch+3] = continue_ip & 0xFF;
+        }
+        loop_continue_patches.pop_back();
+        
         if (for_stmt->iteration) {
-            compileExpression(for_stmt->iteration.get());
-            emitByte(static_cast<uint8_t>(OpCode::POP));
+            compileNode(for_stmt->iteration.get());
         }
         
         emitByte(static_cast<uint8_t>(OpCode::JUMP));
         emitInt32(start_ip);
         
+        uint32_t end_ip = bytecode.size();
         if (has_condition) {
-            uint32_t end_ip = bytecode.size();
             bytecode[patch_ip] = (end_ip >> 24) & 0xFF;
             bytecode[patch_ip+1] = (end_ip >> 16) & 0xFF;
             bytecode[patch_ip+2] = (end_ip >> 8) & 0xFF;
             bytecode[patch_ip+3] = end_ip & 0xFF;
         }
+        for (uint32_t break_patch : loop_break_patches.back()) {
+            bytecode[break_patch] = (end_ip >> 24) & 0xFF;
+            bytecode[break_patch+1] = (end_ip >> 16) & 0xFF;
+            bytecode[break_patch+2] = (end_ip >> 8) & 0xFF;
+            bytecode[break_patch+3] = end_ip & 0xFF;
+        }
+        loop_break_patches.pop_back();
     }
     else if (node->node_type == parser::NodeType::RETURN_STATEMENT) {
         auto ret_stmt = static_cast<parser::ReturnStatement*>(node);
@@ -383,7 +434,77 @@ void Compiler::compileNode(parser::Node* node) {
         
         emitByte(static_cast<uint8_t>(OpCode::RETURN));
     }
-    // ... Implement If, While, Do-While, etc. if required
+    else if (node->node_type == parser::NodeType::SWITCH_STATEMENT) {
+        auto switch_stmt = static_cast<parser::SwitchStatement*>(node);
+        compileExpression(switch_stmt->condition.get());
+        
+        loop_break_patches.push_back(std::vector<uint32_t>());
+        
+        std::vector<uint32_t> next_case_patches;
+        for (const auto& child : switch_stmt->children) {
+            auto case_stmt = static_cast<parser::CaseStatement*>(child.get());
+            
+            for (uint32_t patch_ip : next_case_patches) {
+                uint32_t current_ip = bytecode.size();
+                bytecode[patch_ip] = (current_ip >> 24) & 0xFF;
+                bytecode[patch_ip+1] = (current_ip >> 16) & 0xFF;
+                bytecode[patch_ip+2] = (current_ip >> 8) & 0xFF;
+                bytecode[patch_ip+3] = current_ip & 0xFF;
+            }
+            next_case_patches.clear();
+            
+            if (!case_stmt->is_default) {
+                emitByte(static_cast<uint8_t>(OpCode::DUP));
+                compileExpression(case_stmt->case_value.get());
+                emitByte(static_cast<uint8_t>(OpCode::EQUAL));
+                emitByte(static_cast<uint8_t>(OpCode::JUMP_IF_FALSE));
+                next_case_patches.push_back(bytecode.size());
+                emitInt32(0xFFFFFFFF);
+            }
+            
+            for (const auto& stmt : case_stmt->children) {
+                compileNode(stmt.get());
+            }
+        }
+        
+        for (uint32_t patch_ip : next_case_patches) {
+            uint32_t current_ip = bytecode.size();
+            bytecode[patch_ip] = (current_ip >> 24) & 0xFF;
+            bytecode[patch_ip+1] = (current_ip >> 16) & 0xFF;
+            bytecode[patch_ip+2] = (current_ip >> 8) & 0xFF;
+            bytecode[patch_ip+3] = current_ip & 0xFF;
+        }
+        
+        emitByte(static_cast<uint8_t>(OpCode::POP)); 
+        
+        uint32_t end_ip = bytecode.size();
+        for (uint32_t break_patch : loop_break_patches.back()) {
+            bytecode[break_patch] = (end_ip >> 24) & 0xFF;
+            bytecode[break_patch+1] = (end_ip >> 16) & 0xFF;
+            bytecode[break_patch+2] = (end_ip >> 8) & 0xFF;
+            bytecode[break_patch+3] = end_ip & 0xFF;
+        }
+        loop_break_patches.pop_back();
+    }
+    else if (node->node_type == parser::NodeType::BREAK_STATEMENT) {
+        if (loop_break_patches.empty()) throw_compile_error(node, "Break statement outside of loop or switch");
+        emitByte(static_cast<uint8_t>(OpCode::JUMP));
+        loop_break_patches.back().push_back(bytecode.size());
+        emitInt32(0xFFFFFFFF);
+    }
+    else if (node->node_type == parser::NodeType::CONTINUE_STATEMENT) {
+        if (loop_continue_patches.empty()) throw_compile_error(node, "Continue statement outside of loop");
+        emitByte(static_cast<uint8_t>(OpCode::JUMP));
+        loop_continue_patches.back().push_back(bytecode.size());
+        emitInt32(0xFFFFFFFF);
+    }
+    else if (node->node_type == parser::NodeType::EXPRESSION_STATEMENT) {
+        auto expr_stmt = static_cast<parser::ExpressionStatement*>(node);
+        if (expr_stmt->expression) compileExpression(expr_stmt->expression.get());
+    }
+    else {
+        throw_compile_error(node, "Unhandled AST node type in compiler (compileNode): " + std::to_string(static_cast<int>(node->node_type)));
+    }
 }
 
 void Compiler::compileExpression(parser::Node* expr) {
@@ -405,7 +526,7 @@ void Compiler::compileExpression(parser::Node* expr) {
             case lexer::TokenType::OPERATOR_GREATER_EQUAL: emitByte(static_cast<uint8_t>(OpCode::GREATER_EQUAL)); break;
             case lexer::TokenType::OPERATOR_LESS_THAN: emitByte(static_cast<uint8_t>(OpCode::LESS)); break;
             case lexer::TokenType::OPERATOR_LESS_EQUAL: emitByte(static_cast<uint8_t>(OpCode::LESS_EQUAL)); break;
-            default: throw std::runtime_error("Unsupported binary operator in compiler");
+            default: throw_compile_error(expr, "Unsupported binary operator in compiler");
         }
     }
     else if (expr->node_type == parser::NodeType::UNARY_EXPRESSION) {
@@ -453,7 +574,7 @@ void Compiler::compileExpression(parser::Node* expr) {
         else if (target == "uint64") emitByte(static_cast<uint8_t>(OpCode::CONV_U64));
         else if (target == "float32") emitByte(static_cast<uint8_t>(OpCode::CONV_F32));
         else if (target == "float64") emitByte(static_cast<uint8_t>(OpCode::CONV_F64));
-        else throw std::runtime_error("Unsupported cast target type in compiler");
+        else throw_compile_error(expr, "Unsupported cast target type in compiler");
     }
     else if (expr->node_type == parser::NodeType::LITERAL_EXPRESSION) {
         auto lit = static_cast<parser::LiteralExpression*>(expr);
@@ -498,25 +619,48 @@ void Compiler::compileExpression(parser::Node* expr) {
     }
     else if (expr->node_type == parser::NodeType::ASSIGNMENT_EXPRESSION) {
         auto assign = static_cast<parser::AssignmentExpression*>(expr);
-        compileExpression(assign->value.get());
         
         if (assign->target->node_type == parser::NodeType::IDENTIFIER_EXPRESSION) {
+            compileExpression(assign->value.get());
             auto ident = static_cast<parser::IdentifierExpression*>(assign->target.get());
             if (ident->resolved_declaration->node_type == parser::NodeType::VARIABLE_DECLARATION) {
                 auto var = static_cast<parser::VariableDeclaration*>(ident->resolved_declaration);
-                
                 if (var->is_reference_type) {
                     emitByte(static_cast<uint8_t>(OpCode::DUP));
                     emitByte(static_cast<uint8_t>(OpCode::INC_REF));
-                    
                     emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
                     emitInt32(var->memory_index);
                     emitByte(static_cast<uint8_t>(OpCode::DEC_REF));
                 }
-                
                 emitByte(static_cast<uint8_t>(OpCode::SET_LOCAL));
                 emitInt32(var->memory_index);
+            } else if (ident->resolved_declaration->node_type == parser::NodeType::FIELD_DECLARATION) {
+                auto field = static_cast<parser::FieldDeclaration*>(ident->resolved_declaration);
+                if (field->is_static) {
+                    emitByte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
+                    emitInt32(field->memory_index);
+                } else {
+                    emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+                    emitInt32(0);
+                    emitByte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
+                    emitInt32(field->memory_index);
+                }
             }
+        } else if (assign->target->node_type == parser::NodeType::MEMBER_ACCESS_EXPRESSION) {
+            auto mem_acc = static_cast<parser::MemberAccessExpression*>(assign->target.get());
+            compileExpression(assign->value.get());
+            compileExpression(mem_acc->object.get());
+            auto field = static_cast<parser::FieldDeclaration*>(mem_acc->resolved_declaration);
+            emitByte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
+            emitInt32(field->memory_index);
+        } else if (assign->target->node_type == parser::NodeType::ARRAY_ACCESS_EXPRESSION) {
+            auto arr_acc = static_cast<parser::ArrayAccessExpression*>(assign->target.get());
+            compileExpression(assign->value.get());
+            compileExpression(arr_acc->array.get());
+            compileExpression(arr_acc->index.get());
+            emitByte(static_cast<uint8_t>(OpCode::SET_ARRAY));
+        } else {
+            throw_compile_error(expr, "Invalid assignment target");
         }
     }
     else if (expr->node_type == parser::NodeType::CALL_EXPRESSION) {
@@ -560,6 +704,71 @@ void Compiler::compileExpression(parser::Node* expr) {
         emitInt32(inst->arguments.size() + 1);
         
         emitByte(static_cast<uint8_t>(OpCode::CALL));
+    }
+    else if (expr->node_type == parser::NodeType::MEMBER_ACCESS_EXPRESSION) {
+        auto mem_acc = static_cast<parser::MemberAccessExpression*>(expr);
+        if (mem_acc->enum_value != -1) {
+            emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+            emitInt32(mem_acc->enum_value);
+        } else {
+            compileExpression(mem_acc->object.get());
+            auto field = static_cast<parser::FieldDeclaration*>(mem_acc->resolved_declaration);
+            emitByte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
+            emitInt32(field->memory_index);
+        }
+    }
+    else if (expr->node_type == parser::NodeType::ARRAY_ACCESS_EXPRESSION) {
+        auto arr_acc = static_cast<parser::ArrayAccessExpression*>(expr);
+        compileExpression(arr_acc->array.get());
+        compileExpression(arr_acc->index.get());
+        emitByte(static_cast<uint8_t>(OpCode::GET_ARRAY));
+    }
+    else if (expr->node_type == parser::NodeType::ARRAY_CREATION_EXPRESSION) {
+        auto arr_crea = static_cast<parser::ArrayCreationExpression*>(expr);
+        compileExpression(arr_crea->size.get());
+        emitByte(static_cast<uint8_t>(OpCode::ALLOC_DYNAMIC));
+    }
+    else if (expr->node_type == parser::NodeType::ARRAY_LITERAL_EXPRESSION) {
+        auto arr_lit = static_cast<parser::ArrayLiteralExpression*>(expr);
+        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+        emitInt32(arr_lit->elements.size());
+        emitByte(static_cast<uint8_t>(OpCode::ALLOC_DYNAMIC));
+        for (size_t i = 0; i < arr_lit->elements.size(); i++) {
+            emitByte(static_cast<uint8_t>(OpCode::DUP)); 
+            emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+            emitInt32(i); 
+            compileExpression(arr_lit->elements[i].get());
+            emitByte(static_cast<uint8_t>(OpCode::SET_ARRAY));
+        }
+    }
+    else if (expr->node_type == parser::NodeType::TERNARY_EXPRESSION) {
+        auto tern = static_cast<parser::TernaryExpression*>(expr);
+        compileExpression(tern->condition.get());
+        emitByte(static_cast<uint8_t>(OpCode::JUMP_IF_FALSE));
+        uint32_t patch_ip_false = bytecode.size();
+        emitInt32(0xFFFFFFFF);
+        
+        compileExpression(tern->true_branch.get());
+        emitByte(static_cast<uint8_t>(OpCode::JUMP));
+        uint32_t patch_ip_end = bytecode.size();
+        emitInt32(0xFFFFFFFF);
+        
+        uint32_t false_ip = bytecode.size();
+        bytecode[patch_ip_false] = (false_ip >> 24) & 0xFF;
+        bytecode[patch_ip_false+1] = (false_ip >> 16) & 0xFF;
+        bytecode[patch_ip_false+2] = (false_ip >> 8) & 0xFF;
+        bytecode[patch_ip_false+3] = false_ip & 0xFF;
+        
+        compileExpression(tern->false_branch.get());
+        
+        uint32_t end_ip = bytecode.size();
+        bytecode[patch_ip_end] = (end_ip >> 24) & 0xFF;
+        bytecode[patch_ip_end+1] = (end_ip >> 16) & 0xFF;
+        bytecode[patch_ip_end+2] = (end_ip >> 8) & 0xFF;
+        bytecode[patch_ip_end+3] = end_ip & 0xFF;
+    }
+    else {
+        throw_compile_error(expr, "Unhandled AST node type in compiler (compileExpression): " + std::to_string(static_cast<int>(expr->node_type)) + " parent: " + (expr->parent_node ? std::to_string(static_cast<int>(expr->parent_node->node_type)) : "null"));
     }
 }
 
