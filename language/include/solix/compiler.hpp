@@ -25,7 +25,7 @@ enum class OpCode : uint8_t {
     // Arithmetic & Logic
     ADD, SUBTRACT, MULTIPLY, DIVIDE, MODULO,
     EQUAL, NOT_EQUAL, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL,
-    LOGICAL_NOT, NEGATE,
+    LOGICAL_NOT, NEGATE, INC, DEC,
     
     // Variables
     GET_LOCAL, SET_LOCAL,
@@ -89,6 +89,7 @@ private:
 
     void compileNode(parser::Node* node);
     void compileExpression(parser::Node* expr);
+    void emitCleanupForNode(parser::Node* node);
 
     // Current bytecode being generated
     std::vector<uint8_t> bytecode;

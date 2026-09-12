@@ -18,3 +18,9 @@ build-*/
 
 # FetchContent
 _deps/
+scratch*.cpp
+scratch_test*
+fix_compiler*.py
+fix_*.py
+patch.cpp
+out/

@@ -1,5 +1,0 @@
-if(EXISTS "/home/jehud/Projects/enigma/out/Debug/tests/solix_tests-b12d07c_tests.cmake")
-  include("/home/jehud/Projects/enigma/out/Debug/tests/solix_tests-b12d07c_tests.cmake")
-else()
-  add_test(solix_tests_NOT_BUILT-b12d07c solix_tests_NOT_BUILT-b12d07c)
-endif()
