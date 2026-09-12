@@ -62,6 +62,8 @@ enum class NodeType {
 // ==========================================
 // Base AST Node
 // ==========================================
+struct VariableDeclaration;
+
 struct Node {
     NodeType node_type = NodeType::GENERIC;
     

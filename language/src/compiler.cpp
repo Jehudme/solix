@@ -129,7 +129,7 @@ void Compiler::compileExpression(parser::Node* expr) {
             case lexer::TokenType::OPERATOR_MINUS: emitByte(static_cast<uint8_t>(OpCode::SUBTRACT)); break;
             case lexer::TokenType::OPERATOR_MULTIPLY: emitByte(static_cast<uint8_t>(OpCode::MULTIPLY)); break;
             case lexer::TokenType::OPERATOR_DIVIDE: emitByte(static_cast<uint8_t>(OpCode::DIVIDE)); break;
-            case lexer::TokenType::OPERATOR_EQUAL_EQUAL: emitByte(static_cast<uint8_t>(OpCode::EQUAL)); break;
+            case lexer::TokenType::OPERATOR_EQUAL: emitByte(static_cast<uint8_t>(OpCode::EQUAL)); break;
             default: throw std::runtime_error("Unsupported binary operator in compiler");
         }
     }
@@ -164,10 +164,10 @@ void Compiler::compileExpression(parser::Node* expr) {
     }
     else if (expr->node_type == parser::NodeType::ASSIGNMENT_EXPRESSION) {
         auto assign = static_cast<parser::AssignmentExpression*>(expr);
-        compileExpression(assign->right.get());
+        compileExpression(assign->value.get());
         
-        if (assign->left->node_type == parser::NodeType::IDENTIFIER_EXPRESSION) {
-            auto ident = static_cast<parser::IdentifierExpression*>(assign->left.get());
+        if (assign->target->node_type == parser::NodeType::IDENTIFIER_EXPRESSION) {
+            auto ident = static_cast<parser::IdentifierExpression*>(assign->target.get());
             if (ident->resolved_declaration->node_type == parser::NodeType::VARIABLE_DECLARATION) {
                 auto var = static_cast<parser::VariableDeclaration*>(ident->resolved_declaration);
                 emitByte(static_cast<uint8_t>(OpCode::SET_LOCAL));
@@ -175,8 +175,8 @@ void Compiler::compileExpression(parser::Node* expr) {
             }
         }
     }
-    else if (expr->node_type == parser::NodeType::METHOD_CALL_EXPRESSION) {
-        auto call = static_cast<parser::MethodCallExpression*>(expr);
+    else if (expr->node_type == parser::NodeType::CALL_EXPRESSION) {
+        auto call = static_cast<parser::CallExpression*>(expr);
         
         // Push arguments
         for (const auto& arg : call->arguments) {
@@ -187,7 +187,7 @@ void Compiler::compileExpression(parser::Node* expr) {
         
         // Push destination IP placeholder
         emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST));
-        linker_patches.push_back({program.flat_bytecode.size(), target_method});
+        linker_patches.push_back(std::make_pair(program.flat_bytecode.size(), target_method));
         emitInt(0xFFFFFFFF); // Hole to be patched
         
         // Push Frame Size
@@ -220,7 +220,7 @@ void Compiler::compileExpression(parser::Node* expr) {
         // 4. Push constructor call data
         auto ctor = static_cast<parser::ConstructorDeclaration*>(inst->resolved_constructor);
         emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST));
-        linker_patches.push_back({program.flat_bytecode.size(), ctor});
+        linker_patches.push_back(std::make_pair(program.flat_bytecode.size(), ctor));
         emitInt(0xFFFFFFFF);
         
         emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST));

@@ -1284,6 +1284,7 @@ CaseStatement::CaseStatement(const std::vector<lexer::Token>& tokens, Node* pare
     }
 }
 VariableDeclaration::VariableDeclaration(const std::vector<lexer::Token>& tokens, Node* parent) : Node(tokens, NodeType::VARIABLE_DECLARATION, parent) {
+    if (tokens.empty()) return;
     size_t start = 0;
     while (start < tokens.size() && tokens[start].type == lexer::TokenType::KEYWORD_CONST) {
         is_const = true;
@@ -1353,12 +1354,12 @@ const Node* AstTree::resolveDeclaration(const Node* current_scope, const std::st
         } else if (curr->node_type == NodeType::METHOD_DECLARATION) {
             auto method_decl = static_cast<const MethodDeclaration*>(curr);
             for (const auto& param : method_decl->parameters) {
-                if (param.name == name) return method_decl; // Ideally return a Parameter node, but we return the method for now
+                if (param->var_name == name) return param.get();
             }
         } else if (curr->node_type == NodeType::CONSTRUCTOR_DECLARATION) {
             auto ctor_decl = static_cast<const ConstructorDeclaration*>(curr);
             for (const auto& param : ctor_decl->parameters) {
-                if (param.name == name) return ctor_decl;
+                if (param->var_name == name) return param.get();
             }
         }
         
