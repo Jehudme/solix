@@ -1,24 +1,50 @@
 #include "solix/compiler.hpp"
 #include <stdexcept>
 #include <iostream>
+#include <cstring>
 
 namespace solix {
 namespace compiler {
-
-uint32_t Compiler::emitConstant(const ConstantValue& value) {
-    program.constants.push_back(value);
-    return program.constants.size() - 1;
-}
 
 void Compiler::emitByte(uint8_t byte) {
     program.flat_bytecode.push_back(byte);
 }
 
-void Compiler::emitInt(uint32_t value) {
+void Compiler::emitInt32(uint32_t value) {
     program.flat_bytecode.push_back((value >> 24) & 0xFF);
     program.flat_bytecode.push_back((value >> 16) & 0xFF);
     program.flat_bytecode.push_back((value >> 8) & 0xFF);
     program.flat_bytecode.push_back(value & 0xFF);
+}
+
+void Compiler::emitInt64(uint64_t value) {
+    program.flat_bytecode.push_back((value >> 56) & 0xFF);
+    program.flat_bytecode.push_back((value >> 48) & 0xFF);
+    program.flat_bytecode.push_back((value >> 40) & 0xFF);
+    program.flat_bytecode.push_back((value >> 32) & 0xFF);
+    program.flat_bytecode.push_back((value >> 24) & 0xFF);
+    program.flat_bytecode.push_back((value >> 16) & 0xFF);
+    program.flat_bytecode.push_back((value >> 8) & 0xFF);
+    program.flat_bytecode.push_back(value & 0xFF);
+}
+
+void Compiler::emitFloat32(float value) {
+    uint32_t bit_representation;
+    std::memcpy(&bit_representation, &value, sizeof(float));
+    emitInt32(bit_representation);
+}
+
+void Compiler::emitFloat64(double value) {
+    uint64_t bit_representation;
+    std::memcpy(&bit_representation, &value, sizeof(double));
+    emitInt64(bit_representation);
+}
+
+void Compiler::emitString(const std::string& value) {
+    emitInt32(static_cast<uint32_t>(value.size())); // Size of string
+    for (char c : value) {
+        emitByte(static_cast<uint8_t>(c)); // The raw bytes of the string
+    }
 }
 
 void Compiler::applyLinkerPatches() {
@@ -71,7 +97,6 @@ void Compiler::compileNode(parser::Node* node) {
     
     if (node->node_type == parser::NodeType::METHOD_DECLARATION) {
         auto method = static_cast<parser::MethodDeclaration*>(node);
-        // Record where this function starts
         function_ips[node] = program.flat_bytecode.size();
         
         for (const auto& child : method->children) {
@@ -92,15 +117,13 @@ void Compiler::compileNode(parser::Node* node) {
         for (const auto& child : node->children) {
             compileNode(child.get());
         }
-        // At end of block, we should inject REMOVE_REF for local variables!
-        // Future feature.
     }
     else if (node->node_type == parser::NodeType::VARIABLE_DECLARATION) {
         auto var_decl = static_cast<parser::VariableDeclaration*>(node);
         if (var_decl->initializer) {
             compileExpression(var_decl->initializer.get());
             emitByte(static_cast<uint8_t>(OpCode::SET_LOCAL));
-            emitInt(var_decl->memory_index);
+            emitInt32(var_decl->memory_index);
         }
     }
     else if (node->node_type == parser::NodeType::EXPRESSION_STATEMENT) {
@@ -113,7 +136,6 @@ void Compiler::compileNode(parser::Node* node) {
         }
         emitByte(static_cast<uint8_t>(OpCode::RETURN));
     }
-    // ... Implement If, While, Do-While, etc.
 }
 
 void Compiler::compileExpression(parser::Node* expr) {
@@ -130,15 +152,47 @@ void Compiler::compileExpression(parser::Node* expr) {
             case lexer::TokenType::OPERATOR_MULTIPLY: emitByte(static_cast<uint8_t>(OpCode::MULTIPLY)); break;
             case lexer::TokenType::OPERATOR_DIVIDE: emitByte(static_cast<uint8_t>(OpCode::DIVIDE)); break;
             case lexer::TokenType::OPERATOR_EQUAL: emitByte(static_cast<uint8_t>(OpCode::EQUAL)); break;
+            case lexer::TokenType::OPERATOR_NOT_EQUAL: emitByte(static_cast<uint8_t>(OpCode::NOT_EQUAL)); break;
+            case lexer::TokenType::OPERATOR_GREATER_THAN: emitByte(static_cast<uint8_t>(OpCode::GREATER)); break;
+            case lexer::TokenType::OPERATOR_GREATER_EQUAL: emitByte(static_cast<uint8_t>(OpCode::GREATER_EQUAL)); break;
+            case lexer::TokenType::OPERATOR_LESS_THAN: emitByte(static_cast<uint8_t>(OpCode::LESS)); break;
+            case lexer::TokenType::OPERATOR_LESS_EQUAL: emitByte(static_cast<uint8_t>(OpCode::LESS_EQUAL)); break;
             default: throw std::runtime_error("Unsupported binary operator in compiler");
         }
+    }
+    else if (expr->node_type == parser::NodeType::CAST_EXPRESSION) {
+        auto cast_expr = static_cast<parser::CastExpression*>(expr);
+        compileExpression(cast_expr->expression.get());
+        
+        std::string target = cast_expr->target_type;
+        if (target == "int8") emitByte(static_cast<uint8_t>(OpCode::CONV_I8));
+        else if (target == "int16") emitByte(static_cast<uint8_t>(OpCode::CONV_I16));
+        else if (target == "int32") emitByte(static_cast<uint8_t>(OpCode::CONV_I32));
+        else if (target == "int64") emitByte(static_cast<uint8_t>(OpCode::CONV_I64));
+        else if (target == "uint8") emitByte(static_cast<uint8_t>(OpCode::CONV_U8));
+        else if (target == "uint16") emitByte(static_cast<uint8_t>(OpCode::CONV_U16));
+        else if (target == "uint32") emitByte(static_cast<uint8_t>(OpCode::CONV_U32));
+        else if (target == "uint64") emitByte(static_cast<uint8_t>(OpCode::CONV_U64));
+        else if (target == "float32") emitByte(static_cast<uint8_t>(OpCode::CONV_F32));
+        else if (target == "float64") emitByte(static_cast<uint8_t>(OpCode::CONV_F64));
+        else throw std::runtime_error("Unsupported cast target type in compiler");
     }
     else if (expr->node_type == parser::NodeType::LITERAL_EXPRESSION) {
         auto lit = static_cast<parser::LiteralExpression*>(expr);
         if (lit->token.type == lexer::TokenType::NUMBER) {
-            uint32_t c_idx = emitConstant(static_cast<int64_t>(std::stoll(lit->token.value.value())));
-            emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST));
-            emitInt(c_idx);
+            std::string val_str = lit->token.value.value_or("0");
+            if (val_str.find('.') != std::string::npos) {
+                // By default emit float64
+                emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_F64));
+                emitFloat64(std::stod(val_str));
+            } else {
+                // By default emit int32
+                emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+                emitInt32(static_cast<uint32_t>(std::stoll(val_str)));
+            }
+        } else if (lit->token.type == lexer::TokenType::STRING) {
+            emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_STRING));
+            emitString(lit->token.value.value_or(""));
         } else if (lit->token.type == lexer::TokenType::IDENTIFIER && lit->token.value == "null") {
             emitByte(static_cast<uint8_t>(OpCode::PUSH_NULL));
         }
@@ -150,15 +204,15 @@ void Compiler::compileExpression(parser::Node* expr) {
                 auto field = static_cast<parser::FieldDeclaration*>(ident->resolved_declaration);
                 if (field->is_static) {
                     emitByte(static_cast<uint8_t>(OpCode::GET_GLOBAL));
-                    emitInt(field->memory_index);
+                    emitInt32(field->memory_index);
                 } else {
                     emitByte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
-                    emitInt(field->memory_index);
+                    emitInt32(field->memory_index);
                 }
             } else if (ident->resolved_declaration->node_type == parser::NodeType::VARIABLE_DECLARATION) {
                 auto var = static_cast<parser::VariableDeclaration*>(ident->resolved_declaration);
                 emitByte(static_cast<uint8_t>(OpCode::GET_LOCAL));
-                emitInt(var->memory_index);
+                emitInt32(var->memory_index);
             }
         }
     }
@@ -171,32 +225,24 @@ void Compiler::compileExpression(parser::Node* expr) {
             if (ident->resolved_declaration->node_type == parser::NodeType::VARIABLE_DECLARATION) {
                 auto var = static_cast<parser::VariableDeclaration*>(ident->resolved_declaration);
                 emitByte(static_cast<uint8_t>(OpCode::SET_LOCAL));
-                emitInt(var->memory_index);
+                emitInt32(var->memory_index);
             }
         }
     }
     else if (expr->node_type == parser::NodeType::CALL_EXPRESSION) {
         auto call = static_cast<parser::CallExpression*>(expr);
-        
-        // Push arguments
-        for (const auto& arg : call->arguments) {
-            compileExpression(arg.get());
-        }
-        
+        for (const auto& arg : call->arguments) compileExpression(arg.get());
         auto target_method = static_cast<parser::MethodDeclaration*>(call->resolved_declaration);
         
-        // Push destination IP placeholder
-        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST));
+        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
         linker_patches.push_back(std::make_pair(program.flat_bytecode.size(), target_method));
-        emitInt(0xFFFFFFFF); // Hole to be patched
+        emitInt32(0xFFFFFFFF);
         
-        // Push Frame Size
-        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST));
-        emitInt(target_method->frame_size);
+        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+        emitInt32(target_method->frame_size);
         
-        // Push Arg Count
-        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST));
-        emitInt(call->arguments.size() + (target_method->is_static ? 0 : 1));
+        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+        emitInt32(call->arguments.size() + (target_method->is_static ? 0 : 1));
         
         emitByte(static_cast<uint8_t>(OpCode::CALL));
     }
@@ -204,30 +250,24 @@ void Compiler::compileExpression(parser::Node* expr) {
         auto inst = static_cast<parser::NewInstanceExpression*>(expr);
         auto class_decl = static_cast<parser::ClassDeclaration*>(inst->resolved_declaration);
         
-        // 1. Allocate memory
-        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST));
-        emitInt(class_decl->instance_size);
+        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+        emitInt32(class_decl->instance_size);
         emitByte(static_cast<uint8_t>(OpCode::ALLOC_DYNAMIC));
         
-        // 2. Duplicate pointer
         emitByte(static_cast<uint8_t>(OpCode::DUP));
         
-        // 3. Push args
-        for (const auto& arg : inst->arguments) {
-            compileExpression(arg.get());
-        }
-        
-        // 4. Push constructor call data
+        for (const auto& arg : inst->arguments) compileExpression(arg.get());
         auto ctor = static_cast<parser::ConstructorDeclaration*>(inst->resolved_constructor);
-        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST));
+        
+        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
         linker_patches.push_back(std::make_pair(program.flat_bytecode.size(), ctor));
-        emitInt(0xFFFFFFFF);
+        emitInt32(0xFFFFFFFF);
         
-        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST));
-        emitInt(ctor->frame_size);
+        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+        emitInt32(ctor->frame_size);
         
-        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST));
-        emitInt(inst->arguments.size() + 1); // +1 for 'this'
+        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+        emitInt32(inst->arguments.size() + 1);
         
         emitByte(static_cast<uint8_t>(OpCode::CALL));
     }
