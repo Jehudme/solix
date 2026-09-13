@@ -2,7 +2,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <queue>
+#include <string>
 #include <stack>
 #include <vector>
 #include <unordered_map>
@@ -90,11 +92,41 @@ public:
     void run();
 
 private:
+    struct CallFrame {
+        uint64_t return_address;
+        std::vector<uint64_t> locals;
+    };
+
     std::vector<uint8_t> bytecode;
     uint64_t program_counter;
+    bool halted;
 
     MemoryPool memory_pool;
     GarbageCollector garbage_collector;
+    std::vector<CallFrame> call_frames;
+    std::vector<uint64_t> static_globals;
+    std::unordered_map<uint32_t, std::string> native_symbols;
+    std::unordered_map<uint32_t, std::function<void(Program&)>> native_handlers;
+    std::vector<std::string> string_pool;
+    
+    uint8_t read_u8();
+    uint32_t read_u32();
+    uint64_t read_u64();
+    float read_f32();
+    double read_f64();
+    std::string read_string();
+    uint64_t pop();
+    uint64_t peek() const;
+    void push(uint64_t value);
+    CallFrame& current_frame();
+    static bool truthy(uint64_t value);
+    static uint64_t encode_string_ref(uint64_t index);
+    static bool is_string_ref(uint64_t value);
+    static uint64_t decode_string_ref(uint64_t value);
+    void define_native_handler(uint32_t native_id, const std::string& symbol);
+    std::string value_to_string(uint64_t value) const;
+    static int64_t as_i64(uint64_t value);
+    static uint64_t as_u64(int64_t value);
     
     // Call Frames (Local Variables & Return Addresses)
     // We can define a Frame struct locally or globally later!

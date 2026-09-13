@@ -14,3 +14,6 @@ enable_testing()
 add_subdirectory(language)
 add_subdirectory(launcher)
 add_subdirectory(tests)
+
+add_executable(solix_runtime_test main.cpp)
+target_link_libraries(solix_runtime_test PRIVATE solix_language)

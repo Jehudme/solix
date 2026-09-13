@@ -11,6 +11,7 @@ add_library(solix_language
     src/parser.cpp
     src/semantic.cpp
     src/compiler.cpp
+    src/runtime.cpp
     
 )
 
