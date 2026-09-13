@@ -42,6 +42,7 @@ namespace {
         {"inline", TokenType::KEYWORD_INLINE},
         {"alias", TokenType::KEYWORD_ALIAS},
         {"public", TokenType::KEYWORD_PUBLIC},
+        {"native", TokenType::KEYWORD_NATIVE},
         {"protected", TokenType::KEYWORD_PROTECTED},
         {"private", TokenType::KEYWORD_PRIVATE},
         {"internal", TokenType::KEYWORD_INTERNAL},

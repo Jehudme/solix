@@ -119,6 +119,15 @@ std::vector<uint8_t> Compiler::compile(std::string_view entry_point) {
 }
 
 void Compiler::compileBootSequence(std::string_view entry_point) {
+    // Link Native Functions first
+    uint32_t native_id_counter = 0;
+    for (auto* native_method : ast_tree.native_methods) {
+        native_method->memory_index = native_id_counter++;
+        emitByte(static_cast<uint8_t>(OpCode::DEFINE_NATIVE));
+        emitInt32(native_method->memory_index);
+        emitString(native_method->symbol_name);
+    }
+
     // Collect all static fields to know how much memory to allocate
     uint32_t static_count = 0;
     std::vector<parser::FieldDeclaration*> static_fields;
@@ -823,17 +832,22 @@ void Compiler::compileExpression(parser::Node* expr) {
         for (const auto& arg : call->arguments) compileExpression(arg.get());
         auto target_method = static_cast<parser::MethodDeclaration*>(call->resolved_declaration);
         
-        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-        linker_patches.push_back(std::make_pair(bytecode.size(), target_method));
-        emitInt32(0xFFFFFFFF);
-        
-        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-        emitInt32(target_method->frame_size);
-        
-        emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-        emitInt32(call->arguments.size() + (target_method->is_static ? 0 : 1));
-        
-        emitByte(static_cast<uint8_t>(OpCode::CALL));
+        if (target_method->is_native) {
+            emitByte(static_cast<uint8_t>(OpCode::CALL_NATIVE));
+            emitInt32(target_method->memory_index);
+        } else {
+            emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+            linker_patches.push_back(std::make_pair(bytecode.size(), target_method));
+            emitInt32(0xFFFFFFFF);
+            
+            emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+            emitInt32(target_method->frame_size);
+            
+            emitByte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+            emitInt32(call->arguments.size() + (target_method->is_static ? 0 : 1));
+            
+            emitByte(static_cast<uint8_t>(OpCode::CALL));
+        }
     }
     else if (expr->node_type == parser::NodeType::NEW_INSTANCE_EXPRESSION) {
         auto inst = static_cast<parser::NewInstanceExpression*>(expr);
@@ -1044,7 +1058,31 @@ std::string Compiler::disassemble(const std::vector<uint8_t>& bcode) const {
                 i += 4;
                 break;
             }
-            case OpCode::CALL: ss << "CALL\n"; break;
+            case OpCode::CALL: {
+                uint32_t jump_ip = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                ss << "CALL " << jump_ip << "\n";
+                i += 4;
+                break;
+            }
+            case OpCode::CALL_NATIVE: {
+                uint32_t native_id = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                ss << "CALL_NATIVE " << native_id << "\n";
+                i += 4;
+                break;
+            }
+            case OpCode::DEFINE_NATIVE: {
+                uint32_t native_id = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                i += 4;
+                
+                uint32_t length = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
+                i += 4;
+                
+                std::string str(reinterpret_cast<const char*>(&bcode[i]), length);
+                i += length;
+                
+                ss << "DEFINE_NATIVE " << native_id << " \"" << str << "\"\n";
+                break;
+            }
             case OpCode::RETURN: ss << "RETURN\n"; break;
             case OpCode::ADD: ss << "ADD\n"; break;
             case OpCode::POP: ss << "POP\n"; break;

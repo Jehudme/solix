@@ -201,9 +201,15 @@ void SemanticAnalyzer::registerGlobalSymbols(parser::AstTree& tree, parser::Node
         tree.symbols[full_name] = field;
     } else if (root->node_type == parser::NodeType::METHOD_DECLARATION) {
         auto method = static_cast<parser::MethodDeclaration*>(root);
-        std::string full_name = prefix + method->method_name + generate_uuid();
+        std::string full_name;
+        if (method->is_native) {
+            full_name = prefix + method->method_name; // Native methods must have predictable names for the VM linker
+        } else {
+            full_name = prefix + method->method_name + generate_uuid();
+        }
         method->symbol_name = full_name;
         tree.symbols[full_name] = method;
+        if (method->is_native) tree.native_methods.push_back(method);
         my_prefix = prefix + method->method_name + ".";
     } else if (root->node_type == parser::NodeType::CONSTRUCTOR_DECLARATION) {
         auto ctor = static_cast<parser::ConstructorDeclaration*>(root);

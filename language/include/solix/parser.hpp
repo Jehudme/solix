@@ -258,9 +258,11 @@ struct ConstructorDeclaration : public Node {
 struct MethodDeclaration : public Node {
     lexer::TokenType access_modifier;
     bool is_static = false;
+    bool is_native = false;
     bool is_inline = false;
     std::string return_type;
     std::string method_name;
+    std::optional<uint64_t> native_id; // Only set if natice is true
     std::vector<std::unique_ptr<VariableDeclaration>> parameters;
     int frame_size = 0; // Number of local variables inside this method
     
@@ -370,6 +372,7 @@ struct AstTree {
 
   // A single global symbol table for all top-level declarations (Classes, Enums, Functions, Aliases, etc.)
   std::unordered_map<std::string, Node*> symbols;
+  std::vector<MethodDeclaration*> native_methods;
 
   AstTree();
 

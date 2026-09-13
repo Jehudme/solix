@@ -48,7 +48,7 @@ enum class OpCode : uint8_t {
     CONV_F32, CONV_F64,
     
     // Functions
-    CALL, CALL_NATIVE, RETURN,
+    CALL, CALL_NATIVE, DEFINE_NATIVE, RETURN,
     
     // End
     HALT

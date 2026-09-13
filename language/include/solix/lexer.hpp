@@ -61,7 +61,7 @@ namespace solix::lexer {
 
     KEYWORD_ALIAS, // create alias eg: alias int = int32;
 
-    KEYWORD_PUBLIC,
+    KEYWORD_PUBLIC, KEYWORD_NATIVE,
     KEYWORD_PROTECTED,
     KEYWORD_PRIVATE,
     KEYWORD_INTERNAL, // visible in the same package
