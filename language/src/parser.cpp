@@ -285,6 +285,13 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
         return NodeType::BLOCK_STATEMENT;
     }
     
+    // Check if it's a native method (ends with ';' but contains 'native')
+    for (const auto& token : tokens) {
+        if (token.type == lexer::TokenType::KEYWORD_NATIVE) {
+            return NodeType::METHOD_DECLARATION;
+        }
+    }
+
     // Variable / Field Declaration
     size_t index = 0;
     while (index < tokens.size() && (
@@ -294,7 +301,8 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
         tokens[index].type == lexer::TokenType::KEYWORD_INTERNAL ||
         tokens[index].type == lexer::TokenType::KEYWORD_STATIC ||
         tokens[index].type == lexer::TokenType::KEYWORD_CONST ||
-        tokens[index].type == lexer::TokenType::KEYWORD_INLINE)) {
+        tokens[index].type == lexer::TokenType::KEYWORD_INLINE ||
+        tokens[index].type == lexer::TokenType::KEYWORD_NATIVE)) {
         index++;
     }
     
@@ -308,6 +316,8 @@ const NodeType determineNodeType(const std::vector<lexer::Token>& raw_tokens) {
         return NodeType::VARIABLE_DECLARATION; 
     }
     
+
+
     if (tokens.back().type == lexer::TokenType::PUNCTUATION_SEMICOLON) {
         return NodeType::EXPRESSION_STATEMENT;
     }
@@ -1008,9 +1018,12 @@ MethodDeclaration::MethodDeclaration(const std::vector<lexer::Token>& tokens, No
         tokens[index].type == lexer::TokenType::KEYWORD_INTERNAL ||
         tokens[index].type == lexer::TokenType::KEYWORD_STATIC ||
         tokens[index].type == lexer::TokenType::KEYWORD_CONST ||
-        tokens[index].type == lexer::TokenType::KEYWORD_INLINE)) {
+        tokens[index].type == lexer::TokenType::KEYWORD_NATIVE ||
+        tokens[index].type == lexer::TokenType::KEYWORD_INLINE ||
+        tokens[index].type == lexer::TokenType::KEYWORD_NATIVE)) {
         if (tokens[index].type == lexer::TokenType::KEYWORD_STATIC) is_static = true;
         else if (tokens[index].type == lexer::TokenType::KEYWORD_INLINE) is_inline = true;
+        else if (tokens[index].type == lexer::TokenType::KEYWORD_NATIVE) is_native = true;
         else access_modifier = tokens[index].type;
         index++;
     }
@@ -1059,8 +1072,11 @@ MethodDeclaration::MethodDeclaration(const std::vector<lexer::Token>& tokens, No
         }
     }
     if (param_end < tokens.size() - 1 && tokens[param_end + 1].type == lexer::TokenType::PUNCTUATION_OPEN_BRACE) {
+        if (is_native) throw_parse_error(tokens, "Native functions cannot have a body.");
         std::vector<lexer::Token> body_tokens(tokens.begin() + param_end + 1, tokens.end());
         children.push_back(parseTokensToNode(body_tokens, this));
+    } else if (is_native && param_end < tokens.size() - 1 && tokens[param_end + 1].type != lexer::TokenType::PUNCTUATION_SEMICOLON) {
+        throw_parse_error(tokens, "Expected ';' after native function declaration.");
     }
 }
 
