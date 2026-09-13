@@ -7,7 +7,7 @@ using namespace solix;
 
 TEST_CASE("Semantic: Type Resolution (Pass 2)", "[semantic][type]") {
     SECTION("Valid Type: Assignment of Literals") {
-        std::string source = "class Test { public void run() { int32 a = 5; float64 b = 5.5; string c = \"hello\"; bool d = true; } }";
+        std::string source = "class Test { public void run() { int32 a = 5; float64 b = 5.5; char[] c = \"hello\"; bool d = true; } }";
         parser::AstTree tree;
         tree.include(std::string_view(source));
         
@@ -26,7 +26,8 @@ TEST_CASE("Semantic: Type Resolution (Pass 2)", "[semantic][type]") {
         REQUIRE(varB->initializer->resolved_type == "float64");
 
         auto varC = static_cast<parser::VariableDeclaration*>(block->children[2].get());
-        REQUIRE(varC->initializer->resolved_type == "string");
+        REQUIRE(varC->initializer->resolved_type == "char");
+        REQUIRE(varC->initializer->resolved_array_depth == 1);
 
         auto varD = static_cast<parser::VariableDeclaration*>(block->children[3].get());
         REQUIRE(varD->initializer->resolved_type == "bool");

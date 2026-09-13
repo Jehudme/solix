@@ -19,9 +19,11 @@ TEST_CASE("Compiler: Boot Sequence & Main Call", "[compiler]") {
     )";
     
     Compiler compiler;
-    REQUIRE_NOTHROW(compiler.compile(code, "main"));
-    
-    auto bytecode = compiler.compile(code, "main");
+    compiler.include(std::string_view(code));
+    std::vector<uint8_t> bytecode;
+    REQUIRE_NOTHROW([&]() {
+        bytecode = compiler.compile("main");
+    }());
     std::string asm_code = compiler.disassemble(bytecode);
     
     // We expect ALLOC_STATIC and SET_GLOBAL for global_var
@@ -53,9 +55,11 @@ TEST_CASE("Compiler: Complex test.asm.slx Compilation", "[compiler]") {
     )";
     
     Compiler compiler;
-    REQUIRE_NOTHROW(compiler.compile(code, "main"));
-    
-    auto bytecode = compiler.compile(code, "main");
+    compiler.include(std::string_view(code));
+    std::vector<uint8_t> bytecode;
+    REQUIRE_NOTHROW([&]() {
+        bytecode = compiler.compile("main");
+    }());
     std::string asm_code = compiler.disassemble(bytecode);
     
     // We expect CALL, INC_REF, SET_LOCAL
@@ -180,9 +184,11 @@ alias Matrix = float64[][];
 )";
 
     Compiler compiler;
-    REQUIRE_NOTHROW(compiler.compile(code, "main"));
-    
-    auto bytecode = compiler.compile(code, "main");
+    compiler.include(std::string_view(code));
+    std::vector<uint8_t> bytecode;
+    REQUIRE_NOTHROW([&]() {
+        bytecode = compiler.compile("main");
+    }());
     std::string asm_code = compiler.disassemble(bytecode);
     
     // Check if it successfully compiled jumps and allocations
