@@ -1058,12 +1058,7 @@ std::string Compiler::disassemble(const std::vector<uint8_t>& bcode) const {
                 i += 4;
                 break;
             }
-            case OpCode::CALL: {
-                uint32_t jump_ip = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
-                ss << "CALL " << jump_ip << "\n";
-                i += 4;
-                break;
-            }
+            case OpCode::CALL: ss << "CALL\n"; break;
             case OpCode::CALL_NATIVE: {
                 uint32_t native_id = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
                 ss << "CALL_NATIVE " << native_id << "\n";
