@@ -11,46 +11,55 @@
 namespace solix {
 namespace runtime {
 
+// -----------------------------------------------------------------------------
+// Type Aliases
+// -----------------------------------------------------------------------------
+using Value = uint64_t;              // Standard 64-bit VM value 
+using Address = uint32_t;            // 32-bit memory address space
+using InstructionPointer = uint64_t; // Index into the bytecode array
+
 class GarbageCollector;
 
 // -----------------------------------------------------------------------------
-// Memory Pool (Heap & Math Stack)
+// Execution Frame
+// Represents a single function call, holding its own locals and operand stack.
+// -----------------------------------------------------------------------------
+struct Frame {
+    InstructionPointer return_address;
+    
+    // The operand stack for this specific function invocation
+    std::vector<Value> operand_stack;
+    
+    // Indexed array for local variables
+    std::vector<Value> locals;
+
+    explicit Frame(InstructionPointer ret_addr, std::size_t num_locals = 0)
+        : return_address(ret_addr), locals(num_locals) {}
+};
+
+// -----------------------------------------------------------------------------
+// Memory Pool (The Heap)
 // -----------------------------------------------------------------------------
 class MemoryPool {
 public:
-    MemoryPool(std::size_t heap_capacity, std::size_t stack_capacity);
-
-    // Allocates a contiguous block of 'size' 64-bit words and returns the Address.
-    uint32_t allocate(std::size_t size);
+    explicit MemoryPool(std::size_t heap_capacity);
     
-    // Frees a previously allocated block at 'address'.
-    void deallocate(uint32_t address);
+    // Allocates memory on the heap and returns its base address
+    Address allocate_heap(std::size_t size);
+    Address allocate_heap(Address address, std::size_t size);
 
-    // Bulk read/write for whole objects
-    std::vector<uint64_t> read_heap(uint32_t address, std::size_t size) const;
-    void write_heap(uint32_t address, const std::vector<uint64_t>& data);
+    void deallocate(Address address);
 
-    // Fast single-word read/write for GET_PROPERTY, SET_PROPERTY, GET_ARRAY, SET_ARRAY
-    uint64_t read_heap_word(uint32_t address, uint32_t offset) const;
-    void write_heap_word(uint32_t address, uint32_t offset, uint64_t value);
-
-    // Math Stack Operations (PUSH, POP, etc.)
-    void push_stack(uint64_t value);
-    uint64_t pop_stack();
+    // Read and write byte vectors with an offset into the 64-bit storage
+    std::vector<uint8_t> read_global(Address address, uint32_t offset, std::size_t size) const;
+    void write(Address address, uint32_t offset, const std::vector<uint8_t>& value);
 
 private:
-    // Helper function to scan the heap for an available contiguous block
-    uint32_t find_first_fit(std::size_t size);
-
+    // Memory is stored in 64-bit segments
     std::vector<uint64_t> heap_memory;
-    std::vector<uint64_t> stack_memory; // Using vector for faster inline access
-    std::size_t stack_pointer;
 
     // Track allocated chunks: Address -> Size
-    std::unordered_map<uint32_t, std::size_t> heap_allocations;
-    
-    // Track free chunks: Address -> Size
-    std::unordered_map<uint32_t, std::size_t> free_segments;
+    std::unordered_map<Address, std::size_t> heap_allocations;
 };
 
 // -----------------------------------------------------------------------------
@@ -58,21 +67,25 @@ private:
 // -----------------------------------------------------------------------------
 class GarbageCollector {
 public:
-    GarbageCollector(MemoryPool& memory_pool);
+    explicit GarbageCollector(MemoryPool& memory_pool);
 
     // Triggered by INC_REF / ADD_REF opcode
-    void increase_reference(uint32_t address);
+    void increase_reference(Address address);
     
     // Triggered by DEC_REF / REMOVE_REF opcode
-    void decrease_reference(uint32_t address);
+    void decrease_reference(Address address);
 
     // Sweeps the queue and asks MemoryPool to deallocate isolated blocks
     void collect();
 
 private:
     MemoryPool& memory_pool;
-    std::unordered_map<uint32_t, std::size_t> reference_counts;
-    std::queue<uint32_t> deallocation_queue;
+    
+    // Address -> Current Reference Count
+    std::unordered_map<Address, std::size_t> reference_counts;
+    
+    // Queue of addresses that hit 0 references and need to be freed
+    std::queue<Address> deallocation_queue;
 };
 
 // -----------------------------------------------------------------------------
@@ -81,7 +94,7 @@ private:
 class Program {
 public:
     // Initializes the VM with the compiled bytecode and memory sizes
-    Program(const std::vector<uint8_t>& bytecode, std::size_t heap_size = 1048576, std::size_t stack_size = 65536);
+    Program(const std::vector<uint8_t>& bytecode, std::size_t heap_size = 1048576);
     
     // Executes exactly one opcode instruction
     void progress();
@@ -91,13 +104,18 @@ public:
 
 private:
     std::vector<uint8_t> bytecode;
-    uint64_t program_counter;
+    InstructionPointer program_counter;
 
     MemoryPool memory_pool;
     GarbageCollector garbage_collector;
     
-    // Call Frames (Local Variables & Return Addresses)
-    // We can define a Frame struct locally or globally later!
+    // The Call Stack: A stack of active function frames
+    std::stack<Frame> call_stack;
+
+    // Helper methods for current frame execution
+    Frame& current_frame();
+    void push_value(Value val);
+    Value pop_value();
 };
 
 } // namespace runtime
