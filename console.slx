@@ -1,5 +1,0 @@
-package com.solix.advanced.test;
-
-public class Console {
-    public static native void printHelloWorld();
-}
