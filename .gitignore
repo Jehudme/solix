@@ -16,6 +16,9 @@ build-*/
 *.dll
 *.exe
 
+
+.cache/
+
 # FetchContent
 _deps/
 scratch*.cpp
