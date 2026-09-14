@@ -4,6 +4,7 @@ build-*/
 
 # IDEs and Editors
 .vscode/
+.cache/
 .idea/
 *.swp
 *.swo
@@ -15,9 +16,6 @@ build-*/
 *.dylib
 *.dll
 *.exe
-
-
-.cache/
 
 # FetchContent
 _deps/
