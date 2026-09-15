@@ -23,9 +23,6 @@ MemoryPool::MemoryPool(std::size_t heap_capacity) {
 }
 
 Address MemoryPool::allocate_heap(std::size_t size) {
-    // Simple bump allocator for now, or just search for space.
-    // We'll just append to a static counter for simplicity in this MVP.
-    static Address next_free = 1; 
     Address alloc = next_free;
     // size is in bytes. We need (size + 7) / 8 words
     std::size_t words = (size + 7) / 8;
@@ -330,9 +327,27 @@ void Program::progress() {
             break;
         }
         case compiler::OpCode::ALLOC_DYNAMIC: {
-            uint32_t size = pop_value();
-            Address addr = memory_pool.allocate_heap(size);
-            push_value(addr);
+            Value size = pop_value();
+            push_value(memory_pool.allocate_heap(size * 8));
+            break;
+        }
+        case compiler::OpCode::GET_ARRAY: {
+            Value index = pop_value();
+            Value array_addr = pop_value();
+            std::vector<uint8_t> data = memory_pool.read_global(array_addr, index * 8, 8);
+            Value result = 0;
+            std::memcpy(&result, data.data(), 8);
+            push_value(result);
+            break;
+        }
+        case compiler::OpCode::SET_ARRAY: {
+            Value val = pop_value();
+            Value index = pop_value();
+            Value array_addr = pop_value();
+            std::vector<uint8_t> data(8);
+            std::memcpy(data.data(), &val, 8);
+            memory_pool.write(array_addr, index * 8, data);
+            push_value(val);
             break;
         }
         case compiler::OpCode::GET_PROPERTY: {
@@ -346,8 +361,8 @@ void Program::progress() {
         }
         case compiler::OpCode::SET_PROPERTY: {
             uint32_t offset = read_u32(bytecode, program_counter);
-            Value val = pop_value();
             Address obj = pop_value();
+            Value val = pop_value();
             std::vector<uint8_t> data(8);
             std::memcpy(data.data(), &val, 8);
             memory_pool.write(obj, offset * 8, data);
@@ -356,6 +371,7 @@ void Program::progress() {
         case compiler::OpCode::INC_REF: {
             Address addr = pop_value();
             garbage_collector.increase_reference(addr);
+            push_value(addr);
             break;
         }
         case compiler::OpCode::DEC_REF: {

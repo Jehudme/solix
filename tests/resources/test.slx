@@ -1,10 +1,85 @@
+// ============================================================================
+// Solix Language - Comprehensive Parser Edge-Case & Rules Test
+// ============================================================================
 package com.solix.advanced.test;
+
+alias Matrix = float64[][];
+alias ID = uint64;
+
+public enum ApplicationState {
+    INITIALIZING,
+    RUNNING,
+    CRASHED,
+    SHUTDOWN
+}
 
 public class Engine {
     
-    public static native void print(char[] s);
+    private const string engineName = "Solix V8";
+    protected static int32 instanceCount = 0;
+    internal bool isRunning = false;
+    public float32 temperature = 25.0;
+    
+    public static native void print(string s);
+
+    private class CoreProcessor {
+        private ID coreId;
+        public int32[] cache = new int32[1024];
+
+        public CoreProcessor(ID id) {
+            this.coreId = id;
+            Engine.instanceCount++;
+        }
+
+        public enum CoreStatus {
+            IDLE,
+            PROCESSING,
+            OVERHEATING
+        }
+
+        public CoreStatus currentStatus = CoreStatus.IDLE;
+
+        public const inline void process(int32[] data) {
+            if (this.currentStatus == CoreStatus.OVERHEATING) {
+                return;
+            }
+            
+            int32 temp = 0;
+            
+            for (int32 i = 0; i < 5; i++) {
+                int32 temp = data[i] * 2; 
+                
+                if (temp > 100) {
+                    while (temp > 0) {
+                        temp--;
+                        if (temp == 50) break;
+                    }
+                } else if (temp < 0) {
+                    continue;
+                } else {
+                    this.cache[i] = temp;
+                }
+            }
+        }
+    }
+
+    public Engine() {
+        this.isRunning = true;
+    }
+
+    public static Matrix createIdentityMatrix(int32 size) {
+        Matrix mat = new float64[][size];
+        for (int32 i = 0; i < size; i++) {
+            mat[i] = new float64[size];
+            for (int32 j = 0; j < size; j++) {
+                mat[i][j] = (i == j) ? 1.0 : 0.0;
+            }
+        }
+        return mat;
+    }
 
     public static void main(string[] args) {
+        ApplicationState state = ApplicationState.INITIALIZING;
         
         int32 x = 10;
         int32 y = 20;
@@ -13,12 +88,40 @@ public class Engine {
         x = y + z * 2 - 10 / 5;
 
         bool flag = false;
-        bool result = true;
+        bool result = flag = !true;
 
-        if (x > 10) {
-            x = x + 1;
+        int32[] numbers = { 1, 2, 3, 4, 5 };
+        numbers[0]++;
+        
+        Engine myEngine = new Engine();
+        Engine.CoreProcessor proc = new Engine.CoreProcessor(12345);
+        proc.process(numbers);
+
+        float64 casted = (float64) x;
+
+        switch (state) {
+            case ApplicationState.INITIALIZING:
+                state = ApplicationState.RUNNING;
+                break;
+            case ApplicationState.CRASHED:
+            case ApplicationState.SHUTDOWN:
+                return;
+            default:
+                break;
         }
 
-        Engine.print("Test SLX executed successfully!");
+        float64 complexCall = Engine.createIdentityMatrix(x)[0][0] + (float64) proc.cache[0];
+
+        do {
+            x++;
+        } while (x < 100);
+
+        // Add some more complex logic to fulfill user request
+        Matrix complexMath = Engine.createIdentityMatrix(5);
+        complexMath[1][1] = complexCall * 3.14159;
+        
+        if (state == ApplicationState.RUNNING && myEngine.isRunning && proc.currentStatus == Engine.CoreProcessor.CoreStatus.IDLE) {
+            Engine.print("Complex test passed successfully!");
+        }
     }
 }
