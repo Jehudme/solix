@@ -3,7 +3,7 @@ add_library(solix_language
     src/parser.cpp
     src/semantic.cpp
     src/compiler.cpp
-    
+    src/runtime.cpp
 )
 
 target_include_directories(solix_language

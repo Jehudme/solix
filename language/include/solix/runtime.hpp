@@ -7,9 +7,13 @@
 #include <vector>
 #include <unordered_map>
 #include <stdexcept>
+#include <functional>
+#include <string>
 
 namespace solix {
 namespace runtime {
+
+void register_native_function(const std::string& name, std::function<void(class Program&)> func);
 
 // -----------------------------------------------------------------------------
 // Type Aliases
