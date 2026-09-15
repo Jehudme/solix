@@ -106,6 +106,10 @@ public:
     // Starts the VM and loops `progress()` until HALT
     void run();
 
+    // Helper methods for current frame execution
+    void push_value(Value val);
+    Value pop_value();
+
 private:
     std::vector<uint8_t> bytecode;
     InstructionPointer program_counter;
@@ -116,10 +120,7 @@ private:
     // The Call Stack: A stack of active function frames
     std::stack<Frame> call_stack;
 
-    // Helper methods for current frame execution
     Frame& current_frame();
-    void push_value(Value val);
-    Value pop_value();
 };
 
 } // namespace runtime
