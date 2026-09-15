@@ -110,6 +110,8 @@ public:
     void push_value(Value val);
     Value pop_value();
 
+    MemoryPool& get_memory() { return memory_pool; }
+
 private:
     std::vector<uint8_t> bytecode;
     InstructionPointer program_counter;
