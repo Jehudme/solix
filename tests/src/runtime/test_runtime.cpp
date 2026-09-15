@@ -9,13 +9,19 @@ TEST_CASE("Runtime Native Print Test", "[runtime]") {
     bool print_called = false;
     
     solix::runtime::register_native_function("com.solix.advanced.test.Engine.print", [&print_called](solix::runtime::Program& p) {
-        // Pop argument size, wait...
-        // Actually compiler pushes args, then calls native
-        // Native function doesn't get arg count natively in this simple VM? Wait, CALL_NATIVE just passes ID.
-        // Let's assume print takes 1 string argument.
         solix::runtime::Value val = p.pop_value();
-        // Since it's a string, val is an address. We would read it from memory pool.
-        // For testing, just verify it's called.
+        solix::runtime::Address addr = static_cast<solix::runtime::Address>(val);
+        
+        // Read length (4 bytes)
+        std::vector<uint8_t> len_data = p.get_memory().read_global(addr, 0, 4);
+        uint32_t len = (len_data[0] << 24) | (len_data[1] << 16) | (len_data[2] << 8) | len_data[3];
+        
+        // Read string data
+        std::vector<uint8_t> str_data = p.get_memory().read_global(addr, 4, len);
+        std::string str(str_data.begin(), str_data.end());
+        
+        std::cout << str << std::endl;
+        
         print_called = true;
         p.push_value(0);
     });
