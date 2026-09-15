@@ -61,6 +61,7 @@ public:
 private:
     // Memory is stored in 64-bit segments
     std::vector<uint64_t> heap_memory;
+    Address next_free = 1;
 
     // Track allocated chunks: Address -> Size
     std::unordered_map<Address, std::size_t> heap_allocations;

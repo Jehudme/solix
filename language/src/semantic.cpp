@@ -1,4 +1,6 @@
 #include "solix/semantic.hpp"
+#include <iostream>
+#include <stdexcept>
 #include <random>
 #include <sstream>
 #include <iomanip>
@@ -123,19 +125,28 @@ void SemanticAnalyzer::analyze(parser::AstTree& tree) {
         parser::Node* symbol = pair.second;
         if (symbol->node_type == parser::NodeType::FIELD_DECLARATION) {
             auto field = static_cast<parser::FieldDeclaration*>(symbol);
+            if (field->parent_node && field->parent_node->node_type == parser::NodeType::CLASS_DECLARATION) {
+                current_class = static_cast<parser::ClassDeclaration*>(field->parent_node);
+            } else {
+                current_class = nullptr;
+            }
             TypeInfo type_info = resolveType(tree, field->type_name, {});
+            field->resolved_type = type_info.base_name;
+            field->resolved_array_depth = type_info.array_depth;
             if (!type_info.is_primitive) field->is_reference_type = true;
             if (field->is_static) {
                 field->memory_index = staticVariableIndex++;
             }
         }
     }
+    current_class = nullptr;
     
     // Second, calculate instance_size and field offsets for every class
     for (const auto& pair : tree.symbols) {
         parser::Node* symbol = pair.second;
         if (symbol->node_type == parser::NodeType::CLASS_DECLARATION) {
             auto class_decl = static_cast<parser::ClassDeclaration*>(symbol);
+            current_class = class_decl;
             int field_offset = 0;
             for (const auto& child : class_decl->children) {
                 if (child->node_type == parser::NodeType::FIELD_DECLARATION) {
@@ -148,6 +159,7 @@ void SemanticAnalyzer::analyze(parser::AstTree& tree) {
                 }
             }
             class_decl->instance_size = field_offset;
+            current_class = nullptr;
         } else if (symbol->node_type == parser::NodeType::ENUM_DECLARATION) {
             // Assign integer values to enum members
             auto enum_decl = static_cast<parser::EnumDeclaration*>(symbol);
@@ -473,8 +485,8 @@ TypeInfo SemanticAnalyzer::evaluateExpressionInternal(parser::AstTree& tree, par
             result.is_primitive = true;
         }
         else if (lit->token.type == lexer::TokenType::STRING) {
-            result.base_name = "char";
-            result.array_depth = 1;
+            result.base_name = "string";
+            result.array_depth = 0;
             result.is_primitive = false;
         }
         else if (lit->token.type == lexer::TokenType::IDENTIFIER && (lit->token.value == "true" || lit->token.value == "false")) {
@@ -507,9 +519,9 @@ TypeInfo SemanticAnalyzer::evaluateExpressionInternal(parser::AstTree& tree, par
                 result.base_name = static_cast<parser::EnumDeclaration*>(declaration_node)->symbol_name;
             } else if (declaration_node->node_type == parser::NodeType::FIELD_DECLARATION) {
                 auto field = static_cast<parser::FieldDeclaration*>(declaration_node);
-                TypeInfo t = resolveType(tree, field->type_name, {});
-                result.base_name = t.base_name;
-                result.array_depth = t.array_depth;
+                result.base_name = field->resolved_type;
+                result.array_depth = field->resolved_array_depth;
+                result.is_primitive = !field->is_reference_type;
                 enforceAccessModifier(declaration_node, {});
             } else {
                 result.base_name = declaration_node->resolved_type;
@@ -573,6 +585,12 @@ TypeInfo SemanticAnalyzer::evaluateExpressionInternal(parser::AstTree& tree, par
                 } else if (child->node_type == parser::NodeType::METHOD_DECLARATION) {
                     auto method = static_cast<parser::MethodDeclaration*>(child.get());
                     if (method->method_name == member_access_expr->member_name) { found_member = method; break; }
+                } else if (child->node_type == parser::NodeType::CLASS_DECLARATION) {
+                    auto inner_class = static_cast<parser::ClassDeclaration*>(child.get());
+                    if (inner_class->class_name == member_access_expr->member_name) { found_member = inner_class; break; }
+                } else if (child->node_type == parser::NodeType::ENUM_DECLARATION) {
+                    auto inner_enum = static_cast<parser::EnumDeclaration*>(child.get());
+                    if (inner_enum->enum_name == member_access_expr->member_name) { found_member = inner_enum; break; }
                 }
             }
             if (!found_member) throw_semantic_error(member_access_expr, "Undefined member: " + member_access_expr->member_name);
@@ -581,12 +599,17 @@ TypeInfo SemanticAnalyzer::evaluateExpressionInternal(parser::AstTree& tree, par
             
             if (found_member->node_type == parser::NodeType::FIELD_DECLARATION) {
                 auto field_declaration = static_cast<parser::FieldDeclaration*>(found_member);
-                TypeInfo field_type_info = resolveType(tree, field_declaration->type_name, {});
-                result = field_type_info;
-            } else {
+                result.base_name = field_declaration->resolved_type;
+                result.array_depth = field_declaration->resolved_array_depth;
+                result.is_primitive = !field_declaration->is_reference_type;
+            } else if (found_member->node_type == parser::NodeType::METHOD_DECLARATION) {
                 auto method_declaration = static_cast<parser::MethodDeclaration*>(found_member);
                 result.is_method = true;
                 result.method_ref = method_declaration;
+            } else if (found_member->node_type == parser::NodeType::CLASS_DECLARATION) {
+                result.base_name = static_cast<parser::ClassDeclaration*>(found_member)->symbol_name;
+            } else if (found_member->node_type == parser::NodeType::ENUM_DECLARATION) {
+                result.base_name = static_cast<parser::EnumDeclaration*>(found_member)->symbol_name;
             }
         } else {
             throw_semantic_error(expr, "Cannot access member on non-class/non-enum type");
