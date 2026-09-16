@@ -492,9 +492,15 @@ void Binder::bind_node(Node *node) {
     if (var->initializer) {
       TypeInfo initializer_type = evaluate_expression(var->initializer.get());
       if (initializer_type != var->type_info) {
-        throw_error(node, "Type mismatch in variable declaration: expected '" +
-                              var->type_info.name + "', got '" +
-                              initializer_type.name + "'");
+        if (var->type_info.name == "char" && var->type_info.array_depth == 1 &&
+            initializer_type.name == "string" && initializer_type.array_depth == 0) {
+            // Valid conversion
+            var->initializer->expression_type = var->type_info;
+        } else {
+            throw_error(node, "Type mismatch in variable declaration: expected '" +
+                                  var->type_info.name + "', got '" +
+                                  initializer_type.name + "'");
+        }
       }
     }
     var->memory_index = local_variable_index++;
@@ -692,8 +698,14 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
     TypeInfo target_type = evaluate_expression(assign->target.get());
     TypeInfo value_type = evaluate_expression(assign->value.get());
     if (target_type != value_type) {
-      throw_error(expr, "Assignment type mismatch: '" + target_type.name +
-                            "' = '" + value_type.name + "'");
+      if (target_type.name == "char" && target_type.array_depth == 1 &&
+          value_type.name == "string" && value_type.array_depth == 0) {
+          // Valid conversion
+          assign->value->expression_type = target_type;
+      } else {
+          throw_error(expr, "Assignment type mismatch: '" + target_type.name +
+                                "' = '" + value_type.name + "'");
+      }
     }
     expr->expression_type = target_type;
     return expr->expression_type;
