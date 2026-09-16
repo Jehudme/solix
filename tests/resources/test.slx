@@ -15,12 +15,12 @@ public enum ApplicationState {
 
 public class Engine {
     
-    private const string engineName = "Solix V8";
+    private const char[] engineName = "Solix V8";
     protected static int32 instanceCount = 0;
     internal bool isRunning = false;
     public float32 temperature = 25.0;
     
-    public static native void print(string s);
+    public static native void print(char[] s);
 
     private class CoreProcessor {
         private ID coreId;
@@ -78,7 +78,10 @@ public class Engine {
         return mat;
     }
 
-    public static void main(string[] args) {
+    public static void main(char[][] args) {
+        if (instanceCount > 0) {
+            return;
+        }
         ApplicationState state = ApplicationState.INITIALIZING;
         
         int32 x = 10;

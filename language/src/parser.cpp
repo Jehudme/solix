@@ -141,7 +141,7 @@ size_t consumeType(const std::vector<lexer::Token>& tokens, size_t start_index) 
         tokens[index].type != lexer::TokenType::PRIMITIVE_INT32 &&
         tokens[index].type != lexer::TokenType::PRIMITIVE_FLOAT64 &&
         tokens[index].type != lexer::TokenType::PRIMITIVE_BOOL &&
-        tokens[index].type != lexer::TokenType::PRIMITIVE_STRING &&
+
         tokens[index].type != lexer::TokenType::PRIMITIVE_INT8 &&
         tokens[index].type != lexer::TokenType::PRIMITIVE_INT16 &&
         tokens[index].type != lexer::TokenType::PRIMITIVE_INT64 &&

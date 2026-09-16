@@ -16,7 +16,7 @@ TEST_CASE("Lexer - Primitives Exhaustive", "[lexer][primitives]") {
         assert_primitive("void", TokenType::PRIMITIVE_VOID);
         assert_primitive("bool", TokenType::PRIMITIVE_BOOL);
         assert_primitive("char", TokenType::PRIMITIVE_CHAR);
-        assert_primitive("string", TokenType::PRIMITIVE_STRING);
+
     }
     
     SECTION("Signed Integers") {

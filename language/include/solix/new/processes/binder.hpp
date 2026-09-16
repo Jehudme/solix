@@ -51,7 +51,6 @@ private:
     Node* builtin_float64;
     Node* builtin_bool;
     Node* builtin_char;
-    Node* builtin_string;
     Node* builtin_void;
     
     int static_variable_index = 1; // 0 reserved for null

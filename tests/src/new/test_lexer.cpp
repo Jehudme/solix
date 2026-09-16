@@ -37,11 +37,11 @@ inline TokenList test_tokenize_file(const std::filesystem::path &path) {
 }
 
 TEST_CASE("New Lexer - Primitives and Strings", "[new_lexer]") {
-  auto tokens =
-      test_tokenize("int32 x = 5; char[] s = \"hello\"; string y = \"world\";");
-  // int32, x, =, 5, ;, char, [], s, =, "hello", ;, string, y, =, "world", ;,
-  // EOF
-  REQUIRE(tokens.size() == 17);
+  TokenList tokens =
+      test_tokenize("int32 x = 5; char[] s = \"hello\"; char[] y = \"world\";");
+  // int32, x, =, 5, ;, char, [], s, =, "hello", ;, char, [], y, =, "world", ;, EOF
+  REQUIRE(tokens.size() == 18);
+
   REQUIRE(tokens[0].type == TokenType::PRIMITIVE_INT32);
   REQUIRE(tokens[1].type == TokenType::IDENTIFIER);
   REQUIRE(std::get<std::string>(tokens[1].value) == "x");
@@ -53,9 +53,10 @@ TEST_CASE("New Lexer - Primitives and Strings", "[new_lexer]") {
   REQUIRE(tokens[9].type == TokenType::STRING);
   REQUIRE(std::get<std::string>(tokens[9].value) == "hello");
 
-  // 'string' is no longer a primitive, it's an IDENTIFIER
-  REQUIRE(tokens[11].type == TokenType::IDENTIFIER);
-  REQUIRE(std::get<std::string>(tokens[11].value) == "string");
+  REQUIRE(tokens[11].type == TokenType::PRIMITIVE_CHAR);
+  REQUIRE(tokens[12].type == TokenType::PUNCTUATION_ARRAY_BRACKETS);
+  REQUIRE(tokens[15].type == TokenType::STRING);
+  REQUIRE(std::get<std::string>(tokens[15].value) == "world");
 }
 
 TEST_CASE("New Lexer - Classes, Functions and Enums", "[new_lexer]") {
