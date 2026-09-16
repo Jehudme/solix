@@ -7,6 +7,7 @@ add_library(solix_language
     src/compilation.cpp
     src/process.cpp
     src/new/processes/lexer.cpp
+    src/new/processes/parser.cpp
     src/runtime.cpp
 )
 
