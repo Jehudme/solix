@@ -3,7 +3,7 @@ add_library(solix_language
     src/parser.cpp
     src/semantic.cpp
     src/compiler.cpp
-    src/diagnostic.cpp
+    src/new/utilities/diagnostic.cpp
     src/compilation.cpp
     src/process.cpp
     src/new/processes/lexer.cpp
