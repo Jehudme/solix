@@ -26,6 +26,17 @@ enum class NodeType {
 struct TypeInfo {
     std::string name;
     int array_depth = 0;
+    bool operator==(const TypeInfo& other) const {
+        return name == other.name && array_depth == other.array_depth;
+    }
+    bool operator!=(const TypeInfo& other) const {
+        return !(*this == other);
+    }
+    std::string to_string() const {
+        std::string res = name;
+        for (int i = 0; i < array_depth; i++) res += "[]";
+        return res;
+    }
 };
 
 struct Node {
@@ -35,6 +46,14 @@ struct Node {
     const Source* source;
     
     Node* parent = nullptr;
+    // --- Semantic Binding Fields ---
+    TypeInfo expression_type;
+    Node* resolved_declaration = nullptr;
+    int memory_index = -1;
+    std::string mangled_name = "";
+    int instance_size = 0;
+    bool is_primitive = false;
+    bool is_reference_type = false;
     std::vector<std::unique_ptr<Node>> children;
 
     Node(NodeType type, const Token& token) 

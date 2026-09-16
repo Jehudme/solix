@@ -11,13 +11,13 @@ Diagnostic::Diagnostic(CompilationContext &context) {
     const auto& options = context.options;
     std::vector<spdlog::sink_ptr> sinks;
 
-    if (options.log_sink == CompilationOptions::LogSinkType::STDOUT || options.log_sink == CompilationOptions::LogSinkType::CONSOLE_AND_FILE) {
+    if (options.sink_type == CompilationOptions::LogSinkType::STDOUT || options.sink_type == CompilationOptions::LogSinkType::CONSOLE_AND_FILE) {
         if (options.use_multithreading) {
             sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
         } else {
             sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_st>());
         }
-    } else if (options.log_sink == CompilationOptions::LogSinkType::STDERR) {
+    } else if (options.sink_type == CompilationOptions::LogSinkType::STDERR) {
         if (options.use_multithreading) {
             sinks.push_back(std::make_shared<spdlog::sinks::stderr_color_sink_mt>());
         } else {
@@ -25,7 +25,7 @@ Diagnostic::Diagnostic(CompilationContext &context) {
         }
     }
     
-    if (options.log_sink == CompilationOptions::LogSinkType::BASIC_FILE || options.log_sink == CompilationOptions::LogSinkType::CONSOLE_AND_FILE) {
+    if (options.sink_type == CompilationOptions::LogSinkType::BASIC_FILE || options.sink_type == CompilationOptions::LogSinkType::CONSOLE_AND_FILE) {
         if (options.log_file_path.has_value()) {
             if (options.use_multithreading) {
                 sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(options.log_file_path.value().string(), true));
