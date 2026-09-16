@@ -1,4 +1,4 @@
-#include "solix/new/processes/diagnostic.hpp"
+#include "solix/new/utilities/diagnostic.hpp"
 #include "solix/new/compilation.hpp"
 #include <iostream>
 #include <spdlog/sinks/basic_file_sink.h>
