@@ -415,6 +415,7 @@ void Binder::bind_tree(Node *root) {
       bind_node(child.get());
     }
 
+    current_method->frame_size = local_variable_index;
     exit_scope();
     current_method = nullptr;
     current_class = previous_class;
@@ -452,6 +453,7 @@ void Binder::bind_tree(Node *root) {
       bind_node(child.get());
     }
 
+    ctor->frame_size = local_variable_index;
     exit_scope();
     current_class = previous_class;
     return; // Children already handled above.
