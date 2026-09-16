@@ -11,17 +11,25 @@ public:
 };
 
 class ParserState {
-    const TokenList& tokens;
+    std::vector<const Token*> tokens;
     size_t current = 0;
     Parser* process;
     const Source* current_source;
 
 public:
     ParserState(const TokenList& tkns, Parser* proc, const Source* src) 
-        : tokens(tkns), process(proc), current_source(src) {}
+        
+: process(proc), current_source(src) {
+        for (const auto& t : tkns) {
+            if (t.type != TokenType::COMMENT_SINGLE_LINE && t.type != TokenType::COMMENT_MULTI_LINE) {
+                tokens.push_back(&t);
+            }
+        }
+    }
 
-    const Token& peek() const { return tokens[current]; }
-    const Token& previous() const { return tokens[current - 1]; }
+
+    const Token& peek() const { return *tokens[current]; }
+    const Token& previous() const { return *tokens[current - 1]; }
     bool is_at_end() const { return peek().type == TokenType::EOF_TOKEN; }
 
     const Token& advance() {
@@ -91,7 +99,7 @@ public:
     std::unique_ptr<Node> parse_enum_declaration(TokenType modifier);
     std::unique_ptr<Node> parse_package_statement();
     std::unique_ptr<Node> parse_alias_statement();
-    std::unique_ptr<Node> parse_field_or_method(TokenType modifier, bool is_static, bool is_inline, bool is_native);
+    std::unique_ptr<Node> parse_field_or_method(TokenType modifier, bool is_static, bool is_inline, bool is_native, bool is_const = false);
     
     TypeInfo parse_type_info();
 };
@@ -117,8 +125,12 @@ TypeInfo ParserState::parse_type_info() {
         else if (t.type == TokenType::PRIMITIVE_CHAR) type.name = "char";
     } else if (t.type == TokenType::IDENTIFIER) {
         type.name = std::get<std::string>(t.value);
+        while (match(TokenType::PUNCTUATION_DOT)) {
+            type.name += ".";
+            type.name += std::get<std::string>(consume(TokenType::IDENTIFIER, "Expected identifier after '.' in type").value);
+        }
     } else {
-        throw ParseError("Expected a type name");
+        throw ParseError("Expected a type name at line " + std::to_string(peek().line));
     }
 
     while (match(TokenType::PUNCTUATION_ARRAY_BRACKETS)) {
@@ -126,8 +138,8 @@ TypeInfo ParserState::parse_type_info() {
     }
     
     // In case there are loose brackets like []
-    while (match(TokenType::PUNCTUATION_OPEN_BRACKET)) {
-        consume(TokenType::PUNCTUATION_CLOSE_BRACKET, "Expected ']' after '[' in type declaration");
+    while (check(TokenType::PUNCTUATION_OPEN_BRACKET) && tokens[current+1]->type == TokenType::PUNCTUATION_CLOSE_BRACKET) {
+        advance(); advance();
         type.array_depth++;
     }
     
@@ -324,7 +336,7 @@ std::unique_ptr<Node> ParserState::parse_primary() {
         Token paren = previous();
         
         if ((peek().type >= TokenType::PRIMITIVE_VOID && peek().type <= TokenType::PRIMITIVE_CHAR) || 
-            (peek().type == TokenType::IDENTIFIER && (tokens[current+1].type == TokenType::PUNCTUATION_CLOSE_PAREN || tokens[current+1].type == TokenType::PUNCTUATION_ARRAY_BRACKETS))) {
+            (peek().type == TokenType::IDENTIFIER && (tokens[current+1]->type == TokenType::PUNCTUATION_CLOSE_PAREN || tokens[current+1]->type == TokenType::PUNCTUATION_ARRAY_BRACKETS))) {
             
             // It's likely a cast
             size_t restore = current;
@@ -375,12 +387,28 @@ std::unique_ptr<Node> ParserState::parse_statement() {
     }
     
     // Check for variable declaration starting with type: primitive or Identifier followed by identifier
-    if ((peek().type >= TokenType::PRIMITIVE_VOID && peek().type <= TokenType::PRIMITIVE_CHAR) || 
-        (peek().type == TokenType::IDENTIFIER && tokens[current+1].type != TokenType::OPERATOR_ASSIGN && 
-         tokens[current+1].type != TokenType::PUNCTUATION_OPEN_PAREN && tokens[current+1].type != TokenType::PUNCTUATION_DOT &&
-         tokens[current+1].type != TokenType::PUNCTUATION_OPEN_BRACKET && tokens[current+1].type != TokenType::OPERATOR_INCREMENT &&
-         tokens[current+1].type != TokenType::OPERATOR_DECREMENT &&
-         tokens[current+1].type != TokenType::PUNCTUATION_SEMICOLON)) {
+    bool is_var_decl = false;
+    if (peek().type >= TokenType::PRIMITIVE_VOID && peek().type <= TokenType::PRIMITIVE_CHAR) is_var_decl = true;
+    else if (peek().type == TokenType::IDENTIFIER) {
+        size_t temp = current;
+        while (temp < tokens.size() && tokens[temp]->type == TokenType::IDENTIFIER) {
+            temp++;
+            if (temp < tokens.size() && tokens[temp]->type == TokenType::PUNCTUATION_DOT) {
+                temp++;
+            } else {
+                break;
+            }
+        }
+        while (temp < tokens.size() && (tokens[temp]->type == TokenType::PUNCTUATION_ARRAY_BRACKETS || 
+              (tokens[temp]->type == TokenType::PUNCTUATION_OPEN_BRACKET && temp+1 < tokens.size() && tokens[temp+1]->type == TokenType::PUNCTUATION_CLOSE_BRACKET))) {
+            if (tokens[temp]->type == TokenType::PUNCTUATION_OPEN_BRACKET) temp += 2;
+            else temp++;
+        }
+        if (temp < tokens.size() && tokens[temp]->type == TokenType::OPERATOR_LOGICAL_AND) temp++;
+        if (temp < tokens.size() && tokens[temp]->type == TokenType::IDENTIFIER) is_var_decl = true;
+    }
+    
+    if (is_var_decl) {
              
         // It could be an identifier array or reference `Type& id`
         size_t restore = current;
@@ -451,12 +479,9 @@ std::unique_ptr<Node> ParserState::parse_for_statement() {
     
     if (match(TokenType::PUNCTUATION_SEMICOLON)) {
         stmt->initialization = nullptr;
-    } else if (match(TokenType::KEYWORD_CONST) || (peek().type >= TokenType::PRIMITIVE_VOID && peek().type <= TokenType::PRIMITIVE_CHAR) ||
-               (peek().type == TokenType::IDENTIFIER && tokens[current+1].type == TokenType::IDENTIFIER)) {
-        // Variable declaration logic is simplified for time, assume parsing works
-        bool is_const = false;
-        if (previous().type == TokenType::KEYWORD_CONST) { is_const = true; }
-        else { current--; } // backtrack if we didn't match const
+    } else if (check(TokenType::KEYWORD_CONST) || (peek().type >= TokenType::PRIMITIVE_VOID && peek().type <= TokenType::PRIMITIVE_CHAR) ||
+               (peek().type == TokenType::IDENTIFIER && tokens[current+1]->type == TokenType::IDENTIFIER)) {
+        bool is_const = match(TokenType::KEYWORD_CONST);
         stmt->initialization = parse_variable_declaration(is_const, false);
     } else {
         stmt->initialization = parse_expression_statement();
@@ -561,24 +586,39 @@ std::unique_ptr<Node> ParserState::parse_top_level_declaration() {
     if (match(TokenType::KEYWORD_ALIAS)) return parse_alias_statement();
     
     TokenType modifier = TokenType::KEYWORD_INTERNAL;
-    if (match({TokenType::KEYWORD_PUBLIC, TokenType::KEYWORD_PRIVATE, TokenType::KEYWORD_PROTECTED, TokenType::KEYWORD_INTERNAL})) {
-        modifier = previous().type;
+    bool is_static = false, is_inline = false, is_native = false, is_const = false;
+    while (true) {
+        if (match({TokenType::KEYWORD_PUBLIC, TokenType::KEYWORD_PRIVATE, TokenType::KEYWORD_PROTECTED, TokenType::KEYWORD_INTERNAL})) {
+            modifier = previous().type;
+        } else if (match(TokenType::KEYWORD_STATIC)) {
+            is_static = true;
+        } else if (match(TokenType::KEYWORD_INLINE)) {
+            is_inline = true;
+        } else if (match(TokenType::KEYWORD_NATIVE)) {
+            is_native = true;
+        } else if (match(TokenType::KEYWORD_CONST)) {
+            is_const = true;
+        } else {
+            break;
+        }
     }
     
     if (match(TokenType::KEYWORD_CLASS)) return parse_class_declaration(modifier);
     if (match(TokenType::KEYWORD_ENUM)) return parse_enum_declaration(modifier);
     
     // Fallback: it could be a free function or a global variable
-    // Solix historically expected everything inside a class, but we parse it here if needed.
-    // We will parse it as a field or method for simplicity.
-    return parse_field_or_method(modifier, false, false, false);
+    return parse_field_or_method(modifier, is_static, is_inline, is_native, is_const);
 }
 
 std::unique_ptr<Node> ParserState::parse_package_statement() {
     Token pkg = previous();
-    Token name = consume(TokenType::IDENTIFIER, "Expected package name");
+    std::string name_str = std::get<std::string>(consume(TokenType::IDENTIFIER, "Expected package name").value);
+    while (match(TokenType::PUNCTUATION_DOT)) {
+        name_str += ".";
+        name_str += std::get<std::string>(consume(TokenType::IDENTIFIER, "Expected sub-package name after '.'").value);
+    }
     consume(TokenType::PUNCTUATION_SEMICOLON, "Expected ';' after package declaration");
-    return std::make_unique<PackageStatement>(pkg, std::get<std::string>(name.value));
+    return std::make_unique<PackageStatement>(pkg, name_str);
 }
 
 std::unique_ptr<Node> ParserState::parse_alias_statement() {
@@ -615,16 +655,28 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
     consume(TokenType::PUNCTUATION_OPEN_BRACE, "Expected '{' before class body");
     while (!check(TokenType::PUNCTUATION_CLOSE_BRACE) && !is_at_end()) {
         TokenType field_mod = TokenType::KEYWORD_PRIVATE;
-        if (match({TokenType::KEYWORD_PUBLIC, TokenType::KEYWORD_PRIVATE, TokenType::KEYWORD_PROTECTED, TokenType::KEYWORD_INTERNAL})) {
-            field_mod = previous().type;
+        bool is_static = false, is_inline = false, is_native = false, is_const = false;
+        while (true) {
+            if (match({TokenType::KEYWORD_PUBLIC, TokenType::KEYWORD_PRIVATE, TokenType::KEYWORD_PROTECTED, TokenType::KEYWORD_INTERNAL})) {
+                field_mod = previous().type;
+            } else if (match(TokenType::KEYWORD_STATIC)) {
+                is_static = true;
+            } else if (match(TokenType::KEYWORD_INLINE)) {
+                is_inline = true;
+            } else if (match(TokenType::KEYWORD_NATIVE)) {
+                is_native = true;
+            } else if (match(TokenType::KEYWORD_CONST)) {
+                is_const = true;
+            } else {
+                break;
+            }
         }
         
-        bool is_static = match(TokenType::KEYWORD_STATIC);
-        bool is_inline = match(TokenType::KEYWORD_INLINE);
-        bool is_native = match(TokenType::KEYWORD_NATIVE);
+        if (match(TokenType::KEYWORD_CLASS)) { decl->children.push_back(parse_class_declaration(field_mod)); continue; }
+        if (match(TokenType::KEYWORD_ENUM)) { decl->children.push_back(parse_enum_declaration(field_mod)); continue; }
         
         // Is it a constructor?
-        if (check(TokenType::IDENTIFIER) && std::get<std::string>(peek().value) == decl->class_name && tokens[current+1].type == TokenType::PUNCTUATION_OPEN_PAREN) {
+        if (check(TokenType::IDENTIFIER) && std::get<std::string>(peek().value) == decl->class_name && tokens[current+1]->type == TokenType::PUNCTUATION_OPEN_PAREN) {
             Token ctor_name = advance();
             auto ctor = std::make_unique<ConstructorDeclaration>(ctor_name, decl->class_name);
             ctor->access_modifier = field_mod;
@@ -643,15 +695,15 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
             ctor->children.push_back(parse_block());
             decl->children.push_back(std::move(ctor));
         } else {
-            decl->children.push_back(parse_field_or_method(field_mod, is_static, is_inline, is_native));
+            decl->children.push_back(parse_field_or_method(field_mod, is_static, is_inline, is_native, is_const));
         }
     }
     consume(TokenType::PUNCTUATION_CLOSE_BRACE, "Expected '}' after class body");
     return decl;
 }
 
-std::unique_ptr<Node> ParserState::parse_field_or_method(TokenType modifier, bool is_static, bool is_inline, bool is_native) {
-    bool is_const = match(TokenType::KEYWORD_CONST);
+std::unique_ptr<Node> ParserState::parse_field_or_method(TokenType modifier, bool is_static, bool is_inline, bool is_native, bool is_const) {
+    
     TypeInfo type = parse_type_info();
     bool is_ref = match(TokenType::OPERATOR_LOGICAL_AND);
     Token name = consume(TokenType::IDENTIFIER, "Expected field or method name");
