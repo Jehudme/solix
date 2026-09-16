@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace spdlog {
     class logger;
@@ -21,6 +22,7 @@ public:
 
 private:
   std::shared_ptr<spdlog::logger> root_logger;
+  std::vector<std::string> registered_loggers;
 };
 
 } // namespace solix
