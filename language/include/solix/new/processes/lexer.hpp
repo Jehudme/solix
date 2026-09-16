@@ -3,6 +3,6 @@
 namespace solix {
 struct Lexer : public CompilationProcess {
     using CompilationProcess::CompilationProcess;
-    void execute() override {}
+    void execute() override;
 };
 }
