@@ -3,6 +3,9 @@ add_library(solix_language
     src/parser.cpp
     src/semantic.cpp
     src/compiler.cpp
+    src/diagnostic.cpp
+    src/compilation.cpp
+    src/process.cpp
     src/runtime.cpp
 )
 
@@ -11,3 +14,5 @@ target_include_directories(solix_language
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
+
+target_link_libraries(solix_language PUBLIC spdlog fmt)

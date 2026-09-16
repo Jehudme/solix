@@ -6,13 +6,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-file(GLOB_RECURSE TEST_SOURCES "src/lexer/*.cpp" "src/parser/*.cpp" "src/semantic/*.cpp" "src/compiler/*.cpp" "src/runtime/*.cpp")
+file(GLOB_RECURSE TEST_SOURCES "src/lexer/*.cpp" "src/parser/*.cpp" "src/semantic/*.cpp" "src/compiler/*.cpp" "src/runtime/*.cpp" "src/new/*.cpp")
 
 add_executable(solix_tests
     ${TEST_SOURCES}
 )
 
-target_link_libraries(solix_tests PRIVATE Catch2::Catch2WithMain solix_language)
+target_link_libraries(solix_tests PRIVATE Catch2::Catch2WithMain solix_language spdlog fmt)
 
 include(Catch)
 catch_discover_tests(solix_tests)
