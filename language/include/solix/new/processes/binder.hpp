@@ -57,6 +57,7 @@ private:
     int static_variable_index = 1; // 0 reserved for null
     int local_variable_index = 0;
     int loop_depth = 0;
+    int switch_depth = 0;
     
     ClassDeclaration* current_class = nullptr;
     MethodDeclaration* current_method = nullptr;
