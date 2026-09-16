@@ -290,23 +290,12 @@ void SemanticAnalyzer::resolveAndCheck(parser::AstTree& tree, parser::Node* root
         variable_declaration->resolved_type = type_info_result.base_name;
         variable_declaration->resolved_array_depth = type_info_result.array_depth;
         
-        // If iterator has an initializer, check iterator
-        if (variable_declaration->initializer) {
-            TypeInfo initializer_type = evaluateExpression(tree, variable_declaration->initializer.get());
-            if (initializer_type.base_name != variable_declaration->resolved_type || initializer_type.array_depth != variable_declaration->resolved_array_depth) {
-                // Allow implicit string to char[] conversion
-                if (variable_declaration->resolved_type == "char" && 
-                    variable_declaration->resolved_array_depth == 1 &&
-                    initializer_type.base_name == "string" &&
-                    initializer_type.array_depth == 0) {
-                    // Valid conversion: mutate the literal's type to match target
-                    variable_declaration->initializer->resolved_type = "char";
-                    variable_declaration->initializer->resolved_array_depth = 1;
-                } else {
-                    throw_semantic_error(variable_declaration, "Type mismatch in assignment for variable " + variable_declaration->var_name + ": expected " + variable_declaration->resolved_type + " (array_depth: " + std::to_string(variable_declaration->resolved_array_depth) + "), got " + initializer_type.base_name + " (array_depth: " + std::to_string(initializer_type.array_depth) + ")");
-                }
-            }
+    if (variable_declaration->initializer) {
+        TypeInfo initializer_type = evaluateExpression(tree, variable_declaration->initializer.get());
+        if (initializer_type.base_name != variable_declaration->resolved_type || initializer_type.array_depth != variable_declaration->resolved_array_depth) {
+            throw_semantic_error(variable_declaration, "Type mismatch in assignment for variable " + variable_declaration->var_name + ": expected " + variable_declaration->resolved_type + " (array_depth: " + std::to_string(variable_declaration->resolved_array_depth) + "), got " + initializer_type.base_name + " (array_depth: " + std::to_string(initializer_type.array_depth) + ")");
         }
+    }
     } else if (root->node_type == parser::NodeType::FOR_STATEMENT) {
         auto for_statement = static_cast<parser::ForStatement*>(root);
         if (for_statement->initialization) resolveAndCheck(tree, for_statement->initialization.get());
@@ -495,9 +484,9 @@ TypeInfo SemanticAnalyzer::evaluateExpressionInternal(parser::AstTree& tree, par
             result.is_primitive = true;
         }
         else if (lit->token.type == lexer::TokenType::STRING) {
-            result.base_name = "string";
-            result.array_depth = 0;
-            result.is_primitive = false;
+            result.base_name = "char";
+            result.array_depth = 1;
+            result.is_primitive = false; // Array of primitive is passed as reference type
         }
         else if (lit->token.type == lexer::TokenType::IDENTIFIER && (lit->token.value == "true" || lit->token.value == "false")) {
             result.base_name = "bool";
@@ -556,15 +545,7 @@ TypeInfo SemanticAnalyzer::evaluateExpressionInternal(parser::AstTree& tree, par
         TypeInfo target = evaluateExpression(tree, assignment_expr->target.get());
         TypeInfo val = evaluateExpression(tree, assignment_expr->value.get());
         if (target.base_name != val.base_name || target.array_depth != val.array_depth) {
-            // Allow implicit string to char[] conversion
-            if (target.base_name == "char" && target.array_depth == 1 &&
-                val.base_name == "string" && val.array_depth == 0) {
-                // Valid conversion: mutate literal
-                assignment_expr->value->resolved_type = "char";
-                assignment_expr->value->resolved_array_depth = 1;
-            } else {
-                throw_semantic_error(expr, "Type mismatch in assignment: expected " + target.base_name + " (depth " + std::to_string(target.array_depth) + "), got " + val.base_name + " (depth " + std::to_string(val.array_depth) + ")");
-            }
+            throw_semantic_error(expr, "Type mismatch in assignment: expected " + target.base_name + " (depth " + std::to_string(target.array_depth) + "), got " + val.base_name + " (depth " + std::to_string(val.array_depth) + ")");
         }
         result = target;
     } else if (expr->node_type == parser::NodeType::MEMBER_ACCESS_EXPRESSION) {

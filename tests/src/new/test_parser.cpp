@@ -45,7 +45,7 @@ test_parse_file(const std::filesystem::path &path) {
 }
 
 TEST_CASE("New Parser - Variable Declarations", "[new_parser]") {
-  auto nodes = test_parse("const int32[] x = 5; string y;");
+  auto nodes = test_parse("const int32[] x = 5; char[] y;");
   REQUIRE(nodes.size() == 2);
 
   REQUIRE(nodes[0]->node_type == NodeType::FIELD_DECL);
@@ -58,7 +58,8 @@ TEST_CASE("New Parser - Variable Declarations", "[new_parser]") {
   REQUIRE(nodes[1]->node_type == NodeType::FIELD_DECL);
   auto *y_decl = static_cast<FieldDeclaration *>(nodes[1].get());
   REQUIRE(y_decl->field_name == "y");
-  REQUIRE(y_decl->type_info.name == "string");
+  REQUIRE(y_decl->type_info.name == "char");
+  REQUIRE(y_decl->type_info.array_depth == 1);
 }
 
 TEST_CASE("New Parser - Classes and Methods", "[new_parser]") {
