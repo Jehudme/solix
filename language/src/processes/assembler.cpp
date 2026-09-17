@@ -33,12 +33,14 @@ void Assembler::execute() {
     emit_byte(static_cast<uint8_t>(OpCode::THROW_ABSTRACT));
     
     // Wire all abstract methods to the sentinel
-    for (const auto& [name, node] : context.global_scope.symbols) {
-        if (node->node_type == NodeType::CLASS_DECL) {
-            auto* cls = static_cast<ClassDeclaration*>(node);
-            for (auto* m : cls->vtable) {
-                if (m->is_abstract) {
-                    function_ips[m] = abstract_sentinel_ip;
+    for (const auto& [source, nodes] : context.nodes) {
+        for (const auto& node : nodes) {
+            if (node->node_type == NodeType::CLASS_DECL) {
+                auto* cls = static_cast<ClassDeclaration*>(node.get());
+                for (auto* m : cls->vtable) {
+                    if (m->is_abstract) {
+                        function_ips[m] = abstract_sentinel_ip;
+                    }
                 }
             }
         }
