@@ -47,6 +47,8 @@ struct CompilationOptions {
   bool use_multithreading = false;
   std::chrono::seconds flush_every_seconds{0};
 
+  std::string entry_point = "main";
+
   std::unordered_map<Source, std::optional<std::string>> sources;
 };
 
