@@ -54,6 +54,7 @@ struct Node {
     int instance_size = 0;
     bool is_primitive = false;
     bool is_reference_type = false;
+    bool is_weak = false;
     std::vector<std::unique_ptr<Node>> children;
 
     Node(NodeType type, const Token& token) 
@@ -240,6 +241,7 @@ struct VariableDeclaration : public Node {
     TypeInfo type_info;
     bool is_const = false;
     bool is_reference_type = false;
+    bool is_weak = false;
     std::unique_ptr<Node> initializer;
     VariableDeclaration(const Token& t, std::string name, TypeInfo type)
         : Node(NodeType::VAR_DECL, t), var_name(std::move(name)), type_info(std::move(type)) {}
@@ -309,6 +311,7 @@ struct FieldDeclaration : public Node {
     bool is_static = false;
     bool is_const = false;
     bool is_reference_type = false;
+    bool is_weak = false;
     std::unique_ptr<Node> initializer;
     FieldDeclaration(const Token& t, std::string name, TypeInfo type)
         : Node(NodeType::FIELD_DECL, t), field_name(std::move(name)), type_info(std::move(type)) {}
@@ -330,6 +333,7 @@ struct MethodDeclaration : public Node {
     bool is_inline = false;
     bool is_virtual = false;
     bool is_override = false;
+    bool is_abstract = false;
     int vtable_index = -1;
     TypeInfo return_type;
     std::string method_name;

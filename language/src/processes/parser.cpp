@@ -99,7 +99,7 @@ public:
     std::unique_ptr<Node> parse_enum_declaration(TokenType modifier);
     std::unique_ptr<Node> parse_package_statement();
     std::unique_ptr<Node> parse_alias_statement();
-    std::unique_ptr<Node> parse_field_or_method(TokenType modifier, bool is_static, bool is_inline, bool is_native, bool is_const, bool is_virtual, bool is_override);
+    std::unique_ptr<Node> parse_field_or_method(TokenType modifier, bool is_static, bool is_inline, bool is_native, bool is_const, bool is_virtual, bool is_override, bool is_weak, bool is_abstract);
     
     TypeInfo parse_type_info();
 };
@@ -593,7 +593,7 @@ std::unique_ptr<Node> ParserState::parse_top_level_declaration() {
     if (match(TokenType::KEYWORD_ALIAS)) return parse_alias_statement();
     
     TokenType modifier = TokenType::KEYWORD_INTERNAL;
-        bool is_static = false, is_inline = false, is_native = false, is_const = false, is_virtual = false, is_override = false;
+        bool is_static = false, is_inline = false, is_native = false, is_const = false, is_virtual = false, is_override = false, is_weak = false, is_abstract = false;
     while (true) {
         if (match({TokenType::KEYWORD_PUBLIC, TokenType::KEYWORD_PRIVATE, TokenType::KEYWORD_PROTECTED, TokenType::KEYWORD_INTERNAL})) {
             modifier = previous().type;
@@ -614,7 +614,7 @@ std::unique_ptr<Node> ParserState::parse_top_level_declaration() {
     if (match(TokenType::KEYWORD_ENUM)) return parse_enum_declaration(modifier);
     
     // Fallback: it could be a free function or a global variable
-    return parse_field_or_method(modifier, is_static, is_inline, is_native, is_const, false, false);
+    return parse_field_or_method(modifier, is_static, is_inline, is_native, is_const, false, false, false, false);
 }
 
 std::unique_ptr<Node> ParserState::parse_package_statement() {
@@ -666,7 +666,7 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
     consume(TokenType::PUNCTUATION_OPEN_BRACE, "Expected '{' before class body");
     while (!check(TokenType::PUNCTUATION_CLOSE_BRACE) && !is_at_end()) {
         TokenType field_mod = TokenType::KEYWORD_PRIVATE;
-        bool is_static = false, is_inline = false, is_native = false, is_const = false, is_virtual = false, is_override = false;
+        bool is_static = false, is_inline = false, is_native = false, is_const = false, is_virtual = false, is_override = false, is_weak = false, is_abstract = false;
         while (true) {
             if (match({TokenType::KEYWORD_PUBLIC, TokenType::KEYWORD_PRIVATE, TokenType::KEYWORD_PROTECTED, TokenType::KEYWORD_INTERNAL})) {
                 field_mod = previous().type;
@@ -682,6 +682,10 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
                 is_virtual = true;
             } else if (match(TokenType::KEYWORD_OVERRIDE)) {
                 is_override = true;
+            } else if (match(TokenType::KEYWORD_WEAK)) {
+                is_weak = true;
+            } else if (match(TokenType::KEYWORD_ABSTRACT)) {
+                is_abstract = true;
             } else {
                 break;
             }
@@ -748,7 +752,7 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
             ctor->children.push_back(std::move(body));
             decl->children.push_back(std::move(ctor));
         } else {
-            decl->children.push_back(parse_field_or_method(field_mod, is_static, is_inline, is_native, is_const, is_virtual, is_override));
+            decl->children.push_back(parse_field_or_method(field_mod, is_static, is_inline, is_native, is_const, is_virtual, is_override, is_weak, is_abstract));
 
         }
     }
@@ -761,7 +765,7 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
     return decl;
 }
 
-std::unique_ptr<Node> ParserState::parse_field_or_method(TokenType modifier, bool is_static, bool is_inline, bool is_native, bool is_const, bool is_virtual, bool is_override) {
+std::unique_ptr<Node> ParserState::parse_field_or_method(TokenType modifier, bool is_static, bool is_inline, bool is_native, bool is_const, bool is_virtual, bool is_override, bool is_weak, bool is_abstract) {
     
     TypeInfo type = parse_type_info();
     bool is_ref = match(TokenType::OPERATOR_LOGICAL_AND);
@@ -792,6 +796,7 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(TokenType modifier, boo
         method->is_inline = is_inline;
         method->is_native = is_native;
         method->is_virtual = is_virtual;
+        method->is_abstract = is_abstract;
         method->is_override = is_override;
         
         while (!check(TokenType::PUNCTUATION_CLOSE_PAREN) && !is_at_end()) {
@@ -818,6 +823,7 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(TokenType modifier, boo
         field->is_static = is_static;
         field->is_const = is_const;
         field->is_reference_type = is_ref;
+        field->is_weak = is_weak;
         if (match(TokenType::OPERATOR_ASSIGN)) {
             field->initializer = parse_expression();
         }

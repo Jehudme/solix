@@ -53,6 +53,9 @@ struct Memory {
   // Tracks addresses of freed dynamic blocks so we can instantly reuse them
   std::vector<Address> free_blocks;
 
+  // Weak references tracking: target_object -> set of heap slot addresses holding the weak ref
+  std::unordered_map<Address, std::unordered_set<Address>> weak_references;
+
   // Memory Usage Statistics
   size_t currently_used_words = 0;
   size_t peak_used_words = 0;

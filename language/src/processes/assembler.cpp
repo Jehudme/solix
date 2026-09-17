@@ -697,15 +697,22 @@ void Assembler::compile_expression(Node* expr) {
                         emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
                         emit_int32(0); 
                         
-                        if (field->is_reference_type) {
+                        if (field->is_weak) {
                             emit_byte(static_cast<uint8_t>(OpCode::DUP));
-                            emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
-                            emit_int32(field->memory_index);
                             emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+                            emit_byte(static_cast<uint8_t>(OpCode::WEAK_SET_PROPERTY));
+                            emit_int32(field->memory_index);
+                        } else {
+                            if (field->is_reference_type) {
+                                emit_byte(static_cast<uint8_t>(OpCode::DUP));
+                                emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
+                                emit_int32(field->memory_index);
+                                emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+                            }
+                            
+                            emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
+                            emit_int32(field->memory_index);
                         }
-                        
-                        emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
-                        emit_int32(field->memory_index);
                     }
                 } else if (ident->resolved_declaration->node_type == NodeType::VAR_DECL) {
                     auto* var = static_cast<VariableDeclaration*>(ident->resolved_declaration);
@@ -728,15 +735,22 @@ void Assembler::compile_expression(Node* expr) {
                 if (!field) {
                     throw std::runtime_error("MEMBER_ACCESS resolved_declaration is null at line " + std::to_string(mem_acc->line));
                 }
-                if (field->is_reference_type) {
+                if (field->is_weak) {
                     emit_byte(static_cast<uint8_t>(OpCode::DUP));
-                    emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
-                    emit_int32(field->memory_index);
                     emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+                    emit_byte(static_cast<uint8_t>(OpCode::WEAK_SET_PROPERTY));
+                    emit_int32(field->memory_index);
+                } else {
+                    if (field->is_reference_type) {
+                        emit_byte(static_cast<uint8_t>(OpCode::DUP));
+                        emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
+                        emit_int32(field->memory_index);
+                        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+                    }
+                    
+                    emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
+                    emit_int32(field->memory_index);
                 }
-                
-                emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
-                emit_int32(field->memory_index);
             }
             break;
         }

@@ -56,6 +56,7 @@ enum class OpCode : uint8_t {
   ALLOC_DYNAMIC,
   GET_PROPERTY,
   SET_PROPERTY,
+  WEAK_SET_PROPERTY,
   GET_ARRAY,
   SET_ARRAY,
 
@@ -133,6 +134,7 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::ALLOC_DYNAMIC: return "ALLOC_DYNAMIC";
         case OpCode::GET_PROPERTY: return "GET_PROPERTY";
         case OpCode::SET_PROPERTY: return "SET_PROPERTY";
+        case OpCode::WEAK_SET_PROPERTY: return "WEAK_SET_PROPERTY";
         case OpCode::GET_ARRAY: return "GET_ARRAY";
         case OpCode::SET_ARRAY: return "SET_ARRAY";
         case OpCode::INC_REF: return "INC_REF";
@@ -203,6 +205,7 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "ALLOC_DYNAMIC") return OpCode::ALLOC_DYNAMIC;
     if (str == "GET_PROPERTY") return OpCode::GET_PROPERTY;
     if (str == "SET_PROPERTY") return OpCode::SET_PROPERTY;
+    if (str == "WEAK_SET_PROPERTY") return OpCode::WEAK_SET_PROPERTY;
     if (str == "GET_ARRAY") return OpCode::GET_ARRAY;
     if (str == "SET_ARRAY") return OpCode::SET_ARRAY;
     if (str == "INC_REF") return OpCode::INC_REF;

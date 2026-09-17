@@ -48,6 +48,14 @@ uint64_t Memory::dynamic_allocation(size_t size_in_words, Address address) {
 
 void Memory::deallocate(Address address) {
     if (address == 0) return;
+    
+    if (auto it = weak_references.find(address); it != weak_references.end()) {
+        for (Address weak_slot : it->second) {
+            heap[weak_slot] = 0;
+        }
+        weak_references.erase(it);
+    }
+    
     Address header_addr = address - 1;
     uint64_t header = heap[header_addr];
     uint32_t size = static_cast<uint32_t>(header >> 32);
@@ -335,6 +343,29 @@ void RuntimeContext::execute() {
                 if (obj + offset >= memory.heap.size()) throw std::runtime_error("Heap out of bounds on SET_PROPERTY");
                 
                 memory.write_u64(obj, offset, val);
+                break;
+            }
+            case static_cast<uint8_t>(OpCode::WEAK_SET_PROPERTY): {
+                uint32_t offset = read_u32(bytecode, program_counter);
+                Address obj = static_cast<Address>(pop());
+                uint64_t val = pop();
+                if (obj + offset >= memory.heap.size()) throw std::runtime_error("Heap out of bounds on WEAK_SET_PROPERTY");
+                
+                Address slot_address = obj + offset;
+                Address old_val = memory.read_u64(obj, offset);
+                
+                if (old_val != 0) {
+                    if (auto it = memory.weak_references.find(old_val); it != memory.weak_references.end()) {
+                        it->second.erase(slot_address);
+                        if (it->second.empty()) memory.weak_references.erase(it);
+                    }
+                }
+                
+                memory.write_u64(obj, offset, val);
+                
+                if (val != 0) {
+                    memory.weak_references[val].insert(slot_address);
+                }
                 break;
             }
             case static_cast<uint8_t>(OpCode::GET_ARRAY): {
