@@ -11,4 +11,23 @@ namespace solix {
 CompilationContext::CompilationContext(const CompilationOptions &opts)
     : options(opts) {}
 CompilationContext::~CompilationContext() = default;
+
+std::vector<uint8_t> run(CompilationOptions& options) {
+    CompilationContext context(options);
+    context.diagnostic = std::make_unique<Diagnostic>(context);
+    
+    Lexer lexer(context, "Lexer");
+    lexer.execute();
+    
+    Parser parser(context, "Parser");
+    parser.execute();
+    
+    Binder binder(context, "Binder");
+    binder.execute();
+    
+    Assembler assembler(context, "Assembler");
+    assembler.execute();
+    
+    return std::move(context.bytecode);
+}
 } // namespace solix

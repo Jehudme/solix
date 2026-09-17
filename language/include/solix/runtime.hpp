@@ -82,6 +82,7 @@ using NativeFunction =
                        size_t arg_count)>;
 
 void register_native_function(const std::string &name, NativeFunction func);
+void run(RuntimeOptions& options);
 
 // -----------------------------------------------------------------------------
 // Execution Engine
@@ -101,8 +102,8 @@ struct RuntimeContext {
   void register_native(uint32_t id, NativeFunction func);
   void execute();
 
-  inline void push(uint64_t val);
-  inline uint64_t pop();
+  void push(uint64_t val);
+  uint64_t pop();
 };
 
 } // namespace solix

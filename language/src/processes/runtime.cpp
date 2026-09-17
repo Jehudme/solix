@@ -108,8 +108,8 @@ void RuntimeContext::register_native(uint32_t id, NativeFunction func) {
     native_registry[id] = std::move(func);
 }
 
-inline void RuntimeContext::push(uint64_t val) { memory.stack[memory.stack_pointer++] = val; }
-inline uint64_t RuntimeContext::pop() { return memory.stack[--memory.stack_pointer]; }
+void RuntimeContext::push(uint64_t val) { memory.stack[memory.stack_pointer++] = val; }
+uint64_t RuntimeContext::pop() { return memory.stack[--memory.stack_pointer]; }
 
 static inline uint32_t read_u32(const Bytecode& bcode, Address& pc) {
     uint32_t val = (bcode[pc] << 24) | (bcode[pc+1] << 16) | (bcode[pc+2] << 8) | bcode[pc+3];
@@ -413,6 +413,11 @@ void RuntimeContext::execute() {
                 throw std::runtime_error("Unknown OpCode encountered! " + std::to_string(op));
         }
     }
+}
+
+void run(RuntimeOptions& options) {
+    RuntimeContext vm(options);
+    vm.execute();
 }
 
 } // namespace solix

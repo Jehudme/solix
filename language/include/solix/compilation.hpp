@@ -71,4 +71,5 @@ struct CompilationContext {
   ~CompilationContext();
 };
 
+std::vector<uint8_t> run(CompilationOptions& options);
 } // namespace solix
