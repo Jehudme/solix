@@ -1,27 +1,38 @@
-# CMake build directory
+# Build directories
 build/
 build-*/
+out/
 
-# IDEs and Editors
+# IDEs and editors
 .vscode/
 .cache/
 .idea/
 *.swp
 *.swo
+*.code-workspace
 
-# Compiled files
+# Compiled object files
 *.o
 *.a
 *.so
 *.dylib
 *.dll
 *.exe
+*.slxb
 
-# FetchContent
+# CMake / FetchContent
 _deps/
-scratch*.cpp
-scratch_test*
-fix_compiler*.py
-fix_*.py
+compile_commands.json
+CMakeFiles/
+
+# Python tooling / one-off patch scripts (never committed)
+*.py
+
+# Debug and scratch artefacts
+debug_*
+disasm*
+console.slx
+scratch*
 patch.cpp
-out/
+main.cpp
+CLI/
