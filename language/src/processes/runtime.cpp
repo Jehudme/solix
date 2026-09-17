@@ -105,8 +105,16 @@ void RuntimeContext::register_native(uint32_t id, NativeFunction func) {
     native_registry[id] = std::move(func);
 }
 
-void RuntimeContext::push(uint64_t val) { memory.stack[memory.stack_pointer++] = val; }
-uint64_t RuntimeContext::pop() { return memory.stack[--memory.stack_pointer]; }
+void RuntimeContext::push(uint64_t val) {
+  
+  if (memory.stack_pointer >= memory.stack.size()) throw std::runtime_error("Stack overflow");
+  memory.stack[memory.stack_pointer++] = val;
+}
+uint64_t RuntimeContext::pop() {
+  
+  if (memory.stack_pointer == 0) throw std::runtime_error("Stack underflow");
+  return memory.stack[--memory.stack_pointer];
+}
 
 static inline uint32_t read_u32(const Bytecode& bcode, Address& pc) {
     uint32_t val = (bcode[pc] << 24) | (bcode[pc+1] << 16) | (bcode[pc+2] << 8) | bcode[pc+3];
@@ -260,16 +268,17 @@ void RuntimeContext::execute() {
             }
 
             case static_cast<uint8_t>(OpCode::GET_LOCAL): {
-                uint32_t idx = read_u32(bytecode, program_counter);
-                push(stack[call_stack.back().frame_pointer + idx]);
+                uint32_t index = read_u32(bytecode, program_counter);
+                uint32_t fp = call_stack.back().frame_pointer;
+                if (fp + index >= memory.stack.size()) throw std::runtime_error("Frame out of bounds on GET_LOCAL");
+                push(stack[fp + index]);
                 break;
             }
             case static_cast<uint8_t>(OpCode::SET_LOCAL): {
-                uint32_t idx = read_u32(bytecode, program_counter);
-                uint64_t val = pop();
-                uint32_t target_idx = call_stack.back().frame_pointer + idx;
-                if (target_idx >= memory.stack_pointer) memory.stack_pointer = target_idx + 1;
-                stack[target_idx] = val;
+                uint32_t index = read_u32(bytecode, program_counter);
+                uint32_t fp = call_stack.back().frame_pointer;
+                if (fp + index >= memory.stack.size()) throw std::runtime_error("Frame out of bounds on SET_LOCAL");
+                stack[fp + index] = pop();
                 break;
             }
             case static_cast<uint8_t>(OpCode::GET_GLOBAL): {
@@ -315,14 +324,16 @@ void RuntimeContext::execute() {
             case static_cast<uint8_t>(OpCode::GET_PROPERTY): {
                 uint32_t offset = read_u32(bytecode, program_counter);
                 Address obj = static_cast<Address>(pop());
-                push(heap_data[obj + offset]);
+                if (obj + offset >= memory.heap.size()) throw std::runtime_error("Heap out of bounds on GET_PROPERTY");
+                push(memory.read_u64(obj, offset));
                 break;
             }
             case static_cast<uint8_t>(OpCode::SET_PROPERTY): {
                 uint32_t offset = read_u32(bytecode, program_counter);
-                Address obj = static_cast<Address>(pop());
                 uint64_t val = pop();
-                heap_data[obj + offset] = val;
+                Address obj = static_cast<Address>(pop());
+                if (obj + offset >= memory.heap.size()) throw std::runtime_error("Heap out of bounds on SET_PROPERTY");
+                memory.write_u64(obj, offset, val);
                 break;
             }
             case static_cast<uint8_t>(OpCode::GET_ARRAY): {
