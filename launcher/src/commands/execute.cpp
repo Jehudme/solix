@@ -18,6 +18,12 @@ namespace solix::cli {
             opts->bytecode_source = std::filesystem::path(*bytecode_file);
             
             // For testing purposes, we register a standard print function
+                        opts->native_functions["com.solix.advanced.test.Engine.printFloat"] = [](solix::RuntimeContext& ctx, uint64_t self_address, uint64_t* args, size_t arg_count) {
+                uint64_t val = ctx.pop();
+                double d = std::bit_cast<double>(val);
+                std::cout << d << std::endl;
+                ctx.push(0);
+            };
             opts->native_functions["com.solix.advanced.test.Engine.print"] = [](solix::RuntimeContext& ctx, uint64_t self_address, uint64_t* args, size_t arg_count) {
                 uint64_t val = ctx.pop();
                 solix::Address addr = static_cast<solix::Address>(val);

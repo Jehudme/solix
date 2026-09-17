@@ -198,5 +198,15 @@ public class Engine {
         if (state == ApplicationState.RUNNING && myEngine.isRunning && proc.currentStatus == Engine.CoreProcessor.CoreStatus.IDLE) {
             Engine.print("Complex test passed successfully!");
         }
+
+        // ARC STRESS TEST
+        Engine.print("STARTING ARC STRESS TEST");
+        int32 i = 0;
+        while (i < 1000) {
+            Animal a = new Animal();
+            Dog d = new Dog();
+            i = i + 1;
+        }
+        Engine.print("ARC STRESS TEST PASSED!");
     }
 }

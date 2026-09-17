@@ -330,9 +330,10 @@ void RuntimeContext::execute() {
             }
             case static_cast<uint8_t>(OpCode::SET_PROPERTY): {
                 uint32_t offset = read_u32(bytecode, program_counter);
-                uint64_t val = pop();
                 Address obj = static_cast<Address>(pop());
+                uint64_t val = pop();
                 if (obj + offset >= memory.heap.size()) throw std::runtime_error("Heap out of bounds on SET_PROPERTY");
+                
                 memory.write_u64(obj, offset, val);
                 break;
             }

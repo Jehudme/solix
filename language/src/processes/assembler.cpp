@@ -424,6 +424,16 @@ void Assembler::compile_node(Node* node) {
             } else {
                 emit_byte(static_cast<uint8_t>(OpCode::PUSH_NULL));
             }
+            
+            // Cleanup locals before return
+            Node* current = node->parent;
+            while (current && current->node_type != NodeType::METHOD_DECL && current->node_type != NodeType::CONSTRUCTOR_DECL) {
+                if (current->node_type == NodeType::BLOCK) {
+                    emit_cleanup_for_node(current);
+                }
+                current = current->parent;
+            }
+            
             emit_byte(static_cast<uint8_t>(OpCode::RETURN));
             break;
         }
