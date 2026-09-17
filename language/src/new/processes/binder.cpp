@@ -754,7 +754,19 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
         return expr->expression_type;
       }
     } else if (type_decl->node_type == NodeType::ENUM_DECL) {
-      // Enum member access — the result has the same enum type.
+      auto* enum_decl = static_cast<EnumDeclaration*>(type_decl);
+      int32_t e_val = -1;
+      for (size_t i = 0; i < enum_decl->members.size(); ++i) {
+          if (enum_decl->members[i] == member_access->member_name) {
+              e_val = i;
+              break;
+          }
+      }
+      if (e_val == -1) {
+          throw_error(expr, "Undefined enum member: " + member_access->member_name);
+      }
+      member_access->resolved_declaration = enum_decl;
+      member_access->enum_value = e_val;
       expr->expression_type = object_type;
       return expr->expression_type;
     }

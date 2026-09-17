@@ -67,7 +67,6 @@ struct Node {
 
 struct IdentifierNode : public Node {
     std::string name;
-    Node* resolved_declaration = nullptr;
     IdentifierNode(const Token& t, std::string n) : Node(NodeType::IDENTIFIER, t), name(std::move(n)) {}
 };
 
@@ -121,7 +120,7 @@ struct ArrayAccessExpression : public Node {
 struct MemberAccessExpression : public Node {
     std::unique_ptr<Node> object;
     std::string member_name;
-    Node* resolved_declaration = nullptr;
+    int32_t enum_value = -1;
     MemberAccessExpression(const Token& t, std::unique_ptr<Node> obj, std::string mem)
         : Node(NodeType::MEMBER_ACCESS, t), object(std::move(obj)), member_name(std::move(mem)) {
             if(object) object->parent = this;
@@ -140,7 +139,6 @@ struct MethodCallExpression : public Node {
 struct NewInstanceExpression : public Node {
     TypeInfo type_info;
     std::vector<std::unique_ptr<Node>> arguments;
-    Node* resolved_declaration = nullptr;
     NewInstanceExpression(const Token& t, TypeInfo type)
         : Node(NodeType::NEW_INSTANCE, t), type_info(std::move(type)) {}
 };

@@ -699,6 +699,11 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
         }
     }
     consume(TokenType::PUNCTUATION_CLOSE_BRACE, "Expected '}' after class body");
+    
+    for (auto& child : decl->children) {
+        child->parent = decl.get();
+    }
+    
     return decl;
 }
 
