@@ -11,7 +11,6 @@
 
 namespace solix {
 
-
 using Bytecode = std::vector<uint8_t>;
 using Stack = std::vector<uint64_t>;
 using Heap = std::vector<uint64_t>; // Option B: Everything, including chars,
@@ -19,7 +18,8 @@ using Heap = std::vector<uint64_t>; // Option B: Everything, including chars,
 using Address = uint32_t;
 
 struct RuntimeContext;
-using NativeFunction = std::function<void(RuntimeContext &, uint64_t self_address, uint64_t* args, size_t arg_count)>;
+using NativeFunction = std::function<void(
+    RuntimeContext &, uint64_t self_address, uint64_t *args, size_t arg_count)>;
 
 struct RuntimeOptions {
   size_t stack_capacity = 1024 * 1024;     // 1M words
@@ -54,7 +54,8 @@ struct Memory {
   // Tracks addresses of freed dynamic blocks so we can instantly reuse them
   std::vector<Address> free_blocks;
 
-  // Weak references tracking: target_object -> set of heap slot addresses holding the weak ref
+  // Weak references tracking: target_object -> set of heap slot addresses
+  // holding the weak ref
   std::unordered_map<Address, std::unordered_set<Address>> weak_references;
 
   // Memory Usage Statistics
@@ -85,8 +86,7 @@ struct Memory {
   inline char read_char(Address address, uint32_t offset) const;
 };
 
-
-void run(RuntimeOptions& options);
+void run(RuntimeOptions &options);
 
 // -----------------------------------------------------------------------------
 // Execution Engine
@@ -100,8 +100,7 @@ struct RuntimeContext {
 
   std::vector<Frame> call_stack;
   std::unordered_map<uint32_t, NativeFunction> native_registry;
-    std::unordered_map<uint32_t, std::vector<uint32_t>> vtables;
-    std::unordered_map<uint32_t, int32_t> vtable_bases;
+  std::unordered_map<uint32_t, std::vector<uint32_t>> vtables;
 
   RuntimeContext(const RuntimeOptions &opts);
 
