@@ -52,35 +52,33 @@ void Binder::setup_builtins() {
 // ─── Name Mangling ───────────────────────────────────────────────────────────
 
 std::string Binder::mangle_method(MethodDeclaration *method) {
-  // Native methods keep their plain name so external linkage works.
-  if (method->is_native)
-    return method->method_name;
-  std::string mangled_name = method->method_name;
-  for (const auto &param : method->parameters) {
-    auto *var_decl = static_cast<VariableDeclaration *>(param.get());
-    mangled_name += "_" + var_decl->type_info.to_string();
+  if (method->is_native) return method->method_name;
+  std::string mangled_name = method->method_name + "(";
+  for (size_t i = 0; i < method->parameters.size(); ++i) {
+    auto *var_decl = static_cast<VariableDeclaration *>(method->parameters[i].get());
+    mangled_name += var_decl->type_info.to_string();
+    if (i < method->parameters.size() - 1) mangled_name += ",";
   }
-  return mangled_name;
-}
+  mangled_name += ")";
+  return mangled_name;}
 
-std::string Binder::mangle_method_call(const std::string &base_name,
-                                       const std::vector<TypeInfo> &arg_types) {
-  std::string mangled_name = base_name;
-  for (const auto &arg_type : arg_types) {
-    mangled_name += "_" + arg_type.to_string();
+std::string Binder::mangle_method_call(const std::string &base_name, const std::vector<TypeInfo> &arg_types) {
+  std::string mangled_name = base_name + "(";
+  for (size_t i = 0; i < arg_types.size(); ++i) {
+    mangled_name += arg_types[i].to_string();
+    if (i < arg_types.size() - 1) mangled_name += ",";
   }
-  return mangled_name;
-}
+  mangled_name += ")";
+  return mangled_name;}
 
-std::string Binder::mangle_constructor(const std::string &class_name,
-                                       const std::vector<TypeInfo> &arg_types) {
-  // Constructors are stored as "ClassName.ctor_Type1_Type2..."
-  std::string mangled_name = class_name + ".ctor";
-  for (const auto &arg_type : arg_types) {
-    mangled_name += "_" + arg_type.to_string();
+std::string Binder::mangle_constructor(const std::string &class_name, const std::vector<TypeInfo> &arg_types) {
+  std::string mangled_name = class_name + ".ctor(";
+  for (size_t i = 0; i < arg_types.size(); ++i) {
+    mangled_name += arg_types[i].to_string();
+    if (i < arg_types.size() - 1) mangled_name += ",";
   }
-  return mangled_name;
-}
+  mangled_name += ")";
+  return mangled_name;}
 
 // ─── Scope Management ────────────────────────────────────────────────────────
 
@@ -194,18 +192,15 @@ void Binder::register_members(Node *node, const std::string &prefix) {
   } else if (node->node_type == NodeType::CONSTRUCTOR_DECL) {
     auto *ctor = static_cast<ConstructorDeclaration *>(node);
     // Resolve parameter types now, so the mangled name uses canonical names.
-    std::string full_name = prefix + "ctor";
-    for (const auto &param : ctor->parameters) {
-      auto *var_decl = static_cast<VariableDeclaration *>(param.get());
+    std::string full_name = prefix + "ctor(";
+    for (size_t i = 0; i < ctor->parameters.size(); ++i) {
+      auto *var_decl = static_cast<VariableDeclaration *>(ctor->parameters[i].get());
       var_decl->type_info = resolve_type(var_decl->type_info, var_decl);
-      full_name += "_" + var_decl->type_info.name;
+      full_name += var_decl->type_info.to_string();
+      if (i < ctor->parameters.size() - 1) full_name += ",";
     }
-    if (current_class) {
-      log_info("Injected 'this' into constructor of {}",
-               current_class->class_name);
-    }
-    ctor->mangled_name = full_name;
-    global_scope.define(full_name, ctor);
+    full_name += ")";
+    ctor->mangled_name = full_name;    global_scope.define(full_name, ctor);
   }
 
   if (node->node_type == NodeType::CLASS_DECL ||
@@ -787,10 +782,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
       TypeInfo receiver_type = evaluate_expression(member_access->object.get());
       std::string base_name =
           receiver_type.name + "." + member_access->member_name;
-      std::string mangled_name = base_name;
-      for (const auto &arg_type : argument_types)
-        mangled_name += "_" + arg_type.to_string();
-
+      std::string mangled_name = mangle_method_call(base_name, argument_types);
       // Try mangled name first, then fall back to plain name for native
       // methods.
       Node *method_decl = global_scope.resolve(mangled_name);
@@ -809,10 +801,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
         throw_error(expr, "Local method calls must be inside a class");
       auto *id = static_cast<IdentifierNode *>(method_call->callee.get());
       std::string base_name = current_class->mangled_name + "." + id->name;
-      std::string mangled_name = base_name;
-      for (const auto &arg_type : argument_types)
-        mangled_name += "_" + arg_type.to_string();
-
+      std::string mangled_name = mangle_method_call(base_name, argument_types);
       // Try mangled name first, then fall back to plain name for native
       // methods.
       Node *method_decl = global_scope.resolve(mangled_name);
@@ -844,7 +833,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
     // Fallback: find any constructor with the same arity (allows numeric
     // coercion).
     if (!ctor && !argument_types.empty()) {
-      std::string ctor_prefix = new_instance->type_info.name + ".ctor_";
+      std::string ctor_prefix = new_instance->type_info.name + ".ctor(";
       int expected_param_count = static_cast<int>(argument_types.size());
       for (const auto &[sym_name, sym_node] : global_scope.symbols) {
         if (sym_node->node_type == NodeType::CONSTRUCTOR_DECL &&

@@ -21,6 +21,8 @@ public class Engine {
     public float32 temperature = 25.0;
     
     public static native void print(char[] s);
+    public static void print(int32 x) { print("INT32 PRINT"); }
+    public static void print(float64 x) { print("FLOAT64 PRINT"); }
 
     private class CoreProcessor {
         private ID coreId;
@@ -80,6 +82,8 @@ public class Engine {
 
     public static void main(char[][] args) {
         Engine.print("START OF MAIN!");
+        Engine.print(42);
+        Engine.print(3.14159);
         if (args.length > 0) {
             Engine.print("WE HAVE ARGUMENTS!");
             Engine.print(args[0]);
