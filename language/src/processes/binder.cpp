@@ -937,9 +937,10 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
           if (m->is_virtual && member_access && !member_access->is_scope_resolution) {
               method_call->is_virtual_call = true;
           }
+          expr->expression_type = m->return_type;
+      } else {
+          expr->expression_type = {"void", 0};
       }
-      expr->expression_type =
-          static_cast<MethodDeclaration *>(method_decl)->return_type;
       return expr->expression_type;
 
     } else {
@@ -968,9 +969,10 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
           if (m->is_virtual && id->name != "super") {
               method_call->is_virtual_call = true;
           }
+          expr->expression_type = m->return_type;
+      } else {
+          expr->expression_type = {"void", 0};
       }
-      expr->expression_type =
-          static_cast<MethodDeclaration *>(method_decl)->return_type;
       return expr->expression_type;
     }
 
