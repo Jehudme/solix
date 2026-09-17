@@ -85,6 +85,17 @@ int main(int argc, char** argv) {
               i += 9;
               break;
           }
+          case OpCode::PUSH_CONST_F64: {
+              uint64_t bits = ((uint64_t)bcode[i+1] << 56) | ((uint64_t)bcode[i+2] << 48) |
+                              ((uint64_t)bcode[i+3] << 40) | ((uint64_t)bcode[i+4] << 32) |
+                              ((uint64_t)bcode[i+5] << 24) | ((uint64_t)bcode[i+6] << 16) |
+                              ((uint64_t)bcode[i+7] << 8) | bcode[i+8];
+              double val;
+              std::memcpy(&val, &bits, 8);
+              std::cout << " " << val;
+              i += 9;
+              break;
+          }
           case OpCode::PUSH_CONST_STRING: {
               uint32_t str_len = (bcode[i+1] << 24) | (bcode[i+2] << 16) | (bcode[i+3] << 8) | bcode[i+4];
               i += 5;

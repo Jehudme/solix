@@ -545,6 +545,16 @@ void Assembler::compile_expression(Node* expr) {
         }
         case NodeType::ASSIGNMENT_EXPR: {
             auto* assign = static_cast<AssignmentExpression*>(expr);
+            
+            if (assign->target->node_type == NodeType::ARRAY_ACCESS) {
+                auto* arr_acc = static_cast<ArrayAccessExpression*>(assign->target.get());
+                compile_expression(arr_acc->array.get());
+                compile_expression(arr_acc->index.get());
+                compile_expression(assign->value.get());
+                emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
+                break;
+            }
+            
             compile_expression(assign->value.get());
             
             emit_byte(static_cast<uint8_t>(OpCode::DUP));
@@ -599,12 +609,6 @@ void Assembler::compile_expression(Node* expr) {
                 
                 emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
                 emit_int32(field->memory_index);
-            } else if (assign->target->node_type == NodeType::ARRAY_ACCESS) {
-                auto* arr_acc = static_cast<ArrayAccessExpression*>(assign->target.get());
-                compile_expression(arr_acc->array.get());
-                compile_expression(arr_acc->index.get());
-                
-                emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
             }
             break;
         }
@@ -705,9 +709,10 @@ void Assembler::compile_expression(Node* expr) {
                     }
                 } else if (uny->operand->node_type == NodeType::ARRAY_ACCESS) {
                     auto* arr_acc = static_cast<ArrayAccessExpression*>(uny->operand.get());
-                    emit_byte(static_cast<uint8_t>(OpCode::DUP));
                     compile_expression(arr_acc->array.get());
                     compile_expression(arr_acc->index.get());
+                    compile_expression(uny->operand.get());
+                    emit_byte(opc);
                     emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
                 }
             }
