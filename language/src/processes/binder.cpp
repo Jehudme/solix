@@ -1,25 +1,28 @@
 #include <unordered_set>
 #include "solix/processes/binder.hpp"
 #include "solix/compilation.hpp"
+#include "solix/utilities/diagnostic.hpp"
 
 namespace solix {
 
 // ─── Error Reporting ────────────────────────────────────────────────────────
 
-void Binder::throw_error(Node *node, const std::string &msg) {
-  std::string error_message = "";
+void Binder::record_error(Node *node, const std::string &msg) {
+  Report r;
+  r.severity = ReportSeverity::ERROR;
+  r.code = "E_BIND";
+  r.message = msg;
+  r.source_path = "";
+  r.line = node ? node->line : 0;
+  r.column = node ? node->column : 0;
   if (node && node->source) {
     if (std::holds_alternative<std::filesystem::path>(*node->source)) {
-      error_message +=
-          std::get<std::filesystem::path>(*node->source).string() + ":";
+      r.source_path = std::get<std::filesystem::path>(*node->source).string();
     } else {
-      error_message += std::get<std::string>(*node->source) + ":";
+      r.source_path = std::get<std::string>(*node->source);
     }
-    error_message +=
-        std::to_string(node->line) + ":" + std::to_string(node->column) + " - ";
   }
-  error_message += msg;
-  throw BindError(error_message);
+  context.diagnostic->record_report(r);
 }
 
 // ─── Builtin Primitives Setup ────────────────────────────────────────────────
@@ -96,7 +99,7 @@ void Binder::exit_scope() {
 
 void Binder::declare_local(const std::string &name, Node *node) {
   if (current_scope->symbols.count(name)) {
-    throw_error(node,
+    record_error(node,
                 "Variable '" + name + "' is already defined in this scope.");
   }
   current_scope->define(name, node);
@@ -120,7 +123,7 @@ void Binder::register_global_symbols(Node *node, const std::string &prefix) {
     auto *alias = static_cast<AliasStatement *>(node);
     std::string full_name = prefix + alias->alias_name;
     if (global_scope.symbols.count(full_name)) {
-      throw_error(node, "Duplicate global symbol: " + full_name);
+      record_error(node, "Duplicate global symbol: " + full_name);
     }
     alias->mangled_name = full_name;
     global_scope.define(full_name, alias);
@@ -132,7 +135,7 @@ void Binder::register_global_symbols(Node *node, const std::string &prefix) {
         class_decl->base_class_name = prefix + class_decl->base_class_name;
     }
     if (global_scope.symbols.count(full_name)) {
-      throw_error(node, "Duplicate global symbol: " + full_name);
+      record_error(node, "Duplicate global symbol: " + full_name);
     }
     class_decl->mangled_name = full_name;
     global_scope.define(full_name, class_decl);
@@ -141,7 +144,7 @@ void Binder::register_global_symbols(Node *node, const std::string &prefix) {
     auto *enum_decl = static_cast<EnumDeclaration *>(node);
     std::string full_name = prefix + enum_decl->enum_name;
     if (global_scope.symbols.count(full_name)) {
-      throw_error(node, "Duplicate global symbol: " + full_name);
+      record_error(node, "Duplicate global symbol: " + full_name);
     }
     enum_decl->mangled_name = full_name;
     global_scope.define(full_name, enum_decl);
@@ -190,7 +193,7 @@ void Binder::register_members(Node *node, const std::string &prefix) {
     }
     std::string full_name = prefix + mangle_method(method);
     if (global_scope.symbols.count(full_name) && !method->is_native) {
-      throw_error(node, "Duplicate method signature: " + full_name);
+      record_error(node, "Duplicate method signature: " + full_name);
     }
     method->mangled_name = full_name;
     global_scope.define(full_name, method);
@@ -235,7 +238,7 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
   }
 
   if (!resolved) {
-    throw_error(error_node, "Unknown type: " + raw_type.name);
+    record_error(error_node, "Unknown type: " + raw_type.name);
   }
 
   TypeInfo result = raw_type;
@@ -446,6 +449,14 @@ void Binder::execute() {
     }
   }
 
+  if (context.diagnostic->has_errors()) {
+      std::string all_errors = "Semantic Analysis failed with errors:\n";
+      for (const auto& r : context.diagnostic->get_reports()) {
+          all_errors += r.message + "\n";
+      }
+      throw BindError(all_errors);
+  }
+
   log_info("Semantic Analysis completed successfully.");
 }
 
@@ -573,7 +584,7 @@ void Binder::bind_node(Node *node) {
     if (var->initializer) {
       TypeInfo initializer_type = evaluate_expression(var->initializer.get());
       if (!is_assignable(var->type_info, initializer_type)) {
-        throw_error(node, "Type mismatch in variable declaration: expected '" +
+        record_error(node, "Type mismatch in variable declaration: expected '" +
                               var->type_info.name + "', got '" +
                               initializer_type.name + "'");
       }
@@ -585,7 +596,7 @@ void Binder::bind_node(Node *node) {
     auto *if_stmt = static_cast<IfStatement *>(node);
     TypeInfo condition_type = evaluate_expression(if_stmt->condition.get());
     if (condition_type.name != "bool")
-      throw_error(node, "Condition must be bool");
+      record_error(node, "Condition must be bool");
     bind_node(if_stmt->then_branch.get());
     if (if_stmt->else_branch)
       bind_node(if_stmt->else_branch.get());
@@ -594,7 +605,7 @@ void Binder::bind_node(Node *node) {
     auto *while_stmt = static_cast<WhileStatement *>(node);
     TypeInfo condition_type = evaluate_expression(while_stmt->condition.get());
     if (condition_type.name != "bool")
-      throw_error(node, "Condition must be bool");
+      record_error(node, "Condition must be bool");
     loop_depth++;
     bind_node(while_stmt->body.get());
     loop_depth--;
@@ -607,7 +618,7 @@ void Binder::bind_node(Node *node) {
     TypeInfo condition_type =
         evaluate_expression(do_while_stmt->condition.get());
     if (condition_type.name != "bool")
-      throw_error(node, "Condition must be bool");
+      record_error(node, "Condition must be bool");
 
   } else if (node->node_type == NodeType::FOR_STMT) {
     auto *for_stmt = static_cast<ForStatement *>(node);
@@ -618,7 +629,7 @@ void Binder::bind_node(Node *node) {
     if (for_stmt->condition) {
       TypeInfo condition_type = evaluate_expression(for_stmt->condition.get());
       if (condition_type.name != "bool")
-        throw_error(node, "Condition must be bool");
+        record_error(node, "Condition must be bool");
     }
     if (for_stmt->iteration)
       evaluate_expression(for_stmt->iteration.get());
@@ -649,21 +660,21 @@ void Binder::bind_node(Node *node) {
     if (return_stmt->value) {
       TypeInfo return_type = evaluate_expression(return_stmt->value.get());
       if (current_method && !is_assignable(current_method->return_type, return_type)) {
-        throw_error(node, "Return type mismatch: expected '" +
+        record_error(node, "Return type mismatch: expected '" +
                               current_method->return_type.name + "', got '" +
                               return_type.name + "'");
       }
     } else if (current_method && current_method->return_type.name != "void") {
-      throw_error(node, "Must return a value from non-void method");
+      record_error(node, "Must return a value from non-void method");
     }
 
   } else if (node->node_type == NodeType::BREAK_STMT) {
     if (loop_depth == 0 && switch_depth == 0) {
-      throw_error(node, "Break must be inside a loop or switch");
+      record_error(node, "Break must be inside a loop or switch");
     }
   } else if (node->node_type == NodeType::CONTINUE_STMT) {
     if (loop_depth == 0)
-      throw_error(node, "Continue must be inside a loop");
+      record_error(node, "Continue must be inside a loop");
 
   } else if (node->node_type == NodeType::EXPR_STMT) {
     auto *expr_stmt = static_cast<ExpressionStatement *>(node);
@@ -731,7 +742,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
     }
 
     if (!declaration)
-      throw_error(expr, "Undefined identifier: " + id->name);
+      { record_error(expr, "Undefined identifier: " + id->name); return {"void", 0}; }
     expr->resolved_declaration = declaration;
 
     if (declaration->node_type == NodeType::VAR_DECL) {
@@ -744,7 +755,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
                declaration->node_type == NodeType::ENUM_DECL) {
       expr->expression_type = {declaration->mangled_name, 0};
     } else {
-      throw_error(expr, "Invalid identifier usage: " + id->name);
+      { record_error(expr, "Invalid identifier usage: " + id->name); return {"void", 0}; }
     }
     return expr->expression_type;
 
@@ -775,7 +786,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
     
     primitive_fallback:
     if (left_type != right_type) {
-      throw_error(expr, "Binary operands type mismatch: '" + left_type.name +
+      record_error(expr, "Binary operands type mismatch: '" + left_type.name +
                             "' vs '" + right_type.name + "'");
     }
     if (bin->op >= TokenType::OPERATOR_EQUAL &&
@@ -795,11 +806,11 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
     auto *ternary = static_cast<TernaryExpression *>(expr);
     TypeInfo condition_type = evaluate_expression(ternary->condition.get());
     if (condition_type.name != "bool")
-      throw_error(expr, "Ternary condition must be bool");
+      record_error(expr, "Ternary condition must be bool");
     TypeInfo true_type = evaluate_expression(ternary->true_branch.get());
     TypeInfo false_type = evaluate_expression(ternary->false_branch.get());
     if (true_type != false_type) {
-      throw_error(expr, "Ternary branches must have the same type");
+      record_error(expr, "Ternary branches must have the same type");
     }
     expr->expression_type = true_type;
     return expr->expression_type;
@@ -823,7 +834,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
         }
     }
     if (!is_assignable(target_type, value_type)) {
-      throw_error(expr, "Assignment type mismatch: '" + target_type.name +
+      record_error(expr, "Assignment type mismatch: '" + target_type.name +
                             "' = '" + value_type.name + "'");
     }
     expr->expression_type = target_type;
@@ -837,7 +848,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
       if (element_type.name == "void") {
         element_type = current_element_type;
       } else if (element_type != current_element_type) {
-        throw_error(expr, "Mixed types in array literal");
+        record_error(expr, "Mixed types in array literal");
       }
     }
     element_type.array_depth++;
@@ -854,13 +865,12 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
         expr->expression_type = {"int32", 0};
         return expr->expression_type;
       }
-      throw_error(expr, "Arrays only have the 'length' property");
+      record_error(expr, "Arrays only have the 'length' property");
     }
 
     Node *type_decl = global_scope.resolve(object_type.name);
     if (!type_decl)
-      throw_error(expr,
-                  "Cannot access members on unknown type: " + object_type.name);
+      { record_error(expr, "Cannot access members on unknown type: " +  object_type.name); return {"void", 0}; }
 
     if (type_decl->node_type == NodeType::CLASS_DECL) {
       auto *class_decl = static_cast<ClassDeclaration *>(type_decl);
@@ -873,8 +883,8 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
           member_decl = global_scope.resolve(current_resolve_class->mangled_name + "." + member_access->member_name);
       }
       if (!member_decl) {
-        throw_error(expr, "Member not found: " + member_access->member_name +
-                              " on " + class_decl->mangled_name);
+        { record_error(expr, "Member not found: " +  member_access->member_name +
+                              " on " + class_decl->mangled_name); return {"void", 0}; }
       }
       expr->resolved_declaration = member_decl;
       if (member_decl->node_type == NodeType::FIELD_DECL) {
@@ -899,7 +909,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
           }
       }
       if (e_val == -1) {
-          throw_error(expr, "Undefined enum member: " + member_access->member_name);
+          record_error(expr, "Undefined enum member: " + member_access->member_name);
       }
       member_access->resolved_declaration = enum_decl;
       member_access->enum_value = e_val;
@@ -907,7 +917,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
       return expr->expression_type;
     }
 
-    throw_error(expr, "Invalid member access on type: " + object_type.name);
+    record_error(expr, "Invalid member access on type: " + object_type.name);
 
   } else if (expr->node_type == NodeType::METHOD_CALL) {
     auto *method_call = static_cast<MethodCallExpression *>(expr);
@@ -930,7 +940,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
       if (!method_decl)
         method_decl = global_scope.resolve(base_name);
       if (!method_decl)
-        throw_error(expr, "No matching method: " + mangled_name);
+        { record_error(expr, "No matching method: " +  mangled_name); return {"void", 0}; }
       method_call->resolved_declaration = method_decl;
       if (method_decl->node_type == NodeType::METHOD_DECL) {
           auto* m = static_cast<MethodDeclaration*>(method_decl);
@@ -946,13 +956,13 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
     } else {
       // Local method call — must be inside a class.
       if (!current_class)
-        throw_error(expr, "Local method calls must be inside a class");
+        record_error(expr, "Local method calls must be inside a class");
       auto *id = static_cast<IdentifierNode *>(method_call->callee.get());
       std::string base_name = current_class->mangled_name + "." + id->name;
       if (id->name == "super") {
-          if (current_class->base_class_name.empty()) throw_error(expr, "Cannot call super() in a class without a base class");
+          if (current_class->base_class_name.empty()) record_error(expr, "Cannot call super() in a class without a base class");
           Node* base_node = global_scope.resolve(current_class->base_class_name);
-          if (!base_node) throw_error(expr, "Base class not found");
+          if (!base_node) record_error(expr, "Base class not found");
           base_name = static_cast<ClassDeclaration*>(base_node)->mangled_name + ".ctor";
       }
       std::string mangled_name = mangle_method_call(base_name, argument_types);
@@ -962,7 +972,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
       if (!method_decl)
         method_decl = global_scope.resolve(base_name);
       if (!method_decl)
-        throw_error(expr, "No matching method: " + mangled_name);
+        { record_error(expr, "No matching method: " +  mangled_name); return {"void", 0}; }
       method_call->resolved_declaration = method_decl;
       if (method_decl->node_type == NodeType::METHOD_DECL) {
           auto* m = static_cast<MethodDeclaration*>(method_decl);
@@ -1010,7 +1020,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
     }
 
     if (!ctor && !argument_types.empty()) {
-      throw_error(expr, "No matching constructor: " + mangled_ctor);
+      record_error(expr, "No matching constructor: " + mangled_ctor);
     }
     if (ctor) new_instance->resolved_declaration = ctor; else new_instance->resolved_declaration =
         global_scope.resolve(new_instance->type_info.name);
@@ -1023,7 +1033,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
         resolve_type(array_creation->type_info, array_creation);
     TypeInfo size_type = evaluate_expression(array_creation->size.get());
     if (size_type.name != "int32")
-      throw_error(expr, "Array size must be int32");
+      record_error(expr, "Array size must be int32");
     expr->expression_type = array_creation->type_info;
     expr->expression_type.array_depth++;
     return expr->expression_type;
@@ -1032,10 +1042,10 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
     auto *array_access = static_cast<ArrayAccessExpression *>(expr);
     TypeInfo array_type = evaluate_expression(array_access->array.get());
     if (array_type.array_depth == 0)
-      throw_error(expr, "Cannot index a non-array value");
+      record_error(expr, "Cannot index a non-array value");
     TypeInfo index_type = evaluate_expression(array_access->index.get());
     if (index_type.name != "int32")
-      throw_error(expr, "Array index must be int32");
+      record_error(expr, "Array index must be int32");
     expr->expression_type = array_type;
     expr->expression_type.array_depth--;
     return expr->expression_type;
@@ -1057,7 +1067,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
     if (target_prim && source_prim) {
         // primitive to primitive allowed
     } else if (target_prim != source_prim) {
-        throw_error(expr, "Cannot cast between primitive and class types");
+        record_error(expr, "Cannot cast between primitive and class types");
     } else {
         if (is_assignable(cast_expr->target_type, source_type)) {
             // Upcast: allowed
@@ -1065,7 +1075,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
             // Downcast
             log_info("NOTE: Downcast from '" + source_type.name + "' to '" + cast_expr->target_type.name + "' is unchecked until Phase 10.");
         } else {
-            throw_error(expr, "Cannot cast '" + source_type.name + "' to '" + cast_expr->target_type.name + "': no inheritance relationship");
+            record_error(expr, "Cannot cast '" + source_type.name + "' to '" + cast_expr->target_type.name + "': no inheritance relationship");
         }
     }
     

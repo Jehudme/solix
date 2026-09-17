@@ -122,4 +122,47 @@ Diagnostic::create_process_logger(const std::string &process_name) {
   return new_logger;
 }
 
+
+void Diagnostic::record_report(const Report& report) {
+    reports.push_back(report);
+}
+
+bool Diagnostic::has_errors() const {
+    for (const auto& r : reports) {
+        if (r.severity == ReportSeverity::ERROR) return true;
+    }
+    return false;
+}
+
+const std::vector<Report>& Diagnostic::get_reports() const {
+    return reports;
+}
+
+void Diagnostic::print_reports(bool disable_color) const {
+    const char* RESET = disable_color ? "" : "\033[0m";
+    const char* RED = disable_color ? "" : "\033[31m";
+    const char* YELLOW = disable_color ? "" : "\033[33m";
+    const char* CYAN = disable_color ? "" : "\033[36m";
+    const char* BOLD = disable_color ? "" : "\033[1m";
+
+    for (const auto& r : reports) {
+        std::string severity_str;
+        std::string color;
+        if (r.severity == ReportSeverity::ERROR) {
+            severity_str = "error";
+            color = RED;
+        } else if (r.severity == ReportSeverity::WARNING) {
+            severity_str = "warning";
+            color = YELLOW;
+        } else {
+            severity_str = "note";
+            color = CYAN;
+        }
+
+        std::cout << BOLD << r.source_path << ":" << r.line << ":" << r.column << ": "
+                  << color << severity_str << RESET << BOLD << ": " 
+                  << (r.code.empty() ? "" : "[" + r.code + "] ") << r.message << RESET << "\n";
+    }
+}
 } // namespace solix
+

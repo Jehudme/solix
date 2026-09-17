@@ -88,7 +88,7 @@ private:
     bool is_assignable(const TypeInfo& target, const TypeInfo& source);
     TypeInfo evaluate_expression(Node* expr);
     
-    void throw_error(Node* node, const std::string& msg);
+    void record_error(Node* node, const std::string& msg);
     
     void setup_builtins();
 };
