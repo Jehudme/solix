@@ -810,8 +810,8 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(TokenType modifier, boo
         }
         consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after method parameters");
         
-        if (is_native) {
-            consume(TokenType::PUNCTUATION_SEMICOLON, "Expected ';' after native method declaration");
+        if (is_native || is_abstract) {
+            consume(TokenType::PUNCTUATION_SEMICOLON, "Expected ';' after native or abstract method declaration");
         } else {
             method->children.push_back(parse_block());
         }

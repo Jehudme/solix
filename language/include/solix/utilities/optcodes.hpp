@@ -158,6 +158,7 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::CAST_CHECK: return "CAST_CHECK";
         case OpCode::RETURN: return "RETURN";
         case OpCode::HALT: return "HALT";
+        case OpCode::THROW_ABSTRACT: return "THROW_ABSTRACT";
         default: return "UNKNOWN";
     }
 }
@@ -229,6 +230,7 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "CAST_CHECK") return OpCode::CAST_CHECK;
     if (str == "RETURN") return OpCode::RETURN;
     if (str == "HALT") return OpCode::HALT;
+    if (str == "THROW_ABSTRACT") return OpCode::THROW_ABSTRACT;
     return OpCode::HALT; // fallback
 }
 

@@ -333,7 +333,8 @@ void Binder::bind_types_and_memory() {
                       }
                   }
                   if (!found) throw std::runtime_error("Method marked override but no base method found: " + method->mangled_name);
-              } else if (method->is_virtual) {
+              } else if (method->is_virtual || method->is_abstract) {
+                  method->is_virtual = true; // Abstract methods are implicitly virtual
                   method->vtable_index = vtable.size();
                   vtable.push_back(method);
               }
@@ -347,6 +348,24 @@ void Binder::bind_types_and_memory() {
     if (node->node_type == NodeType::CLASS_DECL) {
       calculate_vtable(static_cast<ClassDeclaration *>(node));
     }
+  }
+
+  // After vtables are calculated, we can check if classes are abstract
+  for (const auto &[name, node] : global_scope.symbols) {
+      if (node->node_type == NodeType::CLASS_DECL) {
+          auto* cls = static_cast<ClassDeclaration*>(node);
+          bool has_abstract = false;
+          for (auto* m : cls->vtable) {
+              if (m->is_abstract) {
+                  has_abstract = true;
+                  break;
+              }
+          }
+          if (has_abstract) {
+              // mark class as abstract! wait, ClassDeclaration doesn't have is_abstract field. I need to add it.
+              // For now, I can just check the vtable inside NEW_INSTANCE.
+          }
+      }
   }
 
   // Assign a unique vtable_id to each class that has a vtable
@@ -1067,6 +1086,17 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
     auto *new_instance = static_cast<NewInstanceExpression *>(expr);
     new_instance->type_info =
         resolve_type(new_instance->type_info, new_instance);
+
+    Node* resolved_cls = global_scope.resolve(new_instance->type_info.name);
+    if (resolved_cls && resolved_cls->node_type == NodeType::CLASS_DECL) {
+        auto* cls = static_cast<ClassDeclaration*>(resolved_cls);
+        for (auto* m : cls->vtable) {
+            if (m->is_abstract) {
+                record_error(expr, "Cannot instantiate abstract class '" + cls->class_name + "' (abstract method: " + m->method_name + ")");
+                return {"void", 0};
+            }
+        }
+    }
 
     std::vector<TypeInfo> argument_types;
     for (const auto &arg : new_instance->arguments) {

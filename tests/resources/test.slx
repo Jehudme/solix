@@ -37,6 +37,17 @@ public class Account {
     public int32 get_balance() { return balance; }
 }
 
+
+class Shape {
+    public abstract void area();
+}
+
+class Circle extends Shape {
+    public override void area() {
+        Engine.print("Circle Area!");
+    }
+}
+
 class Animal {
     public virtual void speak() {
         Engine.print("I am an animal");

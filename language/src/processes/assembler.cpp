@@ -29,6 +29,21 @@ void Assembler::execute() {
         }
     }
 
+    uint32_t abstract_sentinel_ip = bytecode().size();
+    emit_byte(static_cast<uint8_t>(OpCode::THROW_ABSTRACT));
+    
+    // Wire all abstract methods to the sentinel
+    for (const auto& [name, node] : context.global_scope.symbols) {
+        if (node->node_type == NodeType::CLASS_DECL) {
+            auto* cls = static_cast<ClassDeclaration*>(node);
+            for (auto* m : cls->vtable) {
+                if (m->is_abstract) {
+                    function_ips[m] = abstract_sentinel_ip;
+                }
+            }
+        }
+    }
+
     apply_linker_patches();
 
     
@@ -558,11 +573,13 @@ void Assembler::compile_class(ClassDeclaration* class_node) {
 
 void Assembler::compile_function(Node* function_node) {
     bool is_native = false;
+    bool is_abstract = false;
     if (function_node->node_type == NodeType::METHOD_DECL) {
         is_native = static_cast<MethodDeclaration*>(function_node)->is_native;
+        is_abstract = static_cast<MethodDeclaration*>(function_node)->is_abstract;
     }
 
-    if (is_native) return; 
+    if (is_native || is_abstract) return; 
 
     function_ips[function_node] = bytecode().size();
 
