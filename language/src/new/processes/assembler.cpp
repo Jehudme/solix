@@ -429,9 +429,7 @@ void Assembler::compile_node(Node* node) {
         case NodeType::EXPR_STMT: {
             auto* expr_stmt = static_cast<ExpressionStatement*>(node);
             compile_expression(expr_stmt->expression.get());
-            if (expr_stmt->expression->expression_type.name != "void") {
-                emit_byte(static_cast<uint8_t>(OpCode::POP));
-            }
+            emit_byte(static_cast<uint8_t>(OpCode::POP));
             break;
         }
         case NodeType::SWITCH_STMT: {
@@ -879,6 +877,7 @@ void Assembler::compile_expression(Node* expr) {
                 emit_int32(inst->arguments.size() + 1); 
                 
                 emit_byte(static_cast<uint8_t>(OpCode::CALL));
+                emit_byte(static_cast<uint8_t>(OpCode::POP)); // Pop the NULL returned by the constructor
             }
             break;
         }
@@ -937,6 +936,7 @@ void Assembler::compile_expression(Node* expr) {
                 emit_int32(i);
                 compile_expression(arr_lit->elements[i].get());
                 emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
+                emit_byte(static_cast<uint8_t>(OpCode::POP)); // Pop the value pushed back by SET_ARRAY
             }
             break;
         }
