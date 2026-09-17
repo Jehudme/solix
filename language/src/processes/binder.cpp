@@ -1042,8 +1042,33 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
 
   } else if (expr->node_type == NodeType::CAST_EXPR) {
     auto *cast_expr = static_cast<CastExpression *>(expr);
-    evaluate_expression(cast_expr->expression.get());
+    TypeInfo source_type = evaluate_expression(cast_expr->expression.get());
     cast_expr->target_type = resolve_type(cast_expr->target_type, cast_expr);
+    
+    auto is_primitive = [&](const TypeInfo& t) {
+        if (t.array_depth > 0) return false;
+        Node* decl = global_scope.resolve(t.name);
+        return !decl || decl->is_primitive;
+    };
+    
+    bool target_prim = is_primitive(cast_expr->target_type);
+    bool source_prim = is_primitive(source_type);
+    
+    if (target_prim && source_prim) {
+        // primitive to primitive allowed
+    } else if (target_prim != source_prim) {
+        throw_error(expr, "Cannot cast between primitive and class types");
+    } else {
+        if (is_assignable(cast_expr->target_type, source_type)) {
+            // Upcast: allowed
+        } else if (is_assignable(source_type, cast_expr->target_type)) {
+            // Downcast
+            log_info("NOTE: Downcast from '" + source_type.name + "' to '" + cast_expr->target_type.name + "' is unchecked until Phase 10.");
+        } else {
+            throw_error(expr, "Cannot cast '" + source_type.name + "' to '" + cast_expr->target_type.name + "': no inheritance relationship");
+        }
+    }
+    
     expr->expression_type = cast_expr->target_type;
     return expr->expression_type;
   }
