@@ -5,6 +5,7 @@
 #include "solix/new/processes/assembler.hpp"
 #include "solix/new/utilities/diagnostic.hpp"
 #include "solix/new/utilities/optcodes.hpp"
+#include "solix/new/runtime.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -47,68 +48,38 @@ int main(int argc, char** argv) {
       return 1;
   }
 
-  auto& bcode = context.bytecode;
-  for (size_t i = 0; i < bcode.size(); ) {
-      uint8_t op = bcode[i];
-      std::cout << opcode_to_string(op);
-      switch (static_cast<OpCode>(op)) {
-          case OpCode::PUSH_CONST_I32:
-          case OpCode::GET_GLOBAL:
-          case OpCode::SET_GLOBAL:
-          case OpCode::GET_LOCAL:
-          case OpCode::SET_LOCAL:
-          case OpCode::GET_PROPERTY:
-          case OpCode::SET_PROPERTY:
-          case OpCode::JUMP:
-          case OpCode::JUMP_IF_FALSE:
-          case OpCode::JUMP_IF_TRUE:
-          case OpCode::DEFINE_NATIVE:
-          case OpCode::CALL_NATIVE: {
-              uint32_t val = (bcode[i+1] << 24) | (bcode[i+2] << 16) | (bcode[i+3] << 8) | bcode[i+4];
-              std::cout << " " << val;
-              i += 5;
-              if (static_cast<OpCode>(op) == OpCode::DEFINE_NATIVE) {
-                  uint32_t str_len = (bcode[i] << 24) | (bcode[i+1] << 16) | (bcode[i+2] << 8) | bcode[i+3];
-                  i += 4;
-                  std::string s(reinterpret_cast<char*>(&bcode[i]), str_len);
-                  std::cout << " \"" << s << "\"";
-                  i += str_len;
-              }
-              break;
-          }
-          case OpCode::PUSH_CONST_I64: {
-              uint64_t val = ((uint64_t)bcode[i+1] << 56) | ((uint64_t)bcode[i+2] << 48) |
-                             ((uint64_t)bcode[i+3] << 40) | ((uint64_t)bcode[i+4] << 32) |
-                             ((uint64_t)bcode[i+5] << 24) | ((uint64_t)bcode[i+6] << 16) |
-                             ((uint64_t)bcode[i+7] << 8) | bcode[i+8];
-              std::cout << " " << val;
-              i += 9;
-              break;
-          }
-          case OpCode::PUSH_CONST_F64: {
-              uint64_t bits = ((uint64_t)bcode[i+1] << 56) | ((uint64_t)bcode[i+2] << 48) |
-                              ((uint64_t)bcode[i+3] << 40) | ((uint64_t)bcode[i+4] << 32) |
-                              ((uint64_t)bcode[i+5] << 24) | ((uint64_t)bcode[i+6] << 16) |
-                              ((uint64_t)bcode[i+7] << 8) | bcode[i+8];
-              double val;
-              std::memcpy(&val, &bits, 8);
-              std::cout << " " << val;
-              i += 9;
-              break;
-          }
-          case OpCode::PUSH_CONST_STRING: {
-              uint32_t str_len = (bcode[i+1] << 24) | (bcode[i+2] << 16) | (bcode[i+3] << 8) | bcode[i+4];
-              i += 5;
-              std::string s(reinterpret_cast<char*>(&bcode[i]), str_len);
-              std::cout << " \"" << s << "\"";
-              i += str_len;
-              break;
-          }
-          default:
-              i += 1;
-              break;
+  std::cout << "--- Compilation Successful ---" << std::endl;
+
+  solix::register_native_function("com.solix.advanced.test.Engine.print", [](RuntimeContext& ctx, uint64_t self_address, uint64_t* args, size_t arg_count) {
+      // In the old system, the native function manually popped args.
+      // But now we pass the signature required.
+      // Wait, since we don't pass args from VM (args = nullptr), we will manually pop.
+      uint64_t val = ctx.pop();
+      Address addr = static_cast<Address>(val);
+      
+      uint32_t len = static_cast<uint32_t>(ctx.memory.heap[addr]);
+      std::string str = "";
+      for (uint32_t i = 0; i < len; ++i) {
+          str += static_cast<char>(ctx.memory.heap[addr + 1 + i]);
       }
-      std::cout << "\n";
+      
+      std::cout << "NATIVE PRINT: " << str << std::endl;
+      
+      ctx.push(0);
+  });
+
+  RuntimeOptions run_opts;
+  run_opts.bytecode_source = context.bytecode;
+  RuntimeContext vm(run_opts);
+
+  std::cout << "--- Executing ---" << std::endl;
+  try {
+      vm.execute();
+  } catch(const std::exception& e) {
+      std::cerr << "Runtime Exception: " << e.what() << std::endl;
+      return 1;
   }
+  std::cout << "--- Execution Finished ---" << std::endl;
+
   return 0;
 }
