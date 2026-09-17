@@ -30,6 +30,18 @@ public class Vector2 {
         return new Vector2(this.x + other.x, this.y + other.y);
     }
 }
+public class A {
+    public int32 aX;
+    public A(int32 x) {
+        this.aX = x;
+    }
+}
+public class B extends A {
+    public int32 bY;
+    public B(int32 x, int32 y) : super(x) {
+        this.bY = y;
+    }
+}
 public class Engine {
     
     private const char[] engineName = "Solix V8";
@@ -107,6 +119,8 @@ public class Engine {
         Vector2 v4 = new Vector2(0.0, 0.0);
         v4 = v3;
         if (v4.x == 15.0) Engine.print("ASSIGN OVERLOAD SUCCESS");
+        B b = new B(10, 20);
+        if (b.aX == 10) Engine.print("INHERITANCE SUCCESS!");
         Engine.print(3.14159);
         if (args.length > 0) {
             Engine.print("WE HAVE ARGUMENTS!");

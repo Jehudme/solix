@@ -290,6 +290,7 @@ struct EnumDeclaration : public Node {
 
 struct ClassDeclaration : public Node {
     std::string class_name;
+    std::string base_class_name;
     TokenType access_modifier = TokenType::KEYWORD_INTERNAL;
     int instance_size = 0;
     ClassDeclaration(const Token& t, std::string name) : Node(NodeType::CLASS_DECL, t), class_name(std::move(name)) {}
@@ -310,6 +311,7 @@ struct FieldDeclaration : public Node {
 struct ConstructorDeclaration : public Node {
     TokenType access_modifier = TokenType::KEYWORD_PUBLIC;
     std::string class_name;
+    std::string base_class_name;
     std::vector<std::unique_ptr<VariableDeclaration>> parameters;
     int frame_size = 0;
     ConstructorDeclaration(const Token& t, std::string name) : Node(NodeType::CONSTRUCTOR_DECL, t), class_name(std::move(name)) {}

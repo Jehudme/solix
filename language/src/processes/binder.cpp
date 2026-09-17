@@ -1,3 +1,4 @@
+#include <unordered_set>
 #include "solix/processes/binder.hpp"
 #include "solix/compilation.hpp"
 
@@ -126,6 +127,10 @@ void Binder::register_global_symbols(Node *node, const std::string &prefix) {
   } else if (node->node_type == NodeType::CLASS_DECL) {
     auto *class_decl = static_cast<ClassDeclaration *>(node);
     std::string full_name = prefix + class_decl->class_name;
+
+    if (!class_decl->base_class_name.empty()) {
+        class_decl->base_class_name = prefix + class_decl->base_class_name;
+    }
     if (global_scope.symbols.count(full_name)) {
       throw_error(node, "Duplicate global symbol: " + full_name);
     }
@@ -286,24 +291,40 @@ void Binder::bind_types_and_memory() {
     }
   }
 
-  // Calculate instance field offsets for each class.
-  for (const auto &[name, node] : global_scope.symbols) {
-    if (node->node_type == NodeType::CLASS_DECL) {
-      auto *class_decl = static_cast<ClassDeclaration *>(node);
-      int field_offset = 0;
-      for (const auto &child : class_decl->children) {
+  // Calculate instance field offsets for each class with inheritance
+  std::unordered_set<std::string> layout_calculated;
+  std::function<int(ClassDeclaration*)> calculate_layout = [&](ClassDeclaration* cls) -> int {
+      if (layout_calculated.count(cls->mangled_name)) return cls->instance_size;
+      int offset = 0;
+      if (!cls->base_class_name.empty()) {
+          Node* base_node = global_scope.resolve(cls->base_class_name);
+          if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
+              offset = calculate_layout(static_cast<ClassDeclaration*>(base_node));
+          } else {
+              throw std::runtime_error("Base class not found: " + cls->base_class_name);
+          }
+      }
+      for (const auto &child : cls->children) {
         if (child->node_type == NodeType::FIELD_DECL) {
           auto *field = static_cast<FieldDeclaration *>(child.get());
           if (!field->is_static) {
-            field->memory_index = field_offset++;
+            field->memory_index = offset++;
           }
         }
       }
-      class_decl->instance_size = field_offset;
+      cls->instance_size = offset;
+      layout_calculated.insert(cls->mangled_name);
+      return offset;
+  };
+
+  for (const auto &[name, node] : global_scope.symbols) {
+    if (node->node_type == NodeType::CLASS_DECL) {
+      calculate_layout(static_cast<ClassDeclaration *>(node));
     }
   }
-}
 
+
+}
 // ─── Binder::execute ─────────────────────────────────────────────────────────
 
 void Binder::execute() {
@@ -764,8 +785,14 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
 
     if (type_decl->node_type == NodeType::CLASS_DECL) {
       auto *class_decl = static_cast<ClassDeclaration *>(type_decl);
-      Node *member_decl = global_scope.resolve(class_decl->mangled_name + "." +
-                                               member_access->member_name);
+      Node *member_decl = global_scope.resolve(class_decl->mangled_name + "." + member_access->member_name);
+      ClassDeclaration* current_resolve_class = class_decl;
+      while (!member_decl && current_resolve_class && !current_resolve_class->base_class_name.empty()) {
+          Node* base_node = global_scope.resolve(current_resolve_class->base_class_name);
+          if (!base_node) break;
+          current_resolve_class = static_cast<ClassDeclaration*>(base_node);
+          member_decl = global_scope.resolve(current_resolve_class->mangled_name + "." + member_access->member_name);
+      }
       if (!member_decl) {
         throw_error(expr, "Member not found: " + member_access->member_name +
                               " on " + class_decl->mangled_name);
@@ -836,6 +863,12 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
         throw_error(expr, "Local method calls must be inside a class");
       auto *id = static_cast<IdentifierNode *>(method_call->callee.get());
       std::string base_name = current_class->mangled_name + "." + id->name;
+      if (id->name == "super") {
+          if (current_class->base_class_name.empty()) throw_error(expr, "Cannot call super() in a class without a base class");
+          Node* base_node = global_scope.resolve(current_class->base_class_name);
+          if (!base_node) throw_error(expr, "Base class not found");
+          base_name = static_cast<ClassDeclaration*>(base_node)->mangled_name + ".ctor";
+      }
       std::string mangled_name = mangle_method_call(base_name, argument_types);
       // Try mangled name first, then fall back to plain name for native
       // methods.

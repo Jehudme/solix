@@ -650,6 +650,10 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
     Token class_tok = previous();
     Token name = consume(TokenType::IDENTIFIER, "Expected class name");
     auto decl = std::make_unique<ClassDeclaration>(class_tok, std::get<std::string>(name.value));
+
+    if (match(TokenType::KEYWORD_EXTENDS)) {
+        decl->base_class_name = std::get<std::string>(consume(TokenType::IDENTIFIER, "Expected base class name after 'extends'").value);
+    }
     decl->access_modifier = modifier;
     
     consume(TokenType::PUNCTUATION_OPEN_BRACE, "Expected '{' before class body");
@@ -692,7 +696,45 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
                 if (!match(TokenType::PUNCTUATION_COMMA)) break;
             }
             consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after constructor parameters");
-            ctor->children.push_back(parse_block());
+
+            std::vector<std::unique_ptr<Node>> injected_initializers;
+            if (match(TokenType::PUNCTUATION_COLON)) {
+                do {
+                    if (match(TokenType::KEYWORD_SUPER)) {
+                        Token super_tok = previous();
+                        consume(TokenType::PUNCTUATION_OPEN_PAREN, "Expected '(' after super");
+                        std::vector<std::unique_ptr<Node>> args;
+                        while (!check(TokenType::PUNCTUATION_CLOSE_PAREN) && !is_at_end()) {
+                            args.push_back(parse_expression());
+                            if (!match(TokenType::PUNCTUATION_COMMA)) break;
+                        }
+                        consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after super arguments");
+                        auto super_id = std::make_unique<IdentifierNode>(super_tok, "super");
+                        auto super_call = std::make_unique<MethodCallExpression>(super_tok, std::move(super_id));
+                        super_call->arguments = std::move(args);
+                        auto expr_stmt = std::make_unique<ExpressionStatement>(super_tok, std::move(super_call));
+                        injected_initializers.push_back(std::move(expr_stmt));
+                    } else {
+                        Token field_name = consume(TokenType::IDENTIFIER, "Expected 'super' or field name in initializer list");
+                        consume(TokenType::PUNCTUATION_OPEN_PAREN, "Expected '(' after field name");
+                        auto val = parse_expression();
+                        consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after field value");
+                        
+                        auto this_id = std::make_unique<IdentifierNode>(field_name, "this");
+                        auto field_acc = std::make_unique<MemberAccessExpression>(field_name, std::move(this_id), std::get<std::string>(field_name.value));
+                        auto assign = std::make_unique<AssignmentExpression>(field_name, std::move(field_acc), TokenType::OPERATOR_ASSIGN, std::move(val));
+                        auto expr_stmt2 = std::make_unique<ExpressionStatement>(field_name, std::move(assign));
+                        injected_initializers.push_back(std::move(expr_stmt2));
+                    }
+                } while (match(TokenType::PUNCTUATION_COMMA));
+            }
+            
+            auto body = parse_block();
+            for (auto it = injected_initializers.rbegin(); it != injected_initializers.rend(); ++it) {
+                (*it)->parent = body.get();
+                body->children.insert(body->children.begin(), std::move(*it));
+            }
+            ctor->children.push_back(std::move(body));
             decl->children.push_back(std::move(ctor));
         } else {
             decl->children.push_back(parse_field_or_method(field_mod, is_static, is_inline, is_native, is_const));
