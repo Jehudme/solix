@@ -292,10 +292,74 @@ void Binder::bind_types_and_memory() {
   }
 
   // Calculate instance field offsets for each class with inheritance
+
+  // Calculate vtables for each class
+  std::unordered_map<std::string, std::vector<MethodDeclaration*>> vtables;
+  std::unordered_set<std::string> vtable_calculated;
+  
+  std::function<void(ClassDeclaration*)> calculate_vtable = [&](ClassDeclaration* cls) {
+      if (vtable_calculated.count(cls->mangled_name)) return;
+      
+      std::vector<MethodDeclaration*> vtable;
+      if (!cls->base_class_name.empty()) {
+          Node* base_node = global_scope.resolve(cls->base_class_name);
+          if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
+              auto* base_cls = static_cast<ClassDeclaration*>(base_node);
+              calculate_vtable(base_cls);
+              vtable = vtables[base_cls->mangled_name];
+          }
+      }
+      
+      for (const auto &child : cls->children) {
+          if (child->node_type == NodeType::METHOD_DECL) {
+              auto* method = static_cast<MethodDeclaration*>(child.get());
+              if (method->is_override) {
+                  // Find the method in the vtable with the same signature
+                  bool found = false;
+                  for (size_t i = 0; i < vtable.size(); ++i) {
+                      // Compare signature (method name and parameter types)
+                      // A simplistic check: just compare the suffix after the class name
+                      std::string base_sig = vtable[i]->mangled_name.substr(vtable[i]->mangled_name.rfind('.') + 1);
+                      std::string drv_sig = method->mangled_name.substr(method->mangled_name.rfind('.') + 1);
+                      if (base_sig == drv_sig) {
+                          vtable[i] = method; // Override
+                          method->vtable_index = i;
+                          method->is_virtual = true;
+                          found = true;
+                          break;
+                      }
+                  }
+                  if (!found) throw std::runtime_error("Method marked override but no base method found: " + method->mangled_name);
+              } else if (method->is_virtual) {
+                  method->vtable_index = vtable.size();
+                  vtable.push_back(method);
+              }
+          }
+      }
+      vtables[cls->mangled_name] = vtable; cls->vtable = vtable;
+      vtable_calculated.insert(cls->mangled_name);
+  };
+
+  for (const auto &[name, node] : global_scope.symbols) {
+    if (node->node_type == NodeType::CLASS_DECL) {
+      calculate_vtable(static_cast<ClassDeclaration *>(node));
+    }
+  }
+
+  // Assign a unique vtable_id to each class that has a vtable
+  int next_vtable_id = 0;
+  for (const auto &[name, node] : global_scope.symbols) {
+      if (node->node_type == NodeType::CLASS_DECL) {
+          auto* cls = static_cast<ClassDeclaration*>(node);
+          if (!vtables[cls->mangled_name].empty()) {
+              cls->vtable_id = next_vtable_id++;
+          }
+      }
+  }
   std::unordered_set<std::string> layout_calculated;
   std::function<int(ClassDeclaration*)> calculate_layout = [&](ClassDeclaration* cls) -> int {
       if (layout_calculated.count(cls->mangled_name)) return cls->instance_size;
-      int offset = 0;
+      int offset = (!cls->base_class_name.empty() ? 0 : 1);
       if (!cls->base_class_name.empty()) {
           Node* base_node = global_scope.resolve(cls->base_class_name);
           if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
@@ -508,7 +572,7 @@ void Binder::bind_node(Node *node) {
 
     if (var->initializer) {
       TypeInfo initializer_type = evaluate_expression(var->initializer.get());
-      if (initializer_type != var->type_info) {
+      if (!is_assignable(var->type_info, initializer_type)) {
         throw_error(node, "Type mismatch in variable declaration: expected '" +
                               var->type_info.name + "', got '" +
                               initializer_type.name + "'");
@@ -584,7 +648,7 @@ void Binder::bind_node(Node *node) {
     auto *return_stmt = static_cast<ReturnStatement *>(node);
     if (return_stmt->value) {
       TypeInfo return_type = evaluate_expression(return_stmt->value.get());
-      if (current_method && return_type != current_method->return_type) {
+      if (current_method && !is_assignable(current_method->return_type, return_type)) {
         throw_error(node, "Return type mismatch: expected '" +
                               current_method->return_type.name + "', got '" +
                               return_type.name + "'");
@@ -608,6 +672,21 @@ void Binder::bind_node(Node *node) {
 }
 
 // ─── Expression Evaluation ───────────────────────────────────────────────────
+
+bool Binder::is_assignable(const TypeInfo& target, const TypeInfo& source) {
+    if (target == source) return true;
+    if (target.array_depth != source.array_depth) return false;
+    
+    // Check if source inherits from target
+    Node* src_node = global_scope.resolve(source.name);
+    while (src_node && src_node->node_type == NodeType::CLASS_DECL) {
+        auto* cls = static_cast<ClassDeclaration*>(src_node);
+        if (cls->mangled_name == target.name) return true;
+        if (cls->base_class_name.empty()) break;
+        src_node = global_scope.resolve(cls->base_class_name);
+    }
+    return false;
+}
 
 TypeInfo Binder::evaluate_expression(Node *expr) {
   if (!expr)
@@ -743,7 +822,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
             return expr->expression_type;
         }
     }
-    if (target_type != value_type) {
+    if (!is_assignable(target_type, value_type)) {
       throw_error(expr, "Assignment type mismatch: '" + target_type.name +
                             "' = '" + value_type.name + "'");
     }
@@ -853,6 +932,12 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
       if (!method_decl)
         throw_error(expr, "No matching method: " + mangled_name);
       method_call->resolved_declaration = method_decl;
+      if (method_decl->node_type == NodeType::METHOD_DECL) {
+          auto* m = static_cast<MethodDeclaration*>(method_decl);
+          if (m->is_virtual && member_access && !member_access->is_scope_resolution) {
+              method_call->is_virtual_call = true;
+          }
+      }
       expr->expression_type =
           static_cast<MethodDeclaration *>(method_decl)->return_type;
       return expr->expression_type;
@@ -878,6 +963,12 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
       if (!method_decl)
         throw_error(expr, "No matching method: " + mangled_name);
       method_call->resolved_declaration = method_decl;
+      if (method_decl->node_type == NodeType::METHOD_DECL) {
+          auto* m = static_cast<MethodDeclaration*>(method_decl);
+          if (m->is_virtual && id->name != "super") {
+              method_call->is_virtual_call = true;
+          }
+      }
       expr->expression_type =
           static_cast<MethodDeclaration *>(method_decl)->return_type;
       return expr->expression_type;

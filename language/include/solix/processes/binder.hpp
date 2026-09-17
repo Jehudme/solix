@@ -85,6 +85,7 @@ private:
     
     // Evaluators
     TypeInfo resolve_type(const TypeInfo& raw_type, Node* error_node);
+    bool is_assignable(const TypeInfo& target, const TypeInfo& source);
     TypeInfo evaluate_expression(Node* expr);
     
     void throw_error(Node* node, const std::string& msg);

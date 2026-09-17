@@ -21,6 +21,7 @@ void Assembler::execute() {
 
     compile_boot_sequence();
 
+
     // Compile classes and functions
     for (const auto& [source, nodes] : context.nodes) {
         for (const auto& node : nodes) {
@@ -95,6 +96,7 @@ void Assembler::apply_linker_patches() {
 }
 
 void Assembler::compile_boot_sequence() {
+    std::vector<ClassDeclaration*> classes_with_vtables;
     std::vector<MethodDeclaration*> native_methods;
     std::vector<FieldDeclaration*> static_fields;
 
@@ -102,6 +104,7 @@ void Assembler::compile_boot_sequence() {
         for (const auto& node : nodes) {
             if (node->node_type == NodeType::CLASS_DECL) {
                 auto* class_decl = static_cast<ClassDeclaration*>(node.get());
+                if (class_decl->vtable_id != -1) classes_with_vtables.push_back(class_decl);
                 for (const auto& child : class_decl->children) {
                     if (child->node_type == NodeType::METHOD_DECL) {
                         auto* method = static_cast<MethodDeclaration*>(child.get());
@@ -131,6 +134,16 @@ void Assembler::compile_boot_sequence() {
         emit_string(native_method->mangled_name);
     }
 
+
+    for (auto* cls : classes_with_vtables) {
+        emit_byte(static_cast<uint8_t>(OpCode::DEFINE_VTABLE));
+        emit_int32(cls->vtable_id);
+        emit_int32(cls->vtable.size());
+        for (auto* method : cls->vtable) {
+            linker_patches.push_back({bytecode().size(), method});
+            emit_int32(0xFFFFFFFF);
+        }
+    }
     uint32_t total_globals = 1; 
     for (auto* field : static_fields) {
         if (field->memory_index >= (int)total_globals) {
@@ -895,6 +908,14 @@ void Assembler::compile_expression(Node* expr) {
                 throw_error(call, "Resolved declaration is not a method or constructor.");
             }
 
+
+            if (call->is_virtual_call) {
+                auto* target_method = static_cast<MethodDeclaration*>(call->resolved_declaration);
+                emit_byte(static_cast<uint8_t>(OpCode::CALL_VIRTUAL));
+                emit_int32(target_method->vtable_index);
+                emit_int32(target_method->frame_size);
+                emit_int32(call->arguments.size() + (target_method->is_static ? 0 : 1));
+            } else 
             if (is_native) {
                 emit_byte(static_cast<uint8_t>(OpCode::CALL_NATIVE));
                 emit_int32(memory_index);
@@ -938,6 +959,11 @@ void Assembler::compile_expression(Node* expr) {
             emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
             emit_int32(class_decl->instance_size);
             emit_byte(static_cast<uint8_t>(OpCode::ALLOC_DYNAMIC));
+
+            if (class_decl->vtable_id != -1) {
+                emit_byte(static_cast<uint8_t>(OpCode::SET_VTABLE));
+                emit_int32(class_decl->vtable_id);
+            }
             
             if (ctor) {
                 emit_byte(static_cast<uint8_t>(OpCode::DUP));

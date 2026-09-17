@@ -79,6 +79,9 @@ enum class OpCode : uint8_t {
   CALL,
   CALL_NATIVE,
   DEFINE_NATIVE,
+  CALL_VIRTUAL,
+  DEFINE_VTABLE,
+  SET_VTABLE,
   RETURN,
 
   // End
@@ -146,6 +149,9 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::CALL: return "CALL";
         case OpCode::CALL_NATIVE: return "CALL_NATIVE";
         case OpCode::DEFINE_NATIVE: return "DEFINE_NATIVE";
+        case OpCode::CALL_VIRTUAL: return "CALL_VIRTUAL";
+        case OpCode::DEFINE_VTABLE: return "DEFINE_VTABLE";
+        case OpCode::SET_VTABLE: return "SET_VTABLE";
         case OpCode::RETURN: return "RETURN";
         case OpCode::HALT: return "HALT";
         default: return "UNKNOWN";
@@ -212,6 +218,9 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "CALL") return OpCode::CALL;
     if (str == "CALL_NATIVE") return OpCode::CALL_NATIVE;
     if (str == "DEFINE_NATIVE") return OpCode::DEFINE_NATIVE;
+    if (str == "CALL_VIRTUAL") return OpCode::CALL_VIRTUAL;
+    if (str == "DEFINE_VTABLE") return OpCode::DEFINE_VTABLE;
+    if (str == "SET_VTABLE") return OpCode::SET_VTABLE;
     if (str == "RETURN") return OpCode::RETURN;
     if (str == "HALT") return OpCode::HALT;
     return OpCode::HALT; // fallback

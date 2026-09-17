@@ -97,6 +97,7 @@ struct RuntimeContext {
 
   std::vector<Frame> call_stack;
   std::unordered_map<uint32_t, NativeFunction> native_registry;
+    std::unordered_map<uint32_t, std::vector<uint32_t>> vtables;
 
   RuntimeContext(const RuntimeOptions &opts);
 

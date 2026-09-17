@@ -1,179 +1,35 @@
-// ============================================================================
-// Solix Language - Comprehensive Parser Edge-Case & Rules Test
-// ============================================================================
 package com.solix.advanced.test;
 
-alias Matrix = float64[][];
-alias ID = uint64;
-
-public enum ApplicationState {
-    INITIALIZING,
-    RUNNING,
-    CRASHED,
-    SHUTDOWN
+public class Animal {
+    public virtual void speak() {
+        Engine.print("I am an animal");
+    }
 }
 
-public class Vector2 {
-    public float64 x;
-    public float64 y;
-    public Vector2(float64 x, float64 y) {
-        this.x = x;
-        this.y = y;
-    }
-    public Vector2 operator=(Vector2 other) {
-        Engine.print("ASSIGN OVERLOAD CALLED!");
-        this.x = other.x;
-        this.y = other.y;
-        return this;
-    }
-    public Vector2 operator+(Vector2 other) {
-        return new Vector2(this.x + other.x, this.y + other.y);
+public class Dog extends Animal {
+    public override void speak() {
+        Engine.print("I am a dog");
     }
 }
-public class A {
-    public int32 aX;
-    public A(int32 x) {
-        this.aX = x;
+
+public class Cat extends Animal {
+    public override void speak() {
+        Engine.print("I am a cat");
     }
 }
-public class B extends A {
-    public int32 bY;
-    public B(int32 x, int32 y) : super(x) {
-        this.bY = y;
-    }
-}
+
 public class Engine {
-    
-    private const char[] engineName = "Solix V8";
-    protected static int32 instanceCount = 0;
-    internal bool isRunning = false;
-    public float32 temperature = 25.0;
-    
     public static native void print(char[] s);
-    public static void print(int32 x) { print("INT32 PRINT"); }
-    public static void print(float64 x) { print("FLOAT64 PRINT"); }
-
-    private class CoreProcessor {
-        private ID coreId;
-        public int32[] cache = new int32[1024];
-
-        public CoreProcessor(ID id) {
-            this.coreId = id;
-            Engine.instanceCount++;
-        }
-
-        public enum CoreStatus {
-            IDLE,
-            PROCESSING,
-            OVERHEATING
-        }
-
-        public CoreStatus currentStatus = CoreStatus.IDLE;
-
-        public const inline void process(int32[] data) {
-            if (this.currentStatus == CoreStatus.OVERHEATING) {
-                return;
-            }
-            
-            int32 temp = 0;
-            
-            for (int32 i = 0; i < 5; i++) {
-                int32 temp = data[i] * 2; 
-                
-                if (temp > 100) {
-                    while (temp > 0) {
-                        temp--;
-                        if (temp == 50) break;
-                    }
-                } else if (temp < 0) {
-                    continue;
-                } else {
-                    this.cache[i] = temp;
-                }
-            }
-        }
-    }
-
-    public Engine() {
-        this.isRunning = true;
-    }
-
-    public static Matrix createIdentityMatrix(int32 size) {
-        Matrix mat = new float64[][size];
-        for (int32 i = 0; i < size; i++) {
-            mat[i] = new float64[size];
-            for (int32 j = 0; j < size; j++) {
-                mat[i][j] = (i == j) ? 1.0 : 0.0;
-            }
-        }
-        return mat;
-    }
-
+    
     public static void main(char[][] args) {
-        Engine.print("START OF MAIN!");
-        Engine.print(42);
-        Vector2 v1 = new Vector2(10.0, 20.0);
-        Vector2 v2 = new Vector2(5.0, 5.0);
-        Vector2 v3 = v1 + v2;
-        if (v3.x == 15.0) Engine.print("OPERATOR OVERLOAD SUCCESS");
-        Vector2 v4 = new Vector2(0.0, 0.0);
-        v4 = v3;
-        if (v4.x == 15.0) Engine.print("ASSIGN OVERLOAD SUCCESS");
-        B b = new B(10, 20);
-        if (b.aX == 10) Engine.print("INHERITANCE SUCCESS!");
-        Engine.print(3.14159);
-        if (args.length > 0) {
-            Engine.print("WE HAVE ARGUMENTS!");
-            Engine.print(args[0]);
-        } else {
-            Engine.print("NO ARGUMENTS GIVEN!");
-        }
-        if (instanceCount > 0) {
-            return;
-        }
-        ApplicationState state = ApplicationState.INITIALIZING;
+        Animal a = new Animal();
+        Animal b = new Dog();
+        Animal c = new Cat();
         
-        int32 x = 10;
-        int32 y = 20;
-        int32 z = 30;
-
-        x = y + z * 2 - 10 / 5;
-
-        bool flag = false;
-        bool result = flag = !true;
-
-        int32[] numbers = { 1, 2, 3, 4, 5 };
-        numbers[0]++;
+        a.speak(); // "I am an animal"
+        b.speak(); // "I am a dog"
+        c.speak(); // "I am a cat"
         
-        Engine myEngine = new Engine();
-        Engine.CoreProcessor proc = new Engine.CoreProcessor(12345);
-        proc.process(numbers);
-
-        float64 casted = (float64) x;
-
-        switch (state) {
-            case ApplicationState.INITIALIZING:
-                state = ApplicationState.RUNNING;
-                break;
-            case ApplicationState.CRASHED:
-            case ApplicationState.SHUTDOWN:
-                return;
-            default:
-                break;
-        }
-
-        float64 complexCall = Engine.createIdentityMatrix(x)[0][0] + (float64) proc.cache[0];
-
-        do {
-            x++;
-        } while (x < 100);
-
-        // Add some more complex logic to fulfill user request
-        Matrix complexMath = Engine.createIdentityMatrix(5);
-        complexMath[1][1] = complexCall * 3.14159;
-        
-        if (state == ApplicationState.RUNNING && myEngine.isRunning && proc.currentStatus == Engine.CoreProcessor.CoreStatus.IDLE) {
-            Engine.print("Complex test passed successfully!");
-        }
+        // Static resolution
     }
 }

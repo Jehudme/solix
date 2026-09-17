@@ -144,7 +144,7 @@ public:
                     case ';': add_token(TokenType::PUNCTUATION_SEMICOLON); break;
                     case ',': add_token(TokenType::PUNCTUATION_COMMA); break;
                     case '.': add_token(TokenType::PUNCTUATION_DOT); break;
-                    case ':': add_token(TokenType::PUNCTUATION_COLON); break;
+                    case ':': add_token(match(':') ? TokenType::PUNCTUATION_DOUBLE_COLON : TokenType::PUNCTUATION_COLON); break;
                     case '?': add_token(TokenType::OPERATOR_QUESTION); break;
                     
                     case '=': add_token(match('=') ? TokenType::OPERATOR_EQUAL : TokenType::OPERATOR_ASSIGN); break;

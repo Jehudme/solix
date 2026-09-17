@@ -1,3 +1,4 @@
+#include <iostream>
 #include "solix/runtime.hpp"
 #include "solix/utilities/optcodes.hpp"
 #include <fstream>
@@ -390,6 +391,46 @@ void RuntimeContext::execute() {
                     native_registry[id](*this, 0, nullptr, 0);
                 } else {
                     throw std::runtime_error("Call to unknown native function: " + std::to_string(id));
+                }
+                break;
+            }
+
+            case static_cast<uint8_t>(OpCode::DEFINE_VTABLE): {
+                uint32_t vtable_id = read_u32(bytecode, program_counter);
+                uint32_t size = read_u32(bytecode, program_counter);
+                std::vector<uint32_t> vtable(size);
+                for (uint32_t i = 0; i < size; ++i) {
+                    vtable[i] = read_u32(bytecode, program_counter);
+                }
+                vtables[vtable_id] = std::move(vtable);
+                break;
+            }
+            case static_cast<uint8_t>(OpCode::SET_VTABLE): {
+                uint32_t vtable_id = read_u32(bytecode, program_counter);
+                Address obj = static_cast<Address>(stack[memory.stack_pointer - 1]);
+                // std::cout << "SET_VTABLE obj=" << obj << " id=" << vtable_id << "\n";
+                heap_data[obj] = vtable_id;
+                break;
+            }
+            case static_cast<uint8_t>(OpCode::CALL_VIRTUAL): {
+                uint32_t vtable_index = read_u32(bytecode, program_counter);
+                uint32_t frame_size = read_u32(bytecode, program_counter);
+                uint32_t arg_count = read_u32(bytecode, program_counter);
+                
+                Address obj = static_cast<Address>(stack[memory.stack_pointer - arg_count]);
+                uint32_t vtable_id = heap_data[obj];
+                if (vtables.find(vtable_id) == vtables.end() || vtable_index >= vtables[vtable_id].size()) {
+                    throw std::runtime_error("Virtual method resolution failed!");
+                }
+                // std::cout << "CALL_VIRTUAL obj=" << obj << " vtable_id=" << vtable_id << "\n";
+                uint32_t target_ip = vtables[vtable_id][vtable_index];
+                
+                uint32_t new_frame_pointer = memory.stack_pointer - arg_count;
+                call_stack.emplace_back(program_counter, new_frame_pointer);
+                program_counter = target_ip;
+                
+                if (frame_size > arg_count) {
+                    memory.stack_pointer += (frame_size - arg_count);
                 }
                 break;
             }

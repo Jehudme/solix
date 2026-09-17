@@ -123,6 +123,7 @@ struct ArrayAccessExpression : public Node {
 struct MemberAccessExpression : public Node {
     std::unique_ptr<Node> object;
     std::string member_name;
+    bool is_scope_resolution = false;
     int32_t enum_value = -1;
     MemberAccessExpression(const Token& t, std::unique_ptr<Node> obj, std::string mem)
         : Node(NodeType::MEMBER_ACCESS, t), object(std::move(obj)), member_name(std::move(mem)) {
@@ -133,6 +134,7 @@ struct MemberAccessExpression : public Node {
 struct MethodCallExpression : public Node {
     std::unique_ptr<Node> callee;
     std::vector<std::unique_ptr<Node>> arguments;
+    bool is_virtual_call = false;
     MethodCallExpression(const Token& t, std::unique_ptr<Node> cal)
         : Node(NodeType::METHOD_CALL, t), callee(std::move(cal)) {
             if(callee) callee->parent = this;
@@ -142,6 +144,7 @@ struct MethodCallExpression : public Node {
 struct NewInstanceExpression : public Node {
     TypeInfo type_info;
     std::vector<std::unique_ptr<Node>> arguments;
+    bool is_virtual_call = false;
     NewInstanceExpression(const Token& t, TypeInfo type)
         : Node(NodeType::NEW_INSTANCE, t), type_info(std::move(type)) {}
 };
@@ -236,6 +239,9 @@ struct VariableDeclaration : public Node {
     std::string var_name;
     TypeInfo type_info;
     bool is_const = false;
+    bool is_virtual = false;
+    bool is_override = false;
+    int vtable_index = -1;
     bool is_reference_type = false;
     std::unique_ptr<Node> initializer;
     VariableDeclaration(const Token& t, std::string name, TypeInfo type)
@@ -288,7 +294,10 @@ struct EnumDeclaration : public Node {
     EnumDeclaration(const Token& t, std::string name) : Node(NodeType::ENUM_DECL, t), enum_name(std::move(name)) {}
 };
 
+struct MethodDeclaration;
 struct ClassDeclaration : public Node {
+    int vtable_id = -1;
+    std::vector<MethodDeclaration*> vtable;
     std::string class_name;
     std::string base_class_name;
     TokenType access_modifier = TokenType::KEYWORD_INTERNAL;
@@ -322,6 +331,9 @@ struct MethodDeclaration : public Node {
     bool is_static = false;
     bool is_native = false;
     bool is_inline = false;
+    bool is_virtual = false;
+    bool is_override = false;
+    int vtable_index = -1;
     TypeInfo return_type;
     std::string method_name;
     std::optional<uint64_t> native_id;
