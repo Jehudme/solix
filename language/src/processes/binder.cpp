@@ -1143,6 +1143,11 @@ bool Binder::check_access(Node* member_decl, Node* owner_class_node, Node* expr)
     
     if (access == TokenType::KEYWORD_PUBLIC) return true;
 
+    // Nested classes have full access to enclosing class members.
+    if (current_class && current_class->mangled_name.find(owner_class->mangled_name + ".") == 0) {
+        return true;
+    }
+
     if (access == TokenType::KEYWORD_PRIVATE) {
         if (current_class == owner_class) return true;
         record_error(expr, "Cannot access private member of class '" + owner_class->class_name + "'");
