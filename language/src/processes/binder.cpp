@@ -378,6 +378,19 @@ void Binder::bind_types_and_memory() {
           }
       }
   }
+  
+  // Set base_vtable_id
+  for (const auto &[name, node] : global_scope.symbols) {
+      if (node->node_type == NodeType::CLASS_DECL) {
+          auto* cls = static_cast<ClassDeclaration*>(node);
+          if (!cls->base_class_name.empty()) {
+              Node* base_node = global_scope.resolve(cls->base_class_name);
+              if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
+                  cls->base_vtable_id = static_cast<ClassDeclaration*>(base_node)->vtable_id;
+              }
+          }
+      }
+  }
   std::unordered_set<std::string> layout_calculated;
   std::function<int(ClassDeclaration*)> calculate_layout = [&](ClassDeclaration* cls) -> int {
       if (layout_calculated.count(cls->mangled_name)) return cls->instance_size;
@@ -1179,14 +1192,29 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
         if (is_assignable(cast_expr->target_type, source_type)) {
             // Upcast: allowed
         } else if (is_assignable(source_type, cast_expr->target_type)) {
-            // Downcast
-            log_info("NOTE: Downcast from '" + source_type.name + "' to '" + cast_expr->target_type.name + "' is unchecked until Phase 10.");
+            // Downcast: Phase 10
+            Node* target_class = global_scope.resolve(cast_expr->target_type.name);
+            if (target_class && target_class->node_type == NodeType::CLASS_DECL) {
+                cast_expr->target_vtable_id = static_cast<ClassDeclaration*>(target_class)->vtable_id;
+            }
         } else {
             record_error(expr, "Cannot cast '" + source_type.name + "' to '" + cast_expr->target_type.name + "': no inheritance relationship");
         }
     }
     
     expr->expression_type = cast_expr->target_type;
+    return expr->expression_type;
+  } else if (expr->node_type == NodeType::INSTANCEOF_EXPR) {
+    auto *inst_expr = static_cast<InstanceofExpression *>(expr);
+    TypeInfo source_type = evaluate_expression(inst_expr->expression.get());
+    inst_expr->target_type = resolve_type(inst_expr->target_type, inst_expr);
+    
+    Node* target_class = global_scope.resolve(inst_expr->target_type.name);
+    if (target_class && target_class->node_type == NodeType::CLASS_DECL) {
+        inst_expr->target_vtable_id = static_cast<ClassDeclaration*>(target_class)->vtable_id;
+    }
+    
+    expr->expression_type = {"bool", 0};
     return expr->expression_type;
   }
 

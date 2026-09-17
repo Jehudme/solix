@@ -84,6 +84,7 @@ enum class OpCode : uint8_t {
   DEFINE_VTABLE,
   SET_VTABLE,
   CAST_CHECK,
+  INSTANCEOF,
   RETURN,
 
   // End
@@ -157,6 +158,7 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::DEFINE_VTABLE: return "DEFINE_VTABLE";
         case OpCode::SET_VTABLE: return "SET_VTABLE";
         case OpCode::CAST_CHECK: return "CAST_CHECK";
+        case OpCode::INSTANCEOF: return "INSTANCEOF";
         case OpCode::RETURN: return "RETURN";
         case OpCode::HALT: return "HALT";
         case OpCode::THROW_ABSTRACT: return "THROW_ABSTRACT";
@@ -229,6 +231,7 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "DEFINE_VTABLE") return OpCode::DEFINE_VTABLE;
     if (str == "SET_VTABLE") return OpCode::SET_VTABLE;
     if (str == "CAST_CHECK") return OpCode::CAST_CHECK;
+    if (str == "INSTANCEOF") return OpCode::INSTANCEOF;
     if (str == "RETURN") return OpCode::RETURN;
     if (str == "HALT") return OpCode::HALT;
     if (str == "THROW_ABSTRACT") return OpCode::THROW_ABSTRACT;

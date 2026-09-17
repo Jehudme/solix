@@ -211,11 +211,19 @@ std::unique_ptr<Node> ParserState::parse_equality() {
 
 std::unique_ptr<Node> ParserState::parse_comparison() {
     std::unique_ptr<Node> expr = parse_term();
-    while (match({TokenType::OPERATOR_GREATER_THAN, TokenType::OPERATOR_GREATER_EQUAL, 
-                  TokenType::OPERATOR_LESS_THAN, TokenType::OPERATOR_LESS_EQUAL})) {
-        Token op = previous();
-        std::unique_ptr<Node> right = parse_term();
-        expr = std::make_unique<BinaryExpression>(op, std::move(expr), op.type, std::move(right));
+    while (true) {
+        if (match({TokenType::OPERATOR_GREATER_THAN, TokenType::OPERATOR_GREATER_EQUAL, 
+                      TokenType::OPERATOR_LESS_THAN, TokenType::OPERATOR_LESS_EQUAL})) {
+            Token op = previous();
+            std::unique_ptr<Node> right = parse_term();
+            expr = std::make_unique<BinaryExpression>(op, std::move(expr), op.type, std::move(right));
+        } else if (match(TokenType::KEYWORD_INSTANCEOF)) {
+            Token op = previous();
+            TypeInfo tgt = parse_type_info();
+            expr = std::make_unique<InstanceofExpression>(op, std::move(expr), tgt);
+        } else {
+            break;
+        }
     }
     return expr;
 }

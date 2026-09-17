@@ -436,12 +436,55 @@ void RuntimeContext::execute() {
 
             case static_cast<uint8_t>(OpCode::DEFINE_VTABLE): {
                 uint32_t vtable_id = read_u32(bytecode, program_counter);
+                int32_t base_vtable_id = static_cast<int32_t>(read_u32(bytecode, program_counter));
                 uint32_t size = read_u32(bytecode, program_counter);
                 std::vector<uint32_t> vtable(size);
                 for (uint32_t i = 0; i < size; ++i) {
                     vtable[i] = read_u32(bytecode, program_counter);
                 }
                 vtables[vtable_id] = std::move(vtable);
+                vtable_bases[vtable_id] = base_vtable_id;
+                break;
+            }
+            case static_cast<uint8_t>(OpCode::INSTANCEOF): {
+                uint32_t target_vtable_id = read_u32(bytecode, program_counter);
+                Address obj = static_cast<Address>(stack[memory.stack_pointer - 1]);
+                memory.stack_pointer--;
+                
+                bool is_instance = false;
+                if (obj != 0) {
+                    int32_t current_vtable = static_cast<int32_t>(heap_data[obj]);
+                    while (current_vtable != -1) {
+                        if (current_vtable == target_vtable_id) {
+                            is_instance = true;
+                            break;
+                        }
+                        current_vtable = vtable_bases.count(current_vtable) ? vtable_bases[current_vtable] : -1;
+                    }
+                }
+                
+                stack[memory.stack_pointer++] = is_instance ? 1 : 0;
+                break;
+            }
+            case static_cast<uint8_t>(OpCode::CAST_CHECK): {
+                uint32_t target_vtable_id = read_u32(bytecode, program_counter);
+                Address obj = static_cast<Address>(stack[memory.stack_pointer - 1]);
+                
+                if (obj != 0) {
+                    int32_t current_vtable = static_cast<int32_t>(heap_data[obj]);
+                    bool is_instance = false;
+                    while (current_vtable != -1) {
+                        if (current_vtable == target_vtable_id) {
+                            is_instance = true;
+                            break;
+                        }
+                        current_vtable = vtable_bases.count(current_vtable) ? vtable_bases[current_vtable] : -1;
+                    }
+                    if (!is_instance) {
+                        throw std::runtime_error("Invalid cast exception at runtime");
+                    }
+                }
+                // Leaves object on stack
                 break;
             }
             case static_cast<uint8_t>(OpCode::SET_VTABLE): {

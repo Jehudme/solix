@@ -13,7 +13,8 @@ enum class NodeType {
     // Expressions
     IDENTIFIER, LITERAL, BINARY_EXPR, UNARY_EXPR, ASSIGNMENT_EXPR,
     ARRAY_ACCESS, MEMBER_ACCESS, METHOD_CALL, NEW_INSTANCE, ARRAY_CREATION,
-    ARRAY_LITERAL, CAST_EXPR, TERNARY_EXPR,
+    ARRAY_LITERAL, CAST_EXPR,
+    INSTANCEOF_EXPR, TERNARY_EXPR,
 
     // Statements
     BLOCK, IF_STMT, FOR_STMT, WHILE_STMT, DO_WHILE_STMT, SWITCH_STMT, CASE_STMT,
@@ -167,8 +168,19 @@ struct ArrayLiteralExpression : public Node {
 struct CastExpression : public Node {
     TypeInfo target_type;
     std::unique_ptr<Node> expression;
+    int32_t target_vtable_id = -1;
     CastExpression(const Token& t, TypeInfo tgt, std::unique_ptr<Node> expr)
         : Node(NodeType::CAST_EXPR, t), target_type(std::move(tgt)), expression(std::move(expr)) {
+            if(expression) expression->parent = this;
+        }
+};
+
+struct InstanceofExpression : public Node {
+    std::unique_ptr<Node> expression;
+    TypeInfo target_type;
+    int32_t target_vtable_id = -1;
+    InstanceofExpression(const Token& t, std::unique_ptr<Node> expr, TypeInfo tgt)
+        : Node(NodeType::INSTANCEOF_EXPR, t), expression(std::move(expr)), target_type(std::move(tgt)) {
             if(expression) expression->parent = this;
         }
 };
@@ -296,6 +308,7 @@ struct EnumDeclaration : public Node {
 struct MethodDeclaration;
 struct ClassDeclaration : public Node {
     int vtable_id = -1;
+    int base_vtable_id = -1;
     std::vector<MethodDeclaration*> vtable;
     std::string class_name;
     std::string base_class_name;

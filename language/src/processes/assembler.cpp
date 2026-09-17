@@ -155,6 +155,7 @@ void Assembler::compile_boot_sequence() {
     for (auto* cls : classes_with_vtables) {
         emit_byte(static_cast<uint8_t>(OpCode::DEFINE_VTABLE));
         emit_int32(cls->vtable_id);
+        emit_int32(cls->base_vtable_id);
         emit_int32(cls->vtable.size());
         for (auto* method : cls->vtable) {
             linker_patches.push_back({bytecode().size(), method});
@@ -1111,6 +1112,29 @@ void Assembler::compile_expression(Node* expr) {
             else if (t == "uint64") emit_byte(static_cast<uint8_t>(OpCode::CONV_U64));
             else if (t == "float32") emit_byte(static_cast<uint8_t>(OpCode::CONV_F32));
             else if (t == "float64") emit_byte(static_cast<uint8_t>(OpCode::CONV_F64));
+            else if (cast_expr->target_vtable_id != -1) {
+                // Keep the object on stack, but we need to duplicate it to check it without consuming it
+                // Wait, CAST_CHECK will consume it and if successful, push it back? No, let's just make CAST_CHECK NOT consume it!
+                // Let's assume CAST_CHECK doesn't consume the object, just checks it.
+                // Wait, what if we just pass the object, and CAST_CHECK peeks at it, or pops and pushes back?
+                // Either way, emit CAST_CHECK and vtable_id.
+                emit_byte(static_cast<uint8_t>(OpCode::CAST_CHECK));
+                emit_int32(cast_expr->target_vtable_id);
+            }
+            break;
+        }
+        case NodeType::INSTANCEOF_EXPR: {
+            auto* inst_expr = static_cast<InstanceofExpression*>(expr);
+            compile_expression(inst_expr->expression.get());
+            if (inst_expr->target_vtable_id != -1) {
+                emit_byte(static_cast<uint8_t>(OpCode::INSTANCEOF));
+                emit_int32(inst_expr->target_vtable_id);
+            } else {
+                // If it's a primitive or something else, we could just emit PUSH_FALSE, but wait, binder allows it?
+                // Actually, binder sets target_vtable_id. If it's -1, it means it's not a class or we can't check it.
+                emit_byte(static_cast<uint8_t>(OpCode::POP));
+                emit_byte(static_cast<uint8_t>(OpCode::PUSH_FALSE));
+            }
             break;
         }
         case NodeType::TERNARY_EXPR: {
