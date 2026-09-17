@@ -20,6 +20,12 @@ public class Vector2 {
         this.x = x;
         this.y = y;
     }
+    public Vector2 operator=(Vector2 other) {
+        Engine.print("ASSIGN OVERLOAD CALLED!");
+        this.x = other.x;
+        this.y = other.y;
+        return this;
+    }
     public Vector2 operator+(Vector2 other) {
         return new Vector2(this.x + other.x, this.y + other.y);
     }
@@ -98,6 +104,9 @@ public class Engine {
         Vector2 v2 = new Vector2(5.0, 5.0);
         Vector2 v3 = v1 + v2;
         if (v3.x == 15.0) Engine.print("OPERATOR OVERLOAD SUCCESS");
+        Vector2 v4 = new Vector2(0.0, 0.0);
+        v4 = v3;
+        if (v4.x == 15.0) Engine.print("ASSIGN OVERLOAD SUCCESS");
         Engine.print(3.14159);
         if (args.length > 0) {
             Engine.print("WE HAVE ARGUMENTS!");

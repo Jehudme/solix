@@ -723,6 +723,7 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(TokenType modifier, boo
         else if (op_token.type == TokenType::OPERATOR_MINUS) name_str += "-";
         else if (op_token.type == TokenType::OPERATOR_MULTIPLY) name_str += "*";
         else if (op_token.type == TokenType::OPERATOR_DIVIDE) name_str += "/";
+        else if (op_token.type == TokenType::OPERATOR_ASSIGN) name_str += "=";
         else throw ParseError("Invalid operator for overloading");
     } else {
         name = consume(TokenType::IDENTIFIER, "Expected field or method name");

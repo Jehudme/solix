@@ -708,6 +708,20 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
     auto *assign = static_cast<AssignmentExpression *>(expr);
     TypeInfo target_type = evaluate_expression(assign->target.get());
     TypeInfo value_type = evaluate_expression(assign->value.get());
+
+    Node *left_decl = global_scope.resolve(target_type.name);
+    if (left_decl && left_decl->node_type == NodeType::CLASS_DECL) {
+        std::string op_name = "operator=";
+        std::string base_name = left_decl->mangled_name + "." + op_name;
+        std::vector<TypeInfo> args = {value_type};
+        std::string mangled = mangle_method_call(base_name, args);
+        Node* method_decl = global_scope.resolve(mangled);
+        if (method_decl) {
+            assign->overloaded_operator = method_decl;
+            expr->expression_type = static_cast<MethodDeclaration*>(method_decl)->return_type;
+            return expr->expression_type;
+        }
+    }
     if (target_type != value_type) {
       throw_error(expr, "Assignment type mismatch: '" + target_type.name +
                             "' = '" + value_type.name + "'");

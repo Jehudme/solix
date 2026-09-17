@@ -629,6 +629,26 @@ void Assembler::compile_expression(Node* expr) {
         }
         case NodeType::ASSIGNMENT_EXPR: {
             auto* assign = static_cast<AssignmentExpression*>(expr);
+
+            if (assign->overloaded_operator) {
+                compile_expression(assign->target.get());
+                compile_expression(assign->value.get());
+                
+                auto* method = static_cast<MethodDeclaration*>(assign->overloaded_operator);
+                
+                emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+                linker_patches.push_back({bytecode().size(), method});
+                emit_int32(0xFFFFFFFF);
+                
+                emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+                emit_int32(method->frame_size);
+                
+                emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+                emit_int32(2); // this + 1 parameter
+                
+                emit_byte(static_cast<uint8_t>(OpCode::CALL));
+                break;
+            }
             
             if (assign->target->node_type == NodeType::ARRAY_ACCESS) {
                 auto* arr_acc = static_cast<ArrayAccessExpression*>(assign->target.get());
