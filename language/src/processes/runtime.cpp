@@ -261,18 +261,20 @@ op_PUSH_CONST_I8:
                 push(static_cast<uint64_t>(read_u32(bytecode, program_counter))); DISPATCH();
             }
             op_PUSH_CONST_STRING: {
-                std::string str = read_string(bytecode, program_counter);
-                size_t len = str.length();
-                Address addr = memory.dynamic_allocation(len + 1); 
-                heap_data[addr] = len; 
-                for (size_t i = 0; i < len; ++i) heap_data[addr + 1 + i] = static_cast<uint64_t>(str[i]);
-                push(addr);
+                { // inner scope to avoid goto-over-destructor
+                    std::string str = read_string(bytecode, program_counter);
+                    size_t len = str.length();
+                    Address addr = memory.dynamic_allocation(len + 1);
+                    heap_data[addr] = len;
+                    for (size_t i = 0; i < len; ++i) heap_data[addr + 1 + i] = static_cast<uint64_t>(str[i]);
+                    push(addr);
+                }
                 DISPATCH();
             }
-            op_PUSH_TRUE: push(1); break;
-            op_PUSH_FALSE: push(0); break;
-            op_PUSH_NULL: push(0); break;
-            op_POP: pop(); break;
+            op_PUSH_TRUE: push(1); DISPATCH();
+            op_PUSH_FALSE: push(0); DISPATCH();
+            op_PUSH_NULL: push(0); DISPATCH();
+            op_POP: pop(); DISPATCH();
             op_DUP: {
                 uint64_t top = stack[memory.stack_pointer - 1]; push(top); DISPATCH();
             }
@@ -506,8 +508,7 @@ op_PUSH_CONST_I8:
                 DISPATCH();
             }
 
-            op_DEFINE_VTABLE: {
-                uint32_t vtable_id = read_u32(bytecode, program_counter);
+            op_DEFINE_VTABLE: { {   uint32_t vtable_id = read_u32(bytecode, program_counter);
                 int32_t base_vtable_id = static_cast<int32_t>(read_u32(bytecode, program_counter));
                 uint32_t size = read_u32(bytecode, program_counter);
                 std::vector<uint32_t> vtable(size);
@@ -515,8 +516,7 @@ op_PUSH_CONST_I8:
                     vtable[i] = read_u32(bytecode, program_counter);
                 }
                 vtables[vtable_id] = std::move(vtable);
-                vtable_bases[vtable_id] = base_vtable_id;
-                DISPATCH();
+                vtable_bases[vtable_id] = base_vtable_id;} DISPATCH();
             }
             op_INSTANCEOF: {
                 uint32_t target_vtable_id = read_u32(bytecode, program_counter);
@@ -586,15 +586,13 @@ op_PUSH_CONST_I8:
                 }
                 DISPATCH();
             }
-            op_DEFINE_NATIVE: {
-                uint32_t id = read_u32(bytecode, program_counter);
+            op_DEFINE_NATIVE: { {    uint32_t id = read_u32(bytecode, program_counter);
                 std::string name = read_string(bytecode, program_counter);
                 if (options.native_functions.count(name)) {
                     native_registry[id] = options.native_functions[name];
                 } else {
                     std::cerr << "Warning: Native function " << name << " not found." << std::endl;
-                }
-                DISPATCH();
+                }} DISPATCH();
             }
             op_RETURN: {
                 uint64_t ret_val = 0;
@@ -616,10 +614,9 @@ op_PUSH_CONST_I8:
             }
             op_HALT:
                 return;
-                
-            default:
-                throw std::runtime_error("Unknown OpCode encountered! " + std::to_string(op));
-        }
+op_THROW_ABSTRACT:
+            throw std::runtime_error("Called abstract method");
+
     #undef DISPATCH
 
 }
