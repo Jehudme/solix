@@ -862,7 +862,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
     if (!ctor && !argument_types.empty()) {
       throw_error(expr, "No matching constructor: " + mangled_ctor);
     }
-    new_instance->resolved_declaration =
+    if (ctor) new_instance->resolved_declaration = ctor; else new_instance->resolved_declaration =
         global_scope.resolve(new_instance->type_info.name);
     expr->expression_type = new_instance->type_info;
     return expr->expression_type;
