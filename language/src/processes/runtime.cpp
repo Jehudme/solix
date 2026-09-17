@@ -168,184 +168,256 @@ void RuntimeContext::execute() {
     }
     push(args_array);
 
-    while (program_counter < bytecode.size()) {
-        uint8_t op = code[program_counter++];
-        
-        switch (op) {
-            case static_cast<uint8_t>(OpCode::PUSH_CONST_I8):
-            case static_cast<uint8_t>(OpCode::PUSH_CONST_I16):
-            case static_cast<uint8_t>(OpCode::PUSH_CONST_I32): {
-                push(static_cast<uint64_t>(read_u32(bytecode, program_counter))); break;
+        static const void* dispatch_table[] = {
+        &&op_PUSH_CONST_I8,
+        &&op_PUSH_CONST_I16,
+        &&op_PUSH_CONST_I32,
+        &&op_PUSH_CONST_I64,
+        &&op_PUSH_CONST_U8,
+        &&op_PUSH_CONST_U16,
+        &&op_PUSH_CONST_U32,
+        &&op_PUSH_CONST_U64,
+        &&op_PUSH_CONST_F32,
+        &&op_PUSH_CONST_F64,
+        &&op_PUSH_CONST_STRING,
+        &&op_PUSH_TRUE,
+        &&op_PUSH_FALSE,
+        &&op_PUSH_NULL,
+        &&op_POP,
+        &&op_DUP,
+        &&op_ADD,
+        &&op_SUBTRACT,
+        &&op_MULTIPLY,
+        &&op_DIVIDE,
+        &&op_MODULO,
+        &&op_EQUAL,
+        &&op_NOT_EQUAL,
+        &&op_GREATER,
+        &&op_GREATER_EQUAL,
+        &&op_LESS,
+        &&op_LESS_EQUAL,
+        &&op_LOGICAL_NOT,
+        &&op_NEGATE,
+        &&op_INC,
+        &&op_DEC,
+        &&op_GET_LOCAL,
+        &&op_SET_LOCAL,
+        &&op_GET_GLOBAL,
+        &&op_SET_GLOBAL,
+        &&op_JUMP,
+        &&op_JUMP_IF_FALSE,
+        &&op_JUMP_IF_TRUE,
+        &&op_ALLOC_STATIC,
+        &&op_ALLOC_DYNAMIC,
+        &&op_GET_PROPERTY,
+        &&op_SET_PROPERTY,
+        &&op_WEAK_SET_PROPERTY,
+        &&op_GET_ARRAY,
+        &&op_SET_ARRAY,
+        &&op_INC_REF,
+        &&op_DEC_REF,
+        &&op_CONV_I8,
+        &&op_CONV_I16,
+        &&op_CONV_I32,
+        &&op_CONV_I64,
+        &&op_CONV_U8,
+        &&op_CONV_U16,
+        &&op_CONV_U32,
+        &&op_CONV_U64,
+        &&op_CONV_F32,
+        &&op_CONV_F64,
+        &&op_CALL,
+        &&op_CALL_NATIVE,
+        &&op_DEFINE_NATIVE,
+        &&op_CALL_VIRTUAL,
+        &&op_DEFINE_VTABLE,
+        &&op_SET_VTABLE,
+        &&op_CAST_CHECK,
+        &&op_INSTANCEOF,
+        &&op_RETURN,
+        &&op_HALT,
+        &&op_THROW_ABSTRACT,
+    };
+
+    #define DISPATCH() \
+        if (program_counter >= bytecode.size()) return; \
+        goto *dispatch_table[code[program_counter++]]
+
+    DISPATCH();
+op_PUSH_CONST_I8:
+            op_PUSH_CONST_I16:
+            op_PUSH_CONST_I32: {
+                push(static_cast<uint64_t>(read_u32(bytecode, program_counter))); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::PUSH_CONST_I64):
-            case static_cast<uint8_t>(OpCode::PUSH_CONST_U64):
-            case static_cast<uint8_t>(OpCode::PUSH_CONST_F64): {
-                push(read_u64(bytecode, program_counter)); break;
+            op_PUSH_CONST_I64:
+            op_PUSH_CONST_U64:
+            op_PUSH_CONST_F64: {
+                push(read_u64(bytecode, program_counter)); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::PUSH_CONST_U8):
-            case static_cast<uint8_t>(OpCode::PUSH_CONST_U16):
-            case static_cast<uint8_t>(OpCode::PUSH_CONST_U32):
-            case static_cast<uint8_t>(OpCode::PUSH_CONST_F32): {
-                push(static_cast<uint64_t>(read_u32(bytecode, program_counter))); break;
+            op_PUSH_CONST_U8:
+            op_PUSH_CONST_U16:
+            op_PUSH_CONST_U32:
+            op_PUSH_CONST_F32: {
+                push(static_cast<uint64_t>(read_u32(bytecode, program_counter))); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::PUSH_CONST_STRING): {
+            op_PUSH_CONST_STRING: {
                 std::string str = read_string(bytecode, program_counter);
                 size_t len = str.length();
                 Address addr = memory.dynamic_allocation(len + 1); 
                 heap_data[addr] = len; 
                 for (size_t i = 0; i < len; ++i) heap_data[addr + 1 + i] = static_cast<uint64_t>(str[i]);
                 push(addr);
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::PUSH_TRUE): push(1); break;
-            case static_cast<uint8_t>(OpCode::PUSH_FALSE): push(0); break;
-            case static_cast<uint8_t>(OpCode::PUSH_NULL): push(0); break;
-            case static_cast<uint8_t>(OpCode::POP): pop(); break;
-            case static_cast<uint8_t>(OpCode::DUP): {
-                uint64_t top = stack[memory.stack_pointer - 1]; push(top); break;
+            op_PUSH_TRUE: push(1); break;
+            op_PUSH_FALSE: push(0); break;
+            op_PUSH_NULL: push(0); break;
+            op_POP: pop(); break;
+            op_DUP: {
+                uint64_t top = stack[memory.stack_pointer - 1]; push(top); DISPATCH();
             }
 
-            case static_cast<uint8_t>(OpCode::ADD): {
+            op_ADD: {
                 double b = bit_cast_from_u64<double>(pop());
                 double a = bit_cast_from_u64<double>(pop());
-                push(bit_cast_to_u64(a + b)); break;
+                push(bit_cast_to_u64(a + b)); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::SUBTRACT): {
+            op_SUBTRACT: {
                 double b = bit_cast_from_u64<double>(pop());
                 double a = bit_cast_from_u64<double>(pop());
-                push(bit_cast_to_u64(a - b)); break;
+                push(bit_cast_to_u64(a - b)); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::MULTIPLY): {
+            op_MULTIPLY: {
                 double b = bit_cast_from_u64<double>(pop());
                 double a = bit_cast_from_u64<double>(pop());
-                push(bit_cast_to_u64(a * b)); break;
+                push(bit_cast_to_u64(a * b)); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::DIVIDE): {
+            op_DIVIDE: {
                 double b = bit_cast_from_u64<double>(pop());
                 double a = bit_cast_from_u64<double>(pop());
-                push(bit_cast_to_u64(a / b)); break;
+                push(bit_cast_to_u64(a / b)); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::MODULO): {
+            op_MODULO: {
                 double b = bit_cast_from_u64<double>(pop());
                 double a = bit_cast_from_u64<double>(pop());
-                push(bit_cast_to_u64(std::fmod(a, b))); break;
+                push(bit_cast_to_u64(std::fmod(a, b))); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::EQUAL): {
+            op_EQUAL: {
                 uint64_t b = pop(); uint64_t a = pop();
-                push(a == b ? 1 : 0); break;
+                push(a == b ? 1 : 0); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::NOT_EQUAL): {
+            op_NOT_EQUAL: {
                 uint64_t b = pop(); uint64_t a = pop();
-                push(a != b ? 1 : 0); break;
+                push(a != b ? 1 : 0); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::GREATER): {
+            op_GREATER: {
                 double b = bit_cast_from_u64<double>(pop());
                 double a = bit_cast_from_u64<double>(pop());
-                push(a > b ? 1 : 0); break;
+                push(a > b ? 1 : 0); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::GREATER_EQUAL): {
+            op_GREATER_EQUAL: {
                 double b = bit_cast_from_u64<double>(pop());
                 double a = bit_cast_from_u64<double>(pop());
-                push(a >= b ? 1 : 0); break;
+                push(a >= b ? 1 : 0); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::LESS): {
+            op_LESS: {
                 double b = bit_cast_from_u64<double>(pop());
                 double a = bit_cast_from_u64<double>(pop());
-                push(a < b ? 1 : 0); break;
+                push(a < b ? 1 : 0); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::LESS_EQUAL): {
+            op_LESS_EQUAL: {
                 double b = bit_cast_from_u64<double>(pop());
                 double a = bit_cast_from_u64<double>(pop());
-                push(a <= b ? 1 : 0); break;
+                push(a <= b ? 1 : 0); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::LOGICAL_NOT): {
+            op_LOGICAL_NOT: {
                 uint64_t a = pop();
-                push(a == 0 ? 1 : 0); break;
+                push(a == 0 ? 1 : 0); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::NEGATE): {
+            op_NEGATE: {
                 double a = bit_cast_from_u64<double>(pop());
-                push(bit_cast_to_u64(-a)); break;
+                push(bit_cast_to_u64(-a)); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::INC): {
+            op_INC: {
                 double a = bit_cast_from_u64<double>(pop());
-                push(bit_cast_to_u64(a + 1.0)); break;
+                push(bit_cast_to_u64(a + 1.0)); DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::DEC): {
+            op_DEC: {
                 double a = bit_cast_from_u64<double>(pop());
-                push(bit_cast_to_u64(a - 1.0)); break;
+                push(bit_cast_to_u64(a - 1.0)); DISPATCH();
             }
 
-            case static_cast<uint8_t>(OpCode::GET_LOCAL): {
+            op_GET_LOCAL: {
                 uint32_t index = read_u32(bytecode, program_counter);
                 uint32_t fp = call_stack.back().frame_pointer;
                 if (fp + index >= memory.stack.size()) throw std::runtime_error("Frame out of bounds on GET_LOCAL");
                 push(stack[fp + index]);
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::SET_LOCAL): {
+            op_SET_LOCAL: {
                 uint32_t index = read_u32(bytecode, program_counter);
                 uint32_t fp = call_stack.back().frame_pointer;
                 if (fp + index >= memory.stack.size()) throw std::runtime_error("Frame out of bounds on SET_LOCAL");
                 stack[fp + index] = pop();
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::GET_GLOBAL): {
+            op_GET_GLOBAL: {
                 uint32_t idx = read_u32(bytecode, program_counter);
                 push(heap_data[idx]); 
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::SET_GLOBAL): {
+            op_SET_GLOBAL: {
                 uint32_t idx = read_u32(bytecode, program_counter);
                 uint64_t val = pop();
                 heap_data[idx] = val;
-                break;
+                DISPATCH();
             }
 
-            case static_cast<uint8_t>(OpCode::JUMP): {
+            op_JUMP: {
                 uint32_t addr = read_u32(bytecode, program_counter);
                 program_counter = addr;
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::JUMP_IF_FALSE): {
+            op_JUMP_IF_FALSE: {
                 uint32_t addr = read_u32(bytecode, program_counter);
                 uint64_t cond = pop();
                 if (cond == 0) program_counter = addr;
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::JUMP_IF_TRUE): {
+            op_JUMP_IF_TRUE: {
                 uint32_t addr = read_u32(bytecode, program_counter);
                 uint64_t cond = pop();
                 if (cond != 0) program_counter = addr;
-                break;
+                DISPATCH();
             }
 
-            case static_cast<uint8_t>(OpCode::ALLOC_STATIC): {
+            op_ALLOC_STATIC: {
                 uint32_t size = static_cast<uint32_t>(pop());
                 memory.static_allocation(size, 0); 
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::ALLOC_DYNAMIC): {
+            op_ALLOC_DYNAMIC: {
                 uint32_t size = static_cast<uint32_t>(pop());
                 push(memory.dynamic_allocation(size));
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::GET_PROPERTY): {
+            op_GET_PROPERTY: {
                 uint32_t offset = read_u32(bytecode, program_counter);
                 Address obj = static_cast<Address>(pop());
                 if (obj + offset >= memory.heap.size()) throw std::runtime_error("Heap out of bounds on GET_PROPERTY");
                 push(memory.read_u64(obj, offset));
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::SET_PROPERTY): {
+            op_SET_PROPERTY: {
                 uint32_t offset = read_u32(bytecode, program_counter);
                 Address obj = static_cast<Address>(pop());
                 uint64_t val = pop();
                 if (obj + offset >= memory.heap.size()) throw std::runtime_error("Heap out of bounds on SET_PROPERTY");
                 
                 memory.write_u64(obj, offset, val);
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::WEAK_SET_PROPERTY): {
+            op_WEAK_SET_PROPERTY: {
                 uint32_t offset = read_u32(bytecode, program_counter);
                 Address obj = static_cast<Address>(pop());
                 uint64_t val = pop();
@@ -366,50 +438,50 @@ void RuntimeContext::execute() {
                 if (val != 0) {
                     memory.weak_references[val].insert(slot_address);
                 }
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::GET_ARRAY): {
+            op_GET_ARRAY: {
                 uint32_t index = static_cast<uint32_t>(pop());
                 Address array_addr = static_cast<Address>(pop());
                 push(heap_data[array_addr + 1 + index]);
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::SET_ARRAY): {
+            op_SET_ARRAY: {
                 uint64_t val = pop();
                 uint32_t index = static_cast<uint32_t>(pop());
                 Address array_addr = static_cast<Address>(pop());
                 heap_data[array_addr + 1 + index] = val;
                 push(val);
-                break;
+                DISPATCH();
             }
 
-            case static_cast<uint8_t>(OpCode::INC_REF): {
+            op_INC_REF: {
                 Address addr = static_cast<Address>(pop());
                 memory.increase_reference(addr);
                 push(addr);
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::DEC_REF): {
+            op_DEC_REF: {
                 Address addr = static_cast<Address>(pop());
                 memory.decrease_reference(addr);
-                break;
+                DISPATCH();
             }
 
-            case static_cast<uint8_t>(OpCode::CONV_I8):
-            case static_cast<uint8_t>(OpCode::CONV_I16):
-            case static_cast<uint8_t>(OpCode::CONV_I32):
-            case static_cast<uint8_t>(OpCode::CONV_I64):
-            case static_cast<uint8_t>(OpCode::CONV_U8):
-            case static_cast<uint8_t>(OpCode::CONV_U16):
-            case static_cast<uint8_t>(OpCode::CONV_U32):
-            case static_cast<uint8_t>(OpCode::CONV_U64):
-            case static_cast<uint8_t>(OpCode::CONV_F32):
-            case static_cast<uint8_t>(OpCode::CONV_F64): {
+            op_CONV_I8:
+            op_CONV_I16:
+            op_CONV_I32:
+            op_CONV_I64:
+            op_CONV_U8:
+            op_CONV_U16:
+            op_CONV_U32:
+            op_CONV_U64:
+            op_CONV_F32:
+            op_CONV_F64: {
                 // Everything is stored as 64-bit float/int natively, pass through for now
-                break;
+                DISPATCH();
             }
 
-            case static_cast<uint8_t>(OpCode::CALL): {
+            op_CALL: {
                 uint32_t arg_count = static_cast<uint32_t>(pop());
                 uint32_t frame_size = static_cast<uint32_t>(pop());
                 uint32_t target_ip = static_cast<uint32_t>(pop());
@@ -422,19 +494,19 @@ void RuntimeContext::execute() {
                 }
                 
                 program_counter = target_ip;
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::CALL_NATIVE): {
+            op_CALL_NATIVE: {
                 uint32_t id = read_u32(bytecode, program_counter);
                 if (native_registry.count(id)) {
                     native_registry[id](*this, 0, nullptr, 0);
                 } else {
                     throw std::runtime_error("Call to unknown native function: " + std::to_string(id));
                 }
-                break;
+                DISPATCH();
             }
 
-            case static_cast<uint8_t>(OpCode::DEFINE_VTABLE): {
+            op_DEFINE_VTABLE: {
                 uint32_t vtable_id = read_u32(bytecode, program_counter);
                 int32_t base_vtable_id = static_cast<int32_t>(read_u32(bytecode, program_counter));
                 uint32_t size = read_u32(bytecode, program_counter);
@@ -444,9 +516,9 @@ void RuntimeContext::execute() {
                 }
                 vtables[vtable_id] = std::move(vtable);
                 vtable_bases[vtable_id] = base_vtable_id;
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::INSTANCEOF): {
+            op_INSTANCEOF: {
                 uint32_t target_vtable_id = read_u32(bytecode, program_counter);
                 Address obj = static_cast<Address>(stack[memory.stack_pointer - 1]);
                 memory.stack_pointer--;
@@ -457,16 +529,16 @@ void RuntimeContext::execute() {
                     while (current_vtable != -1) {
                         if (current_vtable == target_vtable_id) {
                             is_instance = true;
-                            break;
-                        }
+                            DISPATCH();
+            }
                         current_vtable = vtable_bases.count(current_vtable) ? vtable_bases[current_vtable] : -1;
                     }
                 }
                 
                 stack[memory.stack_pointer++] = is_instance ? 1 : 0;
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::CAST_CHECK): {
+            op_CAST_CHECK: {
                 uint32_t target_vtable_id = read_u32(bytecode, program_counter);
                 Address obj = static_cast<Address>(stack[memory.stack_pointer - 1]);
                 
@@ -476,8 +548,8 @@ void RuntimeContext::execute() {
                     while (current_vtable != -1) {
                         if (current_vtable == target_vtable_id) {
                             is_instance = true;
-                            break;
-                        }
+                            DISPATCH();
+            }
                         current_vtable = vtable_bases.count(current_vtable) ? vtable_bases[current_vtable] : -1;
                     }
                     if (!is_instance) {
@@ -485,15 +557,15 @@ void RuntimeContext::execute() {
                     }
                 }
                 // Leaves object on stack
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::SET_VTABLE): {
+            op_SET_VTABLE: {
                 uint32_t vtable_id = read_u32(bytecode, program_counter);
                 Address obj = static_cast<Address>(stack[memory.stack_pointer - 1]);
                 heap_data[obj] = vtable_id;
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::CALL_VIRTUAL): {
+            op_CALL_VIRTUAL: {
                 uint32_t vtable_index = read_u32(bytecode, program_counter);
                 uint32_t frame_size = read_u32(bytecode, program_counter);
                 uint32_t arg_count = read_u32(bytecode, program_counter);
@@ -512,9 +584,9 @@ void RuntimeContext::execute() {
                 if (frame_size > arg_count) {
                     memory.stack_pointer += (frame_size - arg_count);
                 }
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::DEFINE_NATIVE): {
+            op_DEFINE_NATIVE: {
                 uint32_t id = read_u32(bytecode, program_counter);
                 std::string name = read_string(bytecode, program_counter);
                 if (options.native_functions.count(name)) {
@@ -522,9 +594,9 @@ void RuntimeContext::execute() {
                 } else {
                     std::cerr << "Warning: Native function " << name << " not found." << std::endl;
                 }
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::RETURN): {
+            op_RETURN: {
                 uint64_t ret_val = 0;
                 if (memory.stack_pointer > call_stack.back().frame_pointer) {
                     ret_val = pop();
@@ -540,15 +612,16 @@ void RuntimeContext::execute() {
                 } else {
                     return; 
                 }
-                break;
+                DISPATCH();
             }
-            case static_cast<uint8_t>(OpCode::HALT):
+            op_HALT:
                 return;
                 
             default:
                 throw std::runtime_error("Unknown OpCode encountered! " + std::to_string(op));
         }
-    }
+    #undef DISPATCH
+
 }
 
 void run(RuntimeOptions& options) {
