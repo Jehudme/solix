@@ -87,7 +87,8 @@ enum class OpCode : uint8_t {
   RETURN,
 
   // End
-  HALT
+  HALT,
+  THROW_ABSTRACT
 };
 
 inline const char* opcode_to_string(uint8_t op) {
