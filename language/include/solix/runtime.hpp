@@ -17,11 +17,15 @@ using Heap = std::vector<uint64_t>; // Option B: Everything, including chars,
                                     // takes 1 full word
 using Address = uint32_t;
 
+struct RuntimeContext;
+using NativeFunction = std::function<void(RuntimeContext &, uint64_t self_address, uint64_t* args, size_t arg_count)>;
+
 struct RuntimeOptions {
   size_t stack_capacity = 1024 * 1024;     // 1M words
   size_t heap_capacity = 1024 * 1024 * 16; // 16MB words
   std::variant<Bytecode, std::filesystem::path> bytecode_source;
   std::vector<std::string> program_args;
+  std::unordered_map<std::string, NativeFunction> native_functions;
 };
 
 // -----------------------------------------------------------------------------
@@ -77,12 +81,7 @@ struct Memory {
   inline char read_char(Address address, uint32_t offset) const;
 };
 
-struct RuntimeContext;
-using NativeFunction =
-    std::function<void(RuntimeContext &, uint64_t self_address, uint64_t* args,
-                       size_t arg_count)>;
 
-void register_native_function(const std::string &name, NativeFunction func);
 void run(RuntimeOptions& options);
 
 // -----------------------------------------------------------------------------

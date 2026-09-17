@@ -1,5 +1,5 @@
-#include <iostream>
 #include "solix/runtime.hpp"
+#include <bit>
 #include "solix/utilities/optcodes.hpp"
 #include <fstream>
 #include <stdexcept>
@@ -10,11 +10,7 @@
 
 namespace solix {
 
-static std::unordered_map<std::string, NativeFunction> global_native_registry;
 
-void register_native_function(const std::string& name, NativeFunction func) {
-    global_native_registry[name] = std::move(func);
-}
 
 uint64_t Memory::static_allocation(size_t size_in_words, Address address) {
     if (address == 0) {
@@ -62,10 +58,10 @@ void Memory::deallocate(Address address) {
 inline void Memory::write_u64(Address address, uint32_t offset, uint64_t value) { heap[address + offset] = value; }
 inline uint64_t Memory::read_u64(Address address, uint32_t offset) const { return heap[address + offset]; }
 inline void Memory::write_f64(Address address, uint32_t offset, double value) {
-    uint64_t val; std::memcpy(&val, &value, 8); heap[address + offset] = val;
+    heap[address + offset] = std::bit_cast<uint64_t>(value);
 }
 inline double Memory::read_f64(Address address, uint32_t offset) const {
-    double val; uint64_t raw = heap[address + offset]; std::memcpy(&val, &raw, 8); return val;
+    return std::bit_cast<double>(heap[address + offset]);
 }
 inline void Memory::write_char(Address address, uint32_t offset, char value) { heap[address + offset] = static_cast<uint64_t>(value); }
 inline char Memory::read_char(Address address, uint32_t offset) const { return static_cast<char>(heap[address + offset]); }
@@ -408,7 +404,6 @@ void RuntimeContext::execute() {
             case static_cast<uint8_t>(OpCode::SET_VTABLE): {
                 uint32_t vtable_id = read_u32(bytecode, program_counter);
                 Address obj = static_cast<Address>(stack[memory.stack_pointer - 1]);
-                // std::cout << "SET_VTABLE obj=" << obj << " id=" << vtable_id << "\n";
                 heap_data[obj] = vtable_id;
                 break;
             }
@@ -422,7 +417,6 @@ void RuntimeContext::execute() {
                 if (vtables.find(vtable_id) == vtables.end() || vtable_index >= vtables[vtable_id].size()) {
                     throw std::runtime_error("Virtual method resolution failed!");
                 }
-                // std::cout << "CALL_VIRTUAL obj=" << obj << " vtable_id=" << vtable_id << "\n";
                 uint32_t target_ip = vtables[vtable_id][vtable_index];
                 
                 uint32_t new_frame_pointer = memory.stack_pointer - arg_count;
@@ -437,8 +431,8 @@ void RuntimeContext::execute() {
             case static_cast<uint8_t>(OpCode::DEFINE_NATIVE): {
                 uint32_t id = read_u32(bytecode, program_counter);
                 std::string name = read_string(bytecode, program_counter);
-                if (global_native_registry.count(name)) {
-                    native_registry[id] = global_native_registry[name];
+                if (options.native_functions.count(name)) {
+                    native_registry[id] = options.native_functions[name];
                 } else {
                     std::cerr << "Warning: Native function " << name << " not found." << std::endl;
                 }

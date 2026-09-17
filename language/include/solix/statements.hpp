@@ -239,9 +239,6 @@ struct VariableDeclaration : public Node {
     std::string var_name;
     TypeInfo type_info;
     bool is_const = false;
-    bool is_virtual = false;
-    bool is_override = false;
-    int vtable_index = -1;
     bool is_reference_type = false;
     std::unique_ptr<Node> initializer;
     VariableDeclaration(const Token& t, std::string name, TypeInfo type)
