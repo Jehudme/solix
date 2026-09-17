@@ -434,7 +434,93 @@ void Assembler::compile_node(Node* node) {
             }
             break;
         }
+        case NodeType::SWITCH_STMT: {
+            auto* switch_stmt = static_cast<SwitchStatement*>(node);
+            compile_expression(switch_stmt->condition.get());
+            
+            loop_break_patches.push_back({});
+            
+            std::vector<uint32_t> case_body_jumps;
+            uint32_t default_body_jump = 0xFFFFFFFF;
+            
+            for (const auto& child : switch_stmt->children) {
+                auto* case_stmt = static_cast<CaseStatement*>(child.get());
+                if (!case_stmt->is_default) {
+                    emit_byte(static_cast<uint8_t>(OpCode::DUP));
+                    compile_expression(case_stmt->case_value.get());
+                    emit_byte(static_cast<uint8_t>(OpCode::EQUAL));
+                    emit_byte(static_cast<uint8_t>(OpCode::JUMP_IF_TRUE));
+                    case_body_jumps.push_back(bytecode().size());
+                    emit_int32(0xFFFFFFFF);
+                } else {
+                    emit_byte(static_cast<uint8_t>(OpCode::JUMP));
+                    default_body_jump = bytecode().size();
+                    emit_int32(0xFFFFFFFF);
+                    case_body_jumps.push_back(0xFFFFFFFF);
+                }
+            }
+            
+            uint32_t end_jump_if_no_match = 0xFFFFFFFF;
+            if (default_body_jump == 0xFFFFFFFF) {
+                emit_byte(static_cast<uint8_t>(OpCode::JUMP));
+                end_jump_if_no_match = bytecode().size();
+                emit_int32(0xFFFFFFFF);
+            }
+            
+            int case_idx = 0;
+            for (const auto& child : switch_stmt->children) {
+                auto* case_stmt = static_cast<CaseStatement*>(child.get());
+                
+                uint32_t current_ip = bytecode().size();
+                if (case_stmt->is_default) {
+                    if (default_body_jump != 0xFFFFFFFF) {
+                        bytecode()[default_body_jump] = (current_ip >> 24) & 0xFF;
+                        bytecode()[default_body_jump + 1] = (current_ip >> 16) & 0xFF;
+                        bytecode()[default_body_jump + 2] = (current_ip >> 8) & 0xFF;
+                        bytecode()[default_body_jump + 3] = current_ip & 0xFF;
+                    }
+                } else {
+                    uint32_t patch_ip = case_body_jumps[case_idx];
+                    bytecode()[patch_ip] = (current_ip >> 24) & 0xFF;
+                    bytecode()[patch_ip + 1] = (current_ip >> 16) & 0xFF;
+                    bytecode()[patch_ip + 2] = (current_ip >> 8) & 0xFF;
+                    bytecode()[patch_ip + 3] = current_ip & 0xFF;
+                }
+                
+                for (const auto& stmt : case_stmt->children) {
+                    compile_node(stmt.get());
+                }
+                case_idx++;
+            }
+            
+            if (end_jump_if_no_match != 0xFFFFFFFF) {
+                uint32_t end_ip = bytecode().size();
+                bytecode()[end_jump_if_no_match] = (end_ip >> 24) & 0xFF;
+                bytecode()[end_jump_if_no_match + 1] = (end_ip >> 16) & 0xFF;
+                bytecode()[end_jump_if_no_match + 2] = (end_ip >> 8) & 0xFF;
+                bytecode()[end_jump_if_no_match + 3] = end_ip & 0xFF;
+            }
+            
+            uint32_t end_ip = bytecode().size();
+            emit_byte(static_cast<uint8_t>(OpCode::POP)); 
+            
+            for (uint32_t break_patch : loop_break_patches.back()) {
+                bytecode()[break_patch] = (end_ip >> 24) & 0xFF;
+                bytecode()[break_patch + 1] = (end_ip >> 16) & 0xFF;
+                bytecode()[break_patch + 2] = (end_ip >> 8) & 0xFF;
+                bytecode()[break_patch + 3] = end_ip & 0xFF;
+            }
+            
+            loop_break_patches.pop_back();
+            break;
+        }
+        case NodeType::PACKAGE_STMT:
+        case NodeType::ALIAS_STMT:
+        case NodeType::ENUM_DECL:
+            // These don't emit any code in themselves, skip
+            break;
         default:
+            throw std::runtime_error("Unhandled statement type in assembler: " + std::to_string(static_cast<int>(node->node_type)));
             break;
     }
 }
@@ -871,7 +957,38 @@ void Assembler::compile_expression(Node* expr) {
             else if (t == "float64") emit_byte(static_cast<uint8_t>(OpCode::CONV_F64));
             break;
         }
+        case NodeType::TERNARY_EXPR: {
+            auto* tern = static_cast<TernaryExpression*>(expr);
+            compile_expression(tern->condition.get());
+            
+            emit_byte(static_cast<uint8_t>(OpCode::JUMP_IF_FALSE));
+            size_t false_jump_idx = bytecode().size();
+            emit_int32(0xFFFFFFFF);
+            
+            compile_expression(tern->true_branch.get());
+            
+            emit_byte(static_cast<uint8_t>(OpCode::JUMP));
+            size_t end_jump_idx = bytecode().size();
+            emit_int32(0xFFFFFFFF);
+            
+            uint32_t false_ip = bytecode().size();
+            bytecode()[false_jump_idx] = (false_ip >> 24) & 0xFF;
+            bytecode()[false_jump_idx + 1] = (false_ip >> 16) & 0xFF;
+            bytecode()[false_jump_idx + 2] = (false_ip >> 8) & 0xFF;
+            bytecode()[false_jump_idx + 3] = false_ip & 0xFF;
+            
+            compile_expression(tern->false_branch.get());
+            
+            uint32_t end_ip = bytecode().size();
+            bytecode()[end_jump_idx] = (end_ip >> 24) & 0xFF;
+            bytecode()[end_jump_idx + 1] = (end_ip >> 16) & 0xFF;
+            bytecode()[end_jump_idx + 2] = (end_ip >> 8) & 0xFF;
+            bytecode()[end_jump_idx + 3] = end_ip & 0xFF;
+            
+            break;
+        }
         default:
+            throw std::runtime_error("Unhandled expression type in assembler: " + std::to_string(static_cast<int>(expr->node_type)));
             break;
     }
 }
