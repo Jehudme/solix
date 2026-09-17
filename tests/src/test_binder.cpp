@@ -84,3 +84,41 @@ TEST_CASE("Phase 4: Cast Safety", "[binder]") {
         REQUIRE_THROWS_WITH(run_binder("class Dog {} class Engine {} int32 main() { Dog d = new Dog(); Engine e = (Engine) d; return 0; }"), Catch::Matchers::ContainsSubstring("no inheritance relationship"));
     }
 }
+
+TEST_CASE("Phase 5: Access Control", "[binder]") {
+    auto run_binder = [](const std::string& code) {
+        CompilationOptions options;
+        options.log_level = CompilationOptions::LogLevel::DEBUG;
+        options.sources[std::string("inline_test")] = code;
+        
+        auto* context = new CompilationContext(options);
+        context->diagnostic = std::make_unique<Diagnostic>(*context);
+        
+        Lexer lexer(*context, "Lexer");
+        lexer.execute();
+        
+        Parser parser(*context, "Parser");
+        parser.execute();
+        
+        Binder binder(*context, "Binder");
+        binder.execute();
+        
+        delete context;
+    };
+
+    SECTION("Private access from outside fails") {
+        REQUIRE_THROWS_WITH(run_binder("class A { private int32 x; } int32 main() { A a = new A(); a.x = 5; return 0; }"), Catch::Matchers::ContainsSubstring("Cannot access private member"));
+    }
+
+    SECTION("Private access from inside succeeds") {
+        REQUIRE_NOTHROW(run_binder("class A { private int32 x; public void set() { x = 5; } }"));
+    }
+
+    SECTION("Protected access from subclass succeeds") {
+        REQUIRE_NOTHROW(run_binder("class A { protected int32 x; } class B : A { public void set() { x = 5; } }"));
+    }
+
+    SECTION("Protected access from outside fails") {
+        REQUIRE_THROWS_WITH(run_binder("class A { protected int32 x; } int32 main() { A a = new A(); a.x = 5; return 0; }"), Catch::Matchers::ContainsSubstring("Cannot access protected member"));
+    }
+}

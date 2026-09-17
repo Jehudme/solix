@@ -31,7 +31,13 @@ public class Vector2 {
     }
 }
 
-public class Animal {
+public class Account {
+    private int32 balance = 0;
+    public void deposit(int32 amt) { balance = balance + amt; }
+    public int32 get_balance() { return balance; }
+}
+
+class Animal {
     public virtual void speak() {
         Engine.print("I am an animal");
     }

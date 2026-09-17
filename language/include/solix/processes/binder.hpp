@@ -91,6 +91,7 @@ private:
     void record_error(Node* node, const std::string& msg);
     
     void setup_builtins();
+    bool check_access(Node* member_decl, Node* owner_class, Node* expr);
 };
 
 } // namespace solix

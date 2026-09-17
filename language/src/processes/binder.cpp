@@ -886,6 +886,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
         { record_error(expr, "Member not found: " +  member_access->member_name +
                               " on " + class_decl->mangled_name); return {"void", 0}; }
       }
+      if (!check_access(member_decl, current_resolve_class, expr)) return {"void", 0};
       expr->resolved_declaration = member_decl;
       if (member_decl->node_type == NodeType::FIELD_DECL) {
         expr->expression_type =
@@ -931,16 +932,36 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
       auto *member_access =
           static_cast<MemberAccessExpression *>(method_call->callee.get());
       TypeInfo receiver_type = evaluate_expression(member_access->object.get());
-      std::string base_name =
-          receiver_type.name + "." + member_access->member_name;
-      std::string mangled_name = mangle_method_call(base_name, argument_types);
-      // Try mangled name first, then fall back to plain name for native
-      // methods.
-      Node *method_decl = global_scope.resolve(mangled_name);
-      if (!method_decl)
-        method_decl = global_scope.resolve(base_name);
-      if (!method_decl)
-        { record_error(expr, "No matching method: " +  mangled_name); return {"void", 0}; }
+      ClassDeclaration* current_resolve_class = nullptr;
+      Node* type_decl = global_scope.resolve(receiver_type.name);
+      if (type_decl && type_decl->node_type == NodeType::CLASS_DECL) {
+          current_resolve_class = static_cast<ClassDeclaration*>(type_decl);
+      }
+      
+      Node *method_decl = nullptr;
+      std::string base_name;
+      std::string mangled_name;
+      
+      while (!method_decl && current_resolve_class) {
+          base_name = current_resolve_class->mangled_name + "." + member_access->member_name;
+          mangled_name = mangle_method_call(base_name, argument_types);
+          method_decl = global_scope.resolve(mangled_name);
+          if (!method_decl) method_decl = global_scope.resolve(base_name);
+          
+          if (!method_decl && !current_resolve_class->base_class_name.empty()) {
+              Node* base_node = global_scope.resolve(current_resolve_class->base_class_name);
+              if (base_node) current_resolve_class = static_cast<ClassDeclaration*>(base_node);
+              else break;
+          } else {
+              break;
+          }
+      }
+
+      if (!method_decl) {
+          record_error(expr, "No matching method: " +  member_access->member_name + " on " + receiver_type.name); 
+          return {"void", 0}; 
+      }
+      if (!check_access(method_decl, current_resolve_class, expr)) return {"void", 0};
       method_call->resolved_declaration = method_decl;
       if (method_decl->node_type == NodeType::METHOD_DECL) {
           auto* m = static_cast<MethodDeclaration*>(method_decl);
@@ -955,24 +976,47 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
 
     } else {
       // Local method call — must be inside a class.
-      if (!current_class)
+      if (!current_class) {
         record_error(expr, "Local method calls must be inside a class");
-      auto *id = static_cast<IdentifierNode *>(method_call->callee.get());
-      std::string base_name = current_class->mangled_name + "." + id->name;
-      if (id->name == "super") {
-          if (current_class->base_class_name.empty()) record_error(expr, "Cannot call super() in a class without a base class");
-          Node* base_node = global_scope.resolve(current_class->base_class_name);
-          if (!base_node) record_error(expr, "Base class not found");
-          base_name = static_cast<ClassDeclaration*>(base_node)->mangled_name + ".ctor";
+        return {"void", 0};
       }
-      std::string mangled_name = mangle_method_call(base_name, argument_types);
-      // Try mangled name first, then fall back to plain name for native
-      // methods.
-      Node *method_decl = global_scope.resolve(mangled_name);
-      if (!method_decl)
-        method_decl = global_scope.resolve(base_name);
-      if (!method_decl)
-        { record_error(expr, "No matching method: " +  mangled_name); return {"void", 0}; }
+      auto *id = static_cast<IdentifierNode *>(method_call->callee.get());
+      std::string base_name;
+      std::string mangled_name;
+      Node *method_decl = nullptr;
+      ClassDeclaration* current_resolve_class = current_class;
+
+      if (id->name == "super") {
+          if (current_class->base_class_name.empty()) { record_error(expr, "Cannot call super() in a class without a base class"); return {"void", 0}; }
+          Node* base_node = global_scope.resolve(current_class->base_class_name);
+          if (!base_node) { record_error(expr, "Base class not found"); return {"void", 0}; }
+          current_resolve_class = static_cast<ClassDeclaration*>(base_node);
+          base_name = current_resolve_class->mangled_name + ".ctor";
+          mangled_name = mangle_method_call(base_name, argument_types);
+          method_decl = global_scope.resolve(mangled_name);
+          if (!method_decl) method_decl = global_scope.resolve(base_name);
+      } else {
+          while (!method_decl && current_resolve_class) {
+              base_name = current_resolve_class->mangled_name + "." + id->name;
+              mangled_name = mangle_method_call(base_name, argument_types);
+              method_decl = global_scope.resolve(mangled_name);
+              if (!method_decl) method_decl = global_scope.resolve(base_name);
+              
+              if (!method_decl && !current_resolve_class->base_class_name.empty()) {
+                  Node* base_node = global_scope.resolve(current_resolve_class->base_class_name);
+                  if (base_node) current_resolve_class = static_cast<ClassDeclaration*>(base_node);
+                  else break;
+              } else {
+                  break;
+              }
+          }
+      }
+
+      if (!method_decl) {
+          record_error(expr, "No matching method: " + id->name); 
+          return {"void", 0}; 
+      }
+      if (!check_access(method_decl, current_resolve_class, expr)) return {"void", 0};
       method_call->resolved_declaration = method_decl;
       if (method_decl->node_type == NodeType::METHOD_DECL) {
           auto* m = static_cast<MethodDeclaration*>(method_decl);
@@ -1087,4 +1131,54 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
   return expr->expression_type;
 }
 
+
+
+bool Binder::check_access(Node* member_decl, Node* owner_class_node, Node* expr) {
+    if (!owner_class_node || owner_class_node->node_type != NodeType::CLASS_DECL) return true;
+    ClassDeclaration* owner_class = static_cast<ClassDeclaration*>(owner_class_node);
+
+    TokenType access = TokenType::KEYWORD_PUBLIC;
+    if (member_decl->node_type == NodeType::FIELD_DECL) access = static_cast<FieldDeclaration*>(member_decl)->access_modifier;
+    else if (member_decl->node_type == NodeType::METHOD_DECL) access = static_cast<MethodDeclaration*>(member_decl)->access_modifier;
+    
+    if (access == TokenType::KEYWORD_PUBLIC) return true;
+
+    if (access == TokenType::KEYWORD_PRIVATE) {
+        if (current_class == owner_class) return true;
+        record_error(expr, "Cannot access private member of class '" + owner_class->class_name + "'");
+        return false;
+    }
+
+    if (access == TokenType::KEYWORD_PROTECTED) {
+        if (!current_class) {
+            record_error(expr, "Cannot access protected member outside a class");
+            return false;
+        }
+        ClassDeclaration* iter = current_class;
+        while (iter) {
+            if (iter == owner_class) return true;
+            if (iter->base_class_name.empty()) break;
+            Node* base_node = global_scope.resolve(iter->base_class_name);
+            if (!base_node) break;
+            iter = static_cast<ClassDeclaration*>(base_node);
+        }
+        record_error(expr, "Cannot access protected member of class '" + owner_class->class_name + "'");
+        return false;
+    }
+
+    if (access == TokenType::KEYWORD_INTERNAL) {
+        auto get_package = [](const std::string& name) {
+            size_t last_dot = name.rfind('.');
+            if (last_dot != std::string::npos) return name.substr(0, last_dot + 1);
+            return std::string("");
+        };
+        std::string owner_pkg = get_package(owner_class->mangled_name);
+        if (owner_pkg == current_package) return true;
+        
+        record_error(expr, "Cannot access internal member of class '" + owner_class->class_name + "' from a different package");
+        return false;
+    }
+
+    return true;
+}
 } // namespace solix
