@@ -86,7 +86,10 @@ void Assembler::apply_linker_patches() {
             bytecode()[index + 2] = (target_ip >> 8) & 0xFF;
             bytecode()[index + 3] = target_ip & 0xFF;
         } else {
-            throw_error(nullptr, "Linker Error: Target function not found for patching.");
+            std::string name = "unknown";
+            if (target->node_type == NodeType::METHOD_DECL) name = static_cast<MethodDeclaration*>(target)->mangled_name;
+            else if (target->node_type == NodeType::CONSTRUCTOR_DECL) name = static_cast<ConstructorDeclaration*>(target)->mangled_name;
+            throw std::runtime_error("Linker Error: Target function not found for patching: " + name);
         }
     }
 }
@@ -438,7 +441,9 @@ void Assembler::compile_node(Node* node) {
 
 void Assembler::compile_class(ClassDeclaration* class_node) {
     for (const auto& child : class_node->children) {
-        if (child->node_type == NodeType::METHOD_DECL || child->node_type == NodeType::CONSTRUCTOR_DECL) {
+        if (child->node_type == NodeType::CLASS_DECL) {
+            compile_class(static_cast<ClassDeclaration*>(child.get()));
+        } else if (child->node_type == NodeType::METHOD_DECL || child->node_type == NodeType::CONSTRUCTOR_DECL) {
             compile_function(child.get());
         }
     }
@@ -582,6 +587,9 @@ void Assembler::compile_expression(Node* expr) {
                 compile_expression(mem_acc->object.get());
                 
                 auto* field = static_cast<FieldDeclaration*>(mem_acc->resolved_declaration);
+                if (!field) {
+                    throw std::runtime_error("MEMBER_ACCESS resolved_declaration is null at line " + std::to_string(mem_acc->line));
+                }
                 if (field->is_reference_type) {
                     emit_byte(static_cast<uint8_t>(OpCode::DUP));
                     emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
@@ -602,6 +610,37 @@ void Assembler::compile_expression(Node* expr) {
         }
         case NodeType::BINARY_EXPR: {
             auto* bin = static_cast<BinaryExpression*>(expr);
+            
+            if (bin->op == TokenType::OPERATOR_LOGICAL_AND) {
+                compile_expression(bin->left.get());
+                emit_byte(static_cast<uint8_t>(OpCode::DUP));
+                emit_byte(static_cast<uint8_t>(OpCode::JUMP_IF_FALSE));
+                size_t jump_idx = bytecode().size();
+                emit_int32(0xFFFFFFFF);
+                emit_byte(static_cast<uint8_t>(OpCode::POP));
+                compile_expression(bin->right.get());
+                uint32_t end_ip = bytecode().size();
+                bytecode()[jump_idx] = (end_ip >> 24) & 0xFF;
+                bytecode()[jump_idx + 1] = (end_ip >> 16) & 0xFF;
+                bytecode()[jump_idx + 2] = (end_ip >> 8) & 0xFF;
+                bytecode()[jump_idx + 3] = end_ip & 0xFF;
+                break;
+            } else if (bin->op == TokenType::OPERATOR_LOGICAL_OR) {
+                compile_expression(bin->left.get());
+                emit_byte(static_cast<uint8_t>(OpCode::DUP));
+                emit_byte(static_cast<uint8_t>(OpCode::JUMP_IF_TRUE));
+                size_t jump_idx = bytecode().size();
+                emit_int32(0xFFFFFFFF);
+                emit_byte(static_cast<uint8_t>(OpCode::POP));
+                compile_expression(bin->right.get());
+                uint32_t end_ip = bytecode().size();
+                bytecode()[jump_idx] = (end_ip >> 24) & 0xFF;
+                bytecode()[jump_idx + 1] = (end_ip >> 16) & 0xFF;
+                bytecode()[jump_idx + 2] = (end_ip >> 8) & 0xFF;
+                bytecode()[jump_idx + 3] = end_ip & 0xFF;
+                break;
+            }
+            
             compile_expression(bin->left.get());
             compile_expression(bin->right.get());
             
@@ -617,7 +656,60 @@ void Assembler::compile_expression(Node* expr) {
                 case TokenType::OPERATOR_LESS_EQUAL: emit_byte(static_cast<uint8_t>(OpCode::LESS_EQUAL)); break;
                 case TokenType::OPERATOR_GREATER_THAN: emit_byte(static_cast<uint8_t>(OpCode::GREATER)); break;
                 case TokenType::OPERATOR_GREATER_EQUAL: emit_byte(static_cast<uint8_t>(OpCode::GREATER_EQUAL)); break;
-                default: throw_error(bin, "Unknown binary operator.");
+                default: throw std::runtime_error("Unknown binary operator.");
+            }
+            break;
+        }
+        case NodeType::UNARY_EXPR: {
+            auto* uny = static_cast<UnaryExpression*>(expr);
+            compile_expression(uny->operand.get());
+            
+            if (uny->op == TokenType::OPERATOR_LOGICAL_NOT) {
+                emit_byte(static_cast<uint8_t>(OpCode::LOGICAL_NOT));
+            } else if (uny->op == TokenType::OPERATOR_MINUS) {
+                emit_byte(static_cast<uint8_t>(OpCode::NEGATE));
+            } else if (uny->op == TokenType::OPERATOR_INCREMENT || uny->op == TokenType::OPERATOR_DECREMENT) {
+                uint8_t opc = (uny->op == TokenType::OPERATOR_INCREMENT) ? static_cast<uint8_t>(OpCode::INC) : static_cast<uint8_t>(OpCode::DEC);
+                emit_byte(opc);
+                
+                if (uny->operand->node_type == NodeType::IDENTIFIER) {
+                    auto* ident = static_cast<IdentifierNode*>(uny->operand.get());
+                    if (ident->resolved_declaration->node_type == NodeType::VAR_DECL) {
+                        emit_byte(static_cast<uint8_t>(OpCode::DUP));
+                        emit_byte(static_cast<uint8_t>(OpCode::SET_LOCAL));
+                        emit_int32(static_cast<VariableDeclaration*>(ident->resolved_declaration)->memory_index);
+                    } else if (ident->resolved_declaration->node_type == NodeType::FIELD_DECL) {
+                        auto* field = static_cast<FieldDeclaration*>(ident->resolved_declaration);
+                        emit_byte(static_cast<uint8_t>(OpCode::DUP));
+                        if (field->is_static) {
+                            emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
+                            emit_int32(field->memory_index);
+                        } else {
+                            emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+                            emit_int32(0);
+                            emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
+                            emit_int32(field->memory_index);
+                        }
+                    }
+                } else if (uny->operand->node_type == NodeType::MEMBER_ACCESS) {
+                    auto* mem = static_cast<MemberAccessExpression*>(uny->operand.get());
+                    auto* field = static_cast<FieldDeclaration*>(mem->resolved_declaration);
+                    emit_byte(static_cast<uint8_t>(OpCode::DUP));
+                    if (field->is_static) {
+                        emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
+                        emit_int32(field->memory_index);
+                    } else {
+                        compile_expression(mem->object.get());
+                        emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
+                        emit_int32(field->memory_index);
+                    }
+                } else if (uny->operand->node_type == NodeType::ARRAY_ACCESS) {
+                    auto* arr_acc = static_cast<ArrayAccessExpression*>(uny->operand.get());
+                    emit_byte(static_cast<uint8_t>(OpCode::DUP));
+                    compile_expression(arr_acc->array.get());
+                    compile_expression(arr_acc->index.get());
+                    emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
+                }
             }
             break;
         }
@@ -658,35 +750,59 @@ void Assembler::compile_expression(Node* expr) {
                 throw_error(inst, "Unresolved constructor call in assembler.");
             }
 
-            auto* class_decl = static_cast<ClassDeclaration*>(inst->resolved_declaration->parent);
-            auto* ctor = static_cast<ConstructorDeclaration*>(inst->resolved_declaration);
+            if (!inst->resolved_declaration) {
+                throw std::runtime_error("NEW_INSTANCE resolved_declaration is null!");
+            }
+            
+            ClassDeclaration* class_decl = nullptr;
+            ConstructorDeclaration* ctor = nullptr;
+            
+            if (inst->resolved_declaration->node_type == NodeType::CLASS_DECL) {
+                class_decl = static_cast<ClassDeclaration*>(inst->resolved_declaration);
+            } else if (inst->resolved_declaration->node_type == NodeType::CONSTRUCTOR_DECL) {
+                ctor = static_cast<ConstructorDeclaration*>(inst->resolved_declaration);
+                class_decl = static_cast<ClassDeclaration*>(ctor->parent);
+            } else {
+                throw std::runtime_error("NEW_INSTANCE resolved_declaration is not a class or constructor!");
+            }
 
             emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
             emit_int32(class_decl->instance_size);
             emit_byte(static_cast<uint8_t>(OpCode::ALLOC_DYNAMIC));
             
-            emit_byte(static_cast<uint8_t>(OpCode::DUP));
-            
-            for (const auto& arg : inst->arguments) {
-                compile_expression(arg.get());
+            if (ctor) {
+                emit_byte(static_cast<uint8_t>(OpCode::DUP));
+                
+                for (const auto& arg : inst->arguments) {
+                    compile_expression(arg.get());
+                }
+                
+                emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+                linker_patches.push_back({bytecode().size(), ctor});
+                emit_int32(0xFFFFFFFF);
+                
+                emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+                emit_int32(ctor->frame_size);
+                
+                emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+                emit_int32(inst->arguments.size() + 1); 
+                
+                emit_byte(static_cast<uint8_t>(OpCode::CALL));
             }
-            
-            emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-            linker_patches.push_back({bytecode().size(), ctor});
-            emit_int32(0xFFFFFFFF);
-            
-            emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-            emit_int32(ctor->frame_size);
-            
-            emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-            emit_int32(inst->arguments.size() + 1); 
-            
-            emit_byte(static_cast<uint8_t>(OpCode::CALL));
             break;
         }
         case NodeType::MEMBER_ACCESS: {
             auto* mem_acc = static_cast<MemberAccessExpression*>(expr);
+            if (mem_acc->enum_value != -1) {
+                emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+                emit_int32(mem_acc->enum_value);
+                break;
+            }
+            
             auto* field = static_cast<FieldDeclaration*>(mem_acc->resolved_declaration);
+            if (!field) {
+                throw std::runtime_error("MEMBER_ACCESS read resolved_declaration is null at line " + std::to_string(mem_acc->line));
+            }
             
             if (field->is_static) {
                 emit_byte(static_cast<uint8_t>(OpCode::GET_GLOBAL));
