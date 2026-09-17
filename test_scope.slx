@@ -1,0 +1,12 @@
+class Animal {
+    public virtual void speak() { }
+}
+class Dog extends Animal {
+    public override void speak() { }
+}
+class Main {
+    public static void main() {
+        Dog dog = new Dog();
+        dog.Animal::speak();
+    }
+}

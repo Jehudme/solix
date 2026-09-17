@@ -931,11 +931,44 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
     if (method_call->callee->node_type == NodeType::MEMBER_ACCESS) {
       auto *member_access =
           static_cast<MemberAccessExpression *>(method_call->callee.get());
-      TypeInfo receiver_type = evaluate_expression(member_access->object.get());
+          
+      TypeInfo receiver_type;
       ClassDeclaration* current_resolve_class = nullptr;
-      Node* type_decl = global_scope.resolve(receiver_type.name);
-      if (type_decl && type_decl->node_type == NodeType::CLASS_DECL) {
-          current_resolve_class = static_cast<ClassDeclaration*>(type_decl);
+      
+      if (member_access->is_scope_resolution) {
+          if (member_access->object->node_type == NodeType::IDENTIFIER) {
+              auto* id = static_cast<IdentifierNode*>(member_access->object.get());
+              std::string class_name = resolve_type(TypeInfo{id->name, 0}, expr).name;
+              Node* decl = global_scope.resolve(class_name);
+              if (!decl || decl->node_type != NodeType::CLASS_DECL) {
+                  record_error(expr, "Invalid class name for scope resolution: " + class_name);
+                  return {"void", 0};
+              }
+              current_resolve_class = static_cast<ClassDeclaration*>(decl);
+              receiver_type = {"void", 0};
+          } else if (member_access->object->node_type == NodeType::MEMBER_ACCESS) {
+              auto* inner_access = static_cast<MemberAccessExpression*>(member_access->object.get());
+              receiver_type = evaluate_expression(inner_access->object.get());
+              std::string class_name = resolve_type(TypeInfo{inner_access->member_name, 0}, expr).name;
+              Node* decl = global_scope.resolve(class_name);
+              if (!decl || decl->node_type != NodeType::CLASS_DECL) {
+                  record_error(expr, "Invalid class name for scope resolution: " + class_name);
+                  return {"void", 0};
+              }
+              current_resolve_class = static_cast<ClassDeclaration*>(decl);
+              
+              // Rewrite the AST so that the assembler sees `dog` instead of `dog.Animal` as the receiver
+              member_access->object = std::move(inner_access->object);
+          } else {
+              record_error(expr, "Invalid syntax for scope resolution");
+              return {"void", 0};
+          }
+      } else {
+          receiver_type = evaluate_expression(member_access->object.get());
+          Node* type_decl = global_scope.resolve(receiver_type.name);
+          if (type_decl && type_decl->node_type == NodeType::CLASS_DECL) {
+              current_resolve_class = static_cast<ClassDeclaration*>(type_decl);
+          }
       }
       
       Node *method_decl = nullptr;
@@ -948,7 +981,7 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
           method_decl = global_scope.resolve(mangled_name);
           if (!method_decl) method_decl = global_scope.resolve(base_name);
           
-          if (!method_decl && !current_resolve_class->base_class_name.empty()) {
+          if (!method_decl && !current_resolve_class->base_class_name.empty() && !member_access->is_scope_resolution) {
               Node* base_node = global_scope.resolve(current_resolve_class->base_class_name);
               if (base_node) current_resolve_class = static_cast<ClassDeclaration*>(base_node);
               else break;
