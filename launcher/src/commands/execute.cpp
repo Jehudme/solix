@@ -12,6 +12,7 @@ namespace solix::cli {
         execute_cmd->add_option("file", *bytecode_file, "Bytecode file to execute")->required()->check(CLI::ExistingFile);
         execute_cmd->add_option("-s,--stack", opts->stack_capacity, "Stack capacity in words (default: 1048576)");
         execute_cmd->add_option("-p,--heap", opts->heap_capacity, "Heap capacity in words (default: 16777216)");
+        execute_cmd->add_option("args", opts->program_args, "Arguments passed to the Solix program");
         
         execute_cmd->callback([opts, bytecode_file]() {
             opts->bytecode_source = std::filesystem::path(*bytecode_file);

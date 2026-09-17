@@ -21,6 +21,7 @@ struct RuntimeOptions {
   size_t stack_capacity = 1024 * 1024;     // 1M words
   size_t heap_capacity = 1024 * 1024 * 16; // 16MB words
   std::variant<Bytecode, std::filesystem::path> bytecode_source;
+  std::vector<std::string> program_args;
 };
 
 // -----------------------------------------------------------------------------

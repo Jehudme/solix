@@ -190,7 +190,7 @@ void Assembler::compile_boot_sequence() {
             emit_int32(entry_method->frame_size);
 
             emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-            emit_int32(0);
+            emit_int32(entry_method->parameters.size());
 
             emit_byte(static_cast<uint8_t>(OpCode::CALL));
         }
@@ -680,6 +680,7 @@ void Assembler::compile_expression(Node* expr) {
                 auto* mem_acc = static_cast<MemberAccessExpression*>(assign->target.get());
                 compile_expression(mem_acc->object.get());
                 
+
                 auto* field = static_cast<FieldDeclaration*>(mem_acc->resolved_declaration);
                 if (!field) {
                     throw std::runtime_error("MEMBER_ACCESS resolved_declaration is null at line " + std::to_string(mem_acc->line));
@@ -890,6 +891,13 @@ void Assembler::compile_expression(Node* expr) {
             }
             
             auto* field = static_cast<FieldDeclaration*>(mem_acc->resolved_declaration);
+
+            if (!mem_acc->resolved_declaration && mem_acc->member_name == "length") {
+                compile_expression(mem_acc->object.get());
+                emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
+                emit_int32(0);
+                break;
+            }
             if (!field) {
                 throw std::runtime_error("MEMBER_ACCESS read resolved_declaration is null at line " + std::to_string(mem_acc->line));
             }

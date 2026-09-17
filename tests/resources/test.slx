@@ -79,6 +79,13 @@ public class Engine {
     }
 
     public static void main(char[][] args) {
+        Engine.print("START OF MAIN!");
+        if (args.length > 0) {
+            Engine.print("WE HAVE ARGUMENTS!");
+            Engine.print(args[0]);
+        } else {
+            Engine.print("NO ARGUMENTS GIVEN!");
+        }
         if (instanceCount > 0) {
             return;
         }
