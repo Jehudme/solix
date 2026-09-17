@@ -1,5 +1,7 @@
 add_library(solix_language
     src/utilities/diagnostic.cpp
+    src/compilation.cpp
+    src/processes/process.cpp
     src/processes/lexer.cpp
     src/processes/parser.cpp
     src/processes/binder.cpp
