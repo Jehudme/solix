@@ -1,17 +1,10 @@
 add_library(solix_language
-    src/lexer.cpp
-    src/parser.cpp
-    src/semantic.cpp
-    src/compiler.cpp
-    src/new/utilities/diagnostic.cpp
-    src/compilation.cpp
-    src/process.cpp
-    src/new/processes/lexer.cpp
-    src/new/processes/parser.cpp
-    src/new/processes/binder.cpp
-    src/new/processes/assembler.cpp
-    src/runtime.cpp
-    src/new/processes/runtime.cpp
+    src/utilities/diagnostic.cpp
+    src/processes/lexer.cpp
+    src/processes/parser.cpp
+    src/processes/binder.cpp
+    src/processes/assembler.cpp
+    src/processes/runtime.cpp
 )
 
 target_include_directories(solix_language
