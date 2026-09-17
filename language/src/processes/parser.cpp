@@ -711,11 +711,27 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(TokenType modifier, boo
     
     TypeInfo type = parse_type_info();
     bool is_ref = match(TokenType::OPERATOR_LOGICAL_AND);
-    Token name = consume(TokenType::IDENTIFIER, "Expected field or method name");
+
+    Token name;
+    std::string name_str;
+    if (match(TokenType::KEYWORD_OPERATOR)) {
+        name = previous();
+        Token op_token = peek();
+        advance();
+        name_str = "operator";
+        if (op_token.type == TokenType::OPERATOR_PLUS) name_str += "+";
+        else if (op_token.type == TokenType::OPERATOR_MINUS) name_str += "-";
+        else if (op_token.type == TokenType::OPERATOR_MULTIPLY) name_str += "*";
+        else if (op_token.type == TokenType::OPERATOR_DIVIDE) name_str += "/";
+        else throw ParseError("Invalid operator for overloading");
+    } else {
+        name = consume(TokenType::IDENTIFIER, "Expected field or method name");
+        name_str = std::get<std::string>(name.value);
+    }
     
     if (match(TokenType::PUNCTUATION_OPEN_PAREN)) {
         // It's a method
-        auto method = std::make_unique<MethodDeclaration>(name, std::get<std::string>(name.value), std::move(type));
+        auto method = std::make_unique<MethodDeclaration>(name, name_str, std::move(type));
         method->access_modifier = modifier;
         method->is_static = is_static;
         method->is_inline = is_inline;
@@ -740,7 +756,7 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(TokenType modifier, boo
         return method;
     } else {
         // It's a field
-        auto field = std::make_unique<FieldDeclaration>(name, std::get<std::string>(name.value), std::move(type));
+        auto field = std::make_unique<FieldDeclaration>(name, name_str, std::move(type));
         field->access_modifier = modifier;
         field->is_static = is_static;
         field->is_const = is_const;

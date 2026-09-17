@@ -699,6 +699,26 @@ void Assembler::compile_expression(Node* expr) {
         }
         case NodeType::BINARY_EXPR: {
             auto* bin = static_cast<BinaryExpression*>(expr);
+
+            if (bin->overloaded_operator) {
+                compile_expression(bin->left.get());
+                compile_expression(bin->right.get());
+                
+                auto* method = static_cast<MethodDeclaration*>(bin->overloaded_operator);
+                
+                emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+                linker_patches.push_back({bytecode().size(), method});
+                emit_int32(0xFFFFFFFF);
+                
+                emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+                emit_int32(method->frame_size);
+                
+                emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+                emit_int32(2); // this + 1 parameter
+                
+                emit_byte(static_cast<uint8_t>(OpCode::CALL));
+                break;
+            }
             
             if (bin->op == TokenType::OPERATOR_LOGICAL_AND) {
                 compile_expression(bin->left.get());

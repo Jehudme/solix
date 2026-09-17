@@ -13,6 +13,17 @@ public enum ApplicationState {
     SHUTDOWN
 }
 
+public class Vector2 {
+    public float64 x;
+    public float64 y;
+    public Vector2(float64 x, float64 y) {
+        this.x = x;
+        this.y = y;
+    }
+    public Vector2 operator+(Vector2 other) {
+        return new Vector2(this.x + other.x, this.y + other.y);
+    }
+}
 public class Engine {
     
     private const char[] engineName = "Solix V8";
@@ -83,6 +94,10 @@ public class Engine {
     public static void main(char[][] args) {
         Engine.print("START OF MAIN!");
         Engine.print(42);
+        Vector2 v1 = new Vector2(10.0, 20.0);
+        Vector2 v2 = new Vector2(5.0, 5.0);
+        Vector2 v3 = v1 + v2;
+        if (v3.x == 15.0) Engine.print("OPERATOR OVERLOAD SUCCESS");
         Engine.print(3.14159);
         if (args.length > 0) {
             Engine.print("WE HAVE ARGUMENTS!");

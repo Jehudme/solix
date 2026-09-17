@@ -77,6 +77,7 @@ struct LiteralNode : public Node {
 
 struct BinaryExpression : public Node {
     std::unique_ptr<Node> left;
+    Node* overloaded_operator = nullptr;
     TokenType op;
     std::unique_ptr<Node> right;
     BinaryExpression(const Token& t, std::unique_ptr<Node> l, TokenType o, std::unique_ptr<Node> r) 
@@ -87,6 +88,7 @@ struct BinaryExpression : public Node {
 };
 
 struct UnaryExpression : public Node {
+    Node* overloaded_operator = nullptr;
     TokenType op;
     std::unique_ptr<Node> operand;
     bool is_prefix;
@@ -98,6 +100,7 @@ struct UnaryExpression : public Node {
 
 struct AssignmentExpression : public Node {
     std::unique_ptr<Node> target;
+    Node* overloaded_operator = nullptr;
     TokenType op;
     std::unique_ptr<Node> value;
     AssignmentExpression(const Token& t, std::unique_ptr<Node> tgt, TokenType o, std::unique_ptr<Node> val)

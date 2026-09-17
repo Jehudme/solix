@@ -652,11 +652,32 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
     auto *bin = static_cast<BinaryExpression *>(expr);
     TypeInfo left_type = evaluate_expression(bin->left.get());
     TypeInfo right_type = evaluate_expression(bin->right.get());
+
+    Node *left_decl = global_scope.resolve(left_type.name);
+    if (left_decl && left_decl->node_type == NodeType::CLASS_DECL) {
+        std::string op_name = "operator";
+        if (bin->op == TokenType::OPERATOR_PLUS) op_name += "+";
+        else if (bin->op == TokenType::OPERATOR_MINUS) op_name += "-";
+        else if (bin->op == TokenType::OPERATOR_MULTIPLY) op_name += "*";
+        else if (bin->op == TokenType::OPERATOR_DIVIDE) op_name += "/";
+        else goto primitive_fallback;
+        
+        std::string base_name = left_decl->mangled_name + "." + op_name;
+        std::vector<TypeInfo> args = {right_type};
+        std::string mangled = mangle_method_call(base_name, args);
+        Node* method_decl = global_scope.resolve(mangled);
+        if (!method_decl) goto primitive_fallback;
+        
+        bin->overloaded_operator = method_decl;
+        expr->expression_type = static_cast<MethodDeclaration*>(method_decl)->return_type;
+        return expr->expression_type;
+    }
+    
+    primitive_fallback:
     if (left_type != right_type) {
       throw_error(expr, "Binary operands type mismatch: '" + left_type.name +
                             "' vs '" + right_type.name + "'");
     }
-    // Comparison operators always produce bool.
     if (bin->op >= TokenType::OPERATOR_EQUAL &&
         bin->op <= TokenType::OPERATOR_GREATER_EQUAL) {
       expr->expression_type = {"bool", 0};
