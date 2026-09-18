@@ -56,7 +56,6 @@ void Binder::setup_builtins() {
 // ─── Name Mangling ───────────────────────────────────────────────────────────
 
 std::string Binder::mangle_method(MethodDeclaration *method) {
-  if (method->is_native) return method->method_name;
   std::string mangled_name = method->method_name + "(";
   for (size_t i = 0; i < method->parameters.size(); ++i) {
     auto *var_decl = static_cast<VariableDeclaration *>(method->parameters[i].get());

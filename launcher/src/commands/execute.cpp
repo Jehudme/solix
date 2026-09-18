@@ -7,6 +7,27 @@
 
 namespace solix::cli {
 
+// Temporary helper to register required native functions with full symbols
+static void register_temp_natives(RuntimeOptions& opts) {
+    opts.native_functions["com.solix.advanced.test.Engine.print(char[])"] = [](solix::RuntimeContext& ctx, uint64_t, uint64_t*, size_t) {
+        uint64_t val = ctx.pop();
+        solix::Address addr = static_cast<solix::Address>(val);
+        uint32_t len = static_cast<uint32_t>(ctx.memory.heap[addr]);
+        std::string str = "";
+        for (uint32_t i = 0; i < len; ++i) {
+            str += static_cast<char>(ctx.memory.heap[addr + 1 + i]);
+        }
+        std::cout << str << std::endl;
+        ctx.push(0);
+    };
+
+    opts.native_functions["com.solix.advanced.test.Engine.print(int32)"] = [](solix::RuntimeContext& ctx, uint64_t, uint64_t*, size_t) {
+        uint64_t val = ctx.pop();
+        std::cout << static_cast<int32_t>(val) << std::endl;
+        ctx.push(0);
+    };
+}
+
 void setup_execute_command(CLI::App &app) {
   // TODO: It must only run the .slxb file
   auto *execute_cmd = app.add_subcommand("run", "run compiled bytecode");
@@ -36,6 +57,9 @@ void setup_execute_command(CLI::App &app) {
     }
 
     opts->bytecode_source = path;
+    
+    // Register temporary native functions with full symbol
+    register_temp_natives(*opts);
 
     try {
       run(*opts);

@@ -86,7 +86,7 @@ public class Engine {
     public float32 temperature = 25.0;
     
     public static native void print(char[] s);
-    public static void print(int32 x) { print("INT32 PRINT"); }
+    public static native void print(int32 x);
     public static void print(float64 x) { print("FLOAT64 PRINT"); }
 
     private class CoreProcessor {
