@@ -66,18 +66,28 @@ Node* Binder::instantiate_template(const std::string& template_name, const std::
     // Run Pass 2 (REGISTER_MEMBERS)
     // Run Pass 3 (BIND_EXECUTION)
     
+    std::string current_pkg_copy = current_package;
+    std::string my_prefix = ""; 
+    auto last_dot = template_name.rfind('.');
+    if (last_dot != std::string::npos) my_prefix = template_name.substr(0, last_dot + 1);
+
     if (clone->node_type == NodeType::CLASS_DECL) {
-        std::string current_pkg_copy = current_package;
-        // Wait, template_name might be a full package name!
-        std::string my_prefix = ""; 
-        auto last_dot = template_name.rfind('.');
-        if (last_dot != std::string::npos) my_prefix = template_name.substr(0, last_dot + 1);
-        
         static_cast<ClassDeclaration*>(clone)->class_name = mangled_name.substr(my_prefix.length());
-        
         register_global_symbols(clone, my_prefix);
         register_members(clone, my_prefix);
-        
+        if (current_pass == BinderPass::BIND_EXECUTION) {
+            bind_tree(clone);
+        }
+    } else if (clone->node_type == NodeType::ALIAS_STMT) {
+        static_cast<AliasStatement*>(clone)->alias_name = mangled_name.substr(my_prefix.length());
+        register_global_symbols(clone, my_prefix);
+        if (current_pass == BinderPass::BIND_EXECUTION) {
+            bind_tree(clone);
+        }
+    } else if (clone->node_type == NodeType::METHOD_DECL) {
+        static_cast<MethodDeclaration*>(clone)->method_name = mangled_name.substr(my_prefix.length());
+        // For methods, register_members defines the symbol
+        register_members(clone, my_prefix);
         if (current_pass == BinderPass::BIND_EXECUTION) {
             bind_tree(clone);
         }
@@ -277,6 +287,7 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
     auto *alias = static_cast<AliasStatement *>(resolved);
     result.name = alias->target_type.name;
     result.array_depth += alias->target_type.array_depth;
+    result.type_args = alias->target_type.type_args;
     return resolve_type(result, error_node); // Recursively resolve aliases
   } else if (resolved && (resolved->node_type == NodeType::CLASS_DECL ||
                           resolved->node_type == NodeType::ENUM_DECL)) {
@@ -1047,12 +1058,41 @@ void Binder::visit(MethodCallExpression &n) {
       evaluated_type = n.expression_type;
       return;
     } else {
-      if (!current_class) {
-        record_error(&n, "Local method calls must be inside a class");
-        evaluated_type = {"void", 0};
-        return;
-      }
       auto *id = static_cast<IdentifierNode *>(n.callee.get());
+      if (!current_class) {
+          // Allow global method calls
+          std::string base_name = id->name;
+          std::string mangled_name;
+          Node *method_decl = nullptr;
+          if (!n.type_args.empty()) {
+              std::vector<TypeInfo> resolved_targs;
+              for (auto& t : n.type_args) resolved_targs.push_back(resolve_type(t, &n));
+              instantiate_template(base_name, resolved_targs, &n);
+              base_name += "<";
+              for (size_t i = 0; i < resolved_targs.size(); ++i) {
+                  base_name += resolved_targs[i].to_string();
+                  if (i < resolved_targs.size() - 1) base_name += ",";
+              }
+              base_name += ">";
+          }
+          mangled_name = mangle_method_call(base_name, argument_types);
+          method_decl = global_scope.resolve(mangled_name);
+          if (!method_decl) method_decl = global_scope.resolve(base_name);
+          
+          if (!method_decl) {
+            record_error(&n, "No matching global function: " + id->name);
+            evaluated_type = {"void", 0};
+            return;
+          }
+          n.resolved_declaration = method_decl;
+          if (method_decl->node_type == NodeType::METHOD_DECL) {
+            n.expression_type = static_cast<MethodDeclaration *>(method_decl)->return_type;
+          } else {
+            n.expression_type = {"void", 0};
+          }
+          evaluated_type = n.expression_type;
+          return;
+      }
       std::string base_name;
       std::string mangled_name;
       Node *method_decl = nullptr;
@@ -1080,6 +1120,17 @@ void Binder::visit(MethodCallExpression &n) {
       } else {
         while (!method_decl && current_resolve_class) {
           base_name = current_resolve_class->mangled_name + "." + id->name;
+          if (!n.type_args.empty()) {
+              std::vector<TypeInfo> resolved_targs;
+              for (auto& t : n.type_args) resolved_targs.push_back(resolve_type(t, &n));
+              instantiate_template(base_name, resolved_targs, &n);
+              base_name += "<";
+              for (size_t i = 0; i < resolved_targs.size(); ++i) {
+                  base_name += resolved_targs[i].to_string();
+                  if (i < resolved_targs.size() - 1) base_name += ",";
+              }
+              base_name += ">";
+          }
           mangled_name = mangle_method_call(base_name, argument_types);
           method_decl = global_scope.resolve(mangled_name);
           if (!method_decl)
@@ -1504,6 +1555,13 @@ void Binder::visit(ConstructorDeclaration &n) {
 }
 
 void Binder::visit(MethodDeclaration &n) {
+  if (!n.template_parameters.empty()) {
+      if (current_pass == BinderPass::REGISTER_MEMBERS) {
+          std::string full_name = current_prefix + n.method_name;
+          template_registry[full_name] = &n;
+      }
+      return;
+  }
   if (current_pass == BinderPass::REGISTER_MEMBERS) {
     for (const auto &param : n.parameters) {
       auto *var_decl = static_cast<VariableDeclaration *>(param.get());

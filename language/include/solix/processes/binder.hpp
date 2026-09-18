@@ -73,6 +73,7 @@ public:
     void visit(MethodDeclaration& node) override;
 
 private:
+public:
     SymbolTable global_scope;
   std::unordered_map<std::string, Node*> template_registry;
   std::unordered_set<std::string> instantiated_templates;

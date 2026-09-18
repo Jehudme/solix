@@ -267,10 +267,39 @@ std::unique_ptr<Node> ParserState::parse_unary() {
 std::unique_ptr<Node> ParserState::parse_call_or_access() {
     std::unique_ptr<Node> expr = parse_primary();
     
+    std::vector<TypeInfo> pending_type_args;
+    
     while (true) {
+        if (peek().type == TokenType::OPERATOR_LESS_THAN) {
+            // Might be a template arguments list, or a less-than comparison.
+            // Check if it's followed by types and then `> ( `
+            size_t temp = current;
+            int bracket_count = 1;
+            temp++;
+            bool valid_template = true;
+            while (temp < tokens.size() && bracket_count > 0) {
+                if (tokens[temp]->type == TokenType::OPERATOR_LESS_THAN) bracket_count++;
+                else if (tokens[temp]->type == TokenType::OPERATOR_GREATER_THAN) bracket_count--;
+                else if (tokens[temp]->type == TokenType::PUNCTUATION_SEMICOLON) { valid_template = false; break; }
+                else if (tokens[temp]->type == TokenType::PUNCTUATION_OPEN_BRACE) { valid_template = false; break; }
+                temp++;
+            }
+            if (valid_template && temp < tokens.size() && tokens[temp]->type == TokenType::PUNCTUATION_OPEN_PAREN) {
+                // It IS a method call with template arguments!
+                advance(); // consume '<'
+                do {
+                    pending_type_args.push_back(parse_type_info());
+                } while (match(TokenType::PUNCTUATION_COMMA));
+                consume(TokenType::OPERATOR_GREATER_THAN, "Expected '>' after generic method arguments");
+                continue;
+            }
+        }
+        
         if (match(TokenType::PUNCTUATION_OPEN_PAREN)) {
             Token paren = previous();
             auto call_expr = std::make_unique<MethodCallExpression>(paren, std::move(expr));
+            call_expr->type_args = std::move(pending_type_args);
+            pending_type_args.clear();
             if (!check(TokenType::PUNCTUATION_CLOSE_PAREN)) {
                 do {
                     call_expr->arguments.push_back(parse_expression());
@@ -379,7 +408,7 @@ std::unique_ptr<Node> ParserState::parse_primary() {
         return expr;
     }
     
-    throw ParseError("Expected expression");
+    throw ParseError("Expected expression, got " + std::to_string((int)peek().type));
 }
 
 std::unique_ptr<Node> ParserState::parse_block() {

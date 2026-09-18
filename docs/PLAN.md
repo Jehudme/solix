@@ -558,3 +558,28 @@ This is the core engine for Generics. The Binder will act as an on-demand factor
 [ ] Phase 18 — Templates: Lexer & Parser Updates
 [ ] Phase 19 — Templates: Binder Monomorphization
 ```
+
+---
+
+## Phase 20 — Templates: Alias & Function Monomorphization
+
+**Branch:** `phase-20-templates-alias`
+**Criticality:** 🟡 Medium
+**Difficulty:** ⭐⭐⭐ Hard
+
+### Context
+Phase 18 and 19 implemented Class Templates. Phase 20 completes the Generics system by adding support for Alias Templates (e.g. `alias List<T> = Vector<T>;` vs `alias IntegerList = List<uint32>;`) and Standalone Function Templates.
+
+### 20.1 — Alias Template Monomorphization
+- Update `Binder::instantiate_template()` to support `NodeType::ALIAS_STMT`.
+- When instantiating an Alias, clone the alias, replace its types via `TemplateSubstitutionVisitor`, register it in `global_scope`, and execute `BIND_EXECUTION`.
+- Ensure distinction between concrete aliases (`alias A = B<int>;`) and template aliases (`alias A<T> = B<T>;`).
+
+### 20.2 — Function Template Monomorphization
+- Update `Binder::visit(MethodCallExpression)` to trigger `instantiate_template()` if `type_args` are provided for a generic function/method.
+- When calling a generic function (`foo<int32>()`), ensure the Binder dynamically instantiates the function template, registers the monomorphized signature, and validates the call.
+
+### 20.3 — Testing
+- Add Catch2 tests for `alias IntegerList = List<uint32>` vs `alias List<T> = Vector<T>`.
+- Add Catch2 tests for generic method calls `foo<int32>(5)`.
+
