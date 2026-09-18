@@ -963,38 +963,12 @@ void Assembler::visit(UnaryExpression &node) {
 
 void Assembler::visit(MethodCallExpression &node) {
   auto *call = &node;
-  bool is_static_method = false;
-
-  if (call->resolved_declaration) {
-    if (call->resolved_declaration->node_type == NodeType::METHOD_DECL) {
-      is_static_method =
-          static_cast<MethodDeclaration *>(call->resolved_declaration)
-              ->is_static;
-    } else if (call->resolved_declaration->node_type ==
-               NodeType::CONSTRUCTOR_DECL) {
-      is_static_method = false;
-    }
-  }
-
-  if (call->callee->node_type == NodeType::MEMBER_ACCESS) {
-    auto *mem_acc = static_cast<MemberAccessExpression *>(call->callee.get());
-    if (call->resolved_declaration && !is_static_method) {
-      compile_expression(mem_acc->object.get());
-    }
-  } else if (call->resolved_declaration && !is_static_method) {
-    // local method call, push 'this'
-    emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
-    emit_int32(0);
-  }
-
-  for (const auto &arg : call->arguments) {
-    compile_expression(arg.get());
-  }
 
   if (!call->resolved_declaration) {
     throw_error(call, "Unresolved method call in assembler.");
   }
 
+  bool is_static_method = false;
   bool is_native = false;
   int memory_index = -1;
   int frame_size = 0;
@@ -1016,13 +990,35 @@ void Assembler::visit(MethodCallExpression &node) {
     throw_error(call, "Resolved declaration is not a method or constructor.");
   }
 
+  // Determine if this target actually requires an implicit 'this' instance
+  bool is_instance_method =
+      !is_static_method && call->resolved_declaration->parent != nullptr &&
+      call->resolved_declaration->parent->node_type == NodeType::CLASS_DECL;
+
+  if (call->callee->node_type == NodeType::MEMBER_ACCESS) {
+    auto *mem_acc = static_cast<MemberAccessExpression *>(call->callee.get());
+    if (is_instance_method) {
+      compile_expression(mem_acc->object.get());
+    }
+  } else if (is_instance_method) {
+    // Only push 'this' if it's an instance method call inside a class
+    emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+    emit_int32(0);
+  }
+
+  for (const auto &arg : call->arguments) {
+    compile_expression(arg.get());
+  }
+
+  uint32_t total_args = call->arguments.size() + (is_instance_method ? 1 : 0);
+
   if (call->is_virtual_call) {
     auto *target_method =
         static_cast<MethodDeclaration *>(call->resolved_declaration);
     emit_byte(static_cast<uint8_t>(OpCode::CALL_VIRTUAL));
     emit_int32(target_method->vtable_index);
     emit_int32(target_method->frame_size);
-    emit_int32(call->arguments.size() + (target_method->is_static ? 0 : 1));
+    emit_int32(total_args);
   } else if (is_native) {
     emit_byte(static_cast<uint8_t>(OpCode::CALL_NATIVE));
     emit_int32(memory_index);
@@ -1037,7 +1033,7 @@ void Assembler::visit(MethodCallExpression &node) {
     emit_int32(frame_size);
 
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-    emit_int32(call->arguments.size() + (is_static_method ? 0 : 1));
+    emit_int32(total_args);
 
     emit_byte(static_cast<uint8_t>(OpCode::CALL));
   }
