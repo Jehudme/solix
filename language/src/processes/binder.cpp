@@ -1,4 +1,3 @@
-
 #include "solix/processes/binder.hpp"
 #include "solix/compilation.hpp"
 #include "solix/utilities/diagnostic.hpp"
@@ -7,109 +6,151 @@
 #include "solix/processes/template_substitution.hpp"
 
 namespace solix {
-Node* Binder::instantiate_template(const std::string& template_name, const std::vector<TypeInfo>& type_args, Node* error_node) {
-    if (!template_registry.count(template_name)) {
-        record_error(error_node, "Unknown template: " + template_name);
-        return nullptr;
-    }
-    
-    Node* blueprint = template_registry[template_name];
-    
-    std::string mangled_name = template_name + "<";
-    for (size_t i = 0; i < type_args.size(); ++i) {
-        mangled_name += type_args[i].to_string();
-        if (i < type_args.size() - 1) mangled_name += ",";
-    }
-    mangled_name += ">";
-    
-    if (global_scope.symbols.count(mangled_name)) {
-        return global_scope.symbols[mangled_name];
-    }
-    
-    std::vector<std::string> tparams;
-    if (blueprint->node_type == NodeType::CLASS_DECL) tparams = static_cast<ClassDeclaration*>(blueprint)->template_parameters;
-    else if (blueprint->node_type == NodeType::ALIAS_STMT) tparams = static_cast<AliasStatement*>(blueprint)->template_parameters;
-    else if (blueprint->node_type == NodeType::METHOD_DECL) tparams = static_cast<MethodDeclaration*>(blueprint)->template_parameters;
-    
-    if (type_args.size() != tparams.size()) {
-        record_error(error_node, "Template " + template_name + " expects " + std::to_string(tparams.size()) + " arguments, got " + std::to_string(type_args.size()));
-        return nullptr;
-    }
-    
-    std::unordered_map<std::string, TypeInfo> substitutions;
-    for (size_t i = 0; i < tparams.size(); ++i) {
-        substitutions[tparams[i]] = type_args[i];
-    }
-    
-    auto clone_ptr = blueprint->clone();
-    Node* clone = clone_ptr.get();
-    
-    if (clone->node_type == NodeType::CLASS_DECL) {
-        static_cast<ClassDeclaration*>(clone)->template_parameters.clear();
-        static_cast<ClassDeclaration*>(clone)->class_name = mangled_name;
-    } else if (clone->node_type == NodeType::ALIAS_STMT) {
-        static_cast<AliasStatement*>(clone)->template_parameters.clear();
-        static_cast<AliasStatement*>(clone)->alias_name = mangled_name;
-    } else if (clone->node_type == NodeType::METHOD_DECL) {
-        static_cast<MethodDeclaration*>(clone)->template_parameters.clear();
-        static_cast<MethodDeclaration*>(clone)->method_name = mangled_name;
-    }
-    
-    TemplateSubstitutionVisitor substitutor(substitutions);
-    substitutor.execute(clone);
-    
-    // Inject the newly minted concrete node into context.nodes and global_scope!
-    context.nodes[std::string("__instantiated_templates")].push_back(std::move(clone_ptr));
-    instantiated_templates.insert(mangled_name);
-    
-    // Run Pass 1 (REGISTER_GLOBALS)
-    // Run Pass 2 (REGISTER_MEMBERS)
-    // Run Pass 3 (BIND_EXECUTION)
-    
-    std::string current_pkg_copy = current_package;
-    std::string my_prefix = ""; 
-    auto last_dot = template_name.rfind('.');
-    if (last_dot != std::string::npos) my_prefix = template_name.substr(0, last_dot + 1);
 
-    if (clone->node_type == NodeType::CLASS_DECL) {
-        static_cast<ClassDeclaration*>(clone)->class_name = mangled_name.substr(my_prefix.length());
-        register_global_symbols(clone, my_prefix);
-        register_members(clone, my_prefix);
-        if (current_pass == BinderPass::BIND_EXECUTION) {
-            bind_tree(clone);
-        }
-    } else if (clone->node_type == NodeType::ALIAS_STMT) {
-        static_cast<AliasStatement*>(clone)->alias_name = mangled_name.substr(my_prefix.length());
-        register_global_symbols(clone, my_prefix);
-        if (current_pass == BinderPass::BIND_EXECUTION) {
-            bind_tree(clone);
-        }
-    } else if (clone->node_type == NodeType::METHOD_DECL) {
-        static_cast<MethodDeclaration*>(clone)->method_name = mangled_name.substr(my_prefix.length());
-        // For methods, register_members defines the symbol
-        register_members(clone, my_prefix);
-        if (current_pass == BinderPass::BIND_EXECUTION) {
-            bind_tree(clone);
-        }
+Node *Binder::instantiate_template(const std::string &template_name,
+                                   const std::vector<TypeInfo> &type_args,
+                                   Node *error_node) {
+  log_info("Attempting to instantiate template '{}' with {} type arguments",
+           template_name, type_args.size());
+
+  if (!template_registry.count(template_name)) {
+    log_error(
+        "Failed template instantiation: blueprint '{}' not found in registry",
+        template_name);
+    record_error(error_node, "Unknown template: " + template_name);
+    return nullptr;
+  }
+
+  Node *blueprint = template_registry[template_name];
+
+  std::string mangled_name = template_name + "<";
+  for (size_t i = 0; i < type_args.size(); ++i) {
+    mangled_name += type_args[i].to_string();
+    if (i < type_args.size() - 1)
+      mangled_name += ",";
+  }
+  mangled_name += ">";
+
+  if (global_scope.symbols.count(mangled_name)) {
+    log_debug(
+        "Template instantiation for '{}' retrieved from cache/global_scope",
+        mangled_name);
+    return global_scope.symbols[mangled_name];
+  }
+
+  std::vector<std::string> tparams;
+  if (blueprint->node_type == NodeType::CLASS_DECL)
+    tparams = static_cast<ClassDeclaration *>(blueprint)->template_parameters;
+  else if (blueprint->node_type == NodeType::ALIAS_STMT)
+    tparams = static_cast<AliasStatement *>(blueprint)->template_parameters;
+  else if (blueprint->node_type == NodeType::METHOD_DECL)
+    tparams = static_cast<MethodDeclaration *>(blueprint)->template_parameters;
+
+  if (type_args.size() != tparams.size()) {
+    log_error("Template '{}' arity mismatch: expected {}, got {}",
+              template_name, tparams.size(), type_args.size());
+    record_error(error_node, "Template " + template_name + " expects " +
+                                 std::to_string(tparams.size()) +
+                                 " arguments, got " +
+                                 std::to_string(type_args.size()));
+    return nullptr;
+  }
+
+  std::unordered_map<std::string, TypeInfo> substitutions;
+  for (size_t i = 0; i < tparams.size(); ++i) {
+    substitutions[tparams[i]] = type_args[i];
+    log_trace("Substitution mapping: {} -> {}", tparams[i],
+              type_args[i].to_string());
+  }
+
+  log_debug("Cloning AST blueprint for template '{}' -> '{}'", template_name,
+            mangled_name);
+  auto clone_ptr = blueprint->clone();
+  Node *clone = clone_ptr.get();
+
+  if (clone->node_type == NodeType::CLASS_DECL) {
+    static_cast<ClassDeclaration *>(clone)->template_parameters.clear();
+    static_cast<ClassDeclaration *>(clone)->class_name = mangled_name;
+  } else if (clone->node_type == NodeType::ALIAS_STMT) {
+    static_cast<AliasStatement *>(clone)->template_parameters.clear();
+    static_cast<AliasStatement *>(clone)->alias_name = mangled_name;
+  } else if (clone->node_type == NodeType::METHOD_DECL) {
+    static_cast<MethodDeclaration *>(clone)->template_parameters.clear();
+    static_cast<MethodDeclaration *>(clone)->method_name = mangled_name;
+  }
+
+  log_trace("Executing template substitution visitor on clone for '{}'",
+            mangled_name);
+  TemplateSubstitutionVisitor substitutor(substitutions);
+  substitutor.execute(clone);
+
+  context.nodes[std::string("__instantiated_templates")].push_back(
+      std::move(clone_ptr));
+  instantiated_templates.insert(mangled_name);
+
+  std::string current_pkg_copy = current_package;
+  std::string my_prefix = "";
+  auto last_dot = template_name.rfind('.');
+  if (last_dot != std::string::npos)
+    my_prefix = template_name.substr(0, last_dot + 1);
+
+  log_debug("Running mini-pipeline passes on newly instantiated template '{}'",
+            mangled_name);
+
+  if (clone->node_type == NodeType::CLASS_DECL) {
+    static_cast<ClassDeclaration *>(clone)->class_name =
+        mangled_name.substr(my_prefix.length());
+    register_global_symbols(clone, my_prefix);
+    register_members(clone, my_prefix);
+    if (current_pass == BinderPass::BIND_EXECUTION ||
+        current_pass == BinderPass::EVALUATE_EXPRESSION) {
+      BinderPass old = current_pass;
+      current_pass = BinderPass::BIND_EXECUTION;
+      bind_tree(clone);
+      current_pass = old;
     }
-    
-    return global_scope.resolve(mangled_name);
+  } else if (clone->node_type == NodeType::ALIAS_STMT) {
+    static_cast<AliasStatement *>(clone)->alias_name =
+        mangled_name.substr(my_prefix.length());
+    register_global_symbols(clone, my_prefix);
+    if (current_pass == BinderPass::BIND_EXECUTION ||
+        current_pass == BinderPass::EVALUATE_EXPRESSION) {
+      BinderPass old = current_pass;
+      current_pass = BinderPass::BIND_EXECUTION;
+      bind_tree(clone);
+      current_pass = old;
+    }
+  } else if (clone->node_type == NodeType::METHOD_DECL) {
+    static_cast<MethodDeclaration *>(clone)->method_name =
+        mangled_name.substr(my_prefix.length());
+    register_members(clone, my_prefix);
+    if (current_pass == BinderPass::BIND_EXECUTION ||
+        current_pass == BinderPass::EVALUATE_EXPRESSION) {
+      BinderPass old = current_pass;
+      current_pass = BinderPass::BIND_EXECUTION;
+      bind_tree(clone);
+      current_pass = old;
+    }
+  }
+
+  log_info("Successfully instantiated template: {}", mangled_name);
+  return global_scope.resolve(mangled_name);
 }
-} // namespace solix
-
-
-namespace solix {
 
 // ─── Error Reporting ────────────────────────────────────────────────────────
 
 void Binder::record_error(Node *node, const std::string &msg) {
+  uint32_t line = node ? node->line : 0;
+  uint32_t col = node ? node->column : 0;
+  log_error("[line {}, col {}] {}", line, col, msg);
+
   Report report;
   report.severity = ReportSeverity::ERROR;
   report.code = "E_BIND";
   report.message = msg;
   report.source_path = "";
-  report.line = node ? node->line : 0;
-  report.column = node ? node->column : 0;
+  report.line = line;
+  report.column = col;
   if (node && node->source) {
     if (std::holds_alternative<std::filesystem::path>(*node->source)) {
       report.source_path =
@@ -124,6 +165,8 @@ void Binder::record_error(Node *node, const std::string &msg) {
 // ─── Builtin Primitives Setup ────────────────────────────────────────────────
 
 void Binder::setup_builtins() {
+  log_trace(
+      "Registering language builtin primitive types into global scope...");
   auto make_builtin = [&](const std::string &name) {
     auto *decl = new ClassDeclaration(Token{}, name);
     decl->is_primitive = true;
@@ -189,17 +232,20 @@ std::string Binder::mangle_constructor(const std::string &class_name,
 // ─── Scope Management ────────────────────────────────────────────────────────
 
 void Binder::enter_scope(SymbolTable *new_scope) {
+  log_trace("Entering new local scope");
   new_scope->parent = current_scope;
   current_scope = new_scope;
 }
 
 void Binder::exit_scope() {
+  log_trace("Exiting current local scope");
   if (current_scope->parent) {
     current_scope = current_scope->parent;
   }
 }
 
 void Binder::declare_local(const std::string &name, Node *node) {
+  log_trace("Declaring local variable '{}' in current scope", name);
   if (current_scope->symbols.count(name)) {
     record_error(node,
                  "Variable '" + name + "' is already defined in this scope.");
@@ -212,31 +258,43 @@ void Binder::declare_local(const std::string &name, Node *node) {
 void Binder::register_global_symbols(Node *node, const std::string &prefix) {
   if (!node)
     return;
+  BinderPass old_pass = current_pass;
+  std::string old_prefix = current_prefix;
   current_pass = BinderPass::REGISTER_GLOBALS;
   current_prefix = prefix;
   node->accept(*this);
+  current_pass = old_pass;
+  current_prefix = old_prefix;
 }
 
 void Binder::register_members(Node *node, const std::string &prefix) {
   if (!node)
     return;
+  BinderPass old_pass = current_pass;
+  std::string old_prefix = current_prefix;
   current_pass = BinderPass::REGISTER_MEMBERS;
   current_prefix = prefix;
   node->accept(*this);
+  current_pass = old_pass;
+  current_prefix = old_prefix;
 }
 
 void Binder::bind_node(Node *node) {
   if (!node)
     return;
+  BinderPass old_pass = current_pass;
   current_pass = BinderPass::BIND_EXECUTION;
   node->accept(*this);
+  current_pass = old_pass;
 }
 
 TypeInfo Binder::evaluate_expression(Node *expr) {
   if (!expr)
     return {"void", 0};
+  BinderPass old_pass = current_pass;
   current_pass = BinderPass::EVALUATE_EXPRESSION;
   expr->accept(*this);
+  current_pass = old_pass;
   return evaluated_type;
 }
 
@@ -245,6 +303,9 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
 TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
   if (raw_type.name.empty())
     return raw_type;
+
+  log_trace("Resolving type '{}' (depth: {}, type_args: {})", raw_type.name,
+            raw_type.array_depth, raw_type.type_args.size());
 
   Node *resolved = global_scope.resolve(raw_type.name);
   if (!resolved && !current_package.empty()) {
@@ -258,26 +319,27 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
   TypeInfo result = raw_type;
 
   if (!resolved && !result.type_args.empty()) {
-      // It might be an uninstantiated template!
-      std::string template_name = result.name;
-      if (template_registry.count(template_name)) {
-          // It's a root template name
-      } else if (!current_package.empty() && template_registry.count(current_package + template_name)) {
-          template_name = current_package + template_name;
-      }
-      
-      // Resolve the type arguments
-      std::vector<TypeInfo> resolved_args;
-      for (const auto& arg : result.type_args) {
-          resolved_args.push_back(resolve_type(arg, error_node));
-      }
-      result.type_args = resolved_args;
-      
-      resolved = instantiate_template(template_name, resolved_args, error_node);
-      if (resolved) {
-          result.name = resolved->mangled_name;
-          result.type_args.clear(); // Important! The name itself contains the generic info now.
-      }
+    std::string template_name = result.name;
+    if (template_registry.count(template_name)) {
+    } else if (!current_package.empty() &&
+               template_registry.count(current_package + template_name)) {
+      template_name = current_package + template_name;
+    }
+
+    log_debug("Resolving type arguments for potential template '{}'",
+              template_name);
+    std::vector<TypeInfo> resolved_args;
+    for (const auto &arg : result.type_args) {
+      resolved_args.push_back(resolve_type(arg, error_node));
+    }
+    result.type_args = resolved_args;
+
+    resolved = instantiate_template(template_name, resolved_args, error_node);
+    if (resolved) {
+      result.name = resolved->mangled_name;
+      result.type_args.clear();
+      log_debug("Resolved instantiated template type to '{}'", result.name);
+    }
   }
 
   if (!resolved) {
@@ -285,13 +347,15 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
   }
   if (resolved && resolved->node_type == NodeType::ALIAS_STMT) {
     auto *alias = static_cast<AliasStatement *>(resolved);
+    log_trace("Resolving alias '{}' -> '{}'", alias->alias_name,
+              alias->target_type.to_string());
     result.name = alias->target_type.name;
     result.array_depth += alias->target_type.array_depth;
     result.type_args = alias->target_type.type_args;
-    return resolve_type(result, error_node); // Recursively resolve aliases
+    return resolve_type(result, error_node);
   } else if (resolved && (resolved->node_type == NodeType::CLASS_DECL ||
                           resolved->node_type == NodeType::ENUM_DECL)) {
-    result.name = resolved->mangled_name; // Use fully qualified name
+    result.name = resolved->mangled_name;
   }
 
   return result;
@@ -300,6 +364,7 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
 // ─── Pass 2: Type & Memory Binding ──────────────────────────────────────────
 
 void Binder::bind_types_and_memory() {
+  log_info("Starting Pass 2: Type and Memory Binding...");
   static_variable_index = 1;
 
   for (const auto &[name, node] : global_scope.symbols) {
@@ -317,6 +382,8 @@ void Binder::bind_types_and_memory() {
 
       if (field->is_static || !field->parent) {
         field->memory_index = static_variable_index++;
+        log_debug("Bound static field '{}' to static index {}", name,
+                  field->memory_index);
       }
       current_class = nullptr;
     }
@@ -330,6 +397,8 @@ void Binder::bind_types_and_memory() {
               ? static_cast<ClassDeclaration *>(method->parent)
               : nullptr;
       method->return_type = resolve_type(method->return_type, method);
+      log_trace("Resolved return type for method '{}' -> '{}'", name,
+                method->return_type.to_string());
       current_class = nullptr;
     }
   }
@@ -342,6 +411,7 @@ void Binder::bind_types_and_memory() {
         if (vtable_calculated.count(cls->mangled_name))
           return;
 
+        log_trace("Calculating vtable for class '{}'", cls->mangled_name);
         std::vector<MethodDeclaration *> vtable;
         if (!cls->base_class_name.empty()) {
           Node *base_node = global_scope.resolve(cls->base_class_name);
@@ -367,6 +437,8 @@ void Binder::bind_types_and_memory() {
                   method->vtable_index = i;
                   method->is_virtual = true;
                   found = true;
+                  log_trace("VTable override: {} at index {}",
+                            method->mangled_name, i);
                   break;
                 }
               }
@@ -378,6 +450,8 @@ void Binder::bind_types_and_memory() {
               method->is_virtual = true;
               method->vtable_index = vtable.size();
               vtable.push_back(method);
+              log_trace("VTable addition: {} assigned slot {}",
+                        method->mangled_name, method->vtable_index);
             }
           }
         }
@@ -411,6 +485,8 @@ void Binder::bind_types_and_memory() {
       auto *cls = static_cast<ClassDeclaration *>(node);
       if (!vtables[cls->mangled_name].empty()) {
         cls->vtable_id = next_vtable_id++;
+        log_debug("Assigned vtable_id {} to class '{}'", cls->vtable_id,
+                  cls->mangled_name);
       }
     }
   }
@@ -423,10 +499,13 @@ void Binder::bind_types_and_memory() {
         if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
           cls->base_vtable_id =
               static_cast<ClassDeclaration *>(base_node)->vtable_id;
+          log_trace("Class '{}' linked to base vtable_id {}", cls->mangled_name,
+                    cls->base_vtable_id);
         }
       }
     }
   }
+
   std::unordered_set<std::string> layout_calculated;
   std::function<int(ClassDeclaration *)> calculate_layout =
       [&](ClassDeclaration *cls) -> int {
@@ -447,11 +526,15 @@ void Binder::bind_types_and_memory() {
         auto *field = static_cast<FieldDeclaration *>(child.get());
         if (!field->is_static) {
           field->memory_index = offset++;
+          log_trace("Field '{}' in '{}' assigned instance offset {}",
+                    field->field_name, cls->mangled_name, field->memory_index);
         }
       }
     }
     cls->instance_size = offset;
     layout_calculated.insert(cls->mangled_name);
+    log_debug("Class '{}' instance layout computed: size = {} words",
+              cls->mangled_name, cls->instance_size);
     return offset;
   };
 
@@ -469,6 +552,7 @@ void Binder::execute() {
 
   setup_builtins();
 
+  log_info("Pass 1a: Registering package and top-level symbols...");
   for (const auto &[source, nodes] : context.nodes) {
     current_package = "";
     for (const auto &node : nodes) {
@@ -477,12 +561,14 @@ void Binder::execute() {
         current_package = pkg->package_name + ".";
         pkg->mangled_name = pkg->package_name;
         global_scope.define(pkg->mangled_name, pkg);
+        log_info("Configured active package: '{}'", pkg->package_name);
       } else {
         register_global_symbols(node.get(), current_package);
       }
     }
   }
 
+  log_info("Pass 1b: Registering class members and signatures...");
   for (const auto &[source, nodes] : context.nodes) {
     current_package = "";
     for (const auto &node : nodes) {
@@ -495,13 +581,16 @@ void Binder::execute() {
     }
   }
 
-  log_debug("Registered {} global symbols.", global_scope.symbols.size());
+  log_debug("Pass 1 complete. Registered {} global symbols, {} templates in "
+            "registry.",
+            global_scope.symbols.size(), template_registry.size());
 
   bind_types_and_memory();
 
-  log_debug("Memory mapping complete. Static variables: {}",
+  log_debug("Memory mapping complete. Total static variables: {}",
             static_variable_index);
 
+  log_info("Pass 3: Binding statement execution logic and bodies...");
   for (const auto &[source, nodes] : context.nodes) {
     current_package = "";
     for (const auto &node : nodes) {
@@ -515,6 +604,7 @@ void Binder::execute() {
   }
 
   if (context.diagnostic->has_errors()) {
+    log_error("Semantic Analysis completed with errors.");
     std::string all_errors = "Semantic Analysis failed with errors:\n";
     for (const auto &r : context.diagnostic->get_reports()) {
       all_errors += r.message + "\n";
@@ -531,20 +621,47 @@ void Binder::bind_tree(Node *root) {
   if (!root)
     return;
 
-  ClassDeclaration *previous_class = current_class;
+  struct StateGuard {
+    Binder *b;
+    ClassDeclaration *pc;
+    MethodDeclaration *pm;
+    uint32_t pl;
+    StateGuard(Binder *b)
+        : b(b), pc(b->current_class), pm(b->current_method),
+          pl(b->local_variable_index) {}
+    ~StateGuard() {
+      b->current_class = pc;
+      b->current_method = pm;
+      b->local_variable_index = pl;
+    }
+  } guard(this);
 
   if (root->node_type == NodeType::CLASS_DECL) {
-    auto* cls = static_cast<ClassDeclaration *>(root);
-    if (!cls->template_parameters.empty()) return;
+    auto *cls = static_cast<ClassDeclaration *>(root);
+    if (!cls->template_parameters.empty()) {
+      log_trace(
+          "Skipping uninstantiated template class blueprint '{}' in bind_tree",
+          cls->class_name);
+      return;
+    }
+    log_debug("Binding AST tree for class '{}'", cls->class_name);
     current_class = cls;
   } else if (root->node_type == NodeType::METHOD_DECL) {
-    auto* mth = static_cast<MethodDeclaration *>(root);
-    if (!mth->template_parameters.empty()) return;
+    auto *mth = static_cast<MethodDeclaration *>(root);
+    if (!mth->template_parameters.empty()) {
+      log_trace(
+          "Skipping uninstantiated template method blueprint '{}' in bind_tree",
+          mth->method_name);
+      return;
+    }
     current_method = static_cast<MethodDeclaration *>(root);
     local_variable_index = 0;
 
     current_method->return_type =
         resolve_type(current_method->return_type, current_method);
+    log_debug("Binding method '{}' (return type: '{}')",
+              current_method->method_name,
+              current_method->return_type.to_string());
 
     SymbolTable method_scope;
     enter_scope(&method_scope);
@@ -567,6 +684,8 @@ void Binder::bind_tree(Node *root) {
 
       param_var->memory_index = local_variable_index++;
       declare_local(param_var->var_name, param_var);
+      log_trace("Bound parameter '{}' to frame slot {}", param_var->var_name,
+                param_var->memory_index);
     }
 
     for (const auto &child : current_method->children) {
@@ -574,13 +693,14 @@ void Binder::bind_tree(Node *root) {
     }
 
     current_method->frame_size = local_variable_index;
+    log_debug("Method '{}' frame size resolved to {} words",
+              current_method->method_name, current_method->frame_size);
     exit_scope();
-    current_method = nullptr;
-    current_class = previous_class;
     return;
   } else if (root->node_type == NodeType::CONSTRUCTOR_DECL) {
     auto *ctor = static_cast<ConstructorDeclaration *>(root);
     local_variable_index = 0;
+    log_debug("Binding constructor for class '{}'", ctor->class_name);
 
     SymbolTable constructor_scope;
     enter_scope(&constructor_scope);
@@ -603,6 +723,8 @@ void Binder::bind_tree(Node *root) {
 
       param_var->memory_index = local_variable_index++;
       declare_local(param_var->var_name, param_var);
+      log_trace("Bound ctor parameter '{}' to frame slot {}",
+                param_var->var_name, param_var->memory_index);
     }
 
     for (const auto &child : ctor->children) {
@@ -610,8 +732,9 @@ void Binder::bind_tree(Node *root) {
     }
 
     ctor->frame_size = local_variable_index;
+    log_debug("Constructor for '{}' frame size resolved to {} words",
+              ctor->class_name, ctor->frame_size);
     exit_scope();
-    current_class = previous_class;
     return;
   }
 
@@ -619,8 +742,6 @@ void Binder::bind_tree(Node *root) {
     if (child)
       bind_tree(child.get());
   }
-
-  current_class = previous_class;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -762,6 +883,8 @@ void Binder::visit(IdentifierNode &n) {
       return;
     }
     evaluated_type = n.expression_type;
+    log_trace("Evaluated identifier '{}' -> type '{}'", n.name,
+              evaluated_type.to_string());
   }
 }
 
@@ -776,6 +899,7 @@ void Binder::visit(LiteralNode &n) {
     else
       n.expression_type = {"void", 0};
     evaluated_type = n.expression_type;
+    log_trace("Evaluated literal -> type '{}'", evaluated_type.to_string());
   }
 }
 
@@ -809,6 +933,7 @@ void Binder::visit(BinaryExpression &n) {
       n.expression_type =
           static_cast<MethodDeclaration *>(method_decl)->return_type;
       evaluated_type = n.expression_type;
+      log_debug("Resolved overloaded binary operator: {}", mangled);
       return;
     }
 
@@ -824,6 +949,7 @@ void Binder::visit(BinaryExpression &n) {
       n.expression_type = left_type;
     }
     evaluated_type = n.expression_type;
+    log_trace("Evaluated binary operation -> '{}'", evaluated_type.to_string());
   }
 }
 
@@ -831,6 +957,7 @@ void Binder::visit(UnaryExpression &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
     n.expression_type = evaluate_expression(n.operand.get());
     evaluated_type = n.expression_type;
+    log_trace("Evaluated unary operation -> '{}'", evaluated_type.to_string());
   }
 }
 
@@ -851,6 +978,7 @@ void Binder::visit(AssignmentExpression &n) {
         n.expression_type =
             static_cast<MethodDeclaration *>(method_decl)->return_type;
         evaluated_type = n.expression_type;
+        log_debug("Resolved overloaded assignment operator: {}", mangled);
         return;
       }
     }
@@ -860,6 +988,8 @@ void Binder::visit(AssignmentExpression &n) {
     }
     n.expression_type = target_type;
     evaluated_type = n.expression_type;
+    log_trace("Evaluated assignment expression -> '{}'",
+              evaluated_type.to_string());
   }
 }
 
@@ -874,6 +1004,8 @@ void Binder::visit(ArrayAccessExpression &n) {
     n.expression_type = array_type;
     n.expression_type.array_depth--;
     evaluated_type = n.expression_type;
+    log_trace("Evaluated array access -> element type '{}'",
+              evaluated_type.to_string());
   }
 }
 
@@ -925,12 +1057,16 @@ void Binder::visit(MemberAccessExpression &n) {
         n.expression_type =
             static_cast<FieldDeclaration *>(member_decl)->type_info;
         evaluated_type = n.expression_type;
+        log_trace("Resolved field member access '{}.{}' -> '{}'",
+                  object_type.name, n.member_name, evaluated_type.to_string());
         return;
       }
       if (member_decl->node_type == NodeType::CLASS_DECL ||
           member_decl->node_type == NodeType::ENUM_DECL) {
         n.expression_type = {member_decl->mangled_name, 0};
         evaluated_type = n.expression_type;
+        log_trace("Resolved nested type access '{}.{}' -> '{}'",
+                  object_type.name, n.member_name, evaluated_type.to_string());
         return;
       }
     } else if (type_decl->node_type == NodeType::ENUM_DECL) {
@@ -948,6 +1084,8 @@ void Binder::visit(MemberAccessExpression &n) {
       n.enum_value = e_val;
       n.expression_type = object_type;
       evaluated_type = n.expression_type;
+      log_trace("Resolved enum member access '{}.{}' = {}", object_type.name,
+                n.member_name, e_val);
       return;
     }
     record_error(&n, "Invalid member access on type: " + object_type.name);
@@ -1056,66 +1194,79 @@ void Binder::visit(MethodCallExpression &n) {
         n.expression_type = {"void", 0};
       }
       evaluated_type = n.expression_type;
+      log_debug("Resolved member method call: '{}' (virtual: {})", mangled_name,
+                n.is_virtual_call);
       return;
     } else {
       auto *id = static_cast<IdentifierNode *>(n.callee.get());
       if (!current_class) {
-          // Allow global method calls
-          std::string base_name = id->name;
-          std::string mangled_name;
-          Node *method_decl = nullptr;
-          if (!n.type_args.empty()) {
-              std::vector<TypeInfo> resolved_targs;
-              for (auto& t : n.type_args) resolved_targs.push_back(resolve_type(t, &n));
-              instantiate_template(base_name, resolved_targs, &n);
-              base_name += "<";
-              for (size_t i = 0; i < resolved_targs.size(); ++i) {
-                  base_name += resolved_targs[i].to_string();
-                  if (i < resolved_targs.size() - 1) base_name += ",";
+        std::string base_name = id->name;
+        std::string mangled_name;
+        Node *method_decl = nullptr;
+        if (!n.type_args.empty()) {
+          std::vector<TypeInfo> resolved_targs;
+          for (auto &t : n.type_args)
+            resolved_targs.push_back(resolve_type(t, &n));
+          instantiate_template(base_name, resolved_targs, &n);
+          base_name += "<";
+          for (size_t i = 0; i < resolved_targs.size(); ++i) {
+            base_name += resolved_targs[i].to_string();
+            if (i < resolved_targs.size() - 1)
+              base_name += ",";
+          }
+          base_name += ">";
+        }
+        mangled_name = mangle_method_call(base_name, argument_types);
+        method_decl = global_scope.resolve(mangled_name);
+        if (!method_decl)
+          method_decl = global_scope.resolve(base_name);
+
+        if (!method_decl && n.type_args.empty() &&
+            template_registry.count(base_name)) {
+          Node *blueprint = template_registry[base_name];
+          if (blueprint->node_type == NodeType::METHOD_DECL) {
+            auto *method_bp = static_cast<MethodDeclaration *>(blueprint);
+            std::vector<TypeInfo> param_types;
+            for (const auto &p : method_bp->parameters)
+              param_types.push_back(
+                  static_cast<VariableDeclaration *>(p.get())->type_info);
+            std::vector<TypeInfo> deduced_args;
+            if (deduce_template_arguments(param_types, argument_types,
+                                          method_bp->template_parameters,
+                                          deduced_args)) {
+              std::string instantiated_base = base_name + "<";
+              for (size_t i = 0; i < deduced_args.size(); ++i) {
+                instantiated_base += deduced_args[i].to_string();
+                if (i < deduced_args.size() - 1)
+                  base_name += ",";
               }
-              base_name += ">";
-          }
-          mangled_name = mangle_method_call(base_name, argument_types);
-          method_decl = global_scope.resolve(mangled_name);
-          if (!method_decl) method_decl = global_scope.resolve(base_name);
-          
-          if (!method_decl && n.type_args.empty() && template_registry.count(base_name)) {
-              Node* blueprint = template_registry[base_name];
-              if (blueprint->node_type == NodeType::METHOD_DECL) {
-                  auto* method_bp = static_cast<MethodDeclaration*>(blueprint);
-                  std::vector<TypeInfo> param_types;
-                  for (const auto& p : method_bp->parameters) param_types.push_back(static_cast<VariableDeclaration*>(p.get())->type_info);
-                  std::vector<TypeInfo> deduced_args;
-                  if (deduce_template_arguments(param_types, argument_types, method_bp->template_parameters, deduced_args)) {
-                      std::string instantiated_base = base_name + "<";
-                      for (size_t i = 0; i < deduced_args.size(); ++i) {
-                          instantiated_base += deduced_args[i].to_string();
-                          if (i < deduced_args.size() - 1) instantiated_base += ",";
-                      }
-                      instantiated_base += ">";
-                      mangled_name = mangle_method_call(instantiated_base, argument_types);
-                      method_decl = global_scope.resolve(mangled_name);
-                      if (!method_decl) {
-                          instantiate_template(base_name, deduced_args, &n);
-                          method_decl = global_scope.resolve(mangled_name);
-                      }
-                  }
+              instantiated_base += ">";
+              mangled_name =
+                  mangle_method_call(instantiated_base, argument_types);
+              method_decl = global_scope.resolve(mangled_name);
+              if (!method_decl) {
+                instantiate_template(base_name, deduced_args, &n);
+                method_decl = global_scope.resolve(mangled_name);
               }
+            }
           }
-          
-          if (!method_decl) {
-            record_error(&n, "No matching global function: " + id->name);
-            evaluated_type = {"void", 0};
-            return;
-          }
-          n.resolved_declaration = method_decl;
-          if (method_decl->node_type == NodeType::METHOD_DECL) {
-            n.expression_type = static_cast<MethodDeclaration *>(method_decl)->return_type;
-          } else {
-            n.expression_type = {"void", 0};
-          }
-          evaluated_type = n.expression_type;
+        }
+
+        if (!method_decl) {
+          record_error(&n, "No matching global function: " + id->name);
+          evaluated_type = {"void", 0};
           return;
+        }
+        n.resolved_declaration = method_decl;
+        if (method_decl->node_type == NodeType::METHOD_DECL) {
+          n.expression_type =
+              static_cast<MethodDeclaration *>(method_decl)->return_type;
+        } else {
+          n.expression_type = {"void", 0};
+        }
+        evaluated_type = n.expression_type;
+        log_debug("Resolved global function call: '{}'", mangled_name);
+        return;
       }
       std::string base_name;
       std::string mangled_name;
@@ -1145,15 +1296,17 @@ void Binder::visit(MethodCallExpression &n) {
         while (!method_decl && current_resolve_class) {
           base_name = current_resolve_class->mangled_name + "." + id->name;
           if (!n.type_args.empty()) {
-              std::vector<TypeInfo> resolved_targs;
-              for (auto& t : n.type_args) resolved_targs.push_back(resolve_type(t, &n));
-              instantiate_template(base_name, resolved_targs, &n);
-              base_name += "<";
-              for (size_t i = 0; i < resolved_targs.size(); ++i) {
-                  base_name += resolved_targs[i].to_string();
-                  if (i < resolved_targs.size() - 1) base_name += ",";
-              }
-              base_name += ">";
+            std::vector<TypeInfo> resolved_targs;
+            for (auto &t : n.type_args)
+              resolved_targs.push_back(resolve_type(t, &n));
+            instantiate_template(base_name, resolved_targs, &n);
+            base_name += "<";
+            for (size_t i = 0; i < resolved_targs.size(); ++i) {
+              base_name += resolved_targs[i].to_string();
+              if (i < resolved_targs.size() - 1)
+                base_name += ",";
+            }
+            base_name += ">";
           }
           mangled_name = mangle_method_call(base_name, argument_types);
           method_decl = global_scope.resolve(mangled_name);
@@ -1193,6 +1346,8 @@ void Binder::visit(MethodCallExpression &n) {
         n.expression_type = {"void", 0};
       }
       evaluated_type = n.expression_type;
+      log_debug("Resolved local method call: '{}' (virtual: {})", mangled_name,
+                n.is_virtual_call);
       return;
     }
   }
@@ -1201,6 +1356,8 @@ void Binder::visit(MethodCallExpression &n) {
 void Binder::visit(NewInstanceExpression &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
     n.type_info = resolve_type(n.type_info, &n);
+    log_debug("Binding new instance instantiation for type '{}'",
+              n.type_info.to_string());
     Node *resolved_cls = global_scope.resolve(n.type_info.name);
     if (resolved_cls && resolved_cls->node_type == NodeType::CLASS_DECL) {
       auto *cls = static_cast<ClassDeclaration *>(resolved_cls);
@@ -1244,6 +1401,7 @@ void Binder::visit(NewInstanceExpression &n) {
       n.resolved_declaration = global_scope.resolve(n.type_info.name);
     n.expression_type = n.type_info;
     evaluated_type = n.expression_type;
+    log_trace("Resolved new instance constructor -> '{}'", mangled_ctor);
   }
 }
 
@@ -1256,6 +1414,7 @@ void Binder::visit(ArrayCreationExpression &n) {
     n.expression_type = n.type_info;
     n.expression_type.array_depth++;
     evaluated_type = n.expression_type;
+    log_trace("Evaluated array creation -> '{}'", evaluated_type.to_string());
   }
 }
 
@@ -1273,6 +1432,7 @@ void Binder::visit(ArrayLiteralExpression &n) {
     element_type.array_depth++;
     n.expression_type = element_type;
     evaluated_type = n.expression_type;
+    log_trace("Evaluated array literal -> '{}'", evaluated_type.to_string());
   }
 }
 
@@ -1307,6 +1467,8 @@ void Binder::visit(CastExpression &n) {
     }
     n.expression_type = n.target_type;
     evaluated_type = n.expression_type;
+    log_trace("Evaluated explicit cast: '{}' -> '{}'", source_type.to_string(),
+              n.target_type.to_string());
   }
 }
 
@@ -1321,6 +1483,8 @@ void Binder::visit(InstanceofExpression &n) {
     }
     n.expression_type = {"bool", 0};
     evaluated_type = n.expression_type;
+    log_trace("Evaluated instanceof expression: checking '{}' against '{}'",
+              source_type.to_string(), n.target_type.to_string());
   }
 }
 
@@ -1335,6 +1499,8 @@ void Binder::visit(TernaryExpression &n) {
       record_error(&n, "Ternary branches must have the same type");
     n.expression_type = true_type;
     evaluated_type = n.expression_type;
+    log_trace("Evaluated ternary expression -> result type '{}'",
+              evaluated_type.to_string());
   }
 }
 
@@ -1436,6 +1602,8 @@ void Binder::visit(VariableDeclaration &n) {
     }
     n.memory_index = local_variable_index++;
     declare_local(n.var_name, &n);
+    log_trace("Bound local variable '{}' of type '{}' to frame index {}",
+              n.var_name, n.type_info.to_string(), n.memory_index);
   }
 }
 
@@ -1487,11 +1655,13 @@ void Binder::visit(PackageStatement &n) {
 
 void Binder::visit(AliasStatement &n) {
   if (!n.template_parameters.empty()) {
-      if (current_pass == BinderPass::REGISTER_GLOBALS) {
-          std::string full_name = current_prefix + n.alias_name;
-          template_registry[full_name] = &n;
-      }
-      return;
+    if (current_pass == BinderPass::REGISTER_GLOBALS) {
+      std::string full_name = current_prefix + n.alias_name;
+      template_registry[full_name] = &n;
+      log_info("Registered alias template blueprint: '{}' (params: {})",
+               full_name, n.template_parameters.size());
+    }
+    return;
   }
   if (current_pass == BinderPass::REGISTER_GLOBALS) {
     std::string full_name = current_prefix + n.alias_name;
@@ -1499,6 +1669,7 @@ void Binder::visit(AliasStatement &n) {
       record_error(&n, "Duplicate global symbol: " + full_name);
     n.mangled_name = full_name;
     global_scope.define(full_name, &n);
+    log_debug("Registered global alias: '{}'", full_name);
   }
 }
 
@@ -1509,6 +1680,7 @@ void Binder::visit(EnumDeclaration &n) {
       record_error(&n, "Duplicate global symbol: " + full_name);
     n.mangled_name = full_name;
     global_scope.define(full_name, &n);
+    log_debug("Registered global enum: '{}'", full_name);
     std::string my_prefix = full_name + ".";
     for (const auto &child : n.children) {
       if (child)
@@ -1524,11 +1696,13 @@ void Binder::visit(EnumDeclaration &n) {
 
 void Binder::visit(ClassDeclaration &n) {
   if (!n.template_parameters.empty()) {
-      if (current_pass == BinderPass::REGISTER_GLOBALS) {
-          std::string full_name = current_prefix + n.class_name;
-          template_registry[full_name] = &n;
-      }
-      return;
+    if (current_pass == BinderPass::REGISTER_GLOBALS) {
+      std::string full_name = current_prefix + n.class_name;
+      template_registry[full_name] = &n;
+      log_info("Registered class template blueprint: '{}' (params: {})",
+               full_name, n.template_parameters.size());
+    }
+    return;
   }
   if (current_pass == BinderPass::REGISTER_GLOBALS) {
     std::string full_name = current_prefix + n.class_name;
@@ -1538,6 +1712,7 @@ void Binder::visit(ClassDeclaration &n) {
       record_error(&n, "Duplicate global symbol: " + full_name);
     n.mangled_name = full_name;
     global_scope.define(full_name, &n);
+    log_debug("Registered global class: '{}'", full_name);
     std::string my_prefix = full_name + ".";
     for (const auto &child : n.children) {
       if (child)
@@ -1558,6 +1733,7 @@ void Binder::visit(FieldDeclaration &n) {
     std::string full_name = current_prefix + n.field_name;
     n.mangled_name = full_name;
     global_scope.define(full_name, &n);
+    log_trace("Registered class field: '{}'", full_name);
   }
 }
 
@@ -1575,16 +1751,19 @@ void Binder::visit(ConstructorDeclaration &n) {
     full_name += ")";
     n.mangled_name = full_name;
     global_scope.define(full_name, &n);
+    log_debug("Registered class constructor: '{}'", full_name);
   }
 }
 
 void Binder::visit(MethodDeclaration &n) {
   if (!n.template_parameters.empty()) {
-      if (current_pass == BinderPass::REGISTER_MEMBERS) {
-          std::string full_name = current_prefix + n.method_name;
-          template_registry[full_name] = &n;
-      }
-      return;
+    if (current_pass == BinderPass::REGISTER_MEMBERS) {
+      std::string full_name = current_prefix + n.method_name;
+      template_registry[full_name] = &n;
+      log_info("Registered method template blueprint: '{}' (params: {})",
+               full_name, n.template_parameters.size());
+    }
+    return;
   }
   if (current_pass == BinderPass::REGISTER_MEMBERS) {
     for (const auto &param : n.parameters) {
@@ -1596,6 +1775,7 @@ void Binder::visit(MethodDeclaration &n) {
       record_error(&n, "Duplicate method signature: " + full_name);
     n.mangled_name = full_name;
     global_scope.define(full_name, &n);
+    log_debug("Registered method signature: '{}'", full_name);
   }
 }
 

@@ -26,6 +26,35 @@ bool Binder::deduce_template_arguments(const std::vector<TypeInfo>& param_types,
             return true;
         }
         
+        // Check if the argument is an instantiated generic (e.g. com.solix.Box<int32>)
+        if (!param.type_args.empty()) {
+            std::string expected_prefix = param.name + "<";
+            if (arg.name.find(expected_prefix) != std::string::npos || arg.name.find("." + expected_prefix) != std::string::npos) {
+                // We must extract the type args from the mangled name!
+                size_t start = arg.name.find("<") + 1;
+                size_t end = arg.name.rfind(">");
+                std::string generic_content = arg.name.substr(start, end - start);
+                
+                // Extremely simple split by comma for now
+                std::vector<std::string> extracted_args;
+                size_t pos = 0;
+                while ((pos = generic_content.find(",")) != std::string::npos) {
+                    extracted_args.push_back(generic_content.substr(0, pos));
+                    generic_content.erase(0, pos + 1);
+                }
+                extracted_args.push_back(generic_content);
+                
+                if (param.type_args.size() == extracted_args.size() && param.array_depth == arg.array_depth) {
+                    for (size_t i = 0; i < param.type_args.size(); ++i) {
+                        TypeInfo arg_inner;
+                        arg_inner.name = extracted_args[i];
+                        if (!deduce(param.type_args[i], arg_inner)) return false;
+                    }
+                    return true;
+                }
+            }
+        }
+        
         if (!param.type_args.empty() && param.name == arg.name && param.array_depth == arg.array_depth && param.type_args.size() == arg.type_args.size()) {
             for (size_t i = 0; i < param.type_args.size(); ++i) {
                 if (!deduce(param.type_args[i], arg.type_args[i])) return false;

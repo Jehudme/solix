@@ -228,5 +228,89 @@ public class Engine {
             i = i + 1;
         }
         Engine.print("ARC STRESS TEST PASSED!");
+        TemplateTestRunner.run();
+    }
+}
+
+// ============================================================================
+// Phase 18-21: Generics & Templates
+// ============================================================================
+
+// Class Template
+public class Box<T> {
+    public T value;
+    public Box(T v) { this.value = v; }
+    public T get_value() { return value; }
+    public void set_value(T v) { this.value = v; }
+}
+
+// Template returning template
+public class Pair<T1, T2> {
+    public T1 first;
+    public T2 second;
+    public Pair(T1 f, T2 s) {
+        this.first = f;
+        this.second = s;
+    }
+    
+    // Nested Box return
+    public Box<T1> get_first_box() {
+        return new Box<T1>(this.first);
+    }
+}
+
+// Template Aliases
+alias BoxAlias<U> = Box<U>;
+alias IntBox = Box<int32>;
+
+// Global Function Template
+public void swap_boxes<T>(Box<T> a, Box<T> b) {
+    T temp = a.get_value();
+    a.set_value(b.get_value());
+    b.set_value(temp);
+}
+
+// Explicit Template Specialization
+public void print_val<char[]>(char[] val) {
+    Engine.print("SPECIALIZED PRINT: ");
+    Engine.print(val);
+}
+
+// Generic Blueprint
+public void print_val<T>(T val) {
+    Engine.print("GENERIC PRINT!");
+}
+
+// Complex Implicit Deduction
+public void process_pair<T1, T2>(int32 id, T2 val2, T1 val1) {
+    Engine.print("Process pair called successfully!");
+}
+
+class TemplateTestRunner {
+    public static void run() {
+        Engine.print("--- TESTING TEMPLATES ---");
+        
+        // Concrete Alias & Class Template
+        IntBox i_box1 = new IntBox(10);
+        IntBox i_box2 = new IntBox(20);
+        
+        // Implicit Deduction
+        swap_boxes<IntBox>(i_box1, i_box2);
+        
+        if (i_box1.get_value() == 20) Engine.print("TEMPLATE SWAP SUCCESS!");
+        
+        // Template Alias & Multiple generics
+        Pair<int32, char[]> pair = new Pair<int32, char[]>(42, "hello generics");
+        BoxAlias<int32> fb = pair.get_first_box();
+        
+        if (fb.get_value() == 42) Engine.print("NESTED TEMPLATE RETURN SUCCESS!");
+        
+        // Explicit Specialization Test
+        print_val("THIS SHOULD BE SPECIALIZED");
+        
+        // Implicit Deduction complex
+        process_pair(100, "second", false);
+        
+        Engine.print("--- TEMPLATES OK ---");
     }
 }
