@@ -295,7 +295,7 @@ class TemplateTestRunner {
         IntBox i_box2 = new IntBox(20);
         
         // Implicit Deduction
-        swap_boxes<IntBox>(i_box1, i_box2);
+        swap_boxes(i_box1, i_box2);
         
         if (i_box1.get_value() == 20) Engine.print("TEMPLATE SWAP SUCCESS!");
         

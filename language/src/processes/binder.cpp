@@ -1199,10 +1199,86 @@ void Binder::visit(MethodCallExpression &n) {
       return;
     } else {
       auto *id = static_cast<IdentifierNode *>(n.callee.get());
-      if (!current_class) {
-        std::string base_name = id->name;
-        std::string mangled_name;
-        Node *method_decl = nullptr;
+
+      std::string base_name;
+      std::string mangled_name;
+      Node *method_decl = nullptr;
+      ClassDeclaration *current_resolve_class = current_class;
+
+      // 1. Try resolving against the class hierarchy first
+      if (current_resolve_class) {
+        if (id->name == "super") {
+          if (current_class->base_class_name.empty()) {
+            record_error(&n,
+                         "Cannot call super() in a class without a base class");
+            evaluated_type = {"void", 0};
+            return;
+          }
+          Node *base_node =
+              global_scope.resolve(current_class->base_class_name);
+          if (!base_node) {
+            record_error(&n, "Base class not found");
+            evaluated_type = {"void", 0};
+            return;
+          }
+          current_resolve_class = static_cast<ClassDeclaration *>(base_node);
+          base_name = current_resolve_class->mangled_name + ".ctor";
+          mangled_name = mangle_method_call(base_name, argument_types);
+          method_decl = global_scope.resolve(mangled_name);
+          if (!method_decl)
+            method_decl = global_scope.resolve(base_name);
+        } else {
+          while (!method_decl && current_resolve_class) {
+            base_name = current_resolve_class->mangled_name + "." + id->name;
+            if (!n.type_args.empty()) {
+              std::vector<TypeInfo> resolved_targs;
+              for (auto &t : n.type_args)
+                resolved_targs.push_back(resolve_type(t, &n));
+              instantiate_template(base_name, resolved_targs, &n);
+              base_name += "<";
+              for (size_t i = 0; i < resolved_targs.size(); ++i) {
+                base_name += resolved_targs[i].to_string();
+                if (i < resolved_targs.size() - 1)
+                  base_name += ",";
+              }
+              base_name += ">";
+            }
+            mangled_name = mangle_method_call(base_name, argument_types);
+            method_decl = global_scope.resolve(mangled_name);
+            if (!method_decl)
+              method_decl = global_scope.resolve(base_name);
+
+            if (!method_decl &&
+                !current_resolve_class->base_class_name.empty()) {
+              Node *base_node =
+                  global_scope.resolve(current_resolve_class->base_class_name);
+              if (base_node)
+                current_resolve_class =
+                    static_cast<ClassDeclaration *>(base_node);
+              else
+                break;
+            } else
+              break;
+          }
+        }
+      }
+
+      // 2. If not found in class hierarchy, fallback to global resolution
+      if (!method_decl && id->name != "super") {
+        current_resolve_class = nullptr; // Reset to indicate global lookup
+        base_name = id->name;
+
+        // Prepend the active package namespace to find templates and global
+        // functions properly
+        if (!template_registry.count(base_name) && !current_package.empty() &&
+            template_registry.count(current_package + base_name)) {
+          base_name = current_package + base_name;
+        } else if (!global_scope.symbols.count(base_name) &&
+                   !current_package.empty() &&
+                   global_scope.symbols.count(current_package + base_name)) {
+          base_name = current_package + base_name;
+        }
+
         if (!n.type_args.empty()) {
           std::vector<TypeInfo> resolved_targs;
           for (auto &t : n.type_args)
@@ -1221,15 +1297,18 @@ void Binder::visit(MethodCallExpression &n) {
         if (!method_decl)
           method_decl = global_scope.resolve(base_name);
 
+        // Implicit generic deduction
         if (!method_decl && n.type_args.empty() &&
             template_registry.count(base_name)) {
           Node *blueprint = template_registry[base_name];
           if (blueprint->node_type == NodeType::METHOD_DECL) {
             auto *method_bp = static_cast<MethodDeclaration *>(blueprint);
             std::vector<TypeInfo> param_types;
-            for (const auto &p : method_bp->parameters)
+            for (const auto &p : method_bp->parameters) {
               param_types.push_back(
                   static_cast<VariableDeclaration *>(p.get())->type_info);
+            }
+
             std::vector<TypeInfo> deduced_args;
             if (deduce_template_arguments(param_types, argument_types,
                                           method_bp->template_parameters,
@@ -1238,7 +1317,7 @@ void Binder::visit(MethodCallExpression &n) {
               for (size_t i = 0; i < deduced_args.size(); ++i) {
                 instantiated_base += deduced_args[i].to_string();
                 if (i < deduced_args.size() - 1)
-                  base_name += ",";
+                  instantiated_base += ",";
               }
               instantiated_base += ">";
               mangled_name =
@@ -1251,90 +1330,19 @@ void Binder::visit(MethodCallExpression &n) {
             }
           }
         }
-
-        if (!method_decl) {
-          record_error(&n, "No matching global function: " + id->name);
-          evaluated_type = {"void", 0};
-          return;
-        }
-        n.resolved_declaration = method_decl;
-        if (method_decl->node_type == NodeType::METHOD_DECL) {
-          n.expression_type =
-              static_cast<MethodDeclaration *>(method_decl)->return_type;
-        } else {
-          n.expression_type = {"void", 0};
-        }
-        evaluated_type = n.expression_type;
-        log_debug("Resolved global function call: '{}'", mangled_name);
-        return;
-      }
-      std::string base_name;
-      std::string mangled_name;
-      Node *method_decl = nullptr;
-      ClassDeclaration *current_resolve_class = current_class;
-
-      if (id->name == "super") {
-        if (current_class->base_class_name.empty()) {
-          record_error(&n,
-                       "Cannot call super() in a class without a base class");
-          evaluated_type = {"void", 0};
-          return;
-        }
-        Node *base_node = global_scope.resolve(current_class->base_class_name);
-        if (!base_node) {
-          record_error(&n, "Base class not found");
-          evaluated_type = {"void", 0};
-          return;
-        }
-        current_resolve_class = static_cast<ClassDeclaration *>(base_node);
-        base_name = current_resolve_class->mangled_name + ".ctor";
-        mangled_name = mangle_method_call(base_name, argument_types);
-        method_decl = global_scope.resolve(mangled_name);
-        if (!method_decl)
-          method_decl = global_scope.resolve(base_name);
-      } else {
-        while (!method_decl && current_resolve_class) {
-          base_name = current_resolve_class->mangled_name + "." + id->name;
-          if (!n.type_args.empty()) {
-            std::vector<TypeInfo> resolved_targs;
-            for (auto &t : n.type_args)
-              resolved_targs.push_back(resolve_type(t, &n));
-            instantiate_template(base_name, resolved_targs, &n);
-            base_name += "<";
-            for (size_t i = 0; i < resolved_targs.size(); ++i) {
-              base_name += resolved_targs[i].to_string();
-              if (i < resolved_targs.size() - 1)
-                base_name += ",";
-            }
-            base_name += ">";
-          }
-          mangled_name = mangle_method_call(base_name, argument_types);
-          method_decl = global_scope.resolve(mangled_name);
-          if (!method_decl)
-            method_decl = global_scope.resolve(base_name);
-
-          if (!method_decl && !current_resolve_class->base_class_name.empty()) {
-            Node *base_node =
-                global_scope.resolve(current_resolve_class->base_class_name);
-            if (base_node)
-              current_resolve_class =
-                  static_cast<ClassDeclaration *>(base_node);
-            else
-              break;
-          } else
-            break;
-        }
       }
 
       if (!method_decl) {
-        record_error(&n, "No matching method: " + id->name);
+        record_error(&n, "No matching method or global function: " + id->name);
         evaluated_type = {"void", 0};
         return;
       }
+
       if (!check_access(method_decl, current_resolve_class, &n)) {
         evaluated_type = {"void", 0};
         return;
       }
+
       n.resolved_declaration = method_decl;
       if (method_decl->node_type == NodeType::METHOD_DECL) {
         auto *m = static_cast<MethodDeclaration *>(method_decl);
@@ -1346,7 +1354,8 @@ void Binder::visit(MethodCallExpression &n) {
         n.expression_type = {"void", 0};
       }
       evaluated_type = n.expression_type;
-      log_debug("Resolved local method call: '{}' (virtual: {})", mangled_name,
+      log_debug("Resolved local/global method call: '{}' (virtual: {})",
+                mangled_name.empty() ? base_name : mangled_name,
                 n.is_virtual_call);
       return;
     }
