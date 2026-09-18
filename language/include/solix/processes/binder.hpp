@@ -126,6 +126,10 @@ public:
     // Mangling
     std::string mangle_method(MethodDeclaration* method);
     std::string mangle_method_call(const std::string& base_name, const std::vector<TypeInfo>& arg_types);
+    bool deduce_template_arguments(const std::vector<TypeInfo>& param_types,
+                                   const std::vector<TypeInfo>& arg_types,
+                                   const std::vector<std::string>& tparams,
+                                   std::vector<TypeInfo>& deduced_args);
     std::string mangle_constructor(const std::string& class_name, const std::vector<TypeInfo>& arg_types);
     
     // Evaluators

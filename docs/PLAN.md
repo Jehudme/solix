@@ -583,3 +583,31 @@ Phase 18 and 19 implemented Class Templates. Phase 20 completes the Generics sys
 - Add Catch2 tests for `alias IntegerList = List<uint32>` vs `alias List<T> = Vector<T>`.
 - Add Catch2 tests for generic method calls `foo<int32>(5)`.
 
+
+---
+
+## Phase 21 — Templates: Implicit Deduction & Explicit Specialization
+
+**Branch:** `phase-21-templates-deduction`
+**Criticality:** 🟢 Polish
+**Difficulty:** ⭐⭐⭐⭐ Hard
+
+### Context
+To make the Generics system ergonomic and complete, Solix needs the ability to implicitly deduce template arguments from function calls (like modern C++) and allow explicit template specializations using angle brackets in method declarations.
+
+### 21.1 — Explicit Template Specialization
+- Update `parse_field_or_method()` in the Parser to support parsing concrete types inside `< >` after the method identifier (e.g., `print<char[]>(char[] target)`).
+- Differentiate between a generic blueprint (e.g., `<T>`) and a specialization (e.g., `<char[]>`).
+- Bake the concrete types into the method's `mangled_name` at compile time so the Binder handles it as a standard function overload, effortlessly shadowing the auto-generated generic pipeline.
+
+### 21.2 — Implicit Template Parameter Deduction
+- Introduce a sophisticated `deduce_template_arguments` recursive algorithm inside the Binder.
+- Update `Binder::visit(MethodCallExpression)` to intercept unresolved method calls.
+- Zip the provided call-site argument types against the target generic blueprint parameters.
+- Resolve nested generic depths (e.g., extracting `int32` when matching `int32[]` against `T[]`, or matching `Box<int32>` against `Box<T>`).
+- Seamlessly trigger `instantiate_template` in the background with the deduced types.
+
+### 21.3 — Testing
+- Add Catch2 tests for Implicit Deduction (e.g., `swap_boxes(i_box1, i_box2)` without `<int32>`).
+- Add Catch2 tests for Explicit Specialization (e.g., `print<char[]>(...)`).
+

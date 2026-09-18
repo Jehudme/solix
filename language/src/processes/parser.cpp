@@ -861,11 +861,31 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(TokenType modifier, boo
     }
     
     std::vector<std::string> tparams;
+    bool is_specialization = false;
+    std::vector<TypeInfo> spec_args;
+
     if (match(TokenType::OPERATOR_LESS_THAN)) {
         do {
-            tparams.push_back(std::get<std::string>(consume(TokenType::IDENTIFIER, "Expected template parameter name").value));
+            TypeInfo t = parse_type_info();
+            spec_args.push_back(t);
+            if (t.name == "void" || t.name == "bool" || t.name.find("int") != std::string::npos || 
+                t.name.find("float") != std::string::npos || t.name == "char" || 
+                t.array_depth > 0 || !t.type_args.empty()) {
+                is_specialization = true;
+            }
+            tparams.push_back(t.name);
         } while (match(TokenType::PUNCTUATION_COMMA));
         consume(TokenType::OPERATOR_GREATER_THAN, "Expected '>' after template parameters");
+    }
+
+    if (is_specialization) {
+        name_str += "<";
+        for (size_t i = 0; i < spec_args.size(); ++i) {
+            name_str += spec_args[i].to_string();
+            if (i < spec_args.size() - 1) name_str += ",";
+        }
+        name_str += ">";
+        tparams.clear(); // Clear it so Binder treats it as a normal concrete method!
     }
 
     if (match(TokenType::PUNCTUATION_OPEN_PAREN)) {
