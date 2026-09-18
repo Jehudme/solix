@@ -449,7 +449,7 @@ op_SET_LOCAL:
     uint32_t index = read_u32(bytecode, program_counter);
     uint32_t fp = call_stack.back().frame_pointer;
     if (fp + index >= memory.stack.size())
-      throw std::runtime_error("Frame out of bounds on SET_LOCAL");
+      throw std::runtime_error("Frame out of bounds on SET_LOCAL fp=" + std::to_string(fp) + " index=" + std::to_string(index) + " size=" + std::to_string(memory.stack.size()));
     stack[fp + index] = pop();
     DISPATCH();
   }
