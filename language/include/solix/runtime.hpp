@@ -88,6 +88,9 @@ struct Memory {
 
 void run(RuntimeOptions &options);
 
+void register_standard_natives(RuntimeOptions& opts, const std::string& pkg_prefix = "");
+std::string extract_package_prefix(const std::string& source);
+
 // -----------------------------------------------------------------------------
 // Execution Engine
 // -----------------------------------------------------------------------------

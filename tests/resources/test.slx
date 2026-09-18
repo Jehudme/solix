@@ -1,3 +1,6 @@
+// Phase 14: CLI Option passing and Native Stdlib initialization
+class Phase14Test { public void test() {} }
+
 // ============================================================================
 // Solix Language - Comprehensive Parser Edge-Case & Rules Test
 // ============================================================================
