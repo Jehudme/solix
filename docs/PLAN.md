@@ -476,3 +476,85 @@ Current coverage: ~383 lines, 5 files, all happy-path. Zero tests for error cond
 ---
 
 *Generated: 2026-09-17. Synthesized from two independent reviews: 72/100 and 92/100.*
+
+---
+
+## Phase 17 — Templates: AST Upgrades & Deep Cloning
+
+**Branch:** `phase-17-templates-ast`
+**Criticality:** 🟡 Medium
+**Difficulty:** ⭐⭐ Medium
+
+### Context
+To support Generics (Templates) like `List<T>`, Solix will use **Monomorphization** (C++/Rust style). This means the VM and Assembler remain completely unchanged; the `Binder` will copy the AST and replace the generic types with concrete types before compilation.
+
+### 17.1 — `TypeInfo` Support for Nested Templates
+- Update `TypeInfo` in `ast.hpp` to include `std::vector<TypeInfo> type_args;`.
+- This ensures we can represent deep nested types like `Pair<char[], int32>` or `List<Map<String, float64>>`.
+
+### 17.2 — Declaration Template Parameters
+- Add `std::vector<std::string> template_parameters;` to `ClassDeclaration`, `MethodDeclaration`, and `AliasDeclaration`.
+
+### 17.3 — AST Deep Cloning Mechanism
+- Implement a virtual `Node* clone()` method on the `Node` base class and override it in every AST node subclass.
+- This allows the Binder to create fresh, un-bound copies of a generic class or method AST so it can securely replace `T` with concrete types.
+
+---
+
+## Phase 18 — Templates: Lexer & Parser Updates
+
+**Branch:** `phase-18-templates-parser`
+**Criticality:** 🟡 Medium
+**Difficulty:** ⭐⭐⭐ Hard
+
+### Context
+Parsing `<` and `>` as template brackets without confusing them with Less-Than and Greater-Than operators is a classic compiler challenge.
+
+### 18.1 — Declaration Syntax Parsing
+- Update `parse_class_declaration`, `parse_method_declaration`, and `parse_alias_declaration` to look for `<` after the identifier.
+- Parse a comma-separated list of identifiers: `class Dictionary<K, V>`.
+
+### 18.2 — Type Syntax Parsing
+- Update `parse_type()` to check if the type name is followed by `<`.
+- Recursively call `parse_type()` to build the `type_args` list inside `TypeInfo`.
+- **The Bracket Problem:** Carefully handle `>>` tokens so that `List<List<int32>>` parses correctly and doesn't crash if the Lexer combines `>>` into a Right-Shift operator.
+
+---
+
+## Phase 19 — Templates: Binder Monomorphization
+
+**Branch:** `phase-19-templates-binder`
+**Criticality:** 🔴 High
+**Difficulty:** ⭐⭐⭐⭐⭐ Very Hard
+
+### Context
+This is the core engine for Generics. The Binder will act as an on-demand factory for classes.
+
+### 19.1 — Deferred Binding
+- When the Binder visits a `ClassDeclaration` or `MethodDeclaration` that has `template_parameters`, it **skips** binding it. 
+- It stores the raw, un-bound AST into a new `template_registry`.
+
+### 19.2 — On-Demand Instantiation
+- When the Binder resolves a type (e.g., encountering `Pair<char[], int32>`), it checks if that specific concrete class already exists.
+- If it does not exist, the Binder fetches the raw AST for `Pair<K, V>` from the `template_registry`.
+- It calls `clone()` to get a fresh AST.
+- It walks the cloned AST, replacing every `TypeInfo` where name == `K` with `char[]`, and name == `V` with `int32`.
+- It mangles the new class name to something like `Pair<char[],int32>`.
+- Finally, it recursively visits and binds this newly generated class, injecting it seamlessly into the compilation pipeline.
+
+### Test Additions
+- Unit test: Nested generics like `List<Pair<int32, char[]>>`.
+- Integration test in `test.slx`: Create a generic `Box<T>` class, instantiate `Box<int32>` and `Box<float64>`, and verify the methods execute properly.
+
+---
+
+## Updated Summary Checklist
+
+```
+[x] Phase 14 — Refactor CLI Options and Native Registration
+[x] Phase 15 — Full Symbol Mangling for Native Functions
+[x] Phase 16 — Automated Native Call Interface
+[ ] Phase 17 — Templates: AST Upgrades & Deep Cloning
+[ ] Phase 18 — Templates: Lexer & Parser Updates
+[ ] Phase 19 — Templates: Binder Monomorphization
+```
