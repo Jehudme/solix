@@ -9,22 +9,20 @@ namespace solix::cli {
 
 // Temporary helper to register required native functions with full symbols
 static void register_temp_natives(RuntimeOptions& opts) {
-    opts.native_functions["com.solix.advanced.test.Engine.print(char[])"] = [](solix::RuntimeContext& ctx, uint64_t, uint64_t*, size_t) {
-        uint64_t val = ctx.pop();
-        solix::Address addr = static_cast<solix::Address>(val);
+    opts.native_functions["com.solix.advanced.test.Engine.print(char[])"] = [](solix::RuntimeContext& ctx, uint64_t self_address, uint64_t* args, size_t count) -> uint64_t {
+        solix::Address addr = static_cast<solix::Address>(args[0]);
         uint32_t len = static_cast<uint32_t>(ctx.memory.heap[addr]);
         std::string str = "";
         for (uint32_t i = 0; i < len; ++i) {
             str += static_cast<char>(ctx.memory.heap[addr + 1 + i]);
         }
         std::cout << str << std::endl;
-        ctx.push(0);
+        return 0; // Automatically pushed by VM
     };
 
-    opts.native_functions["com.solix.advanced.test.Engine.print(int32)"] = [](solix::RuntimeContext& ctx, uint64_t, uint64_t*, size_t) {
-        uint64_t val = ctx.pop();
-        std::cout << static_cast<int32_t>(val) << std::endl;
-        ctx.push(0);
+    opts.native_functions["com.solix.advanced.test.Engine.print(int32)"] = [](solix::RuntimeContext& ctx, uint64_t self_address, uint64_t* args, size_t count) -> uint64_t {
+        std::cout << static_cast<int32_t>(args[0]) << std::endl;
+        return 0; // Automatically pushed by VM
     };
 }
 

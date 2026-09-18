@@ -18,7 +18,7 @@ using Heap = std::vector<uint64_t>; // Option B: Everything, including chars,
 using Address = uint32_t;
 
 struct RuntimeContext;
-using NativeFunction = std::function<void(
+using NativeFunction = std::function<uint64_t(
     RuntimeContext &, uint64_t self_address, uint64_t *args, size_t arg_count)>;
 
 struct RuntimeOptions {

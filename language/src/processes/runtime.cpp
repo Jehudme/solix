@@ -614,11 +614,26 @@ op_CALL:
 op_CALL_NATIVE:
   {
     uint32_t id = read_u32(bytecode, program_counter);
-    if (native_registry.count(id)) {
-      native_registry[id](*this, 0, nullptr, 0);
-    } else {
-      throw std::runtime_error("Call to unknown native function: " +
-                               std::to_string(id));
+    uint32_t arg_count = read_u32(bytecode, program_counter);
+    bool is_static = bytecode[program_counter++] != 0;
+
+    {
+        std::vector<uint64_t> args(arg_count);
+        for (int i = static_cast<int>(arg_count) - 1; i >= 0; --i) {
+            args[i] = pop();
+        }
+
+        uint64_t self_address = 0;
+        if (!is_static) {
+            self_address = pop();
+        }
+
+        if (native_registry.count(id)) {
+            uint64_t result = native_registry[id](*this, self_address, args.data(), arg_count);
+            push(result);
+        } else {
+            throw std::runtime_error("Call to unknown native function: " + std::to_string(id));
+        }
     }
     DISPATCH();
   }

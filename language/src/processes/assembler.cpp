@@ -963,6 +963,8 @@ void Assembler::compile_expression(Node* expr) {
             if (is_native) {
                 emit_byte(static_cast<uint8_t>(OpCode::CALL_NATIVE));
                 emit_int32(memory_index);
+                emit_int32(call->arguments.size());
+                emit_byte(is_static_method ? 1 : 0);
             } else {
                 emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
                 linker_patches.push_back({bytecode().size(), call->resolved_declaration});
