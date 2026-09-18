@@ -421,6 +421,15 @@ std::unique_ptr<Node> ParserState::parse_statement() {
                 break;
             }
         }
+        if (temp < tokens.size() && tokens[temp]->type == TokenType::OPERATOR_LESS_THAN) {
+            int bracket_count = 1;
+            temp++;
+            while (temp < tokens.size() && bracket_count > 0) {
+                if (tokens[temp]->type == TokenType::OPERATOR_LESS_THAN) bracket_count++;
+                else if (tokens[temp]->type == TokenType::OPERATOR_GREATER_THAN) bracket_count--;
+                temp++;
+            }
+        }
         while (temp < tokens.size() && (tokens[temp]->type == TokenType::PUNCTUATION_ARRAY_BRACKETS || 
               (tokens[temp]->type == TokenType::PUNCTUATION_OPEN_BRACKET && temp+1 < tokens.size() && tokens[temp+1]->type == TokenType::PUNCTUATION_CLOSE_BRACKET))) {
             if (tokens[temp]->type == TokenType::PUNCTUATION_OPEN_BRACKET) temp += 2;
@@ -822,9 +831,18 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(TokenType modifier, boo
         name_str = std::get<std::string>(name.value);
     }
     
+    std::vector<std::string> tparams;
+    if (match(TokenType::OPERATOR_LESS_THAN)) {
+        do {
+            tparams.push_back(std::get<std::string>(consume(TokenType::IDENTIFIER, "Expected template parameter name").value));
+        } while (match(TokenType::PUNCTUATION_COMMA));
+        consume(TokenType::OPERATOR_GREATER_THAN, "Expected '>' after template parameters");
+    }
+
     if (match(TokenType::PUNCTUATION_OPEN_PAREN)) {
         // It's a method
         auto method = std::make_unique<MethodDeclaration>(name, name_str, std::move(type));
+        method->template_parameters = tparams;
         method->access_modifier = modifier;
         method->is_static = is_static;
         method->is_inline = is_inline;

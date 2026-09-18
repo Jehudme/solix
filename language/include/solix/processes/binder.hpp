@@ -1,3 +1,4 @@
+#include <unordered_set>
 #pragma once
 #include "solix/processes/process.hpp"
 #include "solix/statements.hpp"
@@ -73,6 +74,8 @@ public:
 
 private:
     SymbolTable global_scope;
+  std::unordered_map<std::string, Node*> template_registry;
+  std::unordered_set<std::string> instantiated_templates;
     SymbolTable* current_scope = &global_scope;
     
     // Builtin primitives
@@ -126,6 +129,7 @@ private:
     
     // Evaluators
     TypeInfo resolve_type(const TypeInfo& raw_type, Node* error_node);
+    Node* instantiate_template(const std::string& template_name, const std::vector<TypeInfo>& type_args, Node* error_node);
     bool is_assignable(const TypeInfo& target, const TypeInfo& source);
     TypeInfo evaluate_expression(Node* expr);
     

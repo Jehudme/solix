@@ -16,3 +16,4 @@ target_link_libraries(solix_tests PRIVATE Catch2::Catch2WithMain solix_language 
 
 include(Catch)
 catch_discover_tests(solix_tests)
+target_sources(solix_tests PRIVATE src/test_templates.cpp)

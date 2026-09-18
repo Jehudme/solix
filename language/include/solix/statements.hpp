@@ -183,6 +183,7 @@ struct MethodCallExpression : public Node {
     std::unique_ptr<Node> callee;
     std::vector<std::unique_ptr<Node>> arguments;
     bool is_virtual_call = false;
+    std::vector<TypeInfo> type_args;
     MethodCallExpression(const Token& t, std::unique_ptr<Node> cal)
         : Node(NodeType::METHOD_CALL, t), callee(std::move(cal)) {
             if(callee) callee->parent = this;
@@ -197,6 +198,7 @@ struct NewInstanceExpression : public Node {
     TypeInfo type_info;
     std::vector<std::unique_ptr<Node>> arguments;
     bool is_virtual_call = false;
+    std::vector<TypeInfo> type_args;
     NewInstanceExpression(const Token& t, TypeInfo type)
         : Node(NodeType::NEW_INSTANCE, t), type_info(std::move(type)) {}
 };
