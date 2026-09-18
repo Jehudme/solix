@@ -129,6 +129,13 @@ TypeInfo ParserState::parse_type_info() {
             type.name += ".";
             type.name += std::get<std::string>(consume(TokenType::IDENTIFIER, "Expected identifier after '.' in type").value);
         }
+        
+        if (match(TokenType::OPERATOR_LESS_THAN)) {
+            do {
+                type.type_args.push_back(parse_type_info());
+            } while (match(TokenType::PUNCTUATION_COMMA));
+            consume(TokenType::OPERATOR_GREATER_THAN, "Expected '>' after template arguments");
+        }
     } else {
         throw ParseError("Expected a type name at line " + std::to_string(peek().line));
     }
@@ -639,10 +646,22 @@ std::unique_ptr<Node> ParserState::parse_package_statement() {
 std::unique_ptr<Node> ParserState::parse_alias_statement() {
     Token alias = previous();
     Token name = consume(TokenType::IDENTIFIER, "Expected alias name");
+    
+    std::vector<std::string> tparams;
+    if (match(TokenType::OPERATOR_LESS_THAN)) {
+        do {
+            tparams.push_back(std::get<std::string>(consume(TokenType::IDENTIFIER, "Expected template parameter name").value));
+        } while (match(TokenType::PUNCTUATION_COMMA));
+        consume(TokenType::OPERATOR_GREATER_THAN, "Expected '>' after template parameters");
+    }
+    
     consume(TokenType::OPERATOR_ASSIGN, "Expected '=' in alias declaration");
     TypeInfo type = parse_type_info();
     consume(TokenType::PUNCTUATION_SEMICOLON, "Expected ';' after alias declaration");
-    return std::make_unique<AliasStatement>(alias, std::get<std::string>(name.value), std::move(type));
+    
+    auto decl = std::make_unique<AliasStatement>(alias, std::get<std::string>(name.value), std::move(type));
+    decl->template_parameters = tparams;
+    return decl;
 }
 
 std::unique_ptr<Node> ParserState::parse_enum_declaration(TokenType modifier) {
@@ -665,6 +684,13 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
     Token class_tok = previous();
     Token name = consume(TokenType::IDENTIFIER, "Expected class name");
     auto decl = std::make_unique<ClassDeclaration>(class_tok, std::get<std::string>(name.value));
+
+    if (match(TokenType::OPERATOR_LESS_THAN)) {
+        do {
+            decl->template_parameters.push_back(std::get<std::string>(consume(TokenType::IDENTIFIER, "Expected template parameter name").value));
+        } while (match(TokenType::PUNCTUATION_COMMA));
+        consume(TokenType::OPERATOR_GREATER_THAN, "Expected '>' after template parameters");
+    }
 
     if (match(TokenType::KEYWORD_EXTENDS)) {
         decl->base_class_name = std::get<std::string>(consume(TokenType::IDENTIFIER, "Expected base class name after 'extends'").value);

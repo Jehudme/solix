@@ -28,14 +28,25 @@ enum class NodeType {
 struct TypeInfo {
     std::string name;
     int array_depth = 0;
+    std::vector<TypeInfo> type_args;
     bool operator==(const TypeInfo& other) const {
-        return name == other.name && array_depth == other.array_depth;
+        if (name != other.name || array_depth != other.array_depth || type_args.size() != other.type_args.size()) return false;
+        for (size_t i = 0; i < type_args.size(); i++) if (type_args[i] != other.type_args[i]) return false;
+        return true;
     }
     bool operator!=(const TypeInfo& other) const {
         return !(*this == other);
     }
     std::string to_string() const {
         std::string res = name;
+        if (!type_args.empty()) {
+            res += "<";
+            for (size_t i = 0; i < type_args.size(); i++) {
+                res += type_args[i].to_string();
+                if (i < type_args.size() - 1) res += ",";
+            }
+            res += ">";
+        }
         for (int i = 0; i < array_depth; i++) res += "[]";
         return res;
     }
@@ -63,6 +74,7 @@ struct Node {
         : node_type(type), line(token.line), column(token.column), source(token.source) {}
     virtual ~Node() = default;
     virtual void accept(NodeVisitor& v) = 0;
+    virtual std::unique_ptr<Node> clone() const = 0;
 };
 
 // ==========================================
@@ -70,6 +82,8 @@ struct Node {
 // ==========================================
 
 struct IdentifierNode : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::string name;
@@ -77,6 +91,8 @@ struct IdentifierNode : public Node {
 };
 
 struct LiteralNode : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     Value value;
@@ -84,6 +100,8 @@ struct LiteralNode : public Node {
 };
 
 struct BinaryExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> left;
@@ -98,6 +116,8 @@ struct BinaryExpression : public Node {
 };
 
 struct UnaryExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     Node* overloaded_operator = nullptr;
@@ -111,6 +131,8 @@ struct UnaryExpression : public Node {
 };
 
 struct AssignmentExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> target;
@@ -125,6 +147,8 @@ struct AssignmentExpression : public Node {
 };
 
 struct ArrayAccessExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> array;
@@ -137,6 +161,8 @@ struct ArrayAccessExpression : public Node {
 };
 
 struct MemberAccessExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> object;
@@ -150,6 +176,8 @@ struct MemberAccessExpression : public Node {
 };
 
 struct MethodCallExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> callee;
@@ -162,6 +190,8 @@ struct MethodCallExpression : public Node {
 };
 
 struct NewInstanceExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     TypeInfo type_info;
@@ -172,6 +202,8 @@ struct NewInstanceExpression : public Node {
 };
 
 struct ArrayCreationExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     TypeInfo type_info;
@@ -183,6 +215,8 @@ struct ArrayCreationExpression : public Node {
 };
 
 struct ArrayLiteralExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::vector<std::unique_ptr<Node>> elements;
@@ -190,6 +224,8 @@ struct ArrayLiteralExpression : public Node {
 };
 
 struct CastExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     TypeInfo target_type;
@@ -202,6 +238,8 @@ struct CastExpression : public Node {
 };
 
 struct InstanceofExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> expression;
@@ -214,6 +252,8 @@ struct InstanceofExpression : public Node {
 };
 
 struct TernaryExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> condition;
@@ -232,12 +272,16 @@ struct TernaryExpression : public Node {
 // ==========================================
 
 struct BlockStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     BlockStatement(const Token& t) : Node(NodeType::BLOCK, t) {}
 };
 
 struct IfStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> condition;
@@ -252,6 +296,8 @@ struct IfStatement : public Node {
 };
 
 struct ForStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> initialization;
@@ -262,6 +308,8 @@ struct ForStatement : public Node {
 };
 
 struct WhileStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> condition;
@@ -270,6 +318,8 @@ struct WhileStatement : public Node {
 };
 
 struct DoWhileStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> body;
@@ -278,6 +328,8 @@ struct DoWhileStatement : public Node {
 };
 
 struct SwitchStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> condition;
@@ -285,6 +337,8 @@ struct SwitchStatement : public Node {
 };
 
 struct CaseStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> case_value;
@@ -293,6 +347,8 @@ struct CaseStatement : public Node {
 };
 
 struct VariableDeclaration : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::string var_name;
@@ -306,6 +362,8 @@ struct VariableDeclaration : public Node {
 };
 
 struct ExpressionStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> expression;
@@ -316,6 +374,8 @@ struct ExpressionStatement : public Node {
 };
 
 struct ReturnStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::unique_ptr<Node> value;
@@ -325,12 +385,16 @@ struct ReturnStatement : public Node {
 };
 
 struct BreakStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     BreakStatement(const Token& t) : Node(NodeType::BREAK_STMT, t) {}
 };
 
 struct ContinueStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     ContinueStatement(const Token& t) : Node(NodeType::CONTINUE_STMT, t) {}
@@ -341,6 +405,8 @@ struct ContinueStatement : public Node {
 // ==========================================
 
 struct PackageStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::string package_name;
@@ -348,15 +414,20 @@ struct PackageStatement : public Node {
 };
 
 struct AliasStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::string alias_name;
+    std::vector<std::string> template_parameters;
     TypeInfo target_type;
     AliasStatement(const Token& t, std::string alias, TypeInfo tgt)
         : Node(NodeType::ALIAS_STMT, t), alias_name(std::move(alias)), target_type(std::move(tgt)) {}
 };
 
 struct EnumDeclaration : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::string enum_name;
@@ -367,12 +438,15 @@ struct EnumDeclaration : public Node {
 
 struct MethodDeclaration;
 struct ClassDeclaration : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     int vtable_id = -1;
     int base_vtable_id = -1;
     std::vector<MethodDeclaration*> vtable;
     std::string class_name;
+    std::vector<std::string> template_parameters;
     std::string base_class_name;
     TokenType access_modifier = TokenType::KEYWORD_INTERNAL;
     int instance_size = 0;
@@ -380,6 +454,8 @@ struct ClassDeclaration : public Node {
 };
 
 struct FieldDeclaration : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     std::string field_name;
@@ -395,10 +471,13 @@ struct FieldDeclaration : public Node {
 };
 
 struct ConstructorDeclaration : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     TokenType access_modifier = TokenType::KEYWORD_PUBLIC;
     std::string class_name;
+    std::vector<std::string> template_parameters;
     std::string base_class_name;
     std::vector<std::unique_ptr<VariableDeclaration>> parameters;
     int frame_size = 0;
@@ -406,6 +485,8 @@ struct ConstructorDeclaration : public Node {
 };
 
 struct MethodDeclaration : public Node {
+    std::unique_ptr<Node> clone() const override;
+
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     TokenType access_modifier = TokenType::KEYWORD_PRIVATE;
@@ -418,6 +499,7 @@ struct MethodDeclaration : public Node {
     int vtable_index = -1;
     TypeInfo return_type;
     std::string method_name;
+    std::vector<std::string> template_parameters;
     std::optional<uint64_t> native_id;
     std::vector<std::unique_ptr<VariableDeclaration>> parameters;
     int frame_size = 0;

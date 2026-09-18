@@ -45,7 +45,8 @@ test_parse_file(const std::filesystem::path &path) {
 }
 
 TEST_CASE("New Parser - Variable Declarations", "[new_parser]") {
-  auto nodes = test_parse("const int32[] x = 5; char[] y;");
+  REQUIRE_NOTHROW(test_parse("class Map<K, V> { K key; V value; } alias IntMap<V> = Map<int32, V>; void main() { Map<int32, float32> map; }"));
+    auto nodes = test_parse("const int32[] x = 5; char[] y;");
   REQUIRE(nodes.size() == 2);
 
   REQUIRE(nodes[0]->node_type == NodeType::FIELD_DECL);
@@ -63,7 +64,8 @@ TEST_CASE("New Parser - Variable Declarations", "[new_parser]") {
 }
 
 TEST_CASE("New Parser - Classes and Methods", "[new_parser]") {
-  auto nodes = test_parse(
+  REQUIRE_NOTHROW(test_parse("class Map<K, V> { K key; V value; } alias IntMap<V> = Map<int32, V>; void main() { Map<int32, float32> map; }"));
+    auto nodes = test_parse(
       "public class MyClass { public void test(int32 param) { return; } }");
   REQUIRE(nodes.size() == 1);
 
@@ -95,4 +97,38 @@ TEST_CASE("New Parser - Full test.slx script", "[new_parser]") {
   REQUIRE((nodes[0]->node_type == NodeType::CLASS_DECL ||
            nodes[0]->node_type == NodeType::PACKAGE_STMT ||
            nodes[0]->node_type == NodeType::ALIAS_STMT));
+}
+
+TEST_CASE("Phase 18 - Templates Parser", "[templates_parser]") {
+    solix::CompilationOptions opts;
+    opts.sources[std::string("test")] = "class Map<K, V> { K key; V value; } alias IntMap<V> = Map<int32, V>; void main() { Map<int32, float32> map; }";
+    solix::CompilationContext ctx(opts);
+    
+    solix::Lexer lexer(ctx, "Lexer");
+    lexer.execute();
+    
+    solix::Parser parser(ctx, "Parser");
+    REQUIRE_NOTHROW(parser.execute());
+    
+    auto& nodes = ctx.nodes[std::string("test")];
+    REQUIRE(nodes.size() == 3);
+    
+    // Check Class
+    REQUIRE(nodes[0]->node_type == solix::NodeType::CLASS_DECL);
+    auto* cls = static_cast<solix::ClassDeclaration*>(nodes[0].get());
+    REQUIRE(cls->class_name == "Map");
+    REQUIRE(cls->template_parameters.size() == 2);
+    REQUIRE(cls->template_parameters[0] == "K");
+    REQUIRE(cls->template_parameters[1] == "V");
+    
+    // Check Alias
+    REQUIRE(nodes[1]->node_type == solix::NodeType::ALIAS_STMT);
+    auto* alias = static_cast<solix::AliasStatement*>(nodes[1].get());
+    REQUIRE(alias->alias_name == "IntMap");
+    REQUIRE(alias->template_parameters.size() == 1);
+    REQUIRE(alias->template_parameters[0] == "V");
+    REQUIRE(alias->target_type.name == "Map");
+    REQUIRE(alias->target_type.type_args.size() == 2);
+    REQUIRE(alias->target_type.type_args[0].name == "int32");
+    REQUIRE(alias->target_type.type_args[1].name == "V");
 }
