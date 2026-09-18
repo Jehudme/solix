@@ -122,3 +122,27 @@ TEST_CASE("Phase 5: Access Control", "[binder]") {
         REQUIRE_THROWS_WITH(run_binder("class A { protected int32 x; } int32 main() { A a = new A(); a.x = 5; return 0; }"), Catch::Matchers::ContainsSubstring("Cannot access protected member"));
     }
 }
+
+TEST_CASE("Binder - Forward Declaration of Classes", "[binder]") {
+  solix::CompilationOptions opts;
+  opts.log_level = solix::CompilationOptions::LogLevel::ERR;
+  solix::CompilationContext ctx(opts);
+  ctx.diagnostic = std::make_unique<solix::Diagnostic>(ctx);
+  opts.sources[std::string("test")] = R"(
+    class A {
+        B b;
+        void foo() {
+            b = new B();
+        }
+    }
+    class B {
+        int32 x;
+    }
+  )";
+  solix::Lexer lexer(ctx, "Lexer");
+  lexer.execute();
+  solix::Parser parser(ctx, "Parser");
+  parser.execute();
+  solix::Binder binder(ctx, "Binder");
+  REQUIRE_NOTHROW(binder.execute());
+}
