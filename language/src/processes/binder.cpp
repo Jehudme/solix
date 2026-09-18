@@ -28,8 +28,6 @@ void Binder::record_error(Node *node, const std::string &msg) {
 // ─── Builtin Primitives Setup ────────────────────────────────────────────────
 
 void Binder::setup_builtins() {
-  // Allocate dummy ClassDeclaration nodes for primitive types.
-  // These are intentionally leaked — the compiler is short-lived.
   auto make_builtin = [&](const std::string &name) {
     auto *decl = new ClassDeclaration(Token{}, name);
     decl->is_primitive = true;
@@ -63,7 +61,8 @@ std::string Binder::mangle_method(MethodDeclaration *method) {
     if (i < method->parameters.size() - 1) mangled_name += ",";
   }
   mangled_name += ")";
-  return mangled_name;}
+  return mangled_name;
+}
 
 std::string Binder::mangle_method_call(const std::string &base_name, const std::vector<TypeInfo> &arg_types) {
   std::string mangled_name = base_name + "(";
@@ -72,7 +71,8 @@ std::string Binder::mangle_method_call(const std::string &base_name, const std::
     if (i < arg_types.size() - 1) mangled_name += ",";
   }
   mangled_name += ")";
-  return mangled_name;}
+  return mangled_name;
+}
 
 std::string Binder::mangle_constructor(const std::string &class_name, const std::vector<TypeInfo> &arg_types) {
   std::string mangled_name = class_name + ".ctor(";
@@ -81,7 +81,8 @@ std::string Binder::mangle_constructor(const std::string &class_name, const std:
     if (i < arg_types.size() - 1) mangled_name += ",";
   }
   mangled_name += ")";
-  return mangled_name;}
+  return mangled_name;
+}
 
 // ─── Scope Management ────────────────────────────────────────────────────────
 
@@ -98,127 +99,38 @@ void Binder::exit_scope() {
 
 void Binder::declare_local(const std::string &name, Node *node) {
   if (current_scope->symbols.count(name)) {
-    record_error(node,
-                "Variable '" + name + "' is already defined in this scope.");
+    record_error(node, "Variable '" + name + "' is already defined in this scope.");
   }
   current_scope->define(name, node);
 }
 
-// ─── Pass 1a: Register Global Types & Aliases ────────────────────────────────
-// Only registers packages, classes, enums, and aliases.
-// Methods/fields/ctors are skipped here — they need types resolved first.
+// ─── Pass Drivers ────────────────────────────────────────────────────────────
 
 void Binder::register_global_symbols(Node *node, const std::string &prefix) {
-  if (!node)
-    return;
-  std::string my_prefix = prefix;
-
-  if (node->node_type == NodeType::PACKAGE_STMT) {
-    auto *pkg = static_cast<PackageStatement *>(node);
-    current_package = pkg->package_name + ".";
-    pkg->mangled_name = pkg->package_name;
-    global_scope.define(pkg->mangled_name, pkg);
-  } else if (node->node_type == NodeType::ALIAS_STMT) {
-    auto *alias = static_cast<AliasStatement *>(node);
-    std::string full_name = prefix + alias->alias_name;
-    if (global_scope.symbols.count(full_name)) {
-      record_error(node, "Duplicate global symbol: " + full_name);
-    }
-    alias->mangled_name = full_name;
-    global_scope.define(full_name, alias);
-  } else if (node->node_type == NodeType::CLASS_DECL) {
-    auto *class_decl = static_cast<ClassDeclaration *>(node);
-    std::string full_name = prefix + class_decl->class_name;
-
-    if (!class_decl->base_class_name.empty()) {
-        class_decl->base_class_name = prefix + class_decl->base_class_name;
-    }
-    if (global_scope.symbols.count(full_name)) {
-      record_error(node, "Duplicate global symbol: " + full_name);
-    }
-    class_decl->mangled_name = full_name;
-    global_scope.define(full_name, class_decl);
-    my_prefix = full_name + ".";
-  } else if (node->node_type == NodeType::ENUM_DECL) {
-    auto *enum_decl = static_cast<EnumDeclaration *>(node);
-    std::string full_name = prefix + enum_decl->enum_name;
-    if (global_scope.symbols.count(full_name)) {
-      record_error(node, "Duplicate global symbol: " + full_name);
-    }
-    enum_decl->mangled_name = full_name;
-    global_scope.define(full_name, enum_decl);
-    my_prefix = full_name + ".";
-  }
-
-  // Recurse into class/enum bodies so nested types are also registered.
-  if (node->node_type == NodeType::CLASS_DECL ||
-      node->node_type == NodeType::ENUM_DECL) {
-    for (const auto &child : node->children) {
-      if (child)
-        child->parent = node;
-      register_global_symbols(child.get(), my_prefix);
-    }
-  }
+  if (!node) return;
+  current_pass = BinderPass::REGISTER_GLOBALS;
+  current_prefix = prefix;
+  node->accept(*this);
 }
 
-// ─── Pass 1b: Register Members ───────────────────────────────────────────────
-// Runs after all types/aliases are known so parameter types can be resolved
-// before generating mangled method/constructor signatures.
-
 void Binder::register_members(Node *node, const std::string &prefix) {
-  if (!node)
-    return;
-  std::string my_prefix = prefix;
+  if (!node) return;
+  current_pass = BinderPass::REGISTER_MEMBERS;
+  current_prefix = prefix;
+  node->accept(*this);
+}
 
-  if (node->node_type == NodeType::PACKAGE_STMT) {
-    my_prefix = static_cast<PackageStatement *>(node)->package_name + ".";
-  } else if (node->node_type == NodeType::CLASS_DECL) {
-    auto *class_decl = static_cast<ClassDeclaration *>(node);
-    my_prefix = prefix + class_decl->class_name + ".";
-    current_class = class_decl;
-  } else if (node->node_type == NodeType::ENUM_DECL) {
-    my_prefix = prefix + static_cast<EnumDeclaration *>(node)->enum_name + ".";
-  } else if (node->node_type == NodeType::FIELD_DECL) {
-    auto *field = static_cast<FieldDeclaration *>(node);
-    std::string full_name = prefix + field->field_name;
-    field->mangled_name = full_name;
-    global_scope.define(full_name, field);
-  } else if (node->node_type == NodeType::METHOD_DECL) {
-    auto *method = static_cast<MethodDeclaration *>(node);
-    // Resolve parameter types now, so the mangled name uses canonical names.
-    for (const auto &param : method->parameters) {
-      auto *var_decl = static_cast<VariableDeclaration *>(param.get());
-      var_decl->type_info = resolve_type(var_decl->type_info, var_decl);
-    }
-    std::string full_name = prefix + mangle_method(method);
-    if (global_scope.symbols.count(full_name) && !method->is_native) {
-      record_error(node, "Duplicate method signature: " + full_name);
-    }
-    method->mangled_name = full_name;
-    global_scope.define(full_name, method);
-  } else if (node->node_type == NodeType::CONSTRUCTOR_DECL) {
-    auto *ctor = static_cast<ConstructorDeclaration *>(node);
-    // Resolve parameter types now, so the mangled name uses canonical names.
-    std::string full_name = prefix + "ctor(";
-    for (size_t i = 0; i < ctor->parameters.size(); ++i) {
-      auto *var_decl = static_cast<VariableDeclaration *>(ctor->parameters[i].get());
-      var_decl->type_info = resolve_type(var_decl->type_info, var_decl);
-      full_name += var_decl->type_info.to_string();
-      if (i < ctor->parameters.size() - 1) full_name += ",";
-    }
-    full_name += ")";
-    ctor->mangled_name = full_name;    global_scope.define(full_name, ctor);
-  }
+void Binder::bind_node(Node *node) {
+  if (!node) return;
+  current_pass = BinderPass::BIND_EXECUTION;
+  node->accept(*this);
+}
 
-  if (node->node_type == NodeType::CLASS_DECL ||
-      node->node_type == NodeType::ENUM_DECL) {
-    for (const auto &child : node->children) {
-      register_members(child.get(), my_prefix);
-    }
-    if (node->node_type == NodeType::CLASS_DECL) {
-      current_class = nullptr;
-    }
-  }
+TypeInfo Binder::evaluate_expression(Node *expr) {
+  if (!expr) return {"void", 0};
+  current_pass = BinderPass::EVALUATE_EXPRESSION;
+  expr->accept(*this);
+  return evaluated_type;
 }
 
 // ─── Type Resolution ─────────────────────────────────────────────────────────
@@ -232,8 +144,7 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
     resolved = global_scope.resolve(current_package + raw_type.name);
   }
   if (!resolved && current_class) {
-    resolved =
-        global_scope.resolve(current_class->mangled_name + "." + raw_type.name);
+    resolved = global_scope.resolve(current_class->mangled_name + "." + raw_type.name);
   }
 
   if (!resolved) {
@@ -241,13 +152,13 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
   }
 
   TypeInfo result = raw_type;
-  if (resolved->node_type == NodeType::ALIAS_STMT) {
+  if (resolved && resolved->node_type == NodeType::ALIAS_STMT) {
     auto *alias = static_cast<AliasStatement *>(resolved);
     result.name = alias->target_type.name;
     result.array_depth += alias->target_type.array_depth;
     return resolve_type(result, error_node); // Recursively resolve aliases
-  } else if (resolved->node_type == NodeType::CLASS_DECL ||
-             resolved->node_type == NodeType::ENUM_DECL) {
+  } else if (resolved && (resolved->node_type == NodeType::CLASS_DECL ||
+             resolved->node_type == NodeType::ENUM_DECL)) {
     result.name = resolved->mangled_name; // Use fully qualified name
   }
 
@@ -257,16 +168,13 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
 // ─── Pass 2: Type & Memory Binding ──────────────────────────────────────────
 
 void Binder::bind_types_and_memory() {
-  static_variable_index = 1; // 0 is reserved for null
+  static_variable_index = 1;
 
-  // Resolve all field types and assign static field indices.
   for (const auto &[name, node] : global_scope.symbols) {
     if (node->node_type == NodeType::FIELD_DECL) {
       auto *field = static_cast<FieldDeclaration *>(node);
-      current_class =
-          field->parent && field->parent->node_type == NodeType::CLASS_DECL
-              ? static_cast<ClassDeclaration *>(field->parent)
-              : nullptr;
+      current_class = field->parent && field->parent->node_type == NodeType::CLASS_DECL
+              ? static_cast<ClassDeclaration *>(field->parent) : nullptr;
       field->type_info = resolve_type(field->type_info, field);
 
       Node *type_decl = global_scope.resolve(field->type_info.name);
@@ -280,22 +188,16 @@ void Binder::bind_types_and_memory() {
     }
   }
 
-  // Resolve method return types.
   for (const auto &[name, node] : global_scope.symbols) {
     if (node->node_type == NodeType::METHOD_DECL) {
       auto *method = static_cast<MethodDeclaration *>(node);
-      current_class =
-          method->parent && method->parent->node_type == NodeType::CLASS_DECL
-              ? static_cast<ClassDeclaration *>(method->parent)
-              : nullptr;
+      current_class = method->parent && method->parent->node_type == NodeType::CLASS_DECL
+              ? static_cast<ClassDeclaration *>(method->parent) : nullptr;
       method->return_type = resolve_type(method->return_type, method);
       current_class = nullptr;
     }
   }
 
-  // Calculate instance field offsets for each class with inheritance
-
-  // Calculate vtables for each class
   std::unordered_map<std::string, std::vector<MethodDeclaration*>> vtables;
   std::unordered_set<std::string> vtable_calculated;
   
@@ -316,15 +218,12 @@ void Binder::bind_types_and_memory() {
           if (child->node_type == NodeType::METHOD_DECL) {
               auto* method = static_cast<MethodDeclaration*>(child.get());
               if (method->is_override) {
-                  // Find the method in the vtable with the same signature
                   bool found = false;
                   for (size_t i = 0; i < vtable.size(); ++i) {
-                      // Compare signature (method name and parameter types)
-                      // A simplistic check: just compare the suffix after the class name
                       std::string base_sig = vtable[i]->mangled_name.substr(vtable[i]->mangled_name.rfind('.') + 1);
                       std::string drv_sig = method->mangled_name.substr(method->mangled_name.rfind('.') + 1);
                       if (base_sig == drv_sig) {
-                          vtable[i] = method; // Override
+                          vtable[i] = method;
                           method->vtable_index = i;
                           method->is_virtual = true;
                           found = true;
@@ -333,7 +232,7 @@ void Binder::bind_types_and_memory() {
                   }
                   if (!found) throw std::runtime_error("Method marked override but no base method found: " + method->mangled_name);
               } else if (method->is_virtual || method->is_abstract) {
-                  method->is_virtual = true; // Abstract methods are implicitly virtual
+                  method->is_virtual = true;
                   method->vtable_index = vtable.size();
                   vtable.push_back(method);
               }
@@ -349,7 +248,6 @@ void Binder::bind_types_and_memory() {
     }
   }
 
-  // After vtables are calculated, we can check if classes are abstract
   for (const auto &[name, node] : global_scope.symbols) {
       if (node->node_type == NodeType::CLASS_DECL) {
           auto* cls = static_cast<ClassDeclaration*>(node);
@@ -360,14 +258,9 @@ void Binder::bind_types_and_memory() {
                   break;
               }
           }
-          if (has_abstract) {
-              // mark class as abstract! wait, ClassDeclaration doesn't have is_abstract field. I need to add it.
-              // For now, I can just check the vtable inside NEW_INSTANCE.
-          }
       }
   }
 
-  // Assign a unique vtable_id to each class that has a vtable
   int next_vtable_id = 0;
   for (const auto &[name, node] : global_scope.symbols) {
       if (node->node_type == NodeType::CLASS_DECL) {
@@ -378,7 +271,6 @@ void Binder::bind_types_and_memory() {
       }
   }
   
-  // Set base_vtable_id
   for (const auto &[name, node] : global_scope.symbols) {
       if (node->node_type == NodeType::CLASS_DECL) {
           auto* cls = static_cast<ClassDeclaration*>(node);
@@ -420,9 +312,8 @@ void Binder::bind_types_and_memory() {
       calculate_layout(static_cast<ClassDeclaration *>(node));
     }
   }
-
-
 }
+
 // ─── Binder::execute ─────────────────────────────────────────────────────────
 
 void Binder::execute() {
@@ -430,7 +321,6 @@ void Binder::execute() {
 
   setup_builtins();
 
-  // Pass 1a: Register packages, classes, enums, and aliases.
   for (const auto &[source, nodes] : context.nodes) {
     current_package = "";
     for (const auto &node : nodes) {
@@ -445,14 +335,11 @@ void Binder::execute() {
     }
   }
 
-  // Pass 1b: Register fields, methods, and constructors.
-  // Now aliases are resolved, so parameter types can be correctly mangled.
   for (const auto &[source, nodes] : context.nodes) {
     current_package = "";
     for (const auto &node : nodes) {
       if (node->node_type == NodeType::PACKAGE_STMT) {
-        current_package =
-            static_cast<PackageStatement *>(node.get())->package_name + ".";
+        current_package = static_cast<PackageStatement *>(node.get())->package_name + ".";
       } else {
         register_members(node.get(), current_package);
       }
@@ -461,19 +348,15 @@ void Binder::execute() {
 
   log_debug("Registered {} global symbols.", global_scope.symbols.size());
 
-  // Pass 2: Resolve field/method return types and calculate memory layout.
   bind_types_and_memory();
 
-  log_debug("Memory mapping complete. Static variables: {}",
-            static_variable_index);
+  log_debug("Memory mapping complete. Static variables: {}", static_variable_index);
 
-  // Pass 3: Bind execution logic (statement/expression bodies).
   for (const auto &[source, nodes] : context.nodes) {
     current_package = "";
     for (const auto &node : nodes) {
       if (node->node_type == NodeType::PACKAGE_STMT) {
-        current_package =
-            static_cast<PackageStatement *>(node.get())->package_name + ".";
+        current_package = static_cast<PackageStatement *>(node.get())->package_name + ".";
       } else {
         bind_tree(node.get());
       }
@@ -494,28 +377,23 @@ void Binder::execute() {
 // ─── Pass 3 Tree Traversal ───────────────────────────────────────────────────
 
 void Binder::bind_tree(Node *root) {
-  if (!root)
-    return;
+  if (!root) return;
 
   ClassDeclaration *previous_class = current_class;
 
   if (root->node_type == NodeType::CLASS_DECL) {
     current_class = static_cast<ClassDeclaration *>(root);
-
   } else if (root->node_type == NodeType::METHOD_DECL) {
     current_method = static_cast<MethodDeclaration *>(root);
     local_variable_index = 0;
 
-    current_method->return_type =
-        resolve_type(current_method->return_type, current_method);
+    current_method->return_type = resolve_type(current_method->return_type, current_method);
 
     SymbolTable method_scope;
     enter_scope(&method_scope);
 
-    // Inject implicit 'this' for non-static methods.
     if (!current_method->is_static && current_class) {
-      auto *this_decl = new VariableDeclaration(
-          Token{}, "this", TypeInfo{current_class->mangled_name, 0});
+      auto *this_decl = new VariableDeclaration(Token{}, "this", TypeInfo{current_class->mangled_name, 0});
       this_decl->memory_index = local_variable_index++;
       this_decl->is_reference_type = true;
       declare_local("this", this_decl);
@@ -541,8 +419,7 @@ void Binder::bind_tree(Node *root) {
     exit_scope();
     current_method = nullptr;
     current_class = previous_class;
-    return; // Children already handled above.
-
+    return;
   } else if (root->node_type == NodeType::CONSTRUCTOR_DECL) {
     auto *ctor = static_cast<ConstructorDeclaration *>(root);
     local_variable_index = 0;
@@ -550,10 +427,8 @@ void Binder::bind_tree(Node *root) {
     SymbolTable constructor_scope;
     enter_scope(&constructor_scope);
 
-    // Inject implicit 'this' for constructors.
     if (current_class) {
-      auto *this_decl = new VariableDeclaration(
-          Token{}, "this", TypeInfo{current_class->mangled_name, 0});
+      auto *this_decl = new VariableDeclaration(Token{}, "this", TypeInfo{current_class->mangled_name, 0});
       this_decl->memory_index = local_variable_index++;
       this_decl->is_reference_type = true;
       declare_local("this", this_decl);
@@ -578,148 +453,22 @@ void Binder::bind_tree(Node *root) {
     ctor->frame_size = local_variable_index;
     exit_scope();
     current_class = previous_class;
-    return; // Children already handled above.
+    return;
   }
 
-  // Default: recurse into children.
   for (const auto &child : root->children) {
-    if (child)
-      bind_tree(child.get());
+    if (child) bind_tree(child.get());
   }
 
   current_class = previous_class;
 }
 
-// ─── Statement Binding ───────────────────────────────────────────────────────
-
-void Binder::bind_node(Node *node) {
-  if (!node)
-    return;
-
-  if (node->node_type == NodeType::BLOCK) {
-    SymbolTable block_scope;
-    enter_scope(&block_scope);
-    for (const auto &child : node->children) {
-      bind_node(child.get());
-    }
-    exit_scope();
-
-  } else if (node->node_type == NodeType::VAR_DECL) {
-    auto *var = static_cast<VariableDeclaration *>(node);
-    var->type_info = resolve_type(var->type_info, var);
-
-    Node *type_decl = global_scope.resolve(var->type_info.name);
-    var->is_reference_type = !(type_decl && type_decl->is_primitive &&
-                               var->type_info.array_depth == 0);
-
-    if (var->initializer) {
-      TypeInfo initializer_type = evaluate_expression(var->initializer.get());
-      if (!is_assignable(var->type_info, initializer_type)) {
-        record_error(node, "Type mismatch in variable declaration: expected '" +
-                              var->type_info.name + "', got '" +
-                              initializer_type.name + "'");
-      }
-    }
-    var->memory_index = local_variable_index++;
-    declare_local(var->var_name, var);
-
-  } else if (node->node_type == NodeType::IF_STMT) {
-    auto *if_stmt = static_cast<IfStatement *>(node);
-    TypeInfo condition_type = evaluate_expression(if_stmt->condition.get());
-    if (condition_type.name != "bool")
-      record_error(node, "Condition must be bool");
-    bind_node(if_stmt->then_branch.get());
-    if (if_stmt->else_branch)
-      bind_node(if_stmt->else_branch.get());
-
-  } else if (node->node_type == NodeType::WHILE_STMT) {
-    auto *while_stmt = static_cast<WhileStatement *>(node);
-    TypeInfo condition_type = evaluate_expression(while_stmt->condition.get());
-    if (condition_type.name != "bool")
-      record_error(node, "Condition must be bool");
-    loop_depth++;
-    bind_node(while_stmt->body.get());
-    loop_depth--;
-
-  } else if (node->node_type == NodeType::DO_WHILE_STMT) {
-    auto *do_while_stmt = static_cast<DoWhileStatement *>(node);
-    loop_depth++;
-    bind_node(do_while_stmt->body.get());
-    loop_depth--;
-    TypeInfo condition_type =
-        evaluate_expression(do_while_stmt->condition.get());
-    if (condition_type.name != "bool")
-      record_error(node, "Condition must be bool");
-
-  } else if (node->node_type == NodeType::FOR_STMT) {
-    auto *for_stmt = static_cast<ForStatement *>(node);
-    SymbolTable for_scope;
-    enter_scope(&for_scope);
-    if (for_stmt->initialization)
-      bind_node(for_stmt->initialization.get());
-    if (for_stmt->condition) {
-      TypeInfo condition_type = evaluate_expression(for_stmt->condition.get());
-      if (condition_type.name != "bool")
-        record_error(node, "Condition must be bool");
-    }
-    if (for_stmt->iteration)
-      evaluate_expression(for_stmt->iteration.get());
-    loop_depth++;
-    bind_node(for_stmt->body.get());
-    loop_depth--;
-    exit_scope();
-
-  } else if (node->node_type == NodeType::SWITCH_STMT) {
-    auto *switch_stmt = static_cast<SwitchStatement *>(node);
-    evaluate_expression(switch_stmt->condition.get());
-    switch_depth++;
-    for (const auto &case_node : switch_stmt->children) {
-      bind_node(case_node.get());
-    }
-    switch_depth--;
-
-  } else if (node->node_type == NodeType::CASE_STMT) {
-    auto *case_stmt = static_cast<CaseStatement *>(node);
-    if (case_stmt->case_value)
-      evaluate_expression(case_stmt->case_value.get());
-    for (const auto &child : case_stmt->children) {
-      bind_node(child.get());
-    }
-
-  } else if (node->node_type == NodeType::RETURN_STMT) {
-    auto *return_stmt = static_cast<ReturnStatement *>(node);
-    if (return_stmt->value) {
-      TypeInfo return_type = evaluate_expression(return_stmt->value.get());
-      if (current_method && !is_assignable(current_method->return_type, return_type)) {
-        record_error(node, "Return type mismatch: expected '" +
-                              current_method->return_type.name + "', got '" +
-                              return_type.name + "'");
-      }
-    } else if (current_method && current_method->return_type.name != "void") {
-      record_error(node, "Must return a value from non-void method");
-    }
-
-  } else if (node->node_type == NodeType::BREAK_STMT) {
-    if (loop_depth == 0 && switch_depth == 0) {
-      record_error(node, "Break must be inside a loop or switch");
-    }
-  } else if (node->node_type == NodeType::CONTINUE_STMT) {
-    if (loop_depth == 0)
-      record_error(node, "Continue must be inside a loop");
-
-  } else if (node->node_type == NodeType::EXPR_STMT) {
-    auto *expr_stmt = static_cast<ExpressionStatement *>(node);
-    evaluate_expression(expr_stmt->expression.get());
-  }
-}
-
-// ─── Expression Evaluation ───────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 bool Binder::is_assignable(const TypeInfo& target, const TypeInfo& source) {
     if (target == source) return true;
     if (target.array_depth != source.array_depth) return false;
     
-    // Check if source inherits from target
     Node* src_node = global_scope.resolve(source.name);
     while (src_node && src_node->node_type == NodeType::CLASS_DECL) {
         auto* cls = static_cast<ClassDeclaration*>(src_node);
@@ -729,499 +478,6 @@ bool Binder::is_assignable(const TypeInfo& target, const TypeInfo& source) {
     }
     return false;
 }
-
-TypeInfo Binder::evaluate_expression(Node *expr) {
-  if (!expr)
-    return {"void", 0};
-
-  if (expr->node_type == NodeType::LITERAL) {
-    auto *lit = static_cast<LiteralNode *>(expr);
-    if (std::holds_alternative<int64_t>(lit->value))
-      expr->expression_type = {"int32", 0};
-    else if (std::holds_alternative<double>(lit->value))
-      expr->expression_type = {"float64", 0};
-    else if (std::holds_alternative<std::string>(lit->value))
-      expr->expression_type = {"char", 1};
-    else
-      expr->expression_type = {"void", 0};
-    return expr->expression_type;
-
-  } else if (expr->node_type == NodeType::IDENTIFIER) {
-    auto *id = static_cast<IdentifierNode *>(expr);
-
-    // Intrinsic boolean/null keywords are lexed as identifiers.
-    if (id->name == "true" || id->name == "false") {
-      expr->expression_type = {"bool", 0};
-      return expr->expression_type;
-    }
-    if (id->name == "null") {
-      expr->expression_type = {"void", 0};
-      return expr->expression_type;
-    }
-
-    // Look up from innermost to outermost scope, then global.
-    Node *declaration = current_scope->resolve(id->name);
-    if (!declaration && current_class) {
-      declaration =
-          global_scope.resolve(current_class->mangled_name + "." + id->name);
-    }
-    if (!declaration && !current_package.empty()) {
-      declaration = global_scope.resolve(current_package + id->name);
-    }
-    if (!declaration) {
-      declaration = global_scope.resolve(id->name);
-    }
-
-    if (!declaration)
-      { record_error(expr, "Undefined identifier: " + id->name); return {"void", 0}; }
-    expr->resolved_declaration = declaration;
-
-    if (declaration->node_type == NodeType::VAR_DECL) {
-      expr->expression_type =
-          static_cast<VariableDeclaration *>(declaration)->type_info;
-    } else if (declaration->node_type == NodeType::FIELD_DECL) {
-      expr->expression_type =
-          static_cast<FieldDeclaration *>(declaration)->type_info;
-    } else if (declaration->node_type == NodeType::CLASS_DECL ||
-               declaration->node_type == NodeType::ENUM_DECL) {
-      expr->expression_type = {declaration->mangled_name, 0};
-    } else {
-      { record_error(expr, "Invalid identifier usage: " + id->name); return {"void", 0}; }
-    }
-    return expr->expression_type;
-
-  } else if (expr->node_type == NodeType::BINARY_EXPR) {
-    auto *bin = static_cast<BinaryExpression *>(expr);
-    TypeInfo left_type = evaluate_expression(bin->left.get());
-    TypeInfo right_type = evaluate_expression(bin->right.get());
-
-    Node *left_decl = global_scope.resolve(left_type.name);
-    if (left_decl && left_decl->node_type == NodeType::CLASS_DECL) {
-        std::string op_name = "operator";
-        if (bin->op == TokenType::OPERATOR_PLUS) op_name += "+";
-        else if (bin->op == TokenType::OPERATOR_MINUS) op_name += "-";
-        else if (bin->op == TokenType::OPERATOR_MULTIPLY) op_name += "*";
-        else if (bin->op == TokenType::OPERATOR_DIVIDE) op_name += "/";
-        else goto primitive_fallback;
-        
-        std::string base_name = left_decl->mangled_name + "." + op_name;
-        std::vector<TypeInfo> args = {right_type};
-        std::string mangled = mangle_method_call(base_name, args);
-        Node* method_decl = global_scope.resolve(mangled);
-        if (!method_decl) goto primitive_fallback;
-        
-        bin->overloaded_operator = method_decl;
-        expr->expression_type = static_cast<MethodDeclaration*>(method_decl)->return_type;
-        return expr->expression_type;
-    }
-    
-    primitive_fallback:
-    if (left_type != right_type) {
-      record_error(expr, "Binary operands type mismatch: '" + left_type.name +
-                            "' vs '" + right_type.name + "'");
-    }
-    if (bin->op >= TokenType::OPERATOR_EQUAL &&
-        bin->op <= TokenType::OPERATOR_GREATER_EQUAL) {
-      expr->expression_type = {"bool", 0};
-    } else {
-      expr->expression_type = left_type;
-    }
-    return expr->expression_type;
-
-  } else if (expr->node_type == NodeType::UNARY_EXPR) {
-    auto *unary = static_cast<UnaryExpression *>(expr);
-    expr->expression_type = evaluate_expression(unary->operand.get());
-    return expr->expression_type;
-
-  } else if (expr->node_type == NodeType::TERNARY_EXPR) {
-    auto *ternary = static_cast<TernaryExpression *>(expr);
-    TypeInfo condition_type = evaluate_expression(ternary->condition.get());
-    if (condition_type.name != "bool")
-      record_error(expr, "Ternary condition must be bool");
-    TypeInfo true_type = evaluate_expression(ternary->true_branch.get());
-    TypeInfo false_type = evaluate_expression(ternary->false_branch.get());
-    if (true_type != false_type) {
-      record_error(expr, "Ternary branches must have the same type");
-    }
-    expr->expression_type = true_type;
-    return expr->expression_type;
-
-  } else if (expr->node_type == NodeType::ASSIGNMENT_EXPR) {
-    auto *assign = static_cast<AssignmentExpression *>(expr);
-    TypeInfo target_type = evaluate_expression(assign->target.get());
-    TypeInfo value_type = evaluate_expression(assign->value.get());
-
-    Node *left_decl = global_scope.resolve(target_type.name);
-    if (left_decl && left_decl->node_type == NodeType::CLASS_DECL) {
-        std::string op_name = "operator=";
-        std::string base_name = left_decl->mangled_name + "." + op_name;
-        std::vector<TypeInfo> args = {value_type};
-        std::string mangled = mangle_method_call(base_name, args);
-        Node* method_decl = global_scope.resolve(mangled);
-        if (method_decl) {
-            assign->overloaded_operator = method_decl;
-            expr->expression_type = static_cast<MethodDeclaration*>(method_decl)->return_type;
-            return expr->expression_type;
-        }
-    }
-    if (!is_assignable(target_type, value_type)) {
-      record_error(expr, "Assignment type mismatch: '" + target_type.name +
-                            "' = '" + value_type.name + "'");
-    }
-    expr->expression_type = target_type;
-    return expr->expression_type;
-
-  } else if (expr->node_type == NodeType::ARRAY_LITERAL) {
-    auto *array_lit = static_cast<ArrayLiteralExpression *>(expr);
-    TypeInfo element_type = {"void", 0};
-    for (const auto &element : array_lit->elements) {
-      TypeInfo current_element_type = evaluate_expression(element.get());
-      if (element_type.name == "void") {
-        element_type = current_element_type;
-      } else if (element_type != current_element_type) {
-        record_error(expr, "Mixed types in array literal");
-      }
-    }
-    element_type.array_depth++;
-    expr->expression_type = element_type;
-    return expr->expression_type;
-
-  } else if (expr->node_type == NodeType::MEMBER_ACCESS) {
-    auto *member_access = static_cast<MemberAccessExpression *>(expr);
-    TypeInfo object_type = evaluate_expression(member_access->object.get());
-
-    // Array length property.
-    if (object_type.array_depth > 0) {
-      if (member_access->member_name == "length") {
-        expr->expression_type = {"int32", 0};
-        return expr->expression_type;
-      }
-      record_error(expr, "Arrays only have the 'length' property");
-    }
-
-    Node *type_decl = global_scope.resolve(object_type.name);
-    if (!type_decl)
-      { record_error(expr, "Cannot access members on unknown type: " +  object_type.name); return {"void", 0}; }
-
-    if (type_decl->node_type == NodeType::CLASS_DECL) {
-      auto *class_decl = static_cast<ClassDeclaration *>(type_decl);
-      Node *member_decl = global_scope.resolve(class_decl->mangled_name + "." + member_access->member_name);
-      ClassDeclaration* current_resolve_class = class_decl;
-      while (!member_decl && current_resolve_class && !current_resolve_class->base_class_name.empty()) {
-          Node* base_node = global_scope.resolve(current_resolve_class->base_class_name);
-          if (!base_node) break;
-          current_resolve_class = static_cast<ClassDeclaration*>(base_node);
-          member_decl = global_scope.resolve(current_resolve_class->mangled_name + "." + member_access->member_name);
-      }
-      if (!member_decl) {
-        { record_error(expr, "Member not found: " +  member_access->member_name +
-                              " on " + class_decl->mangled_name); return {"void", 0}; }
-      }
-      if (!check_access(member_decl, current_resolve_class, expr)) return {"void", 0};
-      expr->resolved_declaration = member_decl;
-      if (member_decl->node_type == NodeType::FIELD_DECL) {
-        expr->expression_type =
-            static_cast<FieldDeclaration *>(member_decl)->type_info;
-        return expr->expression_type;
-      }
-      // Nested class or enum access — return the type itself so further chained
-      // access works.
-      if (member_decl->node_type == NodeType::CLASS_DECL ||
-          member_decl->node_type == NodeType::ENUM_DECL) {
-        expr->expression_type = {member_decl->mangled_name, 0};
-        return expr->expression_type;
-      }
-    } else if (type_decl->node_type == NodeType::ENUM_DECL) {
-      auto* enum_decl = static_cast<EnumDeclaration*>(type_decl);
-      int32_t e_val = -1;
-      for (size_t i = 0; i < enum_decl->members.size(); ++i) {
-          if (enum_decl->members[i] == member_access->member_name) {
-              e_val = i;
-              break;
-          }
-      }
-      if (e_val == -1) {
-          record_error(expr, "Undefined enum member: " + member_access->member_name);
-      }
-      member_access->resolved_declaration = enum_decl;
-      member_access->enum_value = e_val;
-      expr->expression_type = object_type;
-      return expr->expression_type;
-    }
-
-    record_error(expr, "Invalid member access on type: " + object_type.name);
-
-  } else if (expr->node_type == NodeType::METHOD_CALL) {
-    auto *method_call = static_cast<MethodCallExpression *>(expr);
-
-    std::vector<TypeInfo> argument_types;
-    for (const auto &arg : method_call->arguments) {
-      argument_types.push_back(evaluate_expression(arg.get()));
-    }
-
-    if (method_call->callee->node_type == NodeType::MEMBER_ACCESS) {
-      auto *member_access =
-          static_cast<MemberAccessExpression *>(method_call->callee.get());
-          
-      TypeInfo receiver_type;
-      ClassDeclaration* current_resolve_class = nullptr;
-      
-      if (member_access->is_scope_resolution) {
-          if (member_access->object->node_type == NodeType::IDENTIFIER) {
-              auto* id = static_cast<IdentifierNode*>(member_access->object.get());
-              std::string class_name = resolve_type(TypeInfo{id->name, 0}, expr).name;
-              Node* decl = global_scope.resolve(class_name);
-              if (!decl || decl->node_type != NodeType::CLASS_DECL) {
-                  record_error(expr, "Invalid class name for scope resolution: " + class_name);
-                  return {"void", 0};
-              }
-              current_resolve_class = static_cast<ClassDeclaration*>(decl);
-              receiver_type = {"void", 0};
-          } else if (member_access->object->node_type == NodeType::MEMBER_ACCESS) {
-              auto* inner_access = static_cast<MemberAccessExpression*>(member_access->object.get());
-              receiver_type = evaluate_expression(inner_access->object.get());
-              std::string class_name = resolve_type(TypeInfo{inner_access->member_name, 0}, expr).name;
-              Node* decl = global_scope.resolve(class_name);
-              if (!decl || decl->node_type != NodeType::CLASS_DECL) {
-                  record_error(expr, "Invalid class name for scope resolution: " + class_name);
-                  return {"void", 0};
-              }
-              current_resolve_class = static_cast<ClassDeclaration*>(decl);
-              
-              // Rewrite the AST so that the assembler sees `dog` instead of `dog.Animal` as the receiver
-              member_access->object = std::move(inner_access->object);
-          } else {
-              record_error(expr, "Invalid syntax for scope resolution");
-              return {"void", 0};
-          }
-      } else {
-          receiver_type = evaluate_expression(member_access->object.get());
-          Node* type_decl = global_scope.resolve(receiver_type.name);
-          if (type_decl && type_decl->node_type == NodeType::CLASS_DECL) {
-              current_resolve_class = static_cast<ClassDeclaration*>(type_decl);
-          }
-      }
-      
-      Node *method_decl = nullptr;
-      std::string base_name;
-      std::string mangled_name;
-      
-      while (!method_decl && current_resolve_class) {
-          base_name = current_resolve_class->mangled_name + "." + member_access->member_name;
-          mangled_name = mangle_method_call(base_name, argument_types);
-          method_decl = global_scope.resolve(mangled_name);
-          if (!method_decl) method_decl = global_scope.resolve(base_name);
-          
-          if (!method_decl && !current_resolve_class->base_class_name.empty() && !member_access->is_scope_resolution) {
-              Node* base_node = global_scope.resolve(current_resolve_class->base_class_name);
-              if (base_node) current_resolve_class = static_cast<ClassDeclaration*>(base_node);
-              else break;
-          } else {
-              break;
-          }
-      }
-
-      if (!method_decl) {
-          record_error(expr, "No matching method: " +  member_access->member_name + " on " + receiver_type.name); 
-          return {"void", 0}; 
-      }
-      if (!check_access(method_decl, current_resolve_class, expr)) return {"void", 0};
-      method_call->resolved_declaration = method_decl;
-      if (method_decl->node_type == NodeType::METHOD_DECL) {
-          auto* m = static_cast<MethodDeclaration*>(method_decl);
-          if (m->is_virtual && member_access && !member_access->is_scope_resolution) {
-              method_call->is_virtual_call = true;
-          }
-          expr->expression_type = m->return_type;
-      } else {
-          expr->expression_type = {"void", 0};
-      }
-      return expr->expression_type;
-
-    } else {
-      // Local method call — must be inside a class.
-      if (!current_class) {
-        record_error(expr, "Local method calls must be inside a class");
-        return {"void", 0};
-      }
-      auto *id = static_cast<IdentifierNode *>(method_call->callee.get());
-      std::string base_name;
-      std::string mangled_name;
-      Node *method_decl = nullptr;
-      ClassDeclaration* current_resolve_class = current_class;
-
-      if (id->name == "super") {
-          if (current_class->base_class_name.empty()) { record_error(expr, "Cannot call super() in a class without a base class"); return {"void", 0}; }
-          Node* base_node = global_scope.resolve(current_class->base_class_name);
-          if (!base_node) { record_error(expr, "Base class not found"); return {"void", 0}; }
-          current_resolve_class = static_cast<ClassDeclaration*>(base_node);
-          base_name = current_resolve_class->mangled_name + ".ctor";
-          mangled_name = mangle_method_call(base_name, argument_types);
-          method_decl = global_scope.resolve(mangled_name);
-          if (!method_decl) method_decl = global_scope.resolve(base_name);
-      } else {
-          while (!method_decl && current_resolve_class) {
-              base_name = current_resolve_class->mangled_name + "." + id->name;
-              mangled_name = mangle_method_call(base_name, argument_types);
-              method_decl = global_scope.resolve(mangled_name);
-              if (!method_decl) method_decl = global_scope.resolve(base_name);
-              
-              if (!method_decl && !current_resolve_class->base_class_name.empty()) {
-                  Node* base_node = global_scope.resolve(current_resolve_class->base_class_name);
-                  if (base_node) current_resolve_class = static_cast<ClassDeclaration*>(base_node);
-                  else break;
-              } else {
-                  break;
-              }
-          }
-      }
-
-      if (!method_decl) {
-          record_error(expr, "No matching method: " + id->name); 
-          return {"void", 0}; 
-      }
-      if (!check_access(method_decl, current_resolve_class, expr)) return {"void", 0};
-      method_call->resolved_declaration = method_decl;
-      if (method_decl->node_type == NodeType::METHOD_DECL) {
-          auto* m = static_cast<MethodDeclaration*>(method_decl);
-          if (m->is_virtual && id->name != "super") {
-              method_call->is_virtual_call = true;
-          }
-          expr->expression_type = m->return_type;
-      } else {
-          expr->expression_type = {"void", 0};
-      }
-      return expr->expression_type;
-    }
-
-  } else if (expr->node_type == NodeType::NEW_INSTANCE) {
-    auto *new_instance = static_cast<NewInstanceExpression *>(expr);
-    new_instance->type_info =
-        resolve_type(new_instance->type_info, new_instance);
-
-    Node* resolved_cls = global_scope.resolve(new_instance->type_info.name);
-    if (resolved_cls && resolved_cls->node_type == NodeType::CLASS_DECL) {
-        auto* cls = static_cast<ClassDeclaration*>(resolved_cls);
-        for (auto* m : cls->vtable) {
-            if (m->is_abstract) {
-                record_error(expr, "Cannot instantiate abstract class '" + cls->class_name + "' (abstract method: " + m->method_name + ")");
-                return {"void", 0};
-            }
-        }
-    }
-
-    std::vector<TypeInfo> argument_types;
-    for (const auto &arg : new_instance->arguments) {
-      argument_types.push_back(evaluate_expression(arg.get()));
-    }
-
-    // Try exact constructor match first.
-    std::string mangled_ctor =
-        mangle_constructor(new_instance->type_info.name, argument_types);
-    Node *ctor = global_scope.resolve(mangled_ctor);
-
-    // Fallback: find any constructor with the same arity (allows numeric
-    // coercion).
-    if (!ctor && !argument_types.empty()) {
-      std::string ctor_prefix = new_instance->type_info.name + ".ctor(";
-      int expected_param_count = static_cast<int>(argument_types.size());
-      for (const auto &[sym_name, sym_node] : global_scope.symbols) {
-        if (sym_node->node_type == NodeType::CONSTRUCTOR_DECL &&
-            sym_name.find(ctor_prefix) == 0) {
-          auto *candidate = static_cast<ConstructorDeclaration *>(sym_node);
-          if (static_cast<int>(candidate->parameters.size()) ==
-              expected_param_count) {
-            ctor = sym_node;
-            break;
-          }
-        }
-      }
-    }
-
-    if (!ctor && !argument_types.empty()) {
-      record_error(expr, "No matching constructor: " + mangled_ctor);
-    }
-    if (ctor) new_instance->resolved_declaration = ctor; else new_instance->resolved_declaration =
-        global_scope.resolve(new_instance->type_info.name);
-    expr->expression_type = new_instance->type_info;
-    return expr->expression_type;
-
-  } else if (expr->node_type == NodeType::ARRAY_CREATION) {
-    auto *array_creation = static_cast<ArrayCreationExpression *>(expr);
-    array_creation->type_info =
-        resolve_type(array_creation->type_info, array_creation);
-    TypeInfo size_type = evaluate_expression(array_creation->size.get());
-    if (size_type.name != "int32")
-      record_error(expr, "Array size must be int32");
-    expr->expression_type = array_creation->type_info;
-    expr->expression_type.array_depth++;
-    return expr->expression_type;
-
-  } else if (expr->node_type == NodeType::ARRAY_ACCESS) {
-    auto *array_access = static_cast<ArrayAccessExpression *>(expr);
-    TypeInfo array_type = evaluate_expression(array_access->array.get());
-    if (array_type.array_depth == 0)
-      record_error(expr, "Cannot index a non-array value");
-    TypeInfo index_type = evaluate_expression(array_access->index.get());
-    if (index_type.name != "int32")
-      record_error(expr, "Array index must be int32");
-    expr->expression_type = array_type;
-    expr->expression_type.array_depth--;
-    return expr->expression_type;
-
-  } else if (expr->node_type == NodeType::CAST_EXPR) {
-    auto *cast_expr = static_cast<CastExpression *>(expr);
-    TypeInfo source_type = evaluate_expression(cast_expr->expression.get());
-    cast_expr->target_type = resolve_type(cast_expr->target_type, cast_expr);
-    
-    auto is_primitive = [&](const TypeInfo& t) {
-        if (t.array_depth > 0) return false;
-        Node* decl = global_scope.resolve(t.name);
-        return !decl || decl->is_primitive;
-    };
-    
-    bool target_prim = is_primitive(cast_expr->target_type);
-    bool source_prim = is_primitive(source_type);
-    
-    if (target_prim && source_prim) {
-        // primitive to primitive allowed
-    } else if (target_prim != source_prim) {
-        record_error(expr, "Cannot cast between primitive and class types");
-    } else {
-        if (is_assignable(cast_expr->target_type, source_type)) {
-            // Upcast: allowed
-        } else if (is_assignable(source_type, cast_expr->target_type)) {
-            // Downcast: Phase 10
-            Node* target_class = global_scope.resolve(cast_expr->target_type.name);
-            if (target_class && target_class->node_type == NodeType::CLASS_DECL) {
-                cast_expr->target_vtable_id = static_cast<ClassDeclaration*>(target_class)->vtable_id;
-            }
-        } else {
-            record_error(expr, "Cannot cast '" + source_type.name + "' to '" + cast_expr->target_type.name + "': no inheritance relationship");
-        }
-    }
-    
-    expr->expression_type = cast_expr->target_type;
-    return expr->expression_type;
-  } else if (expr->node_type == NodeType::INSTANCEOF_EXPR) {
-    auto *inst_expr = static_cast<InstanceofExpression *>(expr);
-    TypeInfo source_type = evaluate_expression(inst_expr->expression.get());
-    inst_expr->target_type = resolve_type(inst_expr->target_type, inst_expr);
-    
-    Node* target_class = global_scope.resolve(inst_expr->target_type.name);
-    if (target_class && target_class->node_type == NodeType::CLASS_DECL) {
-        inst_expr->target_vtable_id = static_cast<ClassDeclaration*>(target_class)->vtable_id;
-    }
-    
-    expr->expression_type = {"bool", 0};
-    return expr->expression_type;
-  }
-
-  expr->expression_type = {"void", 0};
-  return expr->expression_type;
-}
-
-
 
 bool Binder::check_access(Node* member_decl, Node* owner_class_node, Node* expr) {
     if (!owner_class_node || owner_class_node->node_type != NodeType::CLASS_DECL) return true;
@@ -1233,7 +489,6 @@ bool Binder::check_access(Node* member_decl, Node* owner_class_node, Node* expr)
     
     if (access == TokenType::KEYWORD_PUBLIC) return true;
 
-    // Nested classes have full access to enclosing class members.
     if (current_class && current_class->mangled_name.find(owner_class->mangled_name + ".") == 0) {
         return true;
     }
@@ -1276,4 +531,668 @@ bool Binder::check_access(Node* member_decl, Node* owner_class_node, Node* expr)
 
     return true;
 }
+
+// ─── Visitors ────────────────────────────────────────────────────────────────
+
+void Binder::visit(IdentifierNode& n) {
+    if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+        if (n.name == "true" || n.name == "false") {
+            n.expression_type = {"bool", 0};
+            evaluated_type = n.expression_type; return;
+        }
+        if (n.name == "null") {
+            n.expression_type = {"void", 0};
+            evaluated_type = n.expression_type; return;
+        }
+
+        Node *declaration = current_scope->resolve(n.name);
+        if (!declaration && current_class) {
+            declaration = global_scope.resolve(current_class->mangled_name + "." + n.name);
+        }
+        if (!declaration && !current_package.empty()) {
+            declaration = global_scope.resolve(current_package + n.name);
+        }
+        if (!declaration) {
+            declaration = global_scope.resolve(n.name);
+        }
+
+        if (!declaration) {
+            record_error(&n, "Undefined identifier: " + n.name);
+            evaluated_type = {"void", 0}; return;
+        }
+        n.resolved_declaration = declaration;
+
+        if (declaration->node_type == NodeType::VAR_DECL) {
+            n.expression_type = static_cast<VariableDeclaration *>(declaration)->type_info;
+        } else if (declaration->node_type == NodeType::FIELD_DECL) {
+            n.expression_type = static_cast<FieldDeclaration *>(declaration)->type_info;
+        } else if (declaration->node_type == NodeType::CLASS_DECL || declaration->node_type == NodeType::ENUM_DECL) {
+            n.expression_type = {declaration->mangled_name, 0};
+        } else {
+            record_error(&n, "Invalid identifier usage: " + n.name);
+            evaluated_type = {"void", 0}; return;
+        }
+        evaluated_type = n.expression_type;
+    }
+}
+
+void Binder::visit(LiteralNode& n) {
+    if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+        if (std::holds_alternative<int64_t>(n.value))
+            n.expression_type = {"int32", 0};
+        else if (std::holds_alternative<double>(n.value))
+            n.expression_type = {"float64", 0};
+        else if (std::holds_alternative<std::string>(n.value))
+            n.expression_type = {"char", 1};
+        else
+            n.expression_type = {"void", 0};
+        evaluated_type = n.expression_type;
+    }
+}
+
+void Binder::visit(BinaryExpression& n) {
+    if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+        TypeInfo left_type = evaluate_expression(n.left.get());
+        TypeInfo right_type = evaluate_expression(n.right.get());
+
+        Node *left_decl = global_scope.resolve(left_type.name);
+        if (left_decl && left_decl->node_type == NodeType::CLASS_DECL) {
+            std::string op_name = "operator";
+            if (n.op == TokenType::OPERATOR_PLUS) op_name += "+";
+            else if (n.op == TokenType::OPERATOR_MINUS) op_name += "-";
+            else if (n.op == TokenType::OPERATOR_MULTIPLY) op_name += "*";
+            else if (n.op == TokenType::OPERATOR_DIVIDE) op_name += "/";
+            else goto primitive_fallback;
+            
+            std::string base_name = left_decl->mangled_name + "." + op_name;
+            std::vector<TypeInfo> args = {right_type};
+            std::string mangled = mangle_method_call(base_name, args);
+            Node* method_decl = global_scope.resolve(mangled);
+            if (!method_decl) goto primitive_fallback;
+            
+            n.overloaded_operator = method_decl;
+            n.expression_type = static_cast<MethodDeclaration*>(method_decl)->return_type;
+            evaluated_type = n.expression_type;
+            return;
+        }
+        
+        primitive_fallback:
+        if (left_type != right_type) {
+            record_error(&n, "Binary operands type mismatch: '" + left_type.name + "' vs '" + right_type.name + "'");
+        }
+        if (n.op >= TokenType::OPERATOR_EQUAL && n.op <= TokenType::OPERATOR_GREATER_EQUAL) {
+            n.expression_type = {"bool", 0};
+        } else {
+            n.expression_type = left_type;
+        }
+        evaluated_type = n.expression_type;
+    }
+}
+
+void Binder::visit(UnaryExpression& n) {
+    if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+        n.expression_type = evaluate_expression(n.operand.get());
+        evaluated_type = n.expression_type;
+    }
+}
+
+void Binder::visit(AssignmentExpression& n) {
+    if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+        TypeInfo target_type = evaluate_expression(n.target.get());
+        TypeInfo value_type = evaluate_expression(n.value.get());
+
+        Node *left_decl = global_scope.resolve(target_type.name);
+        if (left_decl && left_decl->node_type == NodeType::CLASS_DECL) {
+            std::string op_name = "operator=";
+            std::string base_name = left_decl->mangled_name + "." + op_name;
+            std::vector<TypeInfo> args = {value_type};
+            std::string mangled = mangle_method_call(base_name, args);
+            Node* method_decl = global_scope.resolve(mangled);
+            if (method_decl) {
+                n.overloaded_operator = method_decl;
+                n.expression_type = static_cast<MethodDeclaration*>(method_decl)->return_type;
+                evaluated_type = n.expression_type;
+                return;
+            }
+        }
+        if (!is_assignable(target_type, value_type)) {
+            record_error(&n, "Assignment type mismatch: '" + target_type.name + "' = '" + value_type.name + "'");
+        }
+        n.expression_type = target_type;
+        evaluated_type = n.expression_type;
+    }
+}
+
+void Binder::visit(ArrayAccessExpression& n) {
+    if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+        TypeInfo array_type = evaluate_expression(n.array.get());
+        if (array_type.array_depth == 0) record_error(&n, "Cannot index a non-array value");
+        TypeInfo index_type = evaluate_expression(n.index.get());
+        if (index_type.name != "int32") record_error(&n, "Array index must be int32");
+        n.expression_type = array_type;
+        n.expression_type.array_depth--;
+        evaluated_type = n.expression_type;
+    }
+}
+
+void Binder::visit(MemberAccessExpression& n) {
+    if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+        TypeInfo object_type = evaluate_expression(n.object.get());
+        if (object_type.array_depth > 0) {
+            if (n.member_name == "length") {
+                n.expression_type = {"int32", 0}; evaluated_type = n.expression_type; return;
+            }
+            record_error(&n, "Arrays only have the 'length' property");
+        }
+        Node *type_decl = global_scope.resolve(object_type.name);
+        if (!type_decl) {
+            record_error(&n, "Cannot access members on unknown type: " + object_type.name); 
+            evaluated_type = {"void", 0}; return;
+        }
+        if (type_decl->node_type == NodeType::CLASS_DECL) {
+            auto *class_decl = static_cast<ClassDeclaration *>(type_decl);
+            Node *member_decl = global_scope.resolve(class_decl->mangled_name + "." + n.member_name);
+            ClassDeclaration* current_resolve_class = class_decl;
+            while (!member_decl && current_resolve_class && !current_resolve_class->base_class_name.empty()) {
+                Node* base_node = global_scope.resolve(current_resolve_class->base_class_name);
+                if (!base_node) break;
+                current_resolve_class = static_cast<ClassDeclaration*>(base_node);
+                member_decl = global_scope.resolve(current_resolve_class->mangled_name + "." + n.member_name);
+            }
+            if (!member_decl) {
+                record_error(&n, "Member not found: " + n.member_name + " on " + class_decl->mangled_name); 
+                evaluated_type = {"void", 0}; return;
+            }
+            if (!check_access(member_decl, current_resolve_class, &n)) { evaluated_type = {"void", 0}; return; }
+            n.resolved_declaration = member_decl;
+            if (member_decl->node_type == NodeType::FIELD_DECL) {
+                n.expression_type = static_cast<FieldDeclaration *>(member_decl)->type_info;
+                evaluated_type = n.expression_type; return;
+            }
+            if (member_decl->node_type == NodeType::CLASS_DECL || member_decl->node_type == NodeType::ENUM_DECL) {
+                n.expression_type = {member_decl->mangled_name, 0};
+                evaluated_type = n.expression_type; return;
+            }
+        } else if (type_decl->node_type == NodeType::ENUM_DECL) {
+            auto* enum_decl = static_cast<EnumDeclaration*>(type_decl);
+            int32_t e_val = -1;
+            for (size_t i = 0; i < enum_decl->members.size(); ++i) {
+                if (enum_decl->members[i] == n.member_name) { e_val = i; break; }
+            }
+            if (e_val == -1) record_error(&n, "Undefined enum member: " + n.member_name);
+            n.resolved_declaration = enum_decl;
+            n.enum_value = e_val;
+            n.expression_type = object_type;
+            evaluated_type = n.expression_type; return;
+        }
+        record_error(&n, "Invalid member access on type: " + object_type.name);
+        evaluated_type = {"void", 0};
+    }
+}
+
+void Binder::visit(MethodCallExpression& n) {
+    if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+        std::vector<TypeInfo> argument_types;
+        for (const auto &arg : n.arguments) {
+            argument_types.push_back(evaluate_expression(arg.get()));
+        }
+
+        if (n.callee->node_type == NodeType::MEMBER_ACCESS) {
+            auto *member_access = static_cast<MemberAccessExpression *>(n.callee.get());
+            TypeInfo receiver_type;
+            ClassDeclaration* current_resolve_class = nullptr;
+            
+            if (member_access->is_scope_resolution) {
+                if (member_access->object->node_type == NodeType::IDENTIFIER) {
+                    auto* id = static_cast<IdentifierNode*>(member_access->object.get());
+                    std::string class_name = resolve_type(TypeInfo{id->name, 0}, &n).name;
+                    Node* decl = global_scope.resolve(class_name);
+                    if (!decl || decl->node_type != NodeType::CLASS_DECL) {
+                        record_error(&n, "Invalid class name for scope resolution: " + class_name);
+                        evaluated_type = {"void", 0}; return;
+                    }
+                    current_resolve_class = static_cast<ClassDeclaration*>(decl);
+                    receiver_type = {"void", 0};
+                } else if (member_access->object->node_type == NodeType::MEMBER_ACCESS) {
+                    auto* inner_access = static_cast<MemberAccessExpression*>(member_access->object.get());
+                    receiver_type = evaluate_expression(inner_access->object.get());
+                    std::string class_name = resolve_type(TypeInfo{inner_access->member_name, 0}, &n).name;
+                    Node* decl = global_scope.resolve(class_name);
+                    if (!decl || decl->node_type != NodeType::CLASS_DECL) {
+                        record_error(&n, "Invalid class name for scope resolution: " + class_name);
+                        evaluated_type = {"void", 0}; return;
+                    }
+                    current_resolve_class = static_cast<ClassDeclaration*>(decl);
+                    member_access->object = std::move(inner_access->object);
+                } else {
+                    record_error(&n, "Invalid syntax for scope resolution");
+                    evaluated_type = {"void", 0}; return;
+                }
+            } else {
+                receiver_type = evaluate_expression(member_access->object.get());
+                Node* type_decl = global_scope.resolve(receiver_type.name);
+                if (type_decl && type_decl->node_type == NodeType::CLASS_DECL) {
+                    current_resolve_class = static_cast<ClassDeclaration*>(type_decl);
+                }
+            }
+            
+            Node *method_decl = nullptr;
+            std::string base_name;
+            std::string mangled_name;
+            
+            while (!method_decl && current_resolve_class) {
+                base_name = current_resolve_class->mangled_name + "." + member_access->member_name;
+                mangled_name = mangle_method_call(base_name, argument_types);
+                method_decl = global_scope.resolve(mangled_name);
+                if (!method_decl) method_decl = global_scope.resolve(base_name);
+                
+                if (!method_decl && !current_resolve_class->base_class_name.empty() && !member_access->is_scope_resolution) {
+                    Node* base_node = global_scope.resolve(current_resolve_class->base_class_name);
+                    if (base_node) current_resolve_class = static_cast<ClassDeclaration*>(base_node);
+                    else break;
+                } else break;
+            }
+
+            if (!method_decl) {
+                record_error(&n, "No matching method: " + member_access->member_name + " on " + receiver_type.name); 
+                evaluated_type = {"void", 0}; return;
+            }
+            if (!check_access(method_decl, current_resolve_class, &n)) { evaluated_type = {"void", 0}; return; }
+            n.resolved_declaration = method_decl;
+            if (method_decl->node_type == NodeType::METHOD_DECL) {
+                auto* m = static_cast<MethodDeclaration*>(method_decl);
+                if (m->is_virtual && member_access && !member_access->is_scope_resolution) {
+                    n.is_virtual_call = true;
+                }
+                n.expression_type = m->return_type;
+            } else {
+                n.expression_type = {"void", 0};
+            }
+            evaluated_type = n.expression_type; return;
+        } else {
+            if (!current_class) {
+                record_error(&n, "Local method calls must be inside a class");
+                evaluated_type = {"void", 0}; return;
+            }
+            auto *id = static_cast<IdentifierNode *>(n.callee.get());
+            std::string base_name;
+            std::string mangled_name;
+            Node *method_decl = nullptr;
+            ClassDeclaration* current_resolve_class = current_class;
+
+            if (id->name == "super") {
+                if (current_class->base_class_name.empty()) { record_error(&n, "Cannot call super() in a class without a base class"); evaluated_type = {"void", 0}; return; }
+                Node* base_node = global_scope.resolve(current_class->base_class_name);
+                if (!base_node) { record_error(&n, "Base class not found"); evaluated_type = {"void", 0}; return; }
+                current_resolve_class = static_cast<ClassDeclaration*>(base_node);
+                base_name = current_resolve_class->mangled_name + ".ctor";
+                mangled_name = mangle_method_call(base_name, argument_types);
+                method_decl = global_scope.resolve(mangled_name);
+                if (!method_decl) method_decl = global_scope.resolve(base_name);
+            } else {
+                while (!method_decl && current_resolve_class) {
+                    base_name = current_resolve_class->mangled_name + "." + id->name;
+                    mangled_name = mangle_method_call(base_name, argument_types);
+                    method_decl = global_scope.resolve(mangled_name);
+                    if (!method_decl) method_decl = global_scope.resolve(base_name);
+                    
+                    if (!method_decl && !current_resolve_class->base_class_name.empty()) {
+                        Node* base_node = global_scope.resolve(current_resolve_class->base_class_name);
+                        if (base_node) current_resolve_class = static_cast<ClassDeclaration*>(base_node);
+                        else break;
+                    } else break;
+                }
+            }
+
+            if (!method_decl) {
+                record_error(&n, "No matching method: " + id->name); 
+                evaluated_type = {"void", 0}; return;
+            }
+            if (!check_access(method_decl, current_resolve_class, &n)) { evaluated_type = {"void", 0}; return; }
+            n.resolved_declaration = method_decl;
+            if (method_decl->node_type == NodeType::METHOD_DECL) {
+                auto* m = static_cast<MethodDeclaration*>(method_decl);
+                if (m->is_virtual && id->name != "super") {
+                    n.is_virtual_call = true;
+                }
+                n.expression_type = m->return_type;
+            } else {
+                n.expression_type = {"void", 0};
+            }
+            evaluated_type = n.expression_type; return;
+        }
+    }
+}
+
+void Binder::visit(NewInstanceExpression& n) {
+    if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+        n.type_info = resolve_type(n.type_info, &n);
+        Node* resolved_cls = global_scope.resolve(n.type_info.name);
+        if (resolved_cls && resolved_cls->node_type == NodeType::CLASS_DECL) {
+            auto* cls = static_cast<ClassDeclaration*>(resolved_cls);
+            for (auto* m : cls->vtable) {
+                if (m->is_abstract) {
+                    record_error(&n, "Cannot instantiate abstract class '" + cls->class_name + "' (abstract method: " + m->method_name + ")");
+                    evaluated_type = {"void", 0}; return;
+                }
+            }
+        }
+        std::vector<TypeInfo> argument_types;
+        for (const auto &arg : n.arguments) {
+            argument_types.push_back(evaluate_expression(arg.get()));
+        }
+        std::string mangled_ctor = mangle_constructor(n.type_info.name, argument_types);
+        Node *ctor = global_scope.resolve(mangled_ctor);
+        if (!ctor && !argument_types.empty()) {
+            std::string ctor_prefix = n.type_info.name + ".ctor(";
+            int expected_param_count = static_cast<int>(argument_types.size());
+            for (const auto &[sym_name, sym_node] : global_scope.symbols) {
+                if (sym_node->node_type == NodeType::CONSTRUCTOR_DECL && sym_name.find(ctor_prefix) == 0) {
+                    auto *candidate = static_cast<ConstructorDeclaration *>(sym_node);
+                    if (static_cast<int>(candidate->parameters.size()) == expected_param_count) {
+                        ctor = sym_node; break;
+                    }
+                }
+            }
+        }
+        if (!ctor && !argument_types.empty()) record_error(&n, "No matching constructor: " + mangled_ctor);
+        if (ctor) n.resolved_declaration = ctor; else n.resolved_declaration = global_scope.resolve(n.type_info.name);
+        n.expression_type = n.type_info;
+        evaluated_type = n.expression_type;
+    }
+}
+
+void Binder::visit(ArrayCreationExpression& n) {
+    if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+        n.type_info = resolve_type(n.type_info, &n);
+        TypeInfo size_type = evaluate_expression(n.size.get());
+        if (size_type.name != "int32") record_error(&n, "Array size must be int32");
+        n.expression_type = n.type_info;
+        n.expression_type.array_depth++;
+        evaluated_type = n.expression_type;
+    }
+}
+
+void Binder::visit(ArrayLiteralExpression& n) {
+    if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+        TypeInfo element_type = {"void", 0};
+        for (const auto &element : n.elements) {
+            TypeInfo current_element_type = evaluate_expression(element.get());
+            if (element_type.name == "void") {
+                element_type = current_element_type;
+            } else if (element_type != current_element_type) {
+                record_error(&n, "Mixed types in array literal");
+            }
+        }
+        element_type.array_depth++;
+        n.expression_type = element_type;
+        evaluated_type = n.expression_type;
+    }
+}
+
+void Binder::visit(CastExpression& n) {
+    if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+        TypeInfo source_type = evaluate_expression(n.expression.get());
+        n.target_type = resolve_type(n.target_type, &n);
+        auto is_primitive = [&](const TypeInfo& t) {
+            if (t.array_depth > 0) return false;
+            Node* decl = global_scope.resolve(t.name);
+            return !decl || decl->is_primitive;
+        };
+        bool target_prim = is_primitive(n.target_type);
+        bool source_prim = is_primitive(source_type);
+        if (target_prim && source_prim) {
+        } else if (target_prim != source_prim) {
+            record_error(&n, "Cannot cast between primitive and class types");
+        } else {
+            if (is_assignable(n.target_type, source_type)) {
+            } else if (is_assignable(source_type, n.target_type)) {
+                Node* target_class = global_scope.resolve(n.target_type.name);
+                if (target_class && target_class->node_type == NodeType::CLASS_DECL) {
+                    n.target_vtable_id = static_cast<ClassDeclaration*>(target_class)->vtable_id;
+                }
+            } else {
+                record_error(&n, "Cannot cast '" + source_type.name + "' to '" + n.target_type.name + "': no inheritance relationship");
+            }
+        }
+        n.expression_type = n.target_type;
+        evaluated_type = n.expression_type;
+    }
+}
+
+void Binder::visit(InstanceofExpression& n) {
+    if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+        TypeInfo source_type = evaluate_expression(n.expression.get());
+        n.target_type = resolve_type(n.target_type, &n);
+        Node* target_class = global_scope.resolve(n.target_type.name);
+        if (target_class && target_class->node_type == NodeType::CLASS_DECL) {
+            n.target_vtable_id = static_cast<ClassDeclaration*>(target_class)->vtable_id;
+        }
+        n.expression_type = {"bool", 0};
+        evaluated_type = n.expression_type;
+    }
+}
+
+void Binder::visit(TernaryExpression& n) {
+    if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+        TypeInfo condition_type = evaluate_expression(n.condition.get());
+        if (condition_type.name != "bool") record_error(&n, "Ternary condition must be bool");
+        TypeInfo true_type = evaluate_expression(n.true_branch.get());
+        TypeInfo false_type = evaluate_expression(n.false_branch.get());
+        if (true_type != false_type) record_error(&n, "Ternary branches must have the same type");
+        n.expression_type = true_type;
+        evaluated_type = n.expression_type;
+    }
+}
+
+void Binder::visit(BlockStatement& n) {
+    if (current_pass == BinderPass::BIND_EXECUTION) {
+        SymbolTable block_scope;
+        enter_scope(&block_scope);
+        for (const auto &child : n.children) bind_node(child.get());
+        exit_scope();
+    }
+}
+
+void Binder::visit(IfStatement& n) {
+    if (current_pass == BinderPass::BIND_EXECUTION) {
+        TypeInfo condition_type = evaluate_expression(n.condition.get());
+        if (condition_type.name != "bool") record_error(&n, "Condition must be bool");
+        bind_node(n.then_branch.get());
+        if (n.else_branch) bind_node(n.else_branch.get());
+    }
+}
+
+void Binder::visit(ForStatement& n) {
+    if (current_pass == BinderPass::BIND_EXECUTION) {
+        SymbolTable for_scope;
+        enter_scope(&for_scope);
+        if (n.initialization) bind_node(n.initialization.get());
+        if (n.condition) {
+            TypeInfo condition_type = evaluate_expression(n.condition.get());
+            if (condition_type.name != "bool") record_error(&n, "Condition must be bool");
+        }
+        if (n.iteration) evaluate_expression(n.iteration.get());
+        loop_depth++;
+        bind_node(n.body.get());
+        loop_depth--;
+        exit_scope();
+    }
+}
+
+void Binder::visit(WhileStatement& n) {
+    if (current_pass == BinderPass::BIND_EXECUTION) {
+        TypeInfo condition_type = evaluate_expression(n.condition.get());
+        if (condition_type.name != "bool") record_error(&n, "Condition must be bool");
+        loop_depth++;
+        bind_node(n.body.get());
+        loop_depth--;
+    }
+}
+
+void Binder::visit(DoWhileStatement& n) {
+    if (current_pass == BinderPass::BIND_EXECUTION) {
+        loop_depth++;
+        bind_node(n.body.get());
+        loop_depth--;
+        TypeInfo condition_type = evaluate_expression(n.condition.get());
+        if (condition_type.name != "bool") record_error(&n, "Condition must be bool");
+    }
+}
+
+void Binder::visit(SwitchStatement& n) {
+    if (current_pass == BinderPass::BIND_EXECUTION) {
+        evaluate_expression(n.condition.get());
+        switch_depth++;
+        for (const auto &case_node : n.children) bind_node(case_node.get());
+        switch_depth--;
+    }
+}
+
+void Binder::visit(CaseStatement& n) {
+    if (current_pass == BinderPass::BIND_EXECUTION) {
+        if (n.case_value) evaluate_expression(n.case_value.get());
+        for (const auto &child : n.children) bind_node(child.get());
+    }
+}
+
+void Binder::visit(VariableDeclaration& n) {
+    if (current_pass == BinderPass::BIND_EXECUTION) {
+        n.type_info = resolve_type(n.type_info, &n);
+        Node *type_decl = global_scope.resolve(n.type_info.name);
+        n.is_reference_type = !(type_decl && type_decl->is_primitive && n.type_info.array_depth == 0);
+        if (n.initializer) {
+            TypeInfo initializer_type = evaluate_expression(n.initializer.get());
+            if (!is_assignable(n.type_info, initializer_type)) {
+                record_error(&n, "Type mismatch in variable declaration: expected '" + n.type_info.name + "', got '" + initializer_type.name + "'");
+            }
+        }
+        n.memory_index = local_variable_index++;
+        declare_local(n.var_name, &n);
+    }
+}
+
+void Binder::visit(ExpressionStatement& n) {
+    if (current_pass == BinderPass::BIND_EXECUTION) {
+        evaluate_expression(n.expression.get());
+    }
+}
+
+void Binder::visit(ReturnStatement& n) {
+    if (current_pass == BinderPass::BIND_EXECUTION) {
+        if (n.value) {
+            TypeInfo return_type = evaluate_expression(n.value.get());
+            if (current_method && !is_assignable(current_method->return_type, return_type)) {
+                record_error(&n, "Return type mismatch: expected '" + current_method->return_type.name + "', got '" + return_type.name + "'");
+            }
+        } else if (current_method && current_method->return_type.name != "void") {
+            record_error(&n, "Must return a value from non-void method");
+        }
+    }
+}
+
+void Binder::visit(BreakStatement& n) {
+    if (current_pass == BinderPass::BIND_EXECUTION) {
+        if (loop_depth == 0 && switch_depth == 0) record_error(&n, "Break must be inside a loop or switch");
+    }
+}
+
+void Binder::visit(ContinueStatement& n) {
+    if (current_pass == BinderPass::BIND_EXECUTION) {
+        if (loop_depth == 0) record_error(&n, "Continue must be inside a loop");
+    }
+}
+
+void Binder::visit(PackageStatement& n) {
+    if (current_pass == BinderPass::REGISTER_GLOBALS) {
+        current_package = n.package_name + ".";
+        n.mangled_name = n.package_name;
+        global_scope.define(n.mangled_name, &n);
+    } else if (current_pass == BinderPass::REGISTER_MEMBERS) {
+        current_prefix = n.package_name + ".";
+    }
+}
+
+void Binder::visit(AliasStatement& n) {
+    if (current_pass == BinderPass::REGISTER_GLOBALS) {
+        std::string full_name = current_prefix + n.alias_name;
+        if (global_scope.symbols.count(full_name)) record_error(&n, "Duplicate global symbol: " + full_name);
+        n.mangled_name = full_name;
+        global_scope.define(full_name, &n);
+    }
+}
+
+void Binder::visit(EnumDeclaration& n) {
+    if (current_pass == BinderPass::REGISTER_GLOBALS) {
+        std::string full_name = current_prefix + n.enum_name;
+        if (global_scope.symbols.count(full_name)) record_error(&n, "Duplicate global symbol: " + full_name);
+        n.mangled_name = full_name;
+        global_scope.define(full_name, &n);
+        std::string my_prefix = full_name + ".";
+        for (const auto &child : n.children) {
+            if (child) child->parent = &n;
+            register_global_symbols(child.get(), my_prefix);
+        }
+    } else if (current_pass == BinderPass::REGISTER_MEMBERS) {
+        std::string my_prefix = current_prefix + n.enum_name + ".";
+        for (const auto &child : n.children) register_members(child.get(), my_prefix);
+    }
+}
+
+void Binder::visit(ClassDeclaration& n) {
+    if (current_pass == BinderPass::REGISTER_GLOBALS) {
+        std::string full_name = current_prefix + n.class_name;
+        if (!n.base_class_name.empty()) n.base_class_name = current_prefix + n.base_class_name;
+        if (global_scope.symbols.count(full_name)) record_error(&n, "Duplicate global symbol: " + full_name);
+        n.mangled_name = full_name;
+        global_scope.define(full_name, &n);
+        std::string my_prefix = full_name + ".";
+        for (const auto &child : n.children) {
+            if (child) child->parent = &n;
+            register_global_symbols(child.get(), my_prefix);
+        }
+    } else if (current_pass == BinderPass::REGISTER_MEMBERS) {
+        std::string my_prefix = current_prefix + n.class_name + ".";
+        current_class = &n;
+        for (const auto &child : n.children) register_members(child.get(), my_prefix);
+        current_class = nullptr;
+    }
+}
+
+void Binder::visit(FieldDeclaration& n) {
+    if (current_pass == BinderPass::REGISTER_MEMBERS) {
+        std::string full_name = current_prefix + n.field_name;
+        n.mangled_name = full_name;
+        global_scope.define(full_name, &n);
+    }
+}
+
+void Binder::visit(ConstructorDeclaration& n) {
+    if (current_pass == BinderPass::REGISTER_MEMBERS) {
+        std::string full_name = current_prefix + "ctor(";
+        for (size_t i = 0; i < n.parameters.size(); ++i) {
+            auto *var_decl = static_cast<VariableDeclaration *>(n.parameters[i].get());
+            var_decl->type_info = resolve_type(var_decl->type_info, var_decl);
+            full_name += var_decl->type_info.to_string();
+            if (i < n.parameters.size() - 1) full_name += ",";
+        }
+        full_name += ")";
+        n.mangled_name = full_name;
+        global_scope.define(full_name, &n);
+    }
+}
+
+void Binder::visit(MethodDeclaration& n) {
+    if (current_pass == BinderPass::REGISTER_MEMBERS) {
+        for (const auto &param : n.parameters) {
+            auto *var_decl = static_cast<VariableDeclaration *>(param.get());
+            var_decl->type_info = resolve_type(var_decl->type_info, var_decl);
+        }
+        std::string full_name = current_prefix + mangle_method(&n);
+        if (global_scope.symbols.count(full_name) && !n.is_native) record_error(&n, "Duplicate method signature: " + full_name);
+        n.mangled_name = full_name;
+        global_scope.define(full_name, &n);
+    }
+}
+
 } // namespace solix

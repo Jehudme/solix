@@ -1,4 +1,5 @@
 #pragma once
+#include "solix/ast_visitor.hpp"
 #include "solix/compilation.hpp"
 #include "solix/processes/process.hpp"
 #include "solix/utilities/optcodes.hpp"
@@ -10,7 +11,7 @@
 
 namespace solix {
 
-struct Assembler : public CompilationProcess {
+struct Assembler : public CompilationProcess, public NodeVisitor {
     using CompilationProcess::CompilationProcess;
     
     void execute() override;
@@ -47,6 +48,42 @@ private:
     
     void apply_linker_patches();
     void throw_error(Node* node, const std::string& msg);
+
+    void visit(IdentifierNode& node) override;
+    void visit(LiteralNode& node) override;
+    void visit(BinaryExpression& node) override;
+    void visit(UnaryExpression& node) override;
+    void visit(AssignmentExpression& node) override;
+    void visit(ArrayAccessExpression& node) override;
+    void visit(MemberAccessExpression& node) override;
+    void visit(MethodCallExpression& node) override;
+    void visit(NewInstanceExpression& node) override;
+    void visit(ArrayCreationExpression& node) override;
+    void visit(ArrayLiteralExpression& node) override;
+    void visit(CastExpression& node) override;
+    void visit(InstanceofExpression& node) override;
+    void visit(TernaryExpression& node) override;
+
+    void visit(BlockStatement& node) override;
+    void visit(IfStatement& node) override;
+    void visit(ForStatement& node) override;
+    void visit(WhileStatement& node) override;
+    void visit(DoWhileStatement& node) override;
+    void visit(SwitchStatement& node) override;
+    void visit(CaseStatement& node) override;
+    void visit(VariableDeclaration& node) override;
+    void visit(ExpressionStatement& node) override;
+    void visit(ReturnStatement& node) override;
+    void visit(BreakStatement& node) override;
+    void visit(ContinueStatement& node) override;
+    void visit(PackageStatement& node) override;
+    void visit(AliasStatement& node) override;
+
+    void visit(EnumDeclaration& node) override;
+    void visit(ClassDeclaration& node) override;
+    void visit(FieldDeclaration& node) override;
+    void visit(ConstructorDeclaration& node) override;
+    void visit(MethodDeclaration& node) override;
 };
 
 } // namespace solix

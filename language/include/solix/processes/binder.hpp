@@ -1,6 +1,7 @@
 #pragma once
 #include "solix/processes/process.hpp"
 #include "solix/statements.hpp"
+#include "solix/ast_visitor.hpp"
 #include <unordered_map>
 #include <string>
 #include <vector>
@@ -29,10 +30,46 @@ public:
     BindError(const std::string& msg) : std::runtime_error(msg) {}
 };
 
-class Binder : public CompilationProcess {
+enum class BinderPass { REGISTER_GLOBALS, REGISTER_MEMBERS, BIND_EXECUTION, EVALUATE_EXPRESSION };
+
+class Binder : public CompilationProcess, public NodeVisitor {
 public:
     Binder(CompilationContext& context, const std::string& name) : CompilationProcess(context, name) {}
     void execute() override;
+
+    void visit(IdentifierNode& node) override;
+    void visit(LiteralNode& node) override;
+    void visit(BinaryExpression& node) override;
+    void visit(UnaryExpression& node) override;
+    void visit(AssignmentExpression& node) override;
+    void visit(ArrayAccessExpression& node) override;
+    void visit(MemberAccessExpression& node) override;
+    void visit(MethodCallExpression& node) override;
+    void visit(NewInstanceExpression& node) override;
+    void visit(ArrayCreationExpression& node) override;
+    void visit(ArrayLiteralExpression& node) override;
+    void visit(CastExpression& node) override;
+    void visit(InstanceofExpression& node) override;
+    void visit(TernaryExpression& node) override;
+    void visit(BlockStatement& node) override;
+    void visit(IfStatement& node) override;
+    void visit(ForStatement& node) override;
+    void visit(WhileStatement& node) override;
+    void visit(DoWhileStatement& node) override;
+    void visit(SwitchStatement& node) override;
+    void visit(CaseStatement& node) override;
+    void visit(VariableDeclaration& node) override;
+    void visit(ExpressionStatement& node) override;
+    void visit(ReturnStatement& node) override;
+    void visit(BreakStatement& node) override;
+    void visit(ContinueStatement& node) override;
+    void visit(PackageStatement& node) override;
+    void visit(AliasStatement& node) override;
+    void visit(EnumDeclaration& node) override;
+    void visit(ClassDeclaration& node) override;
+    void visit(FieldDeclaration& node) override;
+    void visit(ConstructorDeclaration& node) override;
+    void visit(MethodDeclaration& node) override;
 
 private:
     SymbolTable global_scope;
@@ -61,6 +98,10 @@ private:
     ClassDeclaration* current_class = nullptr;
     MethodDeclaration* current_method = nullptr;
     std::string current_package;
+    
+    BinderPass current_pass;
+    std::string current_prefix;
+    TypeInfo evaluated_type;
     
     // Pass 1: Global Symbol Outline
     void register_global_symbols(Node* node, const std::string& prefix);

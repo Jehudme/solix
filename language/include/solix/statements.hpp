@@ -1,4 +1,5 @@
 #pragma once
+#include "solix/ast_visitor.hpp"
 #include <string>
 #include <vector>
 #include <memory>
@@ -61,6 +62,7 @@ struct Node {
     Node(NodeType type, const Token& token) 
         : node_type(type), line(token.line), column(token.column), source(token.source) {}
     virtual ~Node() = default;
+    virtual void accept(NodeVisitor& v) = 0;
 };
 
 // ==========================================
@@ -68,16 +70,22 @@ struct Node {
 // ==========================================
 
 struct IdentifierNode : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::string name;
     IdentifierNode(const Token& t, std::string n) : Node(NodeType::IDENTIFIER, t), name(std::move(n)) {}
 };
 
 struct LiteralNode : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     Value value;
     LiteralNode(const Token& t, Value v) : Node(NodeType::LITERAL, t), value(std::move(v)) {}
 };
 
 struct BinaryExpression : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> left;
     Node* overloaded_operator = nullptr;
     TokenType op;
@@ -90,6 +98,8 @@ struct BinaryExpression : public Node {
 };
 
 struct UnaryExpression : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     Node* overloaded_operator = nullptr;
     TokenType op;
     std::unique_ptr<Node> operand;
@@ -101,6 +111,8 @@ struct UnaryExpression : public Node {
 };
 
 struct AssignmentExpression : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> target;
     Node* overloaded_operator = nullptr;
     TokenType op;
@@ -113,6 +125,8 @@ struct AssignmentExpression : public Node {
 };
 
 struct ArrayAccessExpression : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> array;
     std::unique_ptr<Node> index;
     ArrayAccessExpression(const Token& t, std::unique_ptr<Node> arr, std::unique_ptr<Node> idx)
@@ -123,6 +137,8 @@ struct ArrayAccessExpression : public Node {
 };
 
 struct MemberAccessExpression : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> object;
     std::string member_name;
     bool is_scope_resolution = false;
@@ -134,6 +150,8 @@ struct MemberAccessExpression : public Node {
 };
 
 struct MethodCallExpression : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> callee;
     std::vector<std::unique_ptr<Node>> arguments;
     bool is_virtual_call = false;
@@ -144,6 +162,8 @@ struct MethodCallExpression : public Node {
 };
 
 struct NewInstanceExpression : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     TypeInfo type_info;
     std::vector<std::unique_ptr<Node>> arguments;
     bool is_virtual_call = false;
@@ -152,6 +172,8 @@ struct NewInstanceExpression : public Node {
 };
 
 struct ArrayCreationExpression : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     TypeInfo type_info;
     std::unique_ptr<Node> size;
     ArrayCreationExpression(const Token& t, TypeInfo type, std::unique_ptr<Node> sz)
@@ -161,11 +183,15 @@ struct ArrayCreationExpression : public Node {
 };
 
 struct ArrayLiteralExpression : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::vector<std::unique_ptr<Node>> elements;
     ArrayLiteralExpression(const Token& t) : Node(NodeType::ARRAY_LITERAL, t) {}
 };
 
 struct CastExpression : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     TypeInfo target_type;
     std::unique_ptr<Node> expression;
     int32_t target_vtable_id = -1;
@@ -176,6 +202,8 @@ struct CastExpression : public Node {
 };
 
 struct InstanceofExpression : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> expression;
     TypeInfo target_type;
     int32_t target_vtable_id = -1;
@@ -186,6 +214,8 @@ struct InstanceofExpression : public Node {
 };
 
 struct TernaryExpression : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> condition;
     std::unique_ptr<Node> true_branch;
     std::unique_ptr<Node> false_branch;
@@ -202,10 +232,14 @@ struct TernaryExpression : public Node {
 // ==========================================
 
 struct BlockStatement : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     BlockStatement(const Token& t) : Node(NodeType::BLOCK, t) {}
 };
 
 struct IfStatement : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> condition;
     std::unique_ptr<Node> then_branch;
     std::unique_ptr<Node> else_branch;
@@ -218,6 +252,8 @@ struct IfStatement : public Node {
 };
 
 struct ForStatement : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> initialization;
     std::unique_ptr<Node> condition;
     std::unique_ptr<Node> iteration;
@@ -226,29 +262,39 @@ struct ForStatement : public Node {
 };
 
 struct WhileStatement : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> condition;
     std::unique_ptr<Node> body;
     WhileStatement(const Token& t) : Node(NodeType::WHILE_STMT, t) {}
 };
 
 struct DoWhileStatement : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> body;
     std::unique_ptr<Node> condition;
     DoWhileStatement(const Token& t) : Node(NodeType::DO_WHILE_STMT, t) {}
 };
 
 struct SwitchStatement : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> condition;
     SwitchStatement(const Token& t) : Node(NodeType::SWITCH_STMT, t) {}
 };
 
 struct CaseStatement : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> case_value;
     bool is_default = false;
     CaseStatement(const Token& t) : Node(NodeType::CASE_STMT, t) {}
 };
 
 struct VariableDeclaration : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::string var_name;
     TypeInfo type_info;
     bool is_const = false;
@@ -260,6 +306,8 @@ struct VariableDeclaration : public Node {
 };
 
 struct ExpressionStatement : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> expression;
     ExpressionStatement(const Token& t, std::unique_ptr<Node> expr)
         : Node(NodeType::EXPR_STMT, t), expression(std::move(expr)) {
@@ -268,6 +316,8 @@ struct ExpressionStatement : public Node {
 };
 
 struct ReturnStatement : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::unique_ptr<Node> value;
     ReturnStatement(const Token& t, std::unique_ptr<Node> val) : Node(NodeType::RETURN_STMT, t), value(std::move(val)) {
         if(value) value->parent = this;
@@ -275,10 +325,14 @@ struct ReturnStatement : public Node {
 };
 
 struct BreakStatement : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     BreakStatement(const Token& t) : Node(NodeType::BREAK_STMT, t) {}
 };
 
 struct ContinueStatement : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     ContinueStatement(const Token& t) : Node(NodeType::CONTINUE_STMT, t) {}
 };
 
@@ -287,11 +341,15 @@ struct ContinueStatement : public Node {
 // ==========================================
 
 struct PackageStatement : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::string package_name;
     PackageStatement(const Token& t, std::string name) : Node(NodeType::PACKAGE_STMT, t), package_name(std::move(name)) {}
 };
 
 struct AliasStatement : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::string alias_name;
     TypeInfo target_type;
     AliasStatement(const Token& t, std::string alias, TypeInfo tgt)
@@ -299,6 +357,8 @@ struct AliasStatement : public Node {
 };
 
 struct EnumDeclaration : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::string enum_name;
     TokenType access_modifier = TokenType::KEYWORD_INTERNAL;
     std::vector<std::string> members;
@@ -307,6 +367,8 @@ struct EnumDeclaration : public Node {
 
 struct MethodDeclaration;
 struct ClassDeclaration : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     int vtable_id = -1;
     int base_vtable_id = -1;
     std::vector<MethodDeclaration*> vtable;
@@ -318,6 +380,8 @@ struct ClassDeclaration : public Node {
 };
 
 struct FieldDeclaration : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     std::string field_name;
     TypeInfo type_info;
     TokenType access_modifier = TokenType::KEYWORD_PRIVATE;
@@ -331,6 +395,8 @@ struct FieldDeclaration : public Node {
 };
 
 struct ConstructorDeclaration : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     TokenType access_modifier = TokenType::KEYWORD_PUBLIC;
     std::string class_name;
     std::string base_class_name;
@@ -340,6 +406,8 @@ struct ConstructorDeclaration : public Node {
 };
 
 struct MethodDeclaration : public Node {
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
     TokenType access_modifier = TokenType::KEYWORD_PRIVATE;
     bool is_static = false;
     bool is_native = false;
