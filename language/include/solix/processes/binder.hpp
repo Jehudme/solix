@@ -102,6 +102,7 @@ public:
     ClassDeclaration* current_class = nullptr;
     MethodDeclaration* current_method = nullptr;
     std::string current_package;
+    std::unordered_set<std::string> known_packages; // All registered package prefixes
     
     BinderPass current_pass;
     std::string current_prefix;

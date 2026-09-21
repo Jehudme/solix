@@ -611,3 +611,35 @@ To make the Generics system ergonomic and complete, Solix needs the ability to i
 - Add Catch2 tests for Implicit Deduction (e.g., `swap_boxes(i_box1, i_box2)` without `<int32>`).
 - Add Catch2 tests for Explicit Specialization (e.g., `print<char[]>(...)`).
 
+
+---
+
+## Phase 22 — Binder Correctness: Node Stamping, Cast Precedence & Null Safety
+
+**Branch:** `phase-22-binder-fixes`
+**Criticality:** 🔴 High
+**Difficulty:** ⭐⭐ Medium
+
+### Context
+Three independent correctness bugs were found and fixed that blocked multi-file compilation and correct expression semantics.
+
+### 22.1 — AST Node Stamping (Context-Loss Fix)
+- Added `std::string package_context = "";` to the base `Node` struct in `statements.hpp`.
+- During Pass 1 (`REGISTER_GLOBALS` + `REGISTER_MEMBERS`), each visited top-level or member node (Class, Alias, Enum, Field, Method, Constructor) is "stamped" with `n.package_context = current_package;` to record the package it belongs to.
+- Updated `Binder::resolve_type()` to prefer the stamped `error_node->package_context` over the mutable `current_package` global when resolving short type names.
+- **Effect:** Pass 2 (`bind_types_and_memory`) can now safely iterate over the flat `global_scope.symbols` dictionary — because each node carries its own package context — without losing namespace information.
+
+### 22.2 — Parser Cast Precedence Fix
+- Inside `ParserState::parse_primary()`, changed the cast target from `parse_expression()` to `parse_unary()`.
+- **Effect:** `(char)x + 5` now correctly parses as `((char)x) + 5`, not `(char)(x + 5)`.
+
+### 22.3 — Null Comparison Safety
+- Inside `Binder::visit(BinaryExpression)`, the `primitive_fallback` block now skips the type-mismatch error when the operator is `==` or `!=` and at least one operand is `"void"` (the type of `null`).
+- **Effect:** Patterns like `if (other == null)` and `if (assigned_string == null)` compile without errors.
+
+### 22.4 — Multi-File Compilation Support
+- The above fixes combined now allow `string.slx` (package `solix.core`) to be compiled together with `test.slx` (package `com.solix.advanced.test`), with cross-package type resolution working correctly across all three passes.
+
+### Testing
+- Verified `solix_launcher compile string.slx test.slx` succeeds end-to-end.
+- Added `tests/src/test_phase22.cpp` with Catch2 unit tests.

@@ -1,0 +1,492 @@
+// ============================================================================
+// Solix Standard Library - String Class Implementation
+// Package: solix.core
+// ============================================================================
+package solix.core;
+
+public class String {
+    private char[] character_buffer;
+    private int32 character_count = 0;
+
+    // ------------------------------------------------------------------------
+    // Constructors
+    // ------------------------------------------------------------------------
+
+    public String() {
+        this.character_buffer = new char[0];
+        this.character_count = 0;
+    }
+
+    public String(char[] source_characters) {
+        if (source_characters == null) {
+            this.character_buffer = new char[0];
+            this.character_count = 0;
+            return;
+        }
+        this.character_count = source_characters.length;
+        this.character_buffer = new char[this.character_count];
+        for (int32 copy_index = 0; copy_index < this.character_count; copy_index++) {
+            this.character_buffer[copy_index] = source_characters[copy_index];
+        }
+    }
+
+    public String(String source_string) {
+        if (source_string == null) {
+            this.character_buffer = new char[0];
+            this.character_count = 0;
+            return;
+        }
+        this.character_count = source_string.character_count;
+        this.character_buffer = new char[this.character_count];
+        for (int32 copy_index = 0; copy_index < this.character_count; copy_index++) {
+            this.character_buffer[copy_index] = source_string.character_buffer[copy_index];
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Capacity & Size
+    // ------------------------------------------------------------------------
+
+    public int32 size() {
+        return this.character_count;
+    }
+
+    public bool is_empty() {
+        return this.character_count == 0;
+    }
+
+    public char[] raw() {
+        char[] buffer_copy = new char[this.character_count];
+        for (int32 copy_index = 0; copy_index < this.character_count; copy_index++) {
+            buffer_copy[copy_index] = this.character_buffer[copy_index];
+        }
+        return buffer_copy;
+    }
+
+    // ------------------------------------------------------------------------
+    // Element Access
+    // ------------------------------------------------------------------------
+
+    public char char_at(int32 target_index) {
+        if (target_index < 0 || target_index >= this.character_count) {
+            return (char)0;
+        }
+        return this.character_buffer[target_index];
+    }
+
+    public void set_char_at(int32 target_index, char replacement_character) {
+        if (target_index >= 0 && target_index < this.character_count) {
+            this.character_buffer[target_index] = replacement_character;
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Comparison
+    // ------------------------------------------------------------------------
+
+    public bool equals(String comparison_string) {
+        if (comparison_string == null) {
+            return false;
+        }
+        if (this.character_count != comparison_string.character_count) {
+            return false;
+        }
+        for (int32 check_index = 0; check_index < this.character_count; check_index++) {
+            if (this.character_buffer[check_index] != comparison_string.character_buffer[check_index]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public bool equals(char[] comparison_characters) {
+        if (comparison_characters == null) {
+            return false;
+        }
+        if (this.character_count != comparison_characters.length) {
+            return false;
+        }
+        for (int32 check_index = 0; check_index < this.character_count; check_index++) {
+            if (this.character_buffer[check_index] != comparison_characters[check_index]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public int32 compare_to(String comparison_string) {
+        if (comparison_string == null) {
+            return 1;
+        }
+        int32 common_boundary_limit = this.character_count;
+        if (comparison_string.character_count < common_boundary_limit) {
+            common_boundary_limit = comparison_string.character_count;
+        }
+        for (int32 scan_index = 0; scan_index < common_boundary_limit; scan_index++) {
+            if (this.character_buffer[scan_index] != comparison_string.character_buffer[scan_index]) {
+                return (int32)this.character_buffer[scan_index] - (int32)comparison_string.character_buffer[scan_index];
+            }
+        }
+        return this.character_count - comparison_string.character_count;
+    }
+
+    public int32 compare_to(char[] comparison_characters) {
+        if (comparison_characters == null) {
+            return 1;
+        }
+        int32 common_boundary_limit = this.character_count;
+        if (comparison_characters.length < common_boundary_limit) {
+            common_boundary_limit = comparison_characters.length;
+        }
+        for (int32 scan_index = 0; scan_index < common_boundary_limit; scan_index++) {
+            if (this.character_buffer[scan_index] != comparison_characters[scan_index]) {
+                return (int32)this.character_buffer[scan_index] - (int32)comparison_characters[scan_index];
+            }
+        }
+        return this.character_count - comparison_characters.length;
+    }
+
+    // ------------------------------------------------------------------------
+    // Search Operations
+    // ------------------------------------------------------------------------
+
+    public int32 index_of(char search_character) {
+        return this.index_of_from(search_character, 0);
+    }
+
+    public int32 index_of_from(char search_character, int32 start_index) {
+        int32 effective_start_index = start_index;
+        if (effective_start_index < 0) {
+            effective_start_index = 0;
+        }
+        for (int32 search_index = effective_start_index; search_index < this.character_count; search_index++) {
+            if (this.character_buffer[search_index] == search_character) {
+                return search_index;
+            }
+        }
+        return -1;
+    }
+
+    public int32 last_index_of(char search_character) {
+        for (int32 reverse_index = this.character_count - 1; reverse_index >= 0; reverse_index--) {
+            if (this.character_buffer[reverse_index] == search_character) {
+                return reverse_index;
+            }
+        }
+        return -1;
+    }
+
+    public bool contains(char search_character) {
+        return this.index_of(search_character) != -1;
+    }
+
+    public bool starts_with(String prefix_string) {
+        if (prefix_string == null || prefix_string.character_count > this.character_count) {
+            return false;
+        }
+        for (int32 prefix_index = 0; prefix_index < prefix_string.character_count; prefix_index++) {
+            if (this.character_buffer[prefix_index] != prefix_string.character_buffer[prefix_index]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public bool starts_with(char[] prefix_characters) {
+        if (prefix_characters == null || prefix_characters.length > this.character_count) {
+            return false;
+        }
+        for (int32 prefix_index = 0; prefix_index < prefix_characters.length; prefix_index++) {
+            if (this.character_buffer[prefix_index] != prefix_characters[prefix_index]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public bool ends_with(String suffix_string) {
+        if (suffix_string == null || suffix_string.character_count > this.character_count) {
+            return false;
+        }
+        int32 suffix_offset = this.character_count - suffix_string.character_count;
+        for (int32 suffix_index = 0; suffix_index < suffix_string.character_count; suffix_index++) {
+            if (this.character_buffer[suffix_offset + suffix_index] != suffix_string.character_buffer[suffix_index]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public bool ends_with(char[] suffix_characters) {
+        if (suffix_characters == null || suffix_characters.length > this.character_count) {
+            return false;
+        }
+        int32 suffix_offset = this.character_count - suffix_characters.length;
+        for (int32 suffix_index = 0; suffix_index < suffix_characters.length; suffix_index++) {
+            if (this.character_buffer[suffix_offset + suffix_index] != suffix_characters[suffix_index]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // ------------------------------------------------------------------------
+    // Substring & Slicing
+    // ------------------------------------------------------------------------
+
+    public String substring(int32 start_index, int32 end_index) {
+        int32 normalized_start_index = start_index;
+        int32 normalized_end_index = end_index;
+
+        if (normalized_start_index < 0) {
+            normalized_start_index = 0;
+        }
+        if (normalized_end_index > this.character_count) {
+            normalized_end_index = this.character_count;
+        }
+        if (normalized_start_index >= normalized_end_index) {
+            return new String();
+        }
+
+        int32 slice_length = normalized_end_index - normalized_start_index;
+        char[] slice_characters = new char[slice_length];
+        for (int32 copy_index = 0; copy_index < slice_length; copy_index++) {
+            slice_characters[copy_index] = this.character_buffer[normalized_start_index + copy_index];
+        }
+        return new String(slice_characters);
+    }
+
+    public String substring_from(int32 start_index) {
+        return this.substring(start_index, this.character_count);
+    }
+
+    // ------------------------------------------------------------------------
+    // Manipulation & Transforms
+    // ------------------------------------------------------------------------
+
+    public String concat(String append_string) {
+        if (append_string == null || append_string.character_count == 0) {
+            return new String(this);
+        }
+        int32 combined_length = this.character_count + append_string.character_count;
+        char[] concatenated_characters = new char[combined_length];
+
+        for (int32 first_index = 0; first_index < this.character_count; first_index++) {
+            concatenated_characters[first_index] = this.character_buffer[first_index];
+        }
+        for (int32 second_index = 0; second_index < append_string.character_count; second_index++) {
+            concatenated_characters[this.character_count + second_index] = append_string.character_buffer[second_index];
+        }
+        return new String(concatenated_characters);
+    }
+
+    public String concat(char[] append_characters) {
+        if (append_characters == null || append_characters.length == 0) {
+            return new String(this);
+        }
+        int32 combined_length = this.character_count + append_characters.length;
+        char[] concatenated_characters = new char[combined_length];
+
+        for (int32 first_index = 0; first_index < this.character_count; first_index++) {
+            concatenated_characters[first_index] = this.character_buffer[first_index];
+        }
+        for (int32 second_index = 0; second_index < append_characters.length; second_index++) {
+            concatenated_characters[this.character_count + second_index] = append_characters[second_index];
+        }
+        return new String(concatenated_characters);
+    }
+
+    public String replace(char target_character, char replacement_character) {
+        char[] modified_characters = new char[this.character_count];
+        for (int32 scan_index = 0; scan_index < this.character_count; scan_index++) {
+            if (this.character_buffer[scan_index] == target_character) {
+                modified_characters[scan_index] = replacement_character;
+            } else {
+                modified_characters[scan_index] = this.character_buffer[scan_index];
+            }
+        }
+        return new String(modified_characters);
+    }
+
+    public String to_lower_case() {
+        char[] lower_case_characters = new char[this.character_count];
+        for (int32 scan_index = 0; scan_index < this.character_count; scan_index++) {
+            char current_character = this.character_buffer[scan_index];
+            if (current_character >= (char)65 && current_character <= (char)90) {
+                lower_case_characters[scan_index] = (char)((int32)current_character + 32);
+            } else {
+                lower_case_characters[scan_index] = current_character;
+            }
+        }
+        return new String(lower_case_characters);
+    }
+
+    public String to_upper_case() {
+        char[] upper_case_characters = new char[this.character_count];
+        for (int32 scan_index = 0; scan_index < this.character_count; scan_index++) {
+            char current_character = this.character_buffer[scan_index];
+            if (current_character >= (char)97 && current_character <= (char)122) {
+                upper_case_characters[scan_index] = (char)((int32)current_character - 32);
+            } else {
+                upper_case_characters[scan_index] = current_character;
+            }
+        }
+        return new String(upper_case_characters);
+    }
+
+    public String trim() {
+        int32 non_whitespace_start_index = 0;
+        while (non_whitespace_start_index < this.character_count) {
+            char current_character = this.character_buffer[non_whitespace_start_index];
+            if (current_character != (char)32 && current_character != (char)9 && 
+                current_character != (char)10 && current_character != (char)13) {
+                break;
+            }
+            non_whitespace_start_index++;
+        }
+
+        int32 non_whitespace_end_index = this.character_count - 1;
+        while (non_whitespace_end_index >= non_whitespace_start_index) {
+            char current_character = this.character_buffer[non_whitespace_end_index];
+            if (current_character != (char)32 && current_character != (char)9 && 
+                current_character != (char)10 && current_character != (char)13) {
+                break;
+            }
+            non_whitespace_end_index--;
+        }
+
+        return this.substring(non_whitespace_start_index, non_whitespace_end_index + 1);
+    }
+
+    public int32 to_int32() {
+        if (this.character_count == 0) {
+            return 0;
+        }
+        int32 parsed_number_accumulator = 0;
+        int32 arithmetic_sign_multiplier = 1;
+        int32 parse_cursor_index = 0;
+
+        if (this.character_buffer[0] == (char)45) {
+            arithmetic_sign_multiplier = -1;
+            parse_cursor_index = 1;
+        } else if (this.character_buffer[0] == (char)43) {
+            parse_cursor_index = 1;
+        }
+
+        while (parse_cursor_index < this.character_count) {
+            char numeric_character = this.character_buffer[parse_cursor_index];
+            if (numeric_character >= (char)48 && numeric_character <= (char)57) {
+                parsed_number_accumulator = (parsed_number_accumulator * 10) + ((int32)numeric_character - 48);
+            } else {
+                break;
+            }
+            parse_cursor_index++;
+        }
+        return parsed_number_accumulator * arithmetic_sign_multiplier;
+    }
+
+    // ------------------------------------------------------------------------
+    // Operator Overloads
+    // ------------------------------------------------------------------------
+
+    public String operator=(String assigned_string) {
+        if (assigned_string == null) {
+            this.character_buffer = new char[0];
+            this.character_count = 0;
+            return this;
+        }
+        this.character_count = assigned_string.character_count;
+        this.character_buffer = new char[this.character_count];
+        for (int32 copy_index = 0; copy_index < this.character_count; copy_index++) {
+            this.character_buffer[copy_index] = assigned_string.character_buffer[copy_index];
+        }
+        return this;
+    }
+
+    public String operator=(char[] assigned_characters) {
+        if (assigned_characters == null) {
+            this.character_buffer = new char[0];
+            this.character_count = 0;
+            return this;
+        }
+        this.character_count = assigned_characters.length;
+        this.character_buffer = new char[this.character_count];
+        for (int32 copy_index = 0; copy_index < this.character_count; copy_index++) {
+            this.character_buffer[copy_index] = assigned_characters[copy_index];
+        }
+        return this;
+    }
+
+    public String operator+(String appended_string) {
+        return this.concat(appended_string);
+    }
+
+    public String operator+(char[] appended_characters) {
+        return this.concat(appended_characters);
+    }
+
+    // ------------------------------------------------------------------------
+    // Static Factories
+    // ------------------------------------------------------------------------
+
+    public static String from_int32(int32 integer_value) {
+        if (integer_value == 0) {
+            char[] zero_character_buffer = new char[1];
+            zero_character_buffer[0] = (char)48;
+            return new String(zero_character_buffer);
+        }
+
+        bool is_negative_number = integer_value < 0;
+        int32 absolute_integer_value = integer_value;
+        if (is_negative_number) {
+            absolute_integer_value = -absolute_integer_value;
+        }
+
+        int32 total_digits_count = 0;
+        int32 digit_counter_value = absolute_integer_value;
+        while (digit_counter_value > 0) {
+            total_digits_count++;
+            digit_counter_value = digit_counter_value / 10;
+        }
+
+        int32 required_buffer_size = total_digits_count;
+        if (is_negative_number) {
+            required_buffer_size++;
+        }
+
+        char[] formatted_characters = new char[required_buffer_size];
+        int32 write_cursor_position = required_buffer_size - 1;
+
+        while (absolute_integer_value > 0) {
+            int32 current_digit_remainder = absolute_integer_value % 10;
+            formatted_characters[write_cursor_position] = (char)(current_digit_remainder + 48);
+            absolute_integer_value = absolute_integer_value / 10;
+            write_cursor_position--;
+        }
+
+        if (is_negative_number) {
+            formatted_characters[0] = (char)45;
+        }
+
+        return new String(formatted_characters);
+    }
+
+    public static String from_bool(bool boolean_value) {
+        if (boolean_value) {
+            char[] true_literal_characters = new char[4];
+            true_literal_characters[0] = (char)116;
+            true_literal_characters[1] = (char)114;
+            true_literal_characters[2] = (char)117;
+            true_literal_characters[3] = (char)101;
+            return new String(true_literal_characters);
+        } else {
+            char[] false_literal_characters = new char[5];
+            false_literal_characters[0] = (char)102;
+            false_literal_characters[1] = (char)97;
+            false_literal_characters[2] = (char)108;
+            false_literal_characters[3] = (char)115;
+            false_literal_characters[4] = (char)101;
+            return new String(false_literal_characters);
+        }
+    }
+}

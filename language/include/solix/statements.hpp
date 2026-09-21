@@ -68,6 +68,7 @@ struct Node {
     bool is_primitive = false;
     bool is_reference_type = false;
     bool is_weak = false;
+    std::string package_context = "";  // Stamped during Pass 1 to preserve namespace context
     std::vector<std::unique_ptr<Node>> children;
 
     Node(NodeType type, const Token& token) 

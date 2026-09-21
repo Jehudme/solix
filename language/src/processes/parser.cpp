@@ -513,7 +513,7 @@ std::unique_ptr<Node> ParserState::parse_primary() {
         if (match(TokenType::PUNCTUATION_CLOSE_PAREN)) {
           log_trace("Parsing explicit cast to {} at line {}",
                     cast_type.to_string(), paren.line);
-          std::unique_ptr<Node> expr = parse_expression();
+          std::unique_ptr<Node> expr = parse_unary();
           return std::make_unique<CastExpression>(paren, std::move(cast_type),
                                                   std::move(expr));
         }

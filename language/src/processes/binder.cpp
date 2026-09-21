@@ -307,13 +307,31 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
   log_trace("Resolving type '{}' (depth: {}, type_args: {})", raw_type.name,
             raw_type.array_depth, raw_type.type_args.size());
 
+  // Use the node's stamped package_context if available, otherwise fall back
+  // to current_package. This prevents context-loss during flat Pass 2 iteration.
+  std::string node_pkg = (error_node && !error_node->package_context.empty())
+                             ? error_node->package_context
+                             : current_package;
+
   Node *resolved = global_scope.resolve(raw_type.name);
-  if (!resolved && !current_package.empty()) {
-    resolved = global_scope.resolve(current_package + raw_type.name);
+  if (!resolved && !node_pkg.empty()) {
+    resolved = global_scope.resolve(node_pkg + raw_type.name);
   }
   if (!resolved && current_class) {
     resolved =
         global_scope.resolve(current_class->mangled_name + "." + raw_type.name);
+  }
+  // Cross-package fallback: search all known packages (enables multi-file compilation)
+  if (!resolved) {
+    for (const auto &pkg : known_packages) {
+      if (pkg == node_pkg) continue; // already tried
+      Node *candidate = global_scope.resolve(pkg + raw_type.name);
+      if (candidate) {
+        resolved = candidate;
+        log_trace("Cross-package resolution: '{}' -> '{}{}'", raw_type.name, pkg, raw_type.name);
+        break;
+      }
+    }
   }
 
   TypeInfo result = raw_type;
@@ -321,9 +339,18 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
   if (!resolved && !result.type_args.empty()) {
     std::string template_name = result.name;
     if (template_registry.count(template_name)) {
-    } else if (!current_package.empty() &&
-               template_registry.count(current_package + template_name)) {
-      template_name = current_package + template_name;
+    } else if (!node_pkg.empty() &&
+               template_registry.count(node_pkg + template_name)) {
+      template_name = node_pkg + template_name;
+    } else {
+      // Cross-package template search
+      for (const auto &pkg : known_packages) {
+        if (pkg == node_pkg) continue;
+        if (template_registry.count(pkg + template_name)) {
+          template_name = pkg + template_name;
+          break;
+        }
+      }
     }
 
     log_debug("Resolving type arguments for potential template '{}'",
@@ -559,6 +586,7 @@ void Binder::execute() {
       if (node->node_type == NodeType::PACKAGE_STMT) {
         auto *pkg = static_cast<PackageStatement *>(node.get());
         current_package = pkg->package_name + ".";
+        known_packages.insert(current_package);
         pkg->mangled_name = pkg->package_name;
         global_scope.define(pkg->mangled_name, pkg);
         log_info("Configured active package: '{}'", pkg->package_name);
@@ -749,6 +777,13 @@ void Binder::bind_tree(Node *root) {
 bool Binder::is_assignable(const TypeInfo &target, const TypeInfo &source) {
   if (target == source)
     return true;
+  // null (void) is assignable to any reference type or array
+  if (source.name == "void" && source.array_depth == 0) {
+    // Allow assigning null to arrays or to classes (reference types)
+    if (target.array_depth > 0) return true;
+    Node *tgt_node = global_scope.resolve(target.name);
+    if (tgt_node && tgt_node->node_type == NodeType::CLASS_DECL) return true;
+  }
   if (target.array_depth != source.array_depth)
     return false;
 
@@ -938,18 +973,22 @@ void Binder::visit(BinaryExpression &n) {
     }
 
   primitive_fallback:
-    if (left_type != right_type) {
-      record_error(&n, "Binary operands type mismatch: '" + left_type.name +
-                           "' vs '" + right_type.name + "'");
+    {
+      bool is_null_compare = (n.op == TokenType::OPERATOR_EQUAL || n.op == TokenType::OPERATOR_NOT_EQUAL) &&
+                             (left_type.name == "void" || right_type.name == "void");
+      if (left_type != right_type && !is_null_compare) {
+        record_error(&n, "Binary operands type mismatch: '" + left_type.name +
+                             "' vs '" + right_type.name + "'");
+      }
+      if (n.op >= TokenType::OPERATOR_EQUAL &&
+          n.op <= TokenType::OPERATOR_GREATER_EQUAL) {
+        n.expression_type = {"bool", 0};
+      } else {
+        n.expression_type = left_type;
+      }
+      evaluated_type = n.expression_type;
+      log_trace("Evaluated binary operation -> '{}'", evaluated_type.to_string());
     }
-    if (n.op >= TokenType::OPERATOR_EQUAL &&
-        n.op <= TokenType::OPERATOR_GREATER_EQUAL) {
-      n.expression_type = {"bool", 0};
-    } else {
-      n.expression_type = left_type;
-    }
-    evaluated_type = n.expression_type;
-    log_trace("Evaluated binary operation -> '{}'", evaluated_type.to_string());
   }
 }
 
@@ -1655,6 +1694,7 @@ void Binder::visit(ContinueStatement &n) {
 void Binder::visit(PackageStatement &n) {
   if (current_pass == BinderPass::REGISTER_GLOBALS) {
     current_package = n.package_name + ".";
+    known_packages.insert(current_package);
     n.mangled_name = n.package_name;
     global_scope.define(n.mangled_name, &n);
   } else if (current_pass == BinderPass::REGISTER_MEMBERS) {
@@ -1666,6 +1706,7 @@ void Binder::visit(AliasStatement &n) {
   if (!n.template_parameters.empty()) {
     if (current_pass == BinderPass::REGISTER_GLOBALS) {
       std::string full_name = current_prefix + n.alias_name;
+      n.package_context = current_prefix;
       template_registry[full_name] = &n;
       log_info("Registered alias template blueprint: '{}' (params: {})",
                full_name, n.template_parameters.size());
@@ -1674,6 +1715,7 @@ void Binder::visit(AliasStatement &n) {
   }
   if (current_pass == BinderPass::REGISTER_GLOBALS) {
     std::string full_name = current_prefix + n.alias_name;
+    n.package_context = current_prefix;
     if (global_scope.symbols.count(full_name))
       record_error(&n, "Duplicate global symbol: " + full_name);
     n.mangled_name = full_name;
@@ -1685,6 +1727,7 @@ void Binder::visit(AliasStatement &n) {
 void Binder::visit(EnumDeclaration &n) {
   if (current_pass == BinderPass::REGISTER_GLOBALS) {
     std::string full_name = current_prefix + n.enum_name;
+    n.package_context = current_prefix;
     if (global_scope.symbols.count(full_name))
       record_error(&n, "Duplicate global symbol: " + full_name);
     n.mangled_name = full_name;
@@ -1707,6 +1750,7 @@ void Binder::visit(ClassDeclaration &n) {
   if (!n.template_parameters.empty()) {
     if (current_pass == BinderPass::REGISTER_GLOBALS) {
       std::string full_name = current_prefix + n.class_name;
+      n.package_context = current_prefix;
       template_registry[full_name] = &n;
       log_info("Registered class template blueprint: '{}' (params: {})",
                full_name, n.template_parameters.size());
@@ -1715,6 +1759,7 @@ void Binder::visit(ClassDeclaration &n) {
   }
   if (current_pass == BinderPass::REGISTER_GLOBALS) {
     std::string full_name = current_prefix + n.class_name;
+    n.package_context = current_prefix;
     if (!n.base_class_name.empty())
       n.base_class_name = current_prefix + n.base_class_name;
     if (global_scope.symbols.count(full_name))
@@ -1741,6 +1786,7 @@ void Binder::visit(FieldDeclaration &n) {
   if (current_pass == BinderPass::REGISTER_MEMBERS) {
     std::string full_name = current_prefix + n.field_name;
     n.mangled_name = full_name;
+    n.package_context = current_package;
     global_scope.define(full_name, &n);
     log_trace("Registered class field: '{}'", full_name);
   }
@@ -1759,6 +1805,7 @@ void Binder::visit(ConstructorDeclaration &n) {
     }
     full_name += ")";
     n.mangled_name = full_name;
+    n.package_context = current_package;
     global_scope.define(full_name, &n);
     log_debug("Registered class constructor: '{}'", full_name);
   }
@@ -1768,6 +1815,7 @@ void Binder::visit(MethodDeclaration &n) {
   if (!n.template_parameters.empty()) {
     if (current_pass == BinderPass::REGISTER_MEMBERS) {
       std::string full_name = current_prefix + n.method_name;
+      n.package_context = current_package;
       template_registry[full_name] = &n;
       log_info("Registered method template blueprint: '{}' (params: {})",
                full_name, n.template_parameters.size());
@@ -1783,6 +1831,7 @@ void Binder::visit(MethodDeclaration &n) {
     if (global_scope.symbols.count(full_name) && !n.is_native)
       record_error(&n, "Duplicate method signature: " + full_name);
     n.mangled_name = full_name;
+    n.package_context = current_package;
     global_scope.define(full_name, &n);
     log_debug("Registered method signature: '{}'", full_name);
   }

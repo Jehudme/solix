@@ -286,6 +286,9 @@ public void process_pair<T1, T2>(int32 id, T2 val2, T1 val1) {
     Engine.print("Process pair called successfully!");
 }
 
+alias interger = int32;
+
+
 class TemplateTestRunner {
     public static void run() {
         Engine.print("--- TESTING TEMPLATES ---");
@@ -293,9 +296,9 @@ class TemplateTestRunner {
         // Concrete Alias & Class Template
         IntBox i_box1 = new IntBox(10);
         IntBox i_box2 = new IntBox(20);
-        
+
         // Implicit Deduction
-        swap_boxes(i_box1, i_box2);
+        swap_boxes<interger>(i_box1, i_box2);
         
         if (i_box1.get_value() == 20) Engine.print("TEMPLATE SWAP SUCCESS!");
         
@@ -314,3 +317,5 @@ class TemplateTestRunner {
         Engine.print("--- TEMPLATES OK ---");
     }
 }
+
+
