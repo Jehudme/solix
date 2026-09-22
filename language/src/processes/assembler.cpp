@@ -673,8 +673,6 @@ void Assembler::visit(IdentifierNode &node) {
     return;
   }
   if (!ident->resolved_declaration) {
-    printf("[DEBUG] Assembler failed on %s at line %zu\n", ident->name.c_str(),
-           ident->line);
     throw_error(ident, "Unresolved identifier in assembler: " + ident->name);
   }
   if (ident->resolved_declaration->node_type == NodeType::FIELD_DECL) {
