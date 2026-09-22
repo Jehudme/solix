@@ -582,16 +582,16 @@ void Binder::execute() {
   log_info("Pass 1a: Registering package and top-level symbols...");
   for (const auto &[source, nodes] : context.nodes) {
     current_package = "";
+    current_prefix = "";
     for (const auto &node : nodes) {
       if (node->node_type == NodeType::PACKAGE_STMT) {
-        auto *pkg = static_cast<PackageStatement *>(node.get());
-        current_package = pkg->package_name + ".";
-        known_packages.insert(current_package);
-        pkg->mangled_name = pkg->package_name;
-        global_scope.define(pkg->mangled_name, pkg);
-        log_info("Configured active package: '{}'", pkg->package_name);
+        // PackageStatement is a file-level context directive — call the visitor
+        // directly so the package state persists across all sibling nodes in
+        // this file (wrapper functions save/restore state, which would undo it).
+        current_pass = BinderPass::REGISTER_GLOBALS;
+        node->accept(*this);
       } else {
-        register_global_symbols(node.get(), current_package);
+        register_global_symbols(node.get(), current_prefix);
       }
     }
   }
@@ -599,12 +599,13 @@ void Binder::execute() {
   log_info("Pass 1b: Registering class members and signatures...");
   for (const auto &[source, nodes] : context.nodes) {
     current_package = "";
+    current_prefix = "";
     for (const auto &node : nodes) {
       if (node->node_type == NodeType::PACKAGE_STMT) {
-        current_package =
-            static_cast<PackageStatement *>(node.get())->package_name + ".";
+        current_pass = BinderPass::REGISTER_MEMBERS;
+        node->accept(*this);
       } else {
-        register_members(node.get(), current_package);
+        register_members(node.get(), current_prefix);
       }
     }
   }
@@ -623,8 +624,8 @@ void Binder::execute() {
     current_package = "";
     for (const auto &node : nodes) {
       if (node->node_type == NodeType::PACKAGE_STMT) {
-        current_package =
-            static_cast<PackageStatement *>(node.get())->package_name + ".";
+        current_pass = BinderPass::BIND_EXECUTION;
+        node->accept(*this);
       } else {
         bind_tree(node.get());
       }
@@ -1694,11 +1695,16 @@ void Binder::visit(ContinueStatement &n) {
 void Binder::visit(PackageStatement &n) {
   if (current_pass == BinderPass::REGISTER_GLOBALS) {
     current_package = n.package_name + ".";
+    current_prefix = current_package;
     known_packages.insert(current_package);
     n.mangled_name = n.package_name;
     global_scope.define(n.mangled_name, &n);
+    log_info("Configured active package: '{}'", n.package_name);
   } else if (current_pass == BinderPass::REGISTER_MEMBERS) {
-    current_prefix = n.package_name + ".";
+    current_package = n.package_name + ".";
+    current_prefix = current_package;
+  } else if (current_pass == BinderPass::BIND_EXECUTION) {
+    current_package = n.package_name + ".";
   }
 }
 
