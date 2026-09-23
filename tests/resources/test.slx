@@ -314,8 +314,13 @@ class TemplateTestRunner {
         // Implicit Deduction complex
         process_pair(100, "second", false);
         
+        // Phase 23 Test
+        int32& ref_val = 10;
+        if (ref_val == 10) Engine.print("PHASE 23 AMPERSAND LEXING OK");
+        
         Engine.print("--- TEMPLATES OK ---");
     }
 }
+
 
 
