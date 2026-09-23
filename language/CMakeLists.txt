@@ -11,6 +11,7 @@ add_library(solix_language
     src/processes/assembler.cpp
     src/runtime.cpp
     src/natives/natives.cpp
+    src/natives/console.cpp
 )
 
 target_include_directories(solix_language

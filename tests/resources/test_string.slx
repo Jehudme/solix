@@ -1,0 +1,20 @@
+package com.solix.test;
+
+alias Console = solix.systems.Console;
+alias String = solix.String;
+
+public class Main {
+    public static void main() {
+        String greeting = new String("Hello from Solix String!");
+        Console.println(greeting);
+
+        String part1 = new String("Solix ");
+        String part2 = new String("Standard Library");
+        String full = part1.concat(part2);
+        Console.println(full);
+
+        String from_num = String.from_int32(2026);
+        Console.print(new String("Current Year: "));
+        Console.println(from_num);
+    }
+}
