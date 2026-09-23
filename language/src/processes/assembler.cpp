@@ -1338,6 +1338,9 @@ void Assembler::visit(MethodCallExpression &node) {
     auto *mem_acc = static_cast<MemberAccessExpression *>(call->callee.get());
     if (is_instance_method) {
       compile_expression(mem_acc->object.get());
+      if (is_reference_type(mem_acc->object->expression_type)) {
+        emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+      }
     }
   } else if (is_instance_method) {
     // Only push 'this' if it's an instance method call inside a class
@@ -1348,6 +1351,9 @@ void Assembler::visit(MethodCallExpression &node) {
 
   for (const auto &arg : call->arguments) {
     compile_expression(arg.get());
+    if (is_reference_type(arg->expression_type)) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    }
   }
 
   uint32_t total_args = call->arguments.size() + (is_instance_method ? 1 : 0);
@@ -1414,6 +1420,9 @@ void Assembler::visit(NewInstanceExpression &node) {
 
     for (const auto &arg : inst->arguments) {
       compile_expression(arg.get());
+      if (is_reference_type(arg->expression_type)) {
+        emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+      }
     }
 
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));

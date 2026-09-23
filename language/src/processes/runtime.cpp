@@ -684,7 +684,7 @@ op_SET_ARRAY:
     if (array_addr == 0) throw std::runtime_error("NullPointer");
     uint32_t length = static_cast<uint32_t>(heap_data[array_addr - 1] >> 32);
     if (index >= length) {
-      throw std::runtime_error("Out of Bounds on SET_ARRAY at PC=" + std::to_string(program_counter) + ": array_addr=" + std::to_string(array_addr) + " index=" + std::to_string(index) + " >= length=" + std::to_string(length) + " (header_val=" + std::to_string(heap_data[array_addr - 1]) + ")");
+      throw std::runtime_error("Out of Bounds on SET_ARRAY at PC=" + std::to_string(program_counter) + ": array_addr=" + std::to_string(array_addr) + " index=" + std::to_string(index) + " >= length=" + std::to_string(length) + " (header_val=" + std::to_string(heap_data[array_addr - 1]) + ", val=" + std::to_string(val) + ")");
     }
     heap_data[array_addr + index] = val;
     PUSH(val);
