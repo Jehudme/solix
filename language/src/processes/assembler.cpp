@@ -6,8 +6,21 @@
 #include <cstring>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_set>
 
 namespace solix {
+
+static bool is_reference_type(const TypeInfo &t) {
+  if (t.array_depth > 0) return true;
+  if (t.name.empty() || t.name == "void") return false;
+  static const std::unordered_set<std::string> primitives = {
+      "int", "int8", "int16", "int32", "int64",
+      "uint", "uint8", "uint16", "uint32", "uint64",
+      "float", "float32", "float64", "bool", "char",
+      "byte", "short", "long", "double"
+  };
+  return primitives.find(t.name) == primitives.end();
+}
 
 void Assembler::throw_error(Node *node, const std::string &msg) {
   throw std::runtime_error(msg);
@@ -332,6 +345,9 @@ void Assembler::visit(VariableDeclaration &node) {
   auto *var_decl = &node;
   if (var_decl->initializer) {
     compile_expression(var_decl->initializer.get());
+    if (var_decl->is_reference_type) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    }
     emit_byte(static_cast<uint8_t>(OpCode::SET_LOCAL));
     emit_int32(var_decl->memory_index);
   }
@@ -549,7 +565,12 @@ void Assembler::visit(ContinueStatement &node) {
 void Assembler::visit(ExpressionStatement &node) {
   auto *expr_stmt = &node;
   compile_expression(expr_stmt->expression.get());
-  emit_byte(static_cast<uint8_t>(OpCode::POP));
+  bool is_ref = is_reference_type(expr_stmt->expression->expression_type);
+  if (is_ref) {
+    emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+  } else {
+    emit_byte(static_cast<uint8_t>(OpCode::POP));
+  }
 }
 
 void Assembler::visit(SwitchStatement &node) {
@@ -669,7 +690,6 @@ void Assembler::visit(IdentifierNode &node) {
   } else if (ident->name == "this") {
     emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
     emit_int32(0);
-    emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
     return;
   }
   if (!ident->resolved_declaration) {
@@ -686,14 +706,10 @@ void Assembler::visit(IdentifierNode &node) {
       emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
       emit_int32(field->memory_index);
     }
-    if (field->is_reference_type)
-      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
   } else if (ident->resolved_declaration->node_type == NodeType::VAR_DECL) {
     auto *var = static_cast<VariableDeclaration *>(ident->resolved_declaration);
     emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
     emit_int32(var->memory_index);
-    if (var->is_reference_type)
-      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
   }
 }
 
@@ -725,11 +741,40 @@ void Assembler::visit(AssignmentExpression &node) {
     compile_expression(arr_acc->array.get());
     compile_expression(arr_acc->index.get());
     compile_expression(assign->value.get());
+    bool is_ref = is_reference_type(assign->value->expression_type);
+    if (is_ref) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    }
     emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
     return;
   }
 
   compile_expression(assign->value.get());
+
+  bool target_is_ref = false;
+  if (assign->target->node_type == NodeType::IDENTIFIER) {
+    auto *ident = static_cast<IdentifierNode *>(assign->target.get());
+    if (ident->resolved_declaration) {
+      if (ident->resolved_declaration->node_type == NodeType::FIELD_DECL) {
+        auto *field = static_cast<FieldDeclaration *>(ident->resolved_declaration);
+        target_is_ref = field->is_reference_type && !field->is_weak;
+      } else if (ident->resolved_declaration->node_type == NodeType::VAR_DECL) {
+        auto *var = static_cast<VariableDeclaration *>(ident->resolved_declaration);
+        target_is_ref = var->is_reference_type;
+      }
+    }
+  } else if (assign->target->node_type == NodeType::MEMBER_ACCESS) {
+    auto *mem_acc = static_cast<MemberAccessExpression *>(assign->target.get());
+    if (mem_acc->resolved_declaration &&
+        mem_acc->resolved_declaration->node_type == NodeType::FIELD_DECL) {
+      auto *field = static_cast<FieldDeclaration *>(mem_acc->resolved_declaration);
+      target_is_ref = field->is_reference_type && !field->is_weak;
+    }
+  }
+
+  if (target_is_ref) {
+    emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+  }
 
   emit_byte(static_cast<uint8_t>(OpCode::DUP));
   if (assign->target->node_type == NodeType::IDENTIFIER) {
@@ -1008,6 +1053,7 @@ void Assembler::visit(MethodCallExpression &node) {
     // Only push 'this' if it's an instance method call inside a class
     emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
     emit_int32(0);
+    emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
   }
 
   for (const auto &arg : call->arguments) {
