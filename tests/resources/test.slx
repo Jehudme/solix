@@ -356,7 +356,12 @@ class TemplateTestRunner {
         // Phase 30 Test: Polymorphic Array Literal
         Animal[] poly_arr = { new Dog(), new Cat() };
         if (poly_arr.length == 2) Engine.print("PHASE 30 POLYMORPHIC ARRAYS OK");
-        
+
+        // Phase 31 Test: High Performance Engine Tuning
+        int32 perf_sum = 0;
+        for (int32 k = 0; k < 100; k++) { perf_sum = perf_sum + k; }
+        if (perf_sum == 4950) Engine.print("PHASE 31 VM ENGINE TUNING OK");
+
         Engine.print("--- TEMPLATES OK ---");
     }
 }
