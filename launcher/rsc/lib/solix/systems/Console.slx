@@ -6,6 +6,18 @@ package solix.systems;
 
 alias String = solix.String;
 
+public enum ConsoleColor {
+    DEFAULT,
+    BLACK,
+    RED,
+    GREEN,
+    YELLOW,
+    BLUE,
+    MAGENTA,
+    CYAN,
+    WHITE
+}
+
 public class Console {
     // ------------------------------------------------------------------------
     // Blank Line
@@ -77,8 +89,103 @@ public class Console {
     public static native void println(float64[] val);
 
     // ------------------------------------------------------------------------
-    // Solix String
+    // Solix String Print
     // ------------------------------------------------------------------------
     public static native void print(String val);
     public static native void println(String val);
+
+    // ------------------------------------------------------------------------
+    // Error Stream (stderr)
+    // ------------------------------------------------------------------------
+    public static native void error(char[] message);
+    public static native void error(String message);
+    public static native void errorln(char[] message);
+    public static native void errorln(String message);
+    public static native void errorln();
+
+    // ------------------------------------------------------------------------
+    // Warning Stream
+    // ------------------------------------------------------------------------
+    public static native void warn(char[] message);
+    public static native void warn(String message);
+    public static native void warnln(char[] message);
+    public static native void warnln(String message);
+
+    // ------------------------------------------------------------------------
+    // Info & Debug Streams
+    // ------------------------------------------------------------------------
+    public static native void info(char[] message);
+    public static native void info(String message);
+    public static native void infoln(char[] message);
+    public static native void infoln(String message);
+    public static native void debug(char[] message);
+    public static native void debug(String message);
+    public static native void debugln(char[] message);
+    public static native void debugln(String message);
+
+    // ------------------------------------------------------------------------
+    // Terminal Control
+    // ------------------------------------------------------------------------
+    public static native void clear();
+    public static native void flush();
+    public static native void beep();
+
+    // ------------------------------------------------------------------------
+    // Colors & Styling
+    // ------------------------------------------------------------------------
+    public static native void set_color(ConsoleColor foreground_color);
+    public static native void set_background(ConsoleColor background_color);
+    public static native void reset_color();
+
+    // ------------------------------------------------------------------------
+    // User Input: Primitives & Raw Array
+    // ------------------------------------------------------------------------
+    public static native char input_char();
+    public static native bool input_bool();
+    public static native int8 input_int8();
+    public static native int16 input_int16();
+    public static native int32 input_int32();
+    public static native int64 input_int64();
+    public static native uint8 input_uint8();
+    public static native uint16 input_uint16();
+    public static native uint32 input_uint32();
+    public static native uint64 input_uint64();
+    public static native float32 input_float32();
+    public static native float64 input_float64();
+    public static native char[] input_line();
+
+    // ------------------------------------------------------------------------
+    // User Input: Convenience Methods
+    // ------------------------------------------------------------------------
+    public static int32 input_int() {
+        return input_int32();
+    }
+
+    public static float64 input_float() {
+        return input_float64();
+    }
+
+    public static String input() {
+        return new String(input_line());
+    }
+
+    public static String input(String prompt) {
+        Console.print(prompt);
+        return new String(input_line());
+    }
+
+    public static String input(char[] prompt) {
+        Console.print(prompt);
+        return new String(input_line());
+    }
+
+    public static char input_char(String prompt) {
+        Console.print(prompt);
+        return input_char();
+    }
+
+    public static char input_char(char[] prompt) {
+        Console.print(prompt);
+        return input_char();
+    }
 }
