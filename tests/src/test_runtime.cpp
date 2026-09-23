@@ -31,3 +31,36 @@ TEST_CASE("Runtime VM bounds checking", "[runtime]") {
         REQUIRE_THROWS_AS(ctx.execute(), std::runtime_error);
     }
 }
+
+TEST_CASE("Builtin Natives Registry and Console Prints", "[runtime]") {
+    const auto &natives = get_builtin_natives();
+    REQUIRE_FALSE(natives.empty());
+
+    // Verify all 12 primitives exist for print and println
+    const std::vector<std::string> prim_types = {
+        "bool", "char", "int8", "int16", "int32", "int64",
+        "uint8", "uint16", "uint32", "uint64", "float32", "float64"
+    };
+
+    for (const auto &t : prim_types) {
+        REQUIRE(natives.count("solix.systems.Console.print(" + t + ")") == 1);
+        REQUIRE(natives.count("solix.systems.Console.println(" + t + ")") == 1);
+        REQUIRE(natives.count("solix.systems.Console.print(" + t + "[])") == 1);
+        REQUIRE(natives.count("solix.systems.Console.println(" + t + "[])") == 1);
+    }
+
+    REQUIRE(natives.count("solix.systems.Console.println()") == 1);
+    REQUIRE(natives.count("solix.systems.Console.print(solix.String)") == 1);
+    REQUIRE(natives.count("solix.systems.Console.println(solix.String)") == 1);
+
+    // Verify Engine.print was removed as requested
+    REQUIRE(natives.count("com.solix.advanced.test.Engine.print(char[])") == 0);
+    REQUIRE(natives.count("com.solix.advanced.test.Engine.print(int32)") == 0);
+
+    // Test calling an actual native function via the registry
+    RuntimeOptions opts;
+    RuntimeContext ctx(opts);
+    uint64_t args[1] = { 42 };
+    auto fn = natives.at("solix.systems.Console.println(int32)");
+    REQUIRE_NOTHROW(fn(ctx, 0, args, 1));
+}
