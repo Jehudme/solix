@@ -366,7 +366,41 @@ void Assembler::visit(ClassDeclaration &node) { compile_class(&node); }
 
 void Assembler::visit(MethodDeclaration &node) { compile_function(&node); }
 
-void Assembler::visit(ConstructorDeclaration &node) { compile_function(&node); }
+void Assembler::visit(ConstructorDeclaration &node) {
+  auto *c = &node;
+  if (!c->template_parameters.empty())
+    return;
+
+  function_ips[c] = bytecode().size();
+
+  // Compile non-static field initializers
+  if (c->parent && c->parent->node_type == NodeType::CLASS_DECL) {
+    auto *class_decl = static_cast<ClassDeclaration *>(c->parent);
+    for (const auto &member : class_decl->children) {
+      if (member && member->node_type == NodeType::FIELD_DECL) {
+        auto *field = static_cast<FieldDeclaration *>(member.get());
+        if (!field->is_static && field->initializer) {
+          compile_expression(field->initializer.get());
+          if (field->is_reference_type && !field->is_weak) {
+            emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+          }
+          emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+          emit_int32(0);
+          emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
+          emit_int32(field->memory_index);
+        }
+      }
+    }
+  }
+
+  for (const auto &child : c->children) {
+    compile_node(child.get());
+  }
+
+  emit_byte(static_cast<uint8_t>(OpCode::PUSH_NULL));
+  emit_cleanup_for_function(c);
+  emit_byte(static_cast<uint8_t>(OpCode::RETURN));
+}
 
 void Assembler::visit(BlockStatement &node) {
   for (const auto &child : node.children) {
@@ -1013,10 +1047,26 @@ void Assembler::visit(BinaryExpression &node) {
 
 void Assembler::visit(UnaryExpression &node) {
   auto *uny = &node;
-  compile_expression(uny->operand.get());
 
   bool is_float = (uny->expression_type.name == "float32" || uny->expression_type.name == "float64") ||
                   (uny->operand && (uny->operand->expression_type.name == "float32" || uny->operand->expression_type.name == "float64"));
+
+  if (uny->operand->node_type == NodeType::ARRAY_ACCESS &&
+      (uny->op == TokenType::OPERATOR_INCREMENT || uny->op == TokenType::OPERATOR_DECREMENT)) {
+    auto *arr_acc = static_cast<ArrayAccessExpression *>(uny->operand.get());
+    compile_expression(arr_acc->array.get());
+    compile_expression(arr_acc->index.get());
+    emit_byte(static_cast<uint8_t>(OpCode::DUP2));
+    emit_byte(static_cast<uint8_t>(OpCode::GET_ARRAY));
+    uint8_t opc = (uny->op == TokenType::OPERATOR_INCREMENT)
+                      ? static_cast<uint8_t>(is_float ? OpCode::INC_F64 : OpCode::INC_I64)
+                      : static_cast<uint8_t>(is_float ? OpCode::DEC_F64 : OpCode::DEC_I64);
+    emit_byte(opc);
+    emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
+    return;
+  }
+
+  compile_expression(uny->operand.get());
 
   if (uny->op == TokenType::OPERATOR_LOGICAL_NOT) {
     emit_byte(static_cast<uint8_t>(OpCode::LOGICAL_NOT));
@@ -1064,13 +1114,6 @@ void Assembler::visit(UnaryExpression &node) {
         emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
         emit_int32(field->memory_index);
       }
-    } else if (uny->operand->node_type == NodeType::ARRAY_ACCESS) {
-      auto *arr_acc = static_cast<ArrayAccessExpression *>(uny->operand.get());
-      compile_expression(arr_acc->array.get());
-      compile_expression(arr_acc->index.get());
-      compile_expression(uny->operand.get());
-      emit_byte(opc);
-      emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
     }
   }
 }

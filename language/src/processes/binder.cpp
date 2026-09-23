@@ -1792,6 +1792,24 @@ void Binder::visit(ClassDeclaration &n) {
     n.mangled_name = full_name;
     global_scope.define(full_name, &n);
     log_debug("Registered global class: '{}'", full_name);
+
+    bool has_ctor = false;
+    for (const auto &child : n.children) {
+      if (child && child->node_type == NodeType::CONSTRUCTOR_DECL) {
+        has_ctor = true;
+        break;
+      }
+    }
+    if (!has_ctor) {
+      Token tok{TokenType::IDENTIFIER, n.line, n.column, n.source, n.class_name};
+      auto default_ctor = std::make_unique<ConstructorDeclaration>(tok, n.class_name);
+      default_ctor->parent = &n;
+      auto empty_body = std::make_unique<BlockStatement>(tok);
+      empty_body->parent = default_ctor.get();
+      default_ctor->children.push_back(std::move(empty_body));
+      n.children.push_back(std::move(default_ctor));
+    }
+
     std::string my_prefix = full_name + ".";
     for (const auto &child : n.children) {
       if (child)
