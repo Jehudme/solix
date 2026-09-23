@@ -192,17 +192,15 @@ void RuntimeContext::execute() {
   call_stack.emplace_back(0, 0);
 
   size_t arg_count = options.program_args.size();
-  Address args_array = memory.dynamic_allocation(arg_count + 1);
-  heap_data[args_array] = arg_count;
+  Address args_array = memory.dynamic_allocation(arg_count);
   for (size_t i = 0; i < arg_count; ++i) {
     const std::string &str = options.program_args[i];
     size_t len = str.length();
-    Address str_addr = memory.dynamic_allocation(len + 1);
-    heap_data[str_addr] = len;
+    Address str_addr = memory.dynamic_allocation(len);
     for (size_t j = 0; j < len; ++j) {
-      heap_data[str_addr + 1 + j] = static_cast<uint64_t>(str[j]);
+      heap_data[str_addr + j] = static_cast<uint64_t>(str[j]);
     }
-    heap_data[args_array + 1 + i] = str_addr;
+    heap_data[args_array + i] = str_addr;
   }
   push(args_array);
 
