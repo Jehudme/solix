@@ -1,9 +1,9 @@
 #pragma once
-#include "solix/ast_visitor.hpp"
+#include "utilities/ast_visitor.hpp"
 #include "solix/compilation.hpp"
-#include "solix/processes/process.hpp"
-#include "solix/utilities/optcodes.hpp"
-#include "solix/statements.hpp"
+#include "processes/process.hpp"
+#include "utilities/optcodes.hpp"
+#include "utilities/statements.hpp"
 #include <vector>
 #include <string>
 #include <unordered_map>

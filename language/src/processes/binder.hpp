@@ -1,8 +1,8 @@
 #include <unordered_set>
 #pragma once
-#include "solix/processes/process.hpp"
-#include "solix/statements.hpp"
-#include "solix/ast_visitor.hpp"
+#include "processes/process.hpp"
+#include "utilities/statements.hpp"
+#include "utilities/ast_visitor.hpp"
 #include <unordered_map>
 #include <string>
 #include <vector>

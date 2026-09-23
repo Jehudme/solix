@@ -1,6 +1,6 @@
-#include "solix/processes/parser.hpp"
+#include "processes/parser.hpp"
 #include "solix/compilation.hpp"
-#include "solix/statements.hpp"
+#include "utilities/statements.hpp"
 #include <stdexcept>
 
 namespace solix {

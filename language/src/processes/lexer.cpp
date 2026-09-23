@@ -1,6 +1,6 @@
-#include "solix/processes/lexer.hpp"
+#include "processes/lexer.hpp"
 #include "solix/compilation.hpp"
-#include "solix/utilities/token.hpp"
+#include "utilities/token.hpp"
 #include <fstream>
 #include <sstream>
 #include <cctype>

@@ -1,4 +1,4 @@
-#include "solix/processes/template_substitution.hpp"
+#include "processes/template_substitution.hpp"
 
 namespace solix {
 

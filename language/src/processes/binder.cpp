@@ -1,9 +1,9 @@
-#include "solix/processes/binder.hpp"
+#include "processes/binder.hpp"
 #include "solix/compilation.hpp"
-#include "solix/utilities/diagnostic.hpp"
+#include "utilities/diagnostic.hpp"
 #include <unordered_set>
 
-#include "solix/processes/template_substitution.hpp"
+#include "processes/template_substitution.hpp"
 
 namespace solix {
 

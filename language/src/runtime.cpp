@@ -1,5 +1,5 @@
 #include "solix/runtime.hpp"
-#include "solix/utilities/optcodes.hpp"
+#include "utilities/optcodes.hpp"
 #include <bit>
 #include <cmath>
 #include <cstring>

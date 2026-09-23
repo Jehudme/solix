@@ -1,6 +1,6 @@
 #pragma once
-#include "solix/ast_visitor.hpp"
-#include "solix/statements.hpp"
+#include "utilities/ast_visitor.hpp"
+#include "utilities/statements.hpp"
 #include <unordered_map>
 #include <string>
 

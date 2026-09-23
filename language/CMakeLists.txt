@@ -1,6 +1,7 @@
 add_library(solix_language
     src/utilities/diagnostic.cpp
-    src/compilation.cpp src/ast_clone.cpp
+    src/compilation.cpp
+    src/utilities/ast_clone.cpp
     src/processes/template_substitution.cpp
     src/processes/template_deduction.cpp
     src/processes/process.cpp
@@ -8,12 +9,13 @@ add_library(solix_language
     src/processes/parser.cpp
     src/processes/binder.cpp
     src/processes/assembler.cpp
-    src/processes/runtime.cpp
+    src/runtime.cpp
 )
 
 target_include_directories(solix_language
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
         $<INSTALL_INTERFACE:include>
 )
 

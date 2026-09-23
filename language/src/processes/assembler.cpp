@@ -1,8 +1,8 @@
-#include "solix/processes/assembler.hpp"
+#include "processes/assembler.hpp"
 #include "solix/compilation.hpp"
-#include "solix/statements.hpp"
-#include "solix/utilities/diagnostic.hpp"
-#include "solix/utilities/optcodes.hpp"
+#include "utilities/statements.hpp"
+#include "utilities/diagnostic.hpp"
+#include "utilities/optcodes.hpp"
 #include <cstring>
 #include <sstream>
 #include <stdexcept>

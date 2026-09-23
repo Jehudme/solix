@@ -1,6 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include "solix/runtime.hpp"
-#include "solix/utilities/optcodes.hpp"
+#include "utilities/optcodes.hpp"
 
 using namespace solix;
 

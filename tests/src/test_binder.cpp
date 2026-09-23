@@ -1,9 +1,9 @@
 #include <catch2/matchers/catch_matchers_string.hpp>
 #include "solix/compilation.hpp"
-#include "solix/processes/binder.hpp"
-#include "solix/processes/lexer.hpp"
-#include "solix/processes/parser.hpp"
-#include "solix/utilities/diagnostic.hpp"
+#include "processes/binder.hpp"
+#include "processes/lexer.hpp"
+#include "processes/parser.hpp"
+#include "utilities/diagnostic.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 using namespace solix;

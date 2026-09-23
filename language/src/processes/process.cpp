@@ -1,6 +1,6 @@
-#include "solix/processes/process.hpp"
+#include "processes/process.hpp"
 #include "solix/compilation.hpp"
-#include "solix/utilities/diagnostic.hpp"
+#include "utilities/diagnostic.hpp"
 
 namespace solix {
 

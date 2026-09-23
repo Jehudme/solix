@@ -1,6 +1,6 @@
 #include "solix/compilation.hpp"
-#include "solix/processes/process.hpp"
-#include "solix/utilities/diagnostic.hpp"
+#include "processes/process.hpp"
+#include "utilities/diagnostic.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
 #include <memory>
