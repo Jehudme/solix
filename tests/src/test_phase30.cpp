@@ -28,7 +28,7 @@ TEST_CASE("Phase 30 - Nested Templates and Polymorphic Array Literals", "[phase3
                 public static int32 main() {
                     BaseObj b = new BaseObj();
                     DerivedObj d = new DerivedObj();
-                    BaseObj[] arr = new BaseObj[]{ b, d };
+                    BaseObj[] arr = { b, d };
                     if (arr.length == 2) return 600;
                     return 0;
                 }

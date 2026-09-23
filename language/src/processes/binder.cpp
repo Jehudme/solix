@@ -1504,7 +1504,29 @@ void Binder::visit(ArrayLiteralExpression &n) {
           // element_type is assignable to current_element_type (e.g. Animal to Dog)
           element_type = current_element_type;
         } else {
-          record_error(&n, "Mixed types in array literal");
+          bool found_common = false;
+          TypeInfo ancestor = element_type;
+          while (!ancestor.name.empty()) {
+            Node *decl = global_scope.resolve(ancestor.name);
+            if (decl && decl->node_type == NodeType::CLASS_DECL) {
+              auto *cls = static_cast<ClassDeclaration *>(decl);
+              if (!cls->base_class_name.empty()) {
+                ancestor.name = cls->base_class_name;
+                if (is_assignable(ancestor, current_element_type)) {
+                  element_type = ancestor;
+                  found_common = true;
+                  break;
+                }
+              } else {
+                break;
+              }
+            } else {
+              break;
+            }
+          }
+          if (!found_common) {
+            record_error(&n, "Mixed types in array literal");
+          }
         }
       }
     }

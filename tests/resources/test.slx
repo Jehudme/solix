@@ -354,7 +354,7 @@ class TemplateTestRunner {
         Engine.print(pool_str);
 
         // Phase 30 Test: Polymorphic Array Literal
-        Animal[] poly_arr = new Animal[]{ new Dog(), new Cat() };
+        Animal[] poly_arr = { new Dog(), new Cat() };
         if (poly_arr.length == 2) Engine.print("PHASE 30 POLYMORPHIC ARRAYS OK");
         
         Engine.print("--- TEMPLATES OK ---");
