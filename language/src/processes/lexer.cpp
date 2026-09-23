@@ -154,7 +154,7 @@ public:
                     
                     case '&': 
                         if (match('&')) add_token(TokenType::OPERATOR_LOGICAL_AND);
-                        else add_token(TokenType::UNKNOWN_TOKEN, std::string("&"));
+                        else add_token(TokenType::PUNCTUATION_AMPERSAND);
                         break;
                     case '|': 
                         if (match('|')) add_token(TokenType::OPERATOR_LOGICAL_OR);
