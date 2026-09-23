@@ -45,6 +45,7 @@ private:
     void compile_expression(Node* expr);
     
     void emit_cleanup_for_node(Node* node);
+    void emit_cleanup_for_function(Node* func_node);
     
     void apply_linker_patches();
     void throw_error(Node* node, const std::string& msg);

@@ -307,6 +307,7 @@ void Assembler::compile_function(Node *function_node) {
   }
 
   emit_byte(static_cast<uint8_t>(OpCode::PUSH_NULL));
+  emit_cleanup_for_function(function_node);
   emit_byte(static_cast<uint8_t>(OpCode::RETURN));
 }
 
@@ -317,6 +318,39 @@ void Assembler::emit_cleanup_for_node(Node *node) {
       if (var_decl->is_reference_type) {
         emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
         emit_int32(var_decl->memory_index);
+        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+      }
+    }
+  }
+}
+
+void Assembler::emit_cleanup_for_function(Node *func_node) {
+  if (!func_node) return;
+  if (func_node->node_type == NodeType::METHOD_DECL) {
+    auto *m = static_cast<MethodDeclaration *>(func_node);
+    bool is_instance_method = !m->is_static && m->parent != nullptr &&
+                              m->parent->node_type == NodeType::CLASS_DECL;
+    if (is_instance_method) {
+      emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+      emit_int32(0);
+      emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+    }
+    for (const auto &param : m->parameters) {
+      if (param && param->is_reference_type) {
+        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+        emit_int32(param->memory_index);
+        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+      }
+    }
+  } else if (func_node->node_type == NodeType::CONSTRUCTOR_DECL) {
+    auto *c = static_cast<ConstructorDeclaration *>(func_node);
+    emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+    emit_int32(0);
+    emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+    for (const auto &param : c->parameters) {
+      if (param && param->is_reference_type) {
+        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+        emit_int32(param->memory_index);
         emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
       }
     }
@@ -537,26 +571,57 @@ void Assembler::visit(ReturnStatement &node) {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_NULL));
   }
 
-  // Cleanup locals before return
+  // Cleanup block locals before return
   Node *current = node.parent;
-  while (current && current->node_type != NodeType::METHOD_DECL &&
-         current->node_type != NodeType::CONSTRUCTOR_DECL) {
+  Node *func_node = nullptr;
+  while (current) {
     if (current->node_type == NodeType::BLOCK) {
       emit_cleanup_for_node(current);
+    } else if (current->node_type == NodeType::METHOD_DECL ||
+               current->node_type == NodeType::CONSTRUCTOR_DECL) {
+      func_node = current;
+      break;
     }
     current = current->parent;
+  }
+
+  if (func_node) {
+    emit_cleanup_for_function(func_node);
   }
 
   emit_byte(static_cast<uint8_t>(OpCode::RETURN));
 }
 
 void Assembler::visit(BreakStatement &node) {
+  Node *current = node.parent;
+  while (current &&
+         current->node_type != NodeType::WHILE_STMT &&
+         current->node_type != NodeType::FOR_STMT &&
+         current->node_type != NodeType::DO_WHILE_STMT &&
+         current->node_type != NodeType::SWITCH_STMT) {
+    if (current->node_type == NodeType::BLOCK) {
+      emit_cleanup_for_node(current);
+    }
+    current = current->parent;
+  }
+
   emit_byte(static_cast<uint8_t>(OpCode::JUMP));
   loop_break_patches.back().push_back(bytecode().size());
   emit_int32(0xFFFFFFFF);
 }
 
 void Assembler::visit(ContinueStatement &node) {
+  Node *current = node.parent;
+  while (current &&
+         current->node_type != NodeType::WHILE_STMT &&
+         current->node_type != NodeType::FOR_STMT &&
+         current->node_type != NodeType::DO_WHILE_STMT) {
+    if (current->node_type == NodeType::BLOCK) {
+      emit_cleanup_for_node(current);
+    }
+    current = current->parent;
+  }
+
   emit_byte(static_cast<uint8_t>(OpCode::JUMP));
   loop_continue_patches.back().push_back(bytecode().size());
   emit_int32(0xFFFFFFFF);
