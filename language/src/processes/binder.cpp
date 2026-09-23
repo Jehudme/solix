@@ -945,9 +945,17 @@ void Binder::visit(LiteralNode &n) {
       n.expression_type = {"int32", 0};
     else if (std::holds_alternative<double>(n.value))
       n.expression_type = {"float64", 0};
-    else if (std::holds_alternative<std::string>(n.value))
+    else if (std::holds_alternative<std::string>(n.value)) {
       n.expression_type = {"char", 1};
-    else
+      std::string str = std::get<std::string>(n.value);
+      if (context.string_pool.count(str)) {
+        n.memory_index = context.string_pool[str];
+      } else {
+        int idx = static_variable_index++;
+        context.string_pool[str] = idx;
+        n.memory_index = idx;
+      }
+    } else
       n.expression_type = {"void", 0};
     evaluated_type = n.expression_type;
     log_trace("Evaluated literal -> type '{}'", evaluated_type.to_string());

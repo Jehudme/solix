@@ -64,6 +64,7 @@ struct CompilationContext {
   std::unordered_map<Source, std::vector<TokenList>> tokens;
   std::unordered_map<Source, NodeList> nodes;
   std::unordered_map<std::string, Node *> symbols;
+  std::unordered_map<std::string, int> string_pool;
   std::vector<uint8_t> bytecode;
   std::string assembly;
   

@@ -193,6 +193,12 @@ void Assembler::compile_boot_sequence() {
     }
   }
 
+  for (const auto &[str, idx] : context.string_pool) {
+    if (idx >= (int)total_globals) {
+      total_globals = idx + 1;
+    }
+  }
+
   emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
   emit_int32(total_globals);
   emit_byte(static_cast<uint8_t>(OpCode::ALLOC_STATIC));
@@ -203,6 +209,13 @@ void Assembler::compile_boot_sequence() {
       emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
       emit_int32(field->memory_index);
     }
+  }
+
+  for (const auto &[str, idx] : context.string_pool) {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_STRING));
+    emit_string(str);
+    emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
+    emit_int32(idx);
   }
 
   std::string entry_point = context.options.entry_point;
@@ -767,8 +780,13 @@ void Assembler::visit(LiteralNode &node) {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_F64));
     emit_float64(std::get<double>(lit->value));
   } else if (std::holds_alternative<std::string>(lit->value)) {
-    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_STRING));
-    emit_string(std::get<std::string>(lit->value));
+    if (lit->memory_index != -1) {
+      emit_byte(static_cast<uint8_t>(OpCode::GET_GLOBAL));
+      emit_int32(lit->memory_index);
+    } else {
+      emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_STRING));
+      emit_string(std::get<std::string>(lit->value));
+    }
   } else if (std::holds_alternative<std::nullptr_t>(lit->value)) {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_NULL));
   }
