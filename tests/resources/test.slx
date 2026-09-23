@@ -85,8 +85,8 @@ public class Engine {
     internal bool isRunning = false;
     public float32 temperature = 25.0;
     
-    public static native void print(char[] s);
-    public static native void print(int32 x);
+    public static void print(char[] s) { solix.systems.Console.println(s); }
+    public static void print(int32 x) { solix.systems.Console.println(x); }
     public static void print(float64 x) { print("FLOAT64 PRINT"); }
 
     private class CoreProcessor {
@@ -363,8 +363,24 @@ class TemplateTestRunner {
         if (perf_sum == 4950) Engine.print("PHASE 31 VM ENGINE TUNING OK");
 
         Engine.print("--- TEMPLATES OK ---");
+
+        ConsoleTestRunner.run();
     }
 }
+
+public class ConsoleTestRunner {
+    public static void run() {
+        solix.systems.Console.println("=== TESTING CONSOLE STANDALONE ===");
+        solix.systems.Console.println(true);
+        solix.systems.Console.println('Z');
+        solix.systems.Console.println(12345);
+        solix.systems.Console.println(3.14159);
+        int32[] test_ints = { 10, 20, 30 };
+        solix.systems.Console.println(test_ints);
+        solix.systems.Console.println("=== CONSOLE TESTS OK ===");
+    }
+}
+
 
 
 
