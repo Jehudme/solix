@@ -961,6 +961,13 @@ void Binder::visit(IdentifierNode &n) {
     } else if (declaration->node_type == NodeType::CLASS_DECL ||
                declaration->node_type == NodeType::ENUM_DECL) {
       n.expression_type = {declaration->mangled_name, 0};
+    } else if (declaration->node_type == NodeType::ALIAS_STMT) {
+      auto *alias = static_cast<AliasStatement *>(declaration);
+      n.expression_type = alias->target_type;
+      Node *target_decl = global_scope.resolve(alias->target_type.name);
+      if (target_decl) {
+        n.resolved_declaration = target_decl;
+      }
     } else {
       record_error(&n, "Invalid identifier usage: " + n.name);
       evaluated_type = {"void", 0};

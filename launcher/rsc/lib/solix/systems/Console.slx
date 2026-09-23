@@ -4,7 +4,7 @@
 // ============================================================================
 package solix.systems;
 
-import solix.String;
+alias String = solix.String;
 
 public class Console {
     // ------------------------------------------------------------------------

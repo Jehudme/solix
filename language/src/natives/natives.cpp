@@ -16,7 +16,9 @@ inline void print_char_array(RuntimeContext &ctx, Address addr, bool newline) {
   } else {
     uint32_t len = static_cast<uint32_t>(ctx.memory.heap[addr - 1] >> 32);
     for (uint32_t i = 0; i < len; ++i) {
-      std::cout << static_cast<char>(ctx.memory.heap[addr + i]);
+      char c = static_cast<char>(ctx.memory.heap[addr + i]);
+      if (c == '\0') break;
+      std::cout << c;
     }
   }
   if (newline) {
@@ -37,7 +39,9 @@ inline void print_solix_string(RuntimeContext &ctx, Address str_obj_addr, bool n
     } else {
       uint32_t len = static_cast<uint32_t>(ctx.memory.heap[buf_addr - 1] >> 32);
       for (uint32_t i = 0; i < len; ++i) {
-        std::cout << static_cast<char>(ctx.memory.heap[buf_addr + i]);
+        char c = static_cast<char>(ctx.memory.heap[buf_addr + i]);
+        if (c == '\0') break;
+        std::cout << c;
       }
     }
   }

@@ -8,6 +8,7 @@ package com.solix.advanced.test;
 
 alias Matrix = float64[][];
 alias ID = uint64;
+alias Console = solix.systems.Console;
 
 public enum ApplicationState {
     INITIALIZING,
@@ -85,8 +86,8 @@ public class Engine {
     internal bool isRunning = false;
     public float32 temperature = 25.0;
     
-    public static void print(char[] s) { solix.systems.Console.println(s); }
-    public static void print(int32 x) { solix.systems.Console.println(x); }
+    public static void print(char[] s) { Console.println(s); }
+    public static void print(int32 x) { Console.println(x); }
     public static void print(float64 x) { print("FLOAT64 PRINT"); }
 
     private class CoreProcessor {
@@ -370,14 +371,14 @@ class TemplateTestRunner {
 
 public class ConsoleTestRunner {
     public static void run() {
-        solix.systems.Console.println("=== TESTING CONSOLE STANDALONE ===");
-        solix.systems.Console.println(true);
-        solix.systems.Console.println('Z');
-        solix.systems.Console.println(12345);
-        solix.systems.Console.println(3.14159);
+        Console.println("=== TESTING CONSOLE STANDALONE ===");
+        Console.println(true);
+        Console.println('Z');
+        Console.println(12345);
+        Console.println(3.14159);
         int32[] test_ints = { 10, 20, 30 };
-        solix.systems.Console.println(test_ints);
-        solix.systems.Console.println("=== CONSOLE TESTS OK ===");
+        Console.println(test_ints);
+        Console.println("=== CONSOLE TESTS OK ===");
     }
 }
 
