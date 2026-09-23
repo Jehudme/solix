@@ -1106,8 +1106,7 @@ void Assembler::visit(MemberAccessExpression &node) {
   auto *field = static_cast<FieldDeclaration *>(mem_acc->resolved_declaration);
   if (!mem_acc->resolved_declaration && mem_acc->member_name == "length") {
     compile_expression(mem_acc->object.get());
-    emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
-    emit_int32(0);
+    emit_byte(static_cast<uint8_t>(OpCode::ARRAY_LENGTH));
     return;
   }
 

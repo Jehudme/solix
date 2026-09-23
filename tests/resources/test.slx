@@ -95,6 +95,7 @@ public class Engine {
 
         public CoreProcessor(ID id) {
             this.coreId = id;
+            this.cache = new int32[1024];
             Engine.instanceCount++;
         }
 
@@ -322,6 +323,10 @@ class TemplateTestRunner {
         int32 i_calc = 100 + 50 * 2 - 40 / 2; // 180
         float64 f_calc = 10.5 + 4.5 * 2.0; // 19.5
         if (i_calc == 180 && f_calc > 19.0) Engine.print("PHASE 24 TYPED ALU MATH OK");
+        
+        // Phase 25 Test: Array Length and Zero-Initialization
+        int32[] safe_arr = new int32[4];
+        if (safe_arr.length == 4 && safe_arr[0] == 0) Engine.print("PHASE 25 ARRAY SAFETY OK");
         
         Engine.print("--- TEMPLATES OK ---");
     }
