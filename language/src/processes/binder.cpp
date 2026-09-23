@@ -106,6 +106,7 @@ Node *Binder::instantiate_template(const std::string &template_name,
         current_pass == BinderPass::EVALUATE_EXPRESSION) {
       BinderPass old = current_pass;
       current_pass = BinderPass::BIND_EXECUTION;
+      current_package = my_prefix;
       bind_tree(clone);
       current_pass = old;
     }
@@ -117,6 +118,7 @@ Node *Binder::instantiate_template(const std::string &template_name,
         current_pass == BinderPass::EVALUATE_EXPRESSION) {
       BinderPass old = current_pass;
       current_pass = BinderPass::BIND_EXECUTION;
+      current_package = my_prefix;
       bind_tree(clone);
       current_pass = old;
     }
@@ -128,10 +130,12 @@ Node *Binder::instantiate_template(const std::string &template_name,
         current_pass == BinderPass::EVALUATE_EXPRESSION) {
       BinderPass old = current_pass;
       current_pass = BinderPass::BIND_EXECUTION;
+      current_package = my_prefix;
       bind_tree(clone);
       current_pass = old;
     }
   }
+  current_package = current_pkg_copy;
 
   log_info("Successfully instantiated template: {}", mangled_name);
   return global_scope.resolve(mangled_name);
@@ -896,6 +900,17 @@ void Binder::visit(IdentifierNode &n) {
     if (!declaration) {
       declaration = global_scope.resolve(n.name);
     }
+    // Cross-package fallback: search all known packages (mirrors resolve_type)
+    if (!declaration) {
+      for (const auto &pkg : known_packages) {
+        if (pkg == current_package) continue;
+        Node *candidate = global_scope.resolve(pkg + n.name);
+        if (candidate) {
+          declaration = candidate;
+          break;
+        }
+      }
+    }
 
     if (!declaration) {
       record_error(&n, "Undefined identifier: " + n.name);
@@ -1497,7 +1512,11 @@ void Binder::visit(CastExpression &n) {
     };
     bool target_prim = is_primitive(n.target_type);
     bool source_prim = is_primitive(source_type);
-    if (target_prim && source_prim) {
+    // (T)null — casting from null (void) to any type is always valid
+    bool source_is_null = (source_type.name == "void" && source_type.array_depth == 0);
+    if (source_is_null) {
+      // null can be cast to any reference type; emit as null
+    } else if (target_prim && source_prim) {
     } else if (target_prim != source_prim) {
       record_error(&n, "Cannot cast between primitive and class types");
     } else {

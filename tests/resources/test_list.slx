@@ -1,0 +1,68 @@
+package com.solix.advanced.test;
+
+alias StringList = solix.util.List<char[]>;
+alias IntList = solix.util.List<int32>;
+
+public class ListTestRunner {
+    public static void main(char[][] args) {
+        Engine.print("=== DEMARRAGE DU TEST LIST<T> ===");
+
+        // Test 1: Liste d'entiers avec croissance dynamique automatique
+        IntList numbers = new IntList(4);
+        for (int32 i = 0; i < 20; i++) {
+            numbers.add(i * 10);
+            //Engine.print(numbers.size());
+            Engine.print(i);
+        }
+
+        for (int32 index = 0; index < 100; index++) {
+          Engine.print(index);
+        }
+
+        if (numbers.size() == 20) {
+            Engine.print("TAILLE INITIALE VALIDEE (20 elements)");
+        }
+
+        // Test 2: Lecture et écriture arbitraire
+        int32 val = numbers.get(5); // Devrait valoir 50
+        if (val == 50) {
+            Engine.print("ACCES PAR INDEX VALIDE (get(5) == 50)");
+        }
+
+        numbers.set(5, 999);
+        if (numbers.get(5) == 999) {
+            Engine.print("MODIFICATION VALIDEE (set(5, 999))");
+        }
+
+        // Test 3: Suppression et décalage mémoire
+        int32 removed = numbers.remove_at(5);
+        if (removed == 999 && numbers.get(5) == 60) {
+            Engine.print("SUPPRESSION PAR INDEX VALIDEE");
+        }
+
+        // Test 4: Inversion in-situ
+        numbers.reverse();
+        if (numbers.first() == 190 && numbers.last() == 0) {
+            Engine.print("INVERSION DE LISTE VALIDEE");
+        }
+
+        // Test 5: Liste de chaînes de caractères (ARC Stress)
+        StringList words = new StringList();
+        words.add("Solix");
+        words.add("Compiler");
+        words.add("Architecture");
+
+        if (words.contains("Compiler")) {
+            Engine.print("RECHERCHE GENIQUE VALIDEE (contains)");
+        }
+
+        Engine.print("hllow world");
+
+        words.remove("Compiler");
+        if (!words.contains("Compiler") && words.size() == 2) {
+            Engine.print("SUPPRESSION DE REFERENCE VALIDEE");
+        }
+
+        Engine.print("=== TOUS LES TESTS LIST<T> SONT PASSES ===");
+    }
+}

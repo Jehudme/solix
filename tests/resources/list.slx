@@ -1,0 +1,308 @@
+// ============================================================================
+// Solix Standard Library - Generic Dynamic Array (List<T>)
+// Package: solix.util
+// ============================================================================
+package solix.util;
+
+public class List<T> {
+    private T[] storage_buffer;
+    private int32 element_count = 0;
+    private int32 buffer_capacity = 0;
+
+    // ------------------------------------------------------------------------
+    // Constructeurs
+    // ------------------------------------------------------------------------
+
+    public List() {
+        this.buffer_capacity = 8;
+        this.element_count = 0;
+        this.storage_buffer = new T[this.buffer_capacity];
+
+        Engine.print("new list");
+    }
+
+    public List(int32 initial_capacity) {
+        int32 capacity = initial_capacity;
+        if (capacity < 4) {
+            capacity = 4;
+        }
+        this.buffer_capacity = capacity;
+        this.element_count = 0;
+        this.storage_buffer = new T[this.buffer_capacity];
+
+        Engine.print("new list");
+    }
+
+    public List(T[] initial_elements) {
+        if (initial_elements == null || initial_elements.length == 0) {
+            this.buffer_capacity = 8;
+            this.element_count = 0;
+            this.storage_buffer = new T[this.buffer_capacity];
+            return;
+        }
+
+        this.element_count = initial_elements.length;
+        this.buffer_capacity = this.element_count * 2;
+        this.storage_buffer = new T[this.buffer_capacity];
+
+        for (int32 i = 0; i < this.element_count; i++) {
+            this.storage_buffer[i] = initial_elements[i];
+        }
+
+        Engine.print("new list");
+
+    }
+
+    // ------------------------------------------------------------------------
+    // Capacité et Dimensionnement
+    // ------------------------------------------------------------------------
+
+    public int32 size() {
+        return this.element_count;
+    }
+
+    public int32 capacity() {
+        return this.buffer_capacity;
+    }
+
+    public bool is_empty() {
+        return this.element_count == 0;
+    }
+
+    public void clear() {
+        this.buffer_capacity = 8;
+        this.element_count = 0;
+        this.storage_buffer = new T[this.buffer_capacity];
+    }
+
+    private void ensure_capacity(int32 required_capacity) {
+        if (required_capacity <= this.buffer_capacity) {
+            return;
+        }
+
+        int32 new_capacity = this.buffer_capacity * 2;
+        if (new_capacity < required_capacity) {
+            new_capacity = required_capacity;
+        }
+
+        T[] new_buffer = new T[new_capacity];
+        for (int32 i = 0; i < this.element_count; i++) {
+            new_buffer[i] = this.storage_buffer[i];
+        }
+
+        this.storage_buffer = new_buffer;
+        this.buffer_capacity = new_capacity;
+    }
+
+    public void reserve(int32 minimum_capacity) {
+        if (minimum_capacity > this.buffer_capacity) {
+            this.ensure_capacity(minimum_capacity);
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Accès aux Éléments
+    // ------------------------------------------------------------------------
+
+    public T get(int32 index) {
+        if (index < 0 || index >= this.element_count) {
+            return (T)null;
+        }
+        return this.storage_buffer[index];
+    }
+
+    public bool set(int32 index, T value) {
+        if (index < 0 || index >= this.element_count) {
+            return false;
+        }
+        this.storage_buffer[index] = value;
+        return true;
+    }
+
+    public T first() {
+        if (this.element_count == 0) {
+            return (T)null;
+        }
+        return this.storage_buffer[0];
+    }
+
+    public T last() {
+        if (this.element_count == 0) {
+            return (T)null;
+        }
+        return this.storage_buffer[this.element_count - 1];
+    }
+
+    public T[] to_array() {
+        T[] export_array = new T[this.element_count];
+        for (int32 i = 0; i < this.element_count; i++) {
+            export_array[i] = this.storage_buffer[i];
+        }
+        return export_array;
+    }
+
+    // ------------------------------------------------------------------------
+    // Insertion et Suppression
+    // ------------------------------------------------------------------------
+
+    public void add(T item) {
+        this.ensure_capacity(this.element_count + 1);
+        this.storage_buffer[this.element_count] = item;
+        this.element_count++;
+    }
+
+    public bool insert(int32 index, T item) {
+        if (index < 0 || index > this.element_count) {
+            return false;
+        }
+
+        this.ensure_capacity(this.element_count + 1);
+
+        // Décalage des éléments vers la droite
+        for (int32 shift = this.element_count; shift > index; shift--) {
+            this.storage_buffer[shift] = this.storage_buffer[shift - 1];
+        }
+
+        this.storage_buffer[index] = item;
+        this.element_count++;
+        return true;
+    }
+
+    public void add_all(List<T> items) {
+        if (items == null || items.size() == 0) {
+            return;
+        }
+
+        int32 incoming_count = items.size();
+        this.ensure_capacity(this.element_count + incoming_count);
+
+        for (int32 i = 0; i < incoming_count; i++) {
+            this.storage_buffer[this.element_count + i] = items.get(i);
+        }
+        this.element_count = this.element_count + incoming_count;
+    }
+
+    public T remove_at(int32 index) {
+        if (index < 0 || index >= this.element_count) {
+            return (T)null;
+        }
+
+        T removed_item = this.storage_buffer[index];
+
+        // Décalage des éléments vers la gauche
+        for (int32 shift = index; shift < this.element_count - 1; shift++) {
+            this.storage_buffer[shift] = this.storage_buffer[shift + 1];
+        }
+
+        this.storage_buffer[this.element_count - 1] = (T)null;
+        this.element_count--;
+        return removed_item;
+    }
+
+    public T pop() {
+        if (this.element_count == 0) {
+            return (T)null;
+        }
+        return this.remove_at(this.element_count - 1);
+    }
+
+    // ------------------------------------------------------------------------
+    // Recherche et Consultation
+    // ------------------------------------------------------------------------
+
+    public int32 index_of(T item) {
+        for (int32 i = 0; i < this.element_count; i++) {
+            if (this.storage_buffer[i] == item) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public int32 last_index_of(T item) {
+        for (int32 i = this.element_count - 1; i >= 0; i--) {
+            if (this.storage_buffer[i] == item) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public bool contains(T item) {
+        return this.index_of(item) != -1;
+    }
+
+    public bool remove(T item) {
+        int32 target_index = this.index_of(item);
+        if (target_index != -1) {
+            this.remove_at(target_index);
+            return true;
+        }
+        return false;
+    }
+
+    // ------------------------------------------------------------------------
+    // Algorithmes & Manipulations Avancées
+    // ------------------------------------------------------------------------
+
+    public void reverse() {
+        int32 left_idx = 0;
+        int32 right_idx = this.element_count - 1;
+
+        while (left_idx < right_idx) {
+            T temporary = this.storage_buffer[left_idx];
+            this.storage_buffer[left_idx] = this.storage_buffer[right_idx];
+            this.storage_buffer[right_idx] = temporary;
+
+            left_idx++;
+            right_idx--;
+        }
+    }
+
+    public List<T> slice(int32 start_index, int32 end_index) {
+        int32 start = start_index;
+        int32 end = end_index;
+
+        if (start < 0) start = 0;
+        if (end > this.element_count) end = this.element_count;
+
+        List<T> sublist = new List<T>();
+        if (start >= end) {
+            return sublist;
+        }
+
+        sublist.reserve(end - start);
+        for (int32 i = start; i < end; i++) {
+            sublist.add(this.storage_buffer[i]);
+        }
+        return sublist;
+    }
+
+    public List<T> clone() {
+        List<T> duplicated = new List<T>(this.buffer_capacity);
+        for (int32 i = 0; i < this.element_count; i++) {
+            duplicated.add(this.storage_buffer[i]);
+        }
+        return duplicated;
+    }
+
+    // ------------------------------------------------------------------------
+    // Surcharges d'Opérateurs
+    // ------------------------------------------------------------------------
+
+    public List<T> operator=(List<T> other) {
+        if (other == null) {
+            this.clear();
+            return this;
+        }
+
+        this.element_count = other.element_count;
+        this.buffer_capacity = other.buffer_capacity;
+        this.storage_buffer = new T[this.buffer_capacity];
+
+        for (int32 i = 0; i < this.element_count; i++) {
+            this.storage_buffer[i] = other.storage_buffer[i];
+        }
+        return this;
+    }
+}
