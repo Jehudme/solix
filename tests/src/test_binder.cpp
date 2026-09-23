@@ -15,6 +15,15 @@ run_full_pipeline(const std::filesystem::path &path) {
   Source src_key = path;
   options.sources[src_key] = std::nullopt;
 
+  std::filesystem::path stdlib_dir = path.parent_path() / "../../launcher/rsc/lib/solix";
+  if (std::filesystem::exists(stdlib_dir)) {
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(stdlib_dir)) {
+      if (entry.is_regular_file() && entry.path().extension() == ".slx" && std::filesystem::file_size(entry.path()) > 0) {
+        options.sources[std::filesystem::canonical(entry.path())] = std::nullopt;
+      }
+    }
+  }
+
   auto *context = new CompilationContext(options);
   context->diagnostic = std::make_unique<Diagnostic>(*context);
 
