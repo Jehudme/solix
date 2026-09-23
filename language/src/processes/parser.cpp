@@ -610,7 +610,7 @@ std::unique_ptr<Node> ParserState::parse_statement() {
         temp++;
     }
     if (temp < tokens.size() &&
-        tokens[temp]->type == TokenType::OPERATOR_LOGICAL_AND)
+        tokens[temp]->type == TokenType::PUNCTUATION_AMPERSAND)
       temp++;
     if (temp < tokens.size() && tokens[temp]->type == TokenType::IDENTIFIER)
       is_var_decl = true;
@@ -620,7 +620,7 @@ std::unique_ptr<Node> ParserState::parse_statement() {
     size_t restore = current;
     try {
       TypeInfo type = parse_type_info();
-      bool is_ref = match(TokenType::OPERATOR_LOGICAL_AND);
+      bool is_ref = match(TokenType::PUNCTUATION_AMPERSAND);
       if (check(TokenType::IDENTIFIER)) {
         current = restore;
         return parse_variable_declaration(false, false);
@@ -797,7 +797,7 @@ std::unique_ptr<Node> ParserState::parse_variable_declaration(bool is_const,
                                                               bool is_ref) {
   Token start = peek();
   TypeInfo type = parse_type_info();
-  if (match(TokenType::OPERATOR_LOGICAL_AND)) {
+  if (match(TokenType::PUNCTUATION_AMPERSAND)) {
     is_ref = true;
   }
 
@@ -1007,7 +1007,7 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
               "Expected '(' after constructor name");
       while (!check(TokenType::PUNCTUATION_CLOSE_PAREN) && !is_at_end()) {
         TypeInfo p_type = parse_type_info();
-        bool p_ref = match(TokenType::OPERATOR_LOGICAL_AND);
+        bool p_ref = match(TokenType::PUNCTUATION_AMPERSAND);
         Token p_name =
             consume(TokenType::IDENTIFIER, "Expected parameter name");
         auto param = std::make_unique<VariableDeclaration>(
@@ -1099,7 +1099,7 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
     bool is_const, bool is_virtual, bool is_override, bool is_weak,
     bool is_abstract) {
   TypeInfo type = parse_type_info();
-  bool is_ref = match(TokenType::OPERATOR_LOGICAL_AND);
+  bool is_ref = match(TokenType::PUNCTUATION_AMPERSAND);
 
   Token name;
   std::string name_str;
@@ -1175,7 +1175,7 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
 
     while (!check(TokenType::PUNCTUATION_CLOSE_PAREN) && !is_at_end()) {
       TypeInfo p_type = parse_type_info();
-      bool p_ref = match(TokenType::OPERATOR_LOGICAL_AND);
+      bool p_ref = match(TokenType::PUNCTUATION_AMPERSAND);
       Token p_name = consume(TokenType::IDENTIFIER, "Expected parameter name");
       auto param = std::make_unique<VariableDeclaration>(
           p_name, std::get<std::string>(p_name.value), std::move(p_type));
