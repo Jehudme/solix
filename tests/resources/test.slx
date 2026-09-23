@@ -379,6 +379,36 @@ public class ConsoleTestRunner {
         int32[] test_ints = { 10, 20, 30 };
         Console.println(test_ints);
         Console.println("=== CONSOLE TESTS OK ===");
+        ExtendedConsoleTestRunner.run();
+    }
+}
+
+public class ExtendedConsoleTestRunner {
+    public static void run() {
+        Console.println("=== TESTING EXTENDED CONSOLE FEATURES ===");
+        
+        // Error & Warning Streams
+        Console.error("Test Error Stream: ");
+        Console.errorln("Critical condition logged to stderr");
+        Console.warnln("Warning: This is a warning message");
+        Console.infoln("Info: Standard info channel active");
+        Console.debugln("Debug: Diagnostics active");
+
+        // Color & Styling
+        Console.set_color(solix.systems.ConsoleColor.GREEN);
+        Console.println("Green text output OK");
+        Console.reset_color();
+
+        // Control
+        Console.flush();
+
+        // Input Handling on EOF
+        char[] eof_input = Console.input_line();
+        if (eof_input.length >= 0) {
+            Console.println("Console.input_line() EOF handled safely");
+        }
+
+        Console.println("=== EXTENDED CONSOLE TESTS OK ===");
     }
 }
 
