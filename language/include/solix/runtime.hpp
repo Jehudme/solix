@@ -90,6 +90,8 @@ struct Memory {
 
 void run(RuntimeOptions &options);
 
+const std::unordered_map<std::string, NativeFunction>& get_builtin_natives();
+
 // -----------------------------------------------------------------------------
 // Execution Engine
 // -----------------------------------------------------------------------------

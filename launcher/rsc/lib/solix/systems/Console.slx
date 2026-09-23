@@ -1,0 +1,84 @@
+// ============================================================================
+// Solix Standard Library - Console System
+// Package: solix.systems
+// ============================================================================
+package solix.systems;
+
+import solix.String;
+
+public class Console {
+    // ------------------------------------------------------------------------
+    // Blank Line
+    // ------------------------------------------------------------------------
+    public static native void println();
+
+    // ------------------------------------------------------------------------
+    // Primitives: Print
+    // ------------------------------------------------------------------------
+    public static native void print(bool val);
+    public static native void print(char val);
+    public static native void print(int8 val);
+    public static native void print(int16 val);
+    public static native void print(int32 val);
+    public static native void print(int64 val);
+    public static native void print(uint8 val);
+    public static native void print(uint16 val);
+    public static native void print(uint32 val);
+    public static native void print(uint64 val);
+    public static native void print(float32 val);
+    public static native void print(float64 val);
+
+    // ------------------------------------------------------------------------
+    // Primitives: Println
+    // ------------------------------------------------------------------------
+    public static native void println(bool val);
+    public static native void println(char val);
+    public static native void println(int8 val);
+    public static native void println(int16 val);
+    public static native void println(int32 val);
+    public static native void println(int64 val);
+    public static native void println(uint8 val);
+    public static native void println(uint16 val);
+    public static native void println(uint32 val);
+    public static native void println(uint64 val);
+    public static native void println(float32 val);
+    public static native void println(float64 val);
+
+    // ------------------------------------------------------------------------
+    // Arrays: Print
+    // ------------------------------------------------------------------------
+    public static native void print(char[] val);
+    public static native void print(bool[] val);
+    public static native void print(int8[] val);
+    public static native void print(int16[] val);
+    public static native void print(int32[] val);
+    public static native void print(int64[] val);
+    public static native void print(uint8[] val);
+    public static native void print(uint16[] val);
+    public static native void print(uint32[] val);
+    public static native void print(uint64[] val);
+    public static native void print(float32[] val);
+    public static native void print(float64[] val);
+
+    // ------------------------------------------------------------------------
+    // Arrays: Println
+    // ------------------------------------------------------------------------
+    public static native void println(char[] val);
+    public static native void println(bool[] val);
+    public static native void println(int8[] val);
+    public static native void println(int16[] val);
+    public static native void println(int32[] val);
+    public static native void println(int64[] val);
+    public static native void println(uint8[] val);
+    public static native void println(uint16[] val);
+    public static native void println(uint32[] val);
+    public static native void println(uint64[] val);
+    public static native void println(float32[] val);
+    public static native void println(float64[] val);
+
+    // ------------------------------------------------------------------------
+    // Solix String
+    // ------------------------------------------------------------------------
+    public static native void print(String val);
+    public static native void println(String val);
+}

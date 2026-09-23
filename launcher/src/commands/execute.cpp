@@ -7,35 +7,13 @@
 
 namespace solix::cli {
 
-// Temporary helper to register required native functions with full symbols
-static void register_temp_natives(RuntimeOptions& opts) {
-    opts.native_functions["com.solix.advanced.test.Engine.print(char[])"] = [](solix::RuntimeContext& ctx, uint64_t self_address, uint64_t* args, size_t count) -> uint64_t {
-        solix::Address addr = static_cast<solix::Address>(args[0]);
-        if (addr == 0) {
-            std::cout << "null" << std::endl;
-            return 0;
-        }
-        uint32_t len = static_cast<uint32_t>(ctx.memory.heap[addr - 1] >> 32);
-        std::string str = "";
-        for (uint32_t i = 0; i < len; ++i) {
-            str += static_cast<char>(ctx.memory.heap[addr + i]);
-        }
-        std::cout << str << std::endl;
-        return 0; // Automatically pushed by VM
-    };
-
-    opts.native_functions["com.solix.advanced.test.Engine.print(int32)"] = [](solix::RuntimeContext& ctx, uint64_t self_address, uint64_t* args, size_t count) -> uint64_t {
-        std::cout << static_cast<int32_t>(args[0]) << std::endl;
-        return 0; // Automatically pushed by VM
-    };
-}
-
 void setup_execute_command(CLI::App &app) {
   // TODO: It must only run the .slxb file
   auto *execute_cmd = app.add_subcommand("run", "run compiled bytecode");
 
   auto opts = std::make_shared<RuntimeOptions>();
   auto input_file = std::make_shared<std::string>();
+  auto no_builtins = std::make_shared<bool>(false);
 
   execute_cmd->add_option("file", *input_file, "Solix source compiled bytecode")
       ->required()
@@ -47,10 +25,13 @@ void setup_execute_command(CLI::App &app) {
   execute_cmd->add_option("-p,--heap", opts->heap_capacity,
                           "Heap capacity in words (default: 16777216)");
 
+  execute_cmd->add_flag("--no-builtins", *no_builtins,
+                        "Do not automatically register builtin native functions");
+
   execute_cmd->add_option("args", opts->program_args,
                           "Arguments passed to the Solix program");
 
-  execute_cmd->callback([opts, input_file]() {
+  execute_cmd->callback([opts, input_file, no_builtins]() {
     std::filesystem::path path(*input_file);
 
     if (!std::filesystem::exists(path)) {
@@ -60,8 +41,14 @@ void setup_execute_command(CLI::App &app) {
 
     opts->bytecode_source = path;
     
-    // Register temporary native functions with full symbol
-    register_temp_natives(*opts);
+    // Register builtin native functions unless explicitly disabled
+    if (!*no_builtins) {
+      for (const auto &[name, func] : solix::get_builtin_natives()) {
+        if (!opts->native_functions.count(name)) {
+          opts->native_functions[name] = func;
+        }
+      }
+    }
 
     try {
       run(*opts);

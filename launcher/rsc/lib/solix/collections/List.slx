@@ -17,8 +17,6 @@ public class List<T> {
         this.buffer_capacity = 8;
         this.element_count = 0;
         this.storage_buffer = new T[this.buffer_capacity];
-
-        Engine.print("new list");
     }
 
     public List(int32 initial_capacity) {
@@ -29,8 +27,6 @@ public class List<T> {
         this.buffer_capacity = capacity;
         this.element_count = 0;
         this.storage_buffer = new T[this.buffer_capacity];
-
-        Engine.print("new list");
     }
 
     public List(T[] initial_elements) {
@@ -48,9 +44,6 @@ public class List<T> {
         for (int32 i = 0; i < this.element_count; i++) {
             this.storage_buffer[i] = initial_elements[i];
         }
-
-        Engine.print("new list");
-
     }
 
     // ------------------------------------------------------------------------

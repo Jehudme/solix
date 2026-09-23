@@ -10,6 +10,7 @@ add_library(solix_language
     src/processes/binder.cpp
     src/processes/assembler.cpp
     src/runtime.cpp
+    src/natives/natives.cpp
 )
 
 target_include_directories(solix_language
