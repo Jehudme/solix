@@ -188,8 +188,17 @@ void RuntimeContext::execute() {
   uint64_t *stack = memory.stack.data();
   uint64_t *heap_data = memory.heap.data();
 
+  uint64_t *sp = stack + memory.stack_pointer;
+
+#define PUSH(val) (*sp++ = (val))
+#define POP() (*--sp)
+#define PEEK() (*(sp - 1))
+#define SYNC_SP() (memory.stack_pointer = static_cast<uint32_t>(sp - stack))
+#define RESTORE_SP() (sp = stack + memory.stack_pointer)
+
   // Add an initial frame so we don't underflow
-  call_stack.emplace_back(0, 0);
+  call_depth = 0;
+  call_stack[call_depth++] = Frame(0, 0);
 
   size_t arg_count = options.program_args.size();
   Address args_array = memory.dynamic_allocation(arg_count);
@@ -202,7 +211,7 @@ void RuntimeContext::execute() {
     }
     heap_data[args_array + i] = str_addr;
   }
-  push(args_array);
+  PUSH(args_array);
 
   static const void *dispatch_table[] = {
       &&op_PUSH_CONST_I8,
@@ -241,7 +250,7 @@ void RuntimeContext::execute() {
       &&op_GREATER_EQ_F64,
       &&op_LESS_I64,
       &&op_LESS_F64,
-      &&op_LESS_EQ_I64,
+      &&op_LESS_EQ_F64,
       &&op_LESS_EQ_F64,
       &&op_LOGICAL_NOT,
       &&op_NEGATE,
@@ -289,24 +298,21 @@ void RuntimeContext::execute() {
       &&op_THROW_ABSTRACT,
   };
 
-#define DISPATCH()                                                             \
-  if (program_counter >= bytecode.size())                                      \
-    return;                                                                    \
-  goto *dispatch_table[code[program_counter++]]
+#define DISPATCH() goto *dispatch_table[code[program_counter++]]
 
   DISPATCH();
 op_PUSH_CONST_I8:
 op_PUSH_CONST_I16:
 op_PUSH_CONST_I32:
   {
-    push(static_cast<uint64_t>(read_u32(bytecode, program_counter)));
+    PUSH(static_cast<uint64_t>(read_u32(bytecode, program_counter)));
     DISPATCH();
   }
 op_PUSH_CONST_I64:
 op_PUSH_CONST_U64:
 op_PUSH_CONST_F64:
   {
-    push(read_u64(bytecode, program_counter));
+    PUSH(read_u64(bytecode, program_counter));
     DISPATCH();
   }
 op_PUSH_CONST_U8:
@@ -314,7 +320,7 @@ op_PUSH_CONST_U16:
 op_PUSH_CONST_U32:
 op_PUSH_CONST_F32:
   {
-    push(static_cast<uint64_t>(read_u32(bytecode, program_counter)));
+    PUSH(static_cast<uint64_t>(read_u32(bytecode, program_counter)));
     DISPATCH();
   }
 op_PUSH_CONST_STRING:
@@ -325,249 +331,249 @@ op_PUSH_CONST_STRING:
       Address addr = memory.dynamic_allocation(len);
       for (size_t i = 0; i < len; ++i)
         heap_data[addr + i] = static_cast<uint64_t>(str[i]);
-      push(addr);
+      PUSH(addr);
     }
     DISPATCH();
   }
 op_PUSH_TRUE:
-  push(1);
+  PUSH(1);
   DISPATCH();
 op_PUSH_FALSE:
-  push(0);
+  PUSH(0);
   DISPATCH();
 op_PUSH_NULL:
-  push(0);
+  PUSH(0);
   DISPATCH();
 op_POP:
-  pop();
+  POP();
   DISPATCH();
 op_DUP:
   {
-    uint64_t top = stack[memory.stack_pointer - 1];
-    push(top);
+    uint64_t top = PEEK();
+    PUSH(top);
     DISPATCH();
   }
 op_DUP2:
   {
-    uint64_t b = stack[memory.stack_pointer - 1];
-    uint64_t a = stack[memory.stack_pointer - 2];
-    push(a);
-    push(b);
+    uint64_t b = *(sp - 1);
+    uint64_t a = *(sp - 2);
+    PUSH(a);
+    PUSH(b);
     DISPATCH();
   }
 
 op_ADD_I64:
   {
-    int64_t b = static_cast<int64_t>(pop());
-    int64_t a = static_cast<int64_t>(pop());
-    push(static_cast<uint64_t>(a + b));
+    int64_t b = static_cast<int64_t>(POP());
+    int64_t a = static_cast<int64_t>(POP());
+    PUSH(static_cast<uint64_t>(a + b));
     DISPATCH();
   }
 op_ADD_F64:
   {
-    double b = bit_cast_from_u64<double>(pop());
-    double a = bit_cast_from_u64<double>(pop());
-    push(bit_cast_to_u64(a + b));
+    double b = bit_cast_from_u64<double>(POP());
+    double a = bit_cast_from_u64<double>(POP());
+    PUSH(bit_cast_to_u64(a + b));
     DISPATCH();
   }
 op_SUB_I64:
   {
-    int64_t b = static_cast<int64_t>(pop());
-    int64_t a = static_cast<int64_t>(pop());
-    push(static_cast<uint64_t>(a - b));
+    int64_t b = static_cast<int64_t>(POP());
+    int64_t a = static_cast<int64_t>(POP());
+    PUSH(static_cast<uint64_t>(a - b));
     DISPATCH();
   }
 op_SUB_F64:
   {
-    double b = bit_cast_from_u64<double>(pop());
-    double a = bit_cast_from_u64<double>(pop());
-    push(bit_cast_to_u64(a - b));
+    double b = bit_cast_from_u64<double>(POP());
+    double a = bit_cast_from_u64<double>(POP());
+    PUSH(bit_cast_to_u64(a - b));
     DISPATCH();
   }
 op_MUL_I64:
   {
-    int64_t b = static_cast<int64_t>(pop());
-    int64_t a = static_cast<int64_t>(pop());
-    push(static_cast<uint64_t>(a * b));
+    int64_t b = static_cast<int64_t>(POP());
+    int64_t a = static_cast<int64_t>(POP());
+    PUSH(static_cast<uint64_t>(a * b));
     DISPATCH();
   }
 op_MUL_F64:
   {
-    double b = bit_cast_from_u64<double>(pop());
-    double a = bit_cast_from_u64<double>(pop());
-    push(bit_cast_to_u64(a * b));
+    double b = bit_cast_from_u64<double>(POP());
+    double a = bit_cast_from_u64<double>(POP());
+    PUSH(bit_cast_to_u64(a * b));
     DISPATCH();
   }
 op_DIV_I64:
   {
-    int64_t b = static_cast<int64_t>(pop());
-    int64_t a = static_cast<int64_t>(pop());
-    push(static_cast<uint64_t>(a / b));
+    int64_t b = static_cast<int64_t>(POP());
+    int64_t a = static_cast<int64_t>(POP());
+    PUSH(static_cast<uint64_t>(a / b));
     DISPATCH();
   }
 op_DIV_F64:
   {
-    double b = bit_cast_from_u64<double>(pop());
-    double a = bit_cast_from_u64<double>(pop());
-    push(bit_cast_to_u64(a / b));
+    double b = bit_cast_from_u64<double>(POP());
+    double a = bit_cast_from_u64<double>(POP());
+    PUSH(bit_cast_to_u64(a / b));
     DISPATCH();
   }
 op_MOD_I64:
   {
-    int64_t b = static_cast<int64_t>(pop());
-    int64_t a = static_cast<int64_t>(pop());
-    push(static_cast<uint64_t>(a % b));
+    int64_t b = static_cast<int64_t>(POP());
+    int64_t a = static_cast<int64_t>(POP());
+    PUSH(static_cast<uint64_t>(a % b));
     DISPATCH();
   }
 op_EQ_I64:
   {
-    uint64_t b = pop();
-    uint64_t a = pop();
-    push(a == b ? 1 : 0);
+    uint64_t b = POP();
+    uint64_t a = POP();
+    PUSH(a == b ? 1 : 0);
     DISPATCH();
   }
 op_EQ_F64:
   {
-    double b = bit_cast_from_u64<double>(pop());
-    double a = bit_cast_from_u64<double>(pop());
-    push(a == b ? 1 : 0);
+    double b = bit_cast_from_u64<double>(POP());
+    double a = bit_cast_from_u64<double>(POP());
+    PUSH(a == b ? 1 : 0);
     DISPATCH();
   }
 op_NEQ_I64:
   {
-    uint64_t b = pop();
-    uint64_t a = pop();
-    push(a != b ? 1 : 0);
+    uint64_t b = POP();
+    uint64_t a = POP();
+    PUSH(a != b ? 1 : 0);
     DISPATCH();
   }
 op_NEQ_F64:
   {
-    double b = bit_cast_from_u64<double>(pop());
-    double a = bit_cast_from_u64<double>(pop());
-    push(a != b ? 1 : 0);
+    double b = bit_cast_from_u64<double>(POP());
+    double a = bit_cast_from_u64<double>(POP());
+    PUSH(a != b ? 1 : 0);
     DISPATCH();
   }
 op_GREATER_I64:
   {
-    int64_t b = static_cast<int64_t>(pop());
-    int64_t a = static_cast<int64_t>(pop());
-    push(a > b ? 1 : 0);
+    int64_t b = static_cast<int64_t>(POP());
+    int64_t a = static_cast<int64_t>(POP());
+    PUSH(a > b ? 1 : 0);
     DISPATCH();
   }
 op_GREATER_F64:
   {
-    double b = bit_cast_from_u64<double>(pop());
-    double a = bit_cast_from_u64<double>(pop());
-    push(a > b ? 1 : 0);
+    double b = bit_cast_from_u64<double>(POP());
+    double a = bit_cast_from_u64<double>(POP());
+    PUSH(a > b ? 1 : 0);
     DISPATCH();
   }
 op_GREATER_EQ_I64:
   {
-    int64_t b = static_cast<int64_t>(pop());
-    int64_t a = static_cast<int64_t>(pop());
-    push(a >= b ? 1 : 0);
+    int64_t b = static_cast<int64_t>(POP());
+    int64_t a = static_cast<int64_t>(POP());
+    PUSH(a >= b ? 1 : 0);
     DISPATCH();
   }
 op_GREATER_EQ_F64:
   {
-    double b = bit_cast_from_u64<double>(pop());
-    double a = bit_cast_from_u64<double>(pop());
-    push(a >= b ? 1 : 0);
+    double b = bit_cast_from_u64<double>(POP());
+    double a = bit_cast_from_u64<double>(POP());
+    PUSH(a >= b ? 1 : 0);
     DISPATCH();
   }
 op_LESS_I64:
   {
-    int64_t b = static_cast<int64_t>(pop());
-    int64_t a = static_cast<int64_t>(pop());
-    push(a < b ? 1 : 0);
+    int64_t b = static_cast<int64_t>(POP());
+    int64_t a = static_cast<int64_t>(POP());
+    PUSH(a < b ? 1 : 0);
     DISPATCH();
   }
 op_LESS_F64:
   {
-    double b = bit_cast_from_u64<double>(pop());
-    double a = bit_cast_from_u64<double>(pop());
-    push(a < b ? 1 : 0);
+    double b = bit_cast_from_u64<double>(POP());
+    double a = bit_cast_from_u64<double>(POP());
+    PUSH(a < b ? 1 : 0);
     DISPATCH();
   }
 op_LESS_EQ_I64:
   {
-    int64_t b = static_cast<int64_t>(pop());
-    int64_t a = static_cast<int64_t>(pop());
-    push(a <= b ? 1 : 0);
+    int64_t b = static_cast<int64_t>(POP());
+    int64_t a = static_cast<int64_t>(POP());
+    PUSH(a <= b ? 1 : 0);
     DISPATCH();
   }
 op_LESS_EQ_F64:
   {
-    double b = bit_cast_from_u64<double>(pop());
-    double a = bit_cast_from_u64<double>(pop());
-    push(a <= b ? 1 : 0);
+    double b = bit_cast_from_u64<double>(POP());
+    double a = bit_cast_from_u64<double>(POP());
+    PUSH(a <= b ? 1 : 0);
     DISPATCH();
   }
 op_LOGICAL_NOT:
   {
-    uint64_t a = pop();
-    push(a == 0 ? 1 : 0);
+    uint64_t a = POP();
+    PUSH(a == 0 ? 1 : 0);
     DISPATCH();
   }
 op_NEGATE:
   {
-    double a = bit_cast_from_u64<double>(pop());
-    push(bit_cast_to_u64(-a));
+    double a = bit_cast_from_u64<double>(POP());
+    PUSH(bit_cast_to_u64(-a));
     DISPATCH();
   }
 op_INC_I64:
   {
-    uint64_t a = pop();
-    push(a + 1);
+    uint64_t a = POP();
+    PUSH(a + 1);
     DISPATCH();
   }
 op_INC_F64:
   {
-    double a = bit_cast_from_u64<double>(pop());
-    push(bit_cast_to_u64(a + 1.0));
+    double a = bit_cast_from_u64<double>(POP());
+    PUSH(bit_cast_to_u64(a + 1.0));
     DISPATCH();
   }
 op_DEC_I64:
   {
-    uint64_t a = pop();
-    push(a - 1);
+    uint64_t a = POP();
+    PUSH(a - 1);
     DISPATCH();
   }
 op_DEC_F64:
   {
-    double a = bit_cast_from_u64<double>(pop());
-    push(bit_cast_to_u64(a - 1.0));
+    double a = bit_cast_from_u64<double>(POP());
+    PUSH(bit_cast_to_u64(a - 1.0));
     DISPATCH();
   }
 
 op_GET_LOCAL:
   {
     uint32_t index = read_u32(bytecode, program_counter);
-    uint32_t fp = call_stack.back().frame_pointer;
+    uint32_t fp = call_stack[call_depth - 1].frame_pointer;
     if (fp + index >= memory.stack.size())
       throw std::runtime_error("Frame out of bounds on GET_LOCAL");
-    push(stack[fp + index]);
+    PUSH(stack[fp + index]);
     DISPATCH();
   }
 op_SET_LOCAL:
   {
     uint32_t index = read_u32(bytecode, program_counter);
-    uint32_t fp = call_stack.back().frame_pointer;
+    uint32_t fp = call_stack[call_depth - 1].frame_pointer;
     if (fp + index >= memory.stack.size())
       throw std::runtime_error("Frame out of bounds on SET_LOCAL fp=" + std::to_string(fp) + " index=" + std::to_string(index) + " size=" + std::to_string(memory.stack.size()));
-    stack[fp + index] = pop();
+    stack[fp + index] = POP();
     DISPATCH();
   }
 op_GET_GLOBAL:
   {
     uint32_t idx = read_u32(bytecode, program_counter);
-    push(heap_data[idx]);
+    PUSH(heap_data[idx]);
     DISPATCH();
   }
 op_SET_GLOBAL:
   {
     uint32_t idx = read_u32(bytecode, program_counter);
-    uint64_t val = pop();
+    uint64_t val = POP();
     heap_data[idx] = val;
     DISPATCH();
   }
@@ -581,7 +587,7 @@ op_JUMP:
 op_JUMP_IF_FALSE:
   {
     uint32_t addr = read_u32(bytecode, program_counter);
-    uint64_t cond = pop();
+    uint64_t cond = POP();
     if (cond == 0)
       program_counter = addr;
     DISPATCH();
@@ -589,7 +595,7 @@ op_JUMP_IF_FALSE:
 op_JUMP_IF_TRUE:
   {
     uint32_t addr = read_u32(bytecode, program_counter);
-    uint64_t cond = pop();
+    uint64_t cond = POP();
     if (cond != 0)
       program_counter = addr;
     DISPATCH();
@@ -597,31 +603,31 @@ op_JUMP_IF_TRUE:
 
 op_ALLOC_STATIC:
   {
-    uint32_t size = static_cast<uint32_t>(pop());
+    uint32_t size = static_cast<uint32_t>(POP());
     memory.static_allocation(size, 0);
     DISPATCH();
   }
 op_ALLOC_DYNAMIC:
   {
-    uint32_t size = static_cast<uint32_t>(pop());
-    push(memory.dynamic_allocation(size));
+    uint32_t size = static_cast<uint32_t>(POP());
+    PUSH(memory.dynamic_allocation(size));
     DISPATCH();
   }
 op_GET_PROPERTY:
   {
     uint32_t offset = read_u32(bytecode, program_counter);
-    Address obj = static_cast<Address>(pop());
+    Address obj = static_cast<Address>(POP());
     if (obj == 0) throw std::runtime_error("NullPointer");
     if (obj + offset >= memory.heap.size())
       throw std::runtime_error("Heap out of bounds on GET_PROPERTY");
-    push(memory.read_u64(obj, offset));
+    PUSH(memory.read_u64(obj, offset));
     DISPATCH();
   }
 op_SET_PROPERTY:
   {
     uint32_t offset = read_u32(bytecode, program_counter);
-    Address obj = static_cast<Address>(pop());
-    uint64_t val = pop();
+    Address obj = static_cast<Address>(POP());
+    uint64_t val = POP();
     if (obj == 0) throw std::runtime_error("NullPointer");
     if (obj + offset >= memory.heap.size())
       throw std::runtime_error("Heap out of bounds on SET_PROPERTY");
@@ -632,8 +638,8 @@ op_SET_PROPERTY:
 op_WEAK_SET_PROPERTY:
   {
     uint32_t offset = read_u32(bytecode, program_counter);
-    Address obj = static_cast<Address>(pop());
-    uint64_t val = pop();
+    Address obj = static_cast<Address>(POP());
+    uint64_t val = POP();
     if (obj == 0) throw std::runtime_error("NullPointer");
     if (obj + offset >= memory.heap.size())
       throw std::runtime_error("Heap out of bounds on WEAK_SET_PROPERTY");
@@ -659,45 +665,45 @@ op_WEAK_SET_PROPERTY:
   }
 op_GET_ARRAY:
   {
-    uint32_t index = static_cast<uint32_t>(pop());
-    Address array_addr = static_cast<Address>(pop());
+    uint32_t index = static_cast<uint32_t>(POP());
+    Address array_addr = static_cast<Address>(POP());
     if (array_addr == 0) throw std::runtime_error("NullPointer");
     uint32_t length = static_cast<uint32_t>(heap_data[array_addr - 1] >> 32);
     if (index >= length) throw std::runtime_error("Out of Bounds");
-    push(heap_data[array_addr + index]);
+    PUSH(heap_data[array_addr + index]);
     DISPATCH();
   }
 op_SET_ARRAY:
   {
-    uint64_t val = pop();
-    uint32_t index = static_cast<uint32_t>(pop());
-    Address array_addr = static_cast<Address>(pop());
+    uint64_t val = POP();
+    uint32_t index = static_cast<uint32_t>(POP());
+    Address array_addr = static_cast<Address>(POP());
     if (array_addr == 0) throw std::runtime_error("NullPointer");
     uint32_t length = static_cast<uint32_t>(heap_data[array_addr - 1] >> 32);
     if (index >= length) throw std::runtime_error("Out of Bounds");
     heap_data[array_addr + index] = val;
-    push(val);
+    PUSH(val);
     DISPATCH();
   }
 op_ARRAY_LENGTH:
   {
-    Address array_addr = static_cast<Address>(pop());
+    Address array_addr = static_cast<Address>(POP());
     if (array_addr == 0) throw std::runtime_error("NullPointer");
     uint32_t length = static_cast<uint32_t>(heap_data[array_addr - 1] >> 32);
-    push(length);
+    PUSH(length);
     DISPATCH();
   }
 
 op_INC_REF:
   {
-    Address addr = static_cast<Address>(pop());
+    Address addr = static_cast<Address>(POP());
     memory.increase_reference(addr);
-    push(addr);
+    PUSH(addr);
     DISPATCH();
   }
 op_DEC_REF:
   {
-    Address addr = static_cast<Address>(pop());
+    Address addr = static_cast<Address>(POP());
     memory.decrease_reference(addr);
     DISPATCH();
   }
@@ -719,15 +725,18 @@ op_CONV_F64:
 
 op_CALL:
   {
-    uint32_t arg_count = static_cast<uint32_t>(pop());
-    uint32_t frame_size = static_cast<uint32_t>(pop());
-    uint32_t target_ip = static_cast<uint32_t>(pop());
+    uint32_t arg_count = static_cast<uint32_t>(POP());
+    uint32_t frame_size = static_cast<uint32_t>(POP());
+    uint32_t target_ip = static_cast<uint32_t>(POP());
 
-    uint32_t new_frame_pointer = memory.stack_pointer - arg_count;
-    call_stack.emplace_back(program_counter, new_frame_pointer);
+    uint32_t current_sp_idx = static_cast<uint32_t>(sp - stack);
+    uint32_t new_frame_pointer = current_sp_idx - arg_count;
+    if (call_depth >= 65536)
+      throw std::runtime_error("Stack overflow: max call depth exceeded");
+    call_stack[call_depth++] = Frame(program_counter, new_frame_pointer);
 
     if (frame_size > arg_count) {
-      memory.stack_pointer += (frame_size - arg_count);
+      sp += (frame_size - arg_count);
     }
 
     program_counter = target_ip;
@@ -742,17 +751,19 @@ op_CALL_NATIVE:
     {
         std::vector<uint64_t> args(arg_count);
         for (int i = static_cast<int>(arg_count) - 1; i >= 0; --i) {
-            args[i] = pop();
+            args[i] = POP();
         }
 
         uint64_t self_address = 0;
         if (!is_static) {
-            self_address = pop();
+            self_address = POP();
         }
 
+        SYNC_SP();
         if (native_registry.count(id)) {
             uint64_t result = native_registry[id](*this, self_address, args.data(), arg_count);
-            push(result);
+            RESTORE_SP();
+            PUSH(result);
         } else {
             throw std::runtime_error("Call to unknown native function: " + std::to_string(id));
         }
@@ -779,8 +790,8 @@ op_DEFINE_VTABLE:
 op_INSTANCEOF:
   {
     uint32_t target_vtable_id = read_u32(bytecode, program_counter);
-    Address obj = static_cast<Address>(stack[memory.stack_pointer - 1]);
-    memory.stack_pointer--;
+    Address obj = static_cast<Address>(*(sp - 1));
+    --sp;
 
     bool is_instance = false;
     if (obj != 0) {
@@ -788,7 +799,7 @@ op_INSTANCEOF:
       while (current_vtable != -1) {
         if (current_vtable == target_vtable_id) {
           is_instance = true;
-          DISPATCH();
+          break;
         }
         current_vtable = vtable_bases.count(current_vtable)
                              ? vtable_bases[current_vtable]
@@ -796,13 +807,13 @@ op_INSTANCEOF:
       }
     }
 
-    stack[memory.stack_pointer++] = is_instance ? 1 : 0;
+    PUSH(is_instance ? 1 : 0);
     DISPATCH();
   }
 op_CAST_CHECK:
   {
     uint32_t target_vtable_id = read_u32(bytecode, program_counter);
-    Address obj = static_cast<Address>(stack[memory.stack_pointer - 1]);
+    Address obj = static_cast<Address>(*(sp - 1));
 
     if (obj != 0) {
       int32_t current_vtable = static_cast<int32_t>(heap_data[obj]);
@@ -810,7 +821,7 @@ op_CAST_CHECK:
       while (current_vtable != -1) {
         if (current_vtable == target_vtable_id) {
           is_instance = true;
-          DISPATCH();
+          break;
         }
         current_vtable = vtable_bases.count(current_vtable)
                              ? vtable_bases[current_vtable]
@@ -820,13 +831,12 @@ op_CAST_CHECK:
         throw std::runtime_error("Invalid cast exception at runtime");
       }
     }
-    // Leaves object on stack
     DISPATCH();
   }
 op_SET_VTABLE:
   {
     uint32_t vtable_id = read_u32(bytecode, program_counter);
-    Address obj = static_cast<Address>(stack[memory.stack_pointer - 1]);
+    Address obj = static_cast<Address>(*(sp - 1));
     heap_data[obj] = vtable_id;
     DISPATCH();
   }
@@ -836,7 +846,8 @@ op_CALL_VIRTUAL:
     uint32_t frame_size = read_u32(bytecode, program_counter);
     uint32_t arg_count = read_u32(bytecode, program_counter);
 
-    Address obj = static_cast<Address>(stack[memory.stack_pointer - arg_count]);
+    uint32_t current_sp_idx = static_cast<uint32_t>(sp - stack);
+    Address obj = static_cast<Address>(stack[current_sp_idx - arg_count]);
     if (obj == 0) throw std::runtime_error("NullPointer");
     uint32_t vtable_id = heap_data[obj];
     if (vtables.find(vtable_id) == vtables.end() ||
@@ -845,12 +856,14 @@ op_CALL_VIRTUAL:
     }
     uint32_t target_ip = vtables[vtable_id][vtable_index];
 
-    uint32_t new_frame_pointer = memory.stack_pointer - arg_count;
-    call_stack.emplace_back(program_counter, new_frame_pointer);
+    uint32_t new_frame_pointer = current_sp_idx - arg_count;
+    if (call_depth >= 65536)
+      throw std::runtime_error("Stack overflow: max call depth exceeded");
+    call_stack[call_depth++] = Frame(program_counter, new_frame_pointer);
     program_counter = target_ip;
 
     if (frame_size > arg_count) {
-      memory.stack_pointer += (frame_size - arg_count);
+      sp += (frame_size - arg_count);
     }
     DISPATCH();
   }
@@ -871,27 +884,36 @@ op_DEFINE_NATIVE:
 op_RETURN:
   {
     uint64_t ret_val = 0;
-    if (memory.stack_pointer > call_stack.back().frame_pointer) {
-      ret_val = pop();
+    uint32_t current_sp_idx = static_cast<uint32_t>(sp - stack);
+    const Frame &current_frame = call_stack[call_depth - 1];
+    if (current_sp_idx > current_frame.frame_pointer) {
+      ret_val = POP();
     }
 
-    Frame frame = call_stack.back();
-    call_stack.pop_back();
-    memory.stack_pointer = frame.frame_pointer;
+    Frame frame = current_frame;
+    --call_depth;
+    sp = stack + frame.frame_pointer;
 
-    if (call_stack.size() > 0) {
-      push(ret_val);
+    if (call_depth > 0) {
+      PUSH(ret_val);
       program_counter = frame.return_ip;
     } else {
+      SYNC_SP();
       return;
     }
     DISPATCH();
   }
 op_HALT:
+  SYNC_SP();
   return;
 op_THROW_ABSTRACT:
   throw std::runtime_error("Called abstract method");
 
+#undef PUSH
+#undef POP
+#undef PEEK
+#undef SYNC_SP
+#undef RESTORE_SP
 #undef DISPATCH
 }
 

@@ -1,3 +1,4 @@
+#include <array>
 #include <unordered_set>
 #pragma once
 
@@ -33,9 +34,10 @@ struct RuntimeOptions {
 // Frame Structure
 // -----------------------------------------------------------------------------
 struct Frame {
-  Address return_ip;
-  uint32_t frame_pointer; // Points to the start of locals in the unified Stack
+  Address return_ip = 0;
+  uint32_t frame_pointer = 0; // Points to the start of locals in the unified Stack
 
+  Frame() = default;
   Frame(Address rip, uint32_t fp) : return_ip(rip), frame_pointer(fp) {}
 };
 
@@ -98,7 +100,8 @@ struct RuntimeContext {
   Bytecode bytecode;
   Address program_counter = 0;
 
-  std::vector<Frame> call_stack;
+  std::array<Frame, 65536> call_stack;
+  size_t call_depth = 0;
   std::unordered_map<uint32_t, NativeFunction> native_registry;
   std::unordered_map<uint32_t, std::vector<uint32_t>> vtables;
   std::unordered_map<uint32_t, int32_t> vtable_bases;
