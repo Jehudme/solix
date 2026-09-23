@@ -566,7 +566,7 @@ void Assembler::visit(SwitchStatement &node) {
     if (!case_stmt->is_default) {
       emit_byte(static_cast<uint8_t>(OpCode::DUP));
       compile_expression(case_stmt->case_value.get());
-      emit_byte(static_cast<uint8_t>(OpCode::EQUAL));
+      emit_byte(static_cast<uint8_t>(OpCode::EQ_I64));
       emit_byte(static_cast<uint8_t>(OpCode::JUMP_IF_TRUE));
       case_body_jumps.push_back(bytecode().size());
       emit_int32(0xFFFFFFFF);
@@ -859,39 +859,42 @@ void Assembler::visit(BinaryExpression &node) {
   compile_expression(bin->left.get());
   compile_expression(bin->right.get());
 
+  bool is_float = (bin->left && (bin->left->expression_type.name == "float32" || bin->left->expression_type.name == "float64")) ||
+                  (bin->right && (bin->right->expression_type.name == "float32" || bin->right->expression_type.name == "float64"));
+
   switch (bin->op) {
   case TokenType::OPERATOR_PLUS:
-    emit_byte(static_cast<uint8_t>(OpCode::ADD));
+    emit_byte(static_cast<uint8_t>(is_float ? OpCode::ADD_F64 : OpCode::ADD_I64));
     break;
   case TokenType::OPERATOR_MINUS:
-    emit_byte(static_cast<uint8_t>(OpCode::SUBTRACT));
+    emit_byte(static_cast<uint8_t>(is_float ? OpCode::SUB_F64 : OpCode::SUB_I64));
     break;
   case TokenType::OPERATOR_MULTIPLY:
-    emit_byte(static_cast<uint8_t>(OpCode::MULTIPLY));
+    emit_byte(static_cast<uint8_t>(is_float ? OpCode::MUL_F64 : OpCode::MUL_I64));
     break;
   case TokenType::OPERATOR_DIVIDE:
-    emit_byte(static_cast<uint8_t>(OpCode::DIVIDE));
+    emit_byte(static_cast<uint8_t>(is_float ? OpCode::DIV_F64 : OpCode::DIV_I64));
     break;
   case TokenType::OPERATOR_MODULO:
-    emit_byte(static_cast<uint8_t>(OpCode::MODULO));
+    emit_byte(static_cast<uint8_t>(OpCode::MOD_I64));
     break;
   case TokenType::OPERATOR_EQUAL:
-    emit_byte(static_cast<uint8_t>(OpCode::EQUAL));
+    emit_byte(static_cast<uint8_t>(is_float ? OpCode::EQ_F64 : OpCode::EQ_I64));
     break;
   case TokenType::OPERATOR_NOT_EQUAL:
-    emit_byte(static_cast<uint8_t>(OpCode::NOT_EQUAL));
+    emit_byte(static_cast<uint8_t>(is_float ? OpCode::NEQ_F64 : OpCode::NEQ_I64));
     break;
   case TokenType::OPERATOR_LESS_THAN:
-    emit_byte(static_cast<uint8_t>(OpCode::LESS));
+    emit_byte(static_cast<uint8_t>(is_float ? OpCode::LESS_F64 : OpCode::LESS_I64));
     break;
   case TokenType::OPERATOR_LESS_EQUAL:
-    emit_byte(static_cast<uint8_t>(OpCode::LESS_EQUAL));
+    emit_byte(static_cast<uint8_t>(is_float ? OpCode::LESS_EQ_F64 : OpCode::LESS_EQ_I64));
     break;
   case TokenType::OPERATOR_GREATER_THAN:
-    emit_byte(static_cast<uint8_t>(OpCode::GREATER));
+    emit_byte(static_cast<uint8_t>(is_float ? OpCode::GREATER_F64 : OpCode::GREATER_I64));
     break;
   case TokenType::OPERATOR_GREATER_EQUAL:
-    emit_byte(static_cast<uint8_t>(OpCode::GREATER_EQUAL));
+    emit_byte(static_cast<uint8_t>(is_float ? OpCode::GREATER_EQ_F64 : OpCode::GREATER_EQ_I64));
     break;
   default:
     throw std::runtime_error("Unknown binary operator.");
@@ -902,6 +905,9 @@ void Assembler::visit(UnaryExpression &node) {
   auto *uny = &node;
   compile_expression(uny->operand.get());
 
+  bool is_float = (uny->expression_type.name == "float32" || uny->expression_type.name == "float64") ||
+                  (uny->operand && (uny->operand->expression_type.name == "float32" || uny->operand->expression_type.name == "float64"));
+
   if (uny->op == TokenType::OPERATOR_LOGICAL_NOT) {
     emit_byte(static_cast<uint8_t>(OpCode::LOGICAL_NOT));
   } else if (uny->op == TokenType::OPERATOR_MINUS) {
@@ -909,8 +915,8 @@ void Assembler::visit(UnaryExpression &node) {
   } else if (uny->op == TokenType::OPERATOR_INCREMENT ||
              uny->op == TokenType::OPERATOR_DECREMENT) {
     uint8_t opc = (uny->op == TokenType::OPERATOR_INCREMENT)
-                      ? static_cast<uint8_t>(OpCode::INC)
-                      : static_cast<uint8_t>(OpCode::DEC);
+                      ? static_cast<uint8_t>(is_float ? OpCode::INC_F64 : OpCode::INC_I64)
+                      : static_cast<uint8_t>(is_float ? OpCode::DEC_F64 : OpCode::DEC_I64);
     emit_byte(opc);
 
     if (uny->operand->node_type == NodeType::IDENTIFIER) {

@@ -219,21 +219,34 @@ void RuntimeContext::execute() {
       &&op_PUSH_NULL,
       &&op_POP,
       &&op_DUP,
-      &&op_ADD,
-      &&op_SUBTRACT,
-      &&op_MULTIPLY,
-      &&op_DIVIDE,
-      &&op_MODULO,
-      &&op_EQUAL,
-      &&op_NOT_EQUAL,
-      &&op_GREATER,
-      &&op_GREATER_EQUAL,
-      &&op_LESS,
-      &&op_LESS_EQUAL,
+      &&op_DUP2,
+      &&op_ADD_I64,
+      &&op_ADD_F64,
+      &&op_SUB_I64,
+      &&op_SUB_F64,
+      &&op_MUL_I64,
+      &&op_MUL_F64,
+      &&op_DIV_I64,
+      &&op_DIV_F64,
+      &&op_MOD_I64,
+      &&op_EQ_I64,
+      &&op_EQ_F64,
+      &&op_NEQ_I64,
+      &&op_NEQ_F64,
+      &&op_GREATER_I64,
+      &&op_GREATER_F64,
+      &&op_GREATER_EQ_I64,
+      &&op_GREATER_EQ_F64,
+      &&op_LESS_I64,
+      &&op_LESS_F64,
+      &&op_LESS_EQ_I64,
+      &&op_LESS_EQ_F64,
       &&op_LOGICAL_NOT,
       &&op_NEGATE,
-      &&op_INC,
-      &&op_DEC,
+      &&op_INC_I64,
+      &&op_INC_F64,
+      &&op_DEC_I64,
+      &&op_DEC_F64,
       &&op_GET_LOCAL,
       &&op_SET_LOCAL,
       &&op_GET_GLOBAL,
@@ -248,6 +261,7 @@ void RuntimeContext::execute() {
       &&op_WEAK_SET_PROPERTY,
       &&op_GET_ARRAY,
       &&op_SET_ARRAY,
+      &&op_ARRAY_LENGTH,
       &&op_INC_REF,
       &&op_DEC_REF,
       &&op_CONV_I8,
@@ -332,78 +346,156 @@ op_DUP:
     push(top);
     DISPATCH();
   }
+op_DUP2:
+  {
+    uint64_t b = stack[memory.stack_pointer - 1];
+    uint64_t a = stack[memory.stack_pointer - 2];
+    push(a);
+    push(b);
+    DISPATCH();
+  }
 
-op_ADD:
+op_ADD_I64:
+  {
+    int64_t b = static_cast<int64_t>(pop());
+    int64_t a = static_cast<int64_t>(pop());
+    push(static_cast<uint64_t>(a + b));
+    DISPATCH();
+  }
+op_ADD_F64:
   {
     double b = bit_cast_from_u64<double>(pop());
     double a = bit_cast_from_u64<double>(pop());
     push(bit_cast_to_u64(a + b));
     DISPATCH();
   }
-op_SUBTRACT:
+op_SUB_I64:
+  {
+    int64_t b = static_cast<int64_t>(pop());
+    int64_t a = static_cast<int64_t>(pop());
+    push(static_cast<uint64_t>(a - b));
+    DISPATCH();
+  }
+op_SUB_F64:
   {
     double b = bit_cast_from_u64<double>(pop());
     double a = bit_cast_from_u64<double>(pop());
     push(bit_cast_to_u64(a - b));
     DISPATCH();
   }
-op_MULTIPLY:
+op_MUL_I64:
+  {
+    int64_t b = static_cast<int64_t>(pop());
+    int64_t a = static_cast<int64_t>(pop());
+    push(static_cast<uint64_t>(a * b));
+    DISPATCH();
+  }
+op_MUL_F64:
   {
     double b = bit_cast_from_u64<double>(pop());
     double a = bit_cast_from_u64<double>(pop());
     push(bit_cast_to_u64(a * b));
     DISPATCH();
   }
-op_DIVIDE:
+op_DIV_I64:
+  {
+    int64_t b = static_cast<int64_t>(pop());
+    int64_t a = static_cast<int64_t>(pop());
+    push(static_cast<uint64_t>(a / b));
+    DISPATCH();
+  }
+op_DIV_F64:
   {
     double b = bit_cast_from_u64<double>(pop());
     double a = bit_cast_from_u64<double>(pop());
     push(bit_cast_to_u64(a / b));
     DISPATCH();
   }
-op_MODULO:
+op_MOD_I64:
   {
-    double b = bit_cast_from_u64<double>(pop());
-    double a = bit_cast_from_u64<double>(pop());
-    push(bit_cast_to_u64(std::fmod(a, b)));
+    int64_t b = static_cast<int64_t>(pop());
+    int64_t a = static_cast<int64_t>(pop());
+    push(static_cast<uint64_t>(a % b));
     DISPATCH();
   }
-op_EQUAL:
+op_EQ_I64:
   {
     uint64_t b = pop();
     uint64_t a = pop();
     push(a == b ? 1 : 0);
     DISPATCH();
   }
-op_NOT_EQUAL:
+op_EQ_F64:
+  {
+    double b = bit_cast_from_u64<double>(pop());
+    double a = bit_cast_from_u64<double>(pop());
+    push(a == b ? 1 : 0);
+    DISPATCH();
+  }
+op_NEQ_I64:
   {
     uint64_t b = pop();
     uint64_t a = pop();
     push(a != b ? 1 : 0);
     DISPATCH();
   }
-op_GREATER:
+op_NEQ_F64:
+  {
+    double b = bit_cast_from_u64<double>(pop());
+    double a = bit_cast_from_u64<double>(pop());
+    push(a != b ? 1 : 0);
+    DISPATCH();
+  }
+op_GREATER_I64:
+  {
+    int64_t b = static_cast<int64_t>(pop());
+    int64_t a = static_cast<int64_t>(pop());
+    push(a > b ? 1 : 0);
+    DISPATCH();
+  }
+op_GREATER_F64:
   {
     double b = bit_cast_from_u64<double>(pop());
     double a = bit_cast_from_u64<double>(pop());
     push(a > b ? 1 : 0);
     DISPATCH();
   }
-op_GREATER_EQUAL:
+op_GREATER_EQ_I64:
+  {
+    int64_t b = static_cast<int64_t>(pop());
+    int64_t a = static_cast<int64_t>(pop());
+    push(a >= b ? 1 : 0);
+    DISPATCH();
+  }
+op_GREATER_EQ_F64:
   {
     double b = bit_cast_from_u64<double>(pop());
     double a = bit_cast_from_u64<double>(pop());
     push(a >= b ? 1 : 0);
     DISPATCH();
   }
-op_LESS:
+op_LESS_I64:
+  {
+    int64_t b = static_cast<int64_t>(pop());
+    int64_t a = static_cast<int64_t>(pop());
+    push(a < b ? 1 : 0);
+    DISPATCH();
+  }
+op_LESS_F64:
   {
     double b = bit_cast_from_u64<double>(pop());
     double a = bit_cast_from_u64<double>(pop());
     push(a < b ? 1 : 0);
     DISPATCH();
   }
-op_LESS_EQUAL:
+op_LESS_EQ_I64:
+  {
+    int64_t b = static_cast<int64_t>(pop());
+    int64_t a = static_cast<int64_t>(pop());
+    push(a <= b ? 1 : 0);
+    DISPATCH();
+  }
+op_LESS_EQ_F64:
   {
     double b = bit_cast_from_u64<double>(pop());
     double a = bit_cast_from_u64<double>(pop());
@@ -422,13 +514,25 @@ op_NEGATE:
     push(bit_cast_to_u64(-a));
     DISPATCH();
   }
-op_INC:
+op_INC_I64:
+  {
+    uint64_t a = pop();
+    push(a + 1);
+    DISPATCH();
+  }
+op_INC_F64:
   {
     double a = bit_cast_from_u64<double>(pop());
     push(bit_cast_to_u64(a + 1.0));
     DISPATCH();
   }
-op_DEC:
+op_DEC_I64:
+  {
+    uint64_t a = pop();
+    push(a - 1);
+    DISPATCH();
+  }
+op_DEC_F64:
   {
     double a = bit_cast_from_u64<double>(pop());
     push(bit_cast_to_u64(a - 1.0));
@@ -563,6 +667,12 @@ op_SET_ARRAY:
     Address array_addr = static_cast<Address>(pop());
     heap_data[array_addr + 1 + index] = val;
     push(val);
+    DISPATCH();
+  }
+op_ARRAY_LENGTH:
+  {
+    Address array_addr = static_cast<Address>(pop());
+    push(heap_data[array_addr]);
     DISPATCH();
   }
 
