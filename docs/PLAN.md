@@ -643,3 +643,222 @@ Three independent correctness bugs were found and fixed that blocked multi-file 
 ### Testing
 - Verified `solix_launcher compile string.slx test.slx` succeeds end-to-end.
 - Added `tests/src/test_phase22.cpp` with Catch2 unit tests.
+
+---
+
+## Architectural VM Refactor (Phases 23–31)
+
+---
+
+## Phase 23 — Lexer & Parsing Fixes: Ampersand Lexing
+
+**Branch:** `phase-23-lexer-ref-fix`  
+**Criticality:** 🔴 Critical  
+**Difficulty:** ⭐ Easy  
+
+### Context
+Reference annotations (`Type& name`) were incorrectly parsed because `&` was lexed as `OPERATOR_LOGICAL_AND` (`&&`) or unrecognized syntax, causing grammar ambiguities in variable and member declarations.
+
+### 23.1 — Ampersand Lexing & Tokenization
+- **File:** `language/include/solix/utilities/token.hpp`
+- Add `PUNCTUATION_AMPERSAND` to `TokenType` enum.
+- **File:** `language/src/processes/lexer.cpp`
+- In `Lexer::tokenize`, parse a single `&` as `PUNCTUATION_AMPERSAND` (distinguishing it from `OPERATOR_LOGICAL_AND` for `&&`).
+
+### 23.2 — Parser Reference Type Disambiguation
+- **File:** `language/src/processes/parser.cpp`
+- Update `ParserState::parse_variable_declaration` and `parse_field_or_method` to check for `PUNCTUATION_AMPERSAND` instead of `OPERATOR_LOGICAL_AND` when identifying reference types (e.g., `Type& name`).
+
+---
+
+## Phase 24 — ALU Type Corruption: Typed Opcodes (_I64 & _F64)
+
+**Branch:** `phase-24-alu-typed-opcodes`  
+**Criticality:** 🔴 Critical  
+**Difficulty:** ⭐⭐ Medium  
+
+### Context
+Generic arithmetic opcodes (`ADD`, `SUBTRACT`, etc.) operated on raw 64-bit stack slots without distinguishing integer from IEEE 754 floating-point representations, causing severe float/integer corruption.
+
+### 24.1 — Typed Opcodes Definition
+- **File:** `language/include/solix/utilities/optcodes.hpp`
+- Replace generic math/comparison opcodes (`ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE`, `MODULO`, `LESS_THAN`, `GREATER_THAN`, `LESS_EQUAL`, `GREATER_EQUAL`, `EQUAL`, `NOT_EQUAL`, `INC`, `DEC`) with explicit `_I64` and `_F64` variants (`ADD_I64`, `ADD_F64`, `SUB_I64`, `SUB_F64`, `MUL_I64`, `MUL_F64`, `DIV_I64`, `DIV_F64`, `MOD_I64`, `LESS_I64`, `LESS_F64`, `GREATER_I64`, `GREATER_F64`, `LESS_EQ_I64`, `LESS_EQ_F64`, `GREATER_EQ_I64`, `GREATER_EQ_F64`, `EQ_I64`, `EQ_F64`, `NEQ_I64`, `NEQ_F64`).
+- Add `OpCode::DUP2` and `OpCode::ARRAY_LENGTH`.
+
+### 24.2 — ALU Execution Handlers
+- **File:** `language/src/processes/runtime.cpp`
+- Implement `_I64` handlers using `static_cast<int64_t>` for 64-bit integer arithmetic.
+- Implement `_F64` handlers using `std::bit_cast<double>` to reinterpret stack slots as double precision floats, execute double math, and `std::bit_cast<uint64_t>` back to stack slots.
+
+### 24.3 — Assembler Code Generation Routing
+- **File:** `language/src/processes/assembler.cpp`
+- Update `Assembler::visit(BinaryExpression)` and `visit(UnaryExpression)` to check `expression_type`: emit `_F64` opcodes for `float32`/`float64`, and `_I64` opcodes for all integral primitive types (`int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`, `bool`, `char`).
+
+---
+
+## Phase 25 — Runtime Memory Integrity & Array Safety
+
+**Branch:** `phase-25-memory-array-safety`  
+**Criticality:** 🔴 Critical  
+**Difficulty:** ⭐⭐ Medium  
+
+### Context
+Heap allocations contained uninitialized dirty memory, arrays suffered from `+1` double-offset calculation errors, and array length operations lacked native opcode support. Null pointers were not safely checked before member access.
+
+### 25.1 — Zero-Initialization & Baseline ARC
+- **File:** `language/src/processes/runtime.cpp`
+- In `Memory::dynamic_allocation`, inject a zero-initialization loop for the memory payload (`heap[header_addr + 1 + i] = 0`).
+- Initialize header metadata with a baseline Automatic Reference Count (ARC) of 1.
+
+### 25.2 — Array Offsets & Bounds Checking
+- **File:** `language/src/processes/runtime.cpp`
+- In `op_GET_ARRAY` and `op_SET_ARRAY`, remove the redundant `+ 1` double-offset (`heap_data[array_addr + index]`).
+- Extract length from allocation header (`heap_data[addr - 1] >> 32`) and throw `"Out of Bounds"` exception if `index >= length`.
+
+### 25.3 — Array Length OpCode
+- **Files:** `language/src/processes/runtime.cpp`, `language/src/processes/assembler.cpp`
+- Implement `op_ARRAY_LENGTH` in `runtime.cpp` to pop array address, extract header length (`heap_data[addr - 1] >> 32`), and push length onto the stack.
+- Update `Assembler::visit(MemberAccessExpression)` to emit `OpCode::ARRAY_LENGTH` for `.length` accesses on array types.
+
+### 25.4 — Null Pointer Guards
+- **File:** `language/src/processes/runtime.cpp`
+- Add `if (obj == 0) throw std::runtime_error("NullPointer");` guard to `GET_PROPERTY`, `SET_PROPERTY`, `WEAK_SET_PROPERTY`, `CALL_VIRTUAL`, `GET_ARRAY`, `SET_ARRAY`, and `ARRAY_LENGTH` instruction handlers.
+
+---
+
+## Phase 26 — ARC Ownership & Emission
+
+**Branch:** `phase-26-arc-ownership-emission`  
+**Criticality:** 🔴 Critical  
+**Difficulty:** ⭐⭐⭐ Hard  
+
+### Context
+Reference count incrementing was improperly attached to identifier evaluations rather than ownership transfers, resulting in incorrect ref counts, premature frees, or memory leaks.
+
+### 26.1 — Read vs Store Shift
+- **File:** `language/src/processes/assembler.cpp`
+- Remove `OpCode::INC_REF` from `visit(IdentifierNode)` (reading an identifier must not increment reference count).
+- Inject `OpCode::INC_REF` immediately *after* expression evaluation but *before* `SET_LOCAL` or `SET_PROPERTY` in assignment expressions and variable declarations.
+
+### 26.2 — Implicit `this` Reference Ownership
+- **File:** `language/src/processes/assembler.cpp`
+- In `visit(MethodCallExpression)`, when pushing `this` (slot 0) implicitly for instance method calls, emit `OpCode::INC_REF`.
+
+### 26.3 — Expression Statement Reference Cleanups
+- **File:** `language/src/processes/assembler.cpp`
+- In `visit(ExpressionStatement)`, if `expression_type` is a reference type (array depth > 0 or non-primitive class), emit `DEC_REF` instead of `POP` to clean up temporary unassigned evaluation results.
+
+---
+
+## Phase 27 — Function Cleanup & Flow Control Leaks
+
+**Branch:** `phase-27-arc-cleanup-flow-leaks`  
+**Criticality:** 🔴 Critical  
+**Difficulty:** ⭐⭐⭐ Hard  
+
+### Context
+Function parameter reference counts leaked upon returning, and `break`/`continue` statements jumped across block boundaries without releasing scope-bound local references.
+
+### 27.1 — Parameter ARC Cleanup
+- **File:** `language/src/processes/assembler.cpp`
+- Implement helper function `emit_cleanup_for_function(MethodDeclaration*)`.
+- Loop through function `parameters` (plus implicit `this` at slot 0 for non-static methods), emitting `GET_LOCAL` + `DEC_REF` for each reference type.
+- Invoke this cleanup helper before `RETURN` in `compile_function` and `visit(ReturnStatement)`.
+
+### 27.2 — Break & Continue Scope Cleanup
+- **File:** `language/src/processes/assembler.cpp`
+- In `visit(BreakStatement)` and `visit(ContinueStatement)`, implement a loop walking up `node.parent`.
+- For every `NodeType::BLOCK` encountered before reaching the enclosing loop node (`WhileStatement`, `ForStatement`, `DoWhileStatement`), call `emit_cleanup_for_node(current)` to release all local reference variables prior to control flow jump.
+
+---
+
+## Phase 28 — Object Initialization & Array Mutation
+
+**Branch:** `phase-28-object-init-array-mutation`  
+**Criticality:** 🟠 High  
+**Difficulty:** ⭐⭐⭐ Hard  
+
+### Context
+Classes without constructors failed to initialize default fields, constructor field initializers were skipped, and array element mutations (`arr[idx]++`) evaluated array and index expressions twice.
+
+### 28.1 — Programmatic Implicit Constructors
+- **File:** `language/src/processes/binder.cpp`
+- In `Binder::visit(ClassDeclaration)`, if a class lacks a `ConstructorDeclaration` child node during Pass 1, programmatically inject an empty default constructor AST node.
+
+### 28.2 — Constructor Field Initializer Emission
+- **File:** `language/src/processes/assembler.cpp`
+- In `visit(ConstructorDeclaration)`, after compiling `super()` / base class setup, iterate through `FieldDeclaration` children.
+- For non-static fields with an `initializer` expression, compile the expression, emit `GET_LOCAL 0` (`this`), and emit `SET_PROPERTY` to initialize fields before executing constructor body statements.
+
+### 28.3 — Array Double-Evaluation Fix & `DUP2`
+- **Files:** `language/src/processes/runtime.cpp`, `language/src/processes/assembler.cpp`
+- Implement `op_DUP2` in `runtime.cpp` (duplicates top two 64-bit stack elements: `[arr, idx] -> [arr, idx, arr, idx]`).
+- In `Assembler::visit(UnaryExpression)` for array element compound mutation or increment/decrement (`arr[idx]++`), evaluate array and index expressions exactly once, emit `DUP2`, execute `GET_ARRAY`, perform arithmetic operation, and execute `SET_ARRAY`.
+
+---
+
+## Phase 29 — The Static String Pool
+
+**Branch:** `phase-29-static-string-pool`  
+**Criticality:** 🟠 High  
+**Difficulty:** ⭐⭐⭐ Hard  
+
+### Context
+String literals were dynamically allocated repeatedly on every access, causing excessive heap allocations and performance degradation.
+
+### 29.1 — Binder String Pool Tracking
+- **Files:** `language/include/solix/compilation.hpp`, `language/src/processes/binder.cpp`
+- Add `std::unordered_map<std::string, int> string_pool;` to `CompilationContext`.
+- In `visit(LiteralNode)` for string literals, check if the string exists in `string_pool`. If not, allocate a `static_variable_index`, record the string, and store the index in `node.memory_index`.
+
+### 29.2 — Global Boot Sequence String Initialization
+- **File:** `language/src/processes/assembler.cpp`
+- In `compile_boot_sequence()`, include `context.string_pool.size()` in `total_globals`.
+- Loop through `string_pool` emitting `PUSH_CONST_STRING` and `SET_GLOBAL <index>` to allocate all string constants once into global slots during VM initialization.
+
+### 29.3 — Hot Path String Access
+- **File:** `language/src/processes/assembler.cpp`
+- In `visit(LiteralNode)` for string literals, emit `GET_GLOBAL <memory_index>` to load the pre-allocated string reference directly.
+
+---
+
+## Phase 30 — Compiler Edge-Cases (Nested Templates & Polymorphic Arrays)
+
+**Branch:** `phase-30-nested-templates-poly-arrays`  
+**Criticality:** 🟡 Medium  
+**Difficulty:** ⭐⭐⭐ Hard  
+
+### Context
+Template parameter deduction broke on nested generic types containing commas (e.g. `Map<K, V>`), and array literals strictly checked type equality rather than assignability.
+
+### 30.1 — Depth-Aware Template Parameter Deduction
+- **File:** `language/src/processes/template_deduction.cpp` / `binder.cpp`
+- In `deduce_template_arguments`, replace naive `generic_content.find(",")` with a loop tracking `<` and `>` depth, splitting on commas only when `depth == 0`.
+
+### 30.2 — Polymorphic Array Literals
+- **File:** `language/src/processes/binder.cpp`
+- In `visit(ArrayLiteralExpression)`, replace strict type equality checks with `is_assignable(target_type, element_type)` so derived class elements can be assigned into base class array literals.
+
+---
+
+## Phase 31 — High-Performance Engine Tuning
+
+**Branch:** `phase-31-vm-engine-tuning`  
+**Criticality:** 🟢 Polish  
+**Difficulty:** ⭐⭐⭐ Hard  
+
+### Context
+Per-instruction program counter bounds checks, member-function stack operations (`push()`/`pop()`), and dynamic vector allocations for call frames added substantial overhead to the VM dispatch loop.
+
+### 31.1 — Uninterrupted OpCode Dispatch
+- **File:** `language/src/processes/runtime.cpp`
+- Remove per-instruction `if (program_counter >= bytecode.size())` bounds check from inner `DISPATCH()` loop/macro, allowing `op_HALT` to terminate execution cleanly.
+
+### 31.2 — Inlined Pointer-Based Evaluation Stack
+- **File:** `language/src/processes/runtime.cpp`
+- Eliminate `push()` and `pop()` class methods. Define `uint64_t* sp = memory.stack.data();` inside `execute()`, manipulating stack slots via direct pointer arithmetic (`*sp++` and `*--sp`).
+
+### 31.3 — Fixed Zero-Allocation Call Stack
+- **File:** `language/src/processes/runtime.cpp`
+- Replace `std::vector<Frame> call_stack` with a fixed-size `std::array<Frame, 65536>` and a `size_t call_depth = 0;` counter to eliminate heap allocations during call frame pushes and pops.
+
