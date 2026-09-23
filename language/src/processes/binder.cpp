@@ -1498,7 +1498,14 @@ void Binder::visit(ArrayLiteralExpression &n) {
       if (element_type.name == "void") {
         element_type = current_element_type;
       } else if (element_type != current_element_type) {
-        record_error(&n, "Mixed types in array literal");
+        if (is_assignable(element_type, current_element_type)) {
+          // current_element_type is assignable to element_type (e.g. Dog to Animal)
+        } else if (is_assignable(current_element_type, element_type)) {
+          // element_type is assignable to current_element_type (e.g. Animal to Dog)
+          element_type = current_element_type;
+        } else {
+          record_error(&n, "Mixed types in array literal");
+        }
       }
     }
     element_type.array_depth++;

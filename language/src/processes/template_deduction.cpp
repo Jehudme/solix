@@ -35,14 +35,27 @@ bool Binder::deduce_template_arguments(const std::vector<TypeInfo>& param_types,
                 size_t end = arg.name.rfind(">");
                 std::string generic_content = arg.name.substr(start, end - start);
                 
-                // Extremely simple split by comma for now
+                // Depth-aware split by comma (respecting nested template <...>)
                 std::vector<std::string> extracted_args;
-                size_t pos = 0;
-                while ((pos = generic_content.find(",")) != std::string::npos) {
-                    extracted_args.push_back(generic_content.substr(0, pos));
-                    generic_content.erase(0, pos + 1);
+                std::string current_arg;
+                int depth = 0;
+                for (char ch : generic_content) {
+                    if (ch == '<') {
+                        depth++;
+                        current_arg += ch;
+                    } else if (ch == '>') {
+                        depth--;
+                        current_arg += ch;
+                    } else if (ch == ',' && depth == 0) {
+                        extracted_args.push_back(current_arg);
+                        current_arg.clear();
+                    } else {
+                        current_arg += ch;
+                    }
                 }
-                extracted_args.push_back(generic_content);
+                if (!current_arg.empty()) {
+                    extracted_args.push_back(current_arg);
+                }
                 
                 if (param.type_args.size() == extracted_args.size() && param.array_depth == arg.array_depth) {
                     for (size_t i = 0; i < param.type_args.size(); ++i) {
