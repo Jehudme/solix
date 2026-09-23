@@ -1185,6 +1185,7 @@ void Assembler::visit(NewInstanceExpression &node) {
 
   if (ctor) {
     emit_byte(static_cast<uint8_t>(OpCode::DUP));
+    emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
 
     for (const auto &arg : inst->arguments) {
       compile_expression(arg.get());
