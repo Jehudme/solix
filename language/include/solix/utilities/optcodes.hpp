@@ -22,23 +22,36 @@ enum class OpCode : uint8_t {
   PUSH_NULL,
   POP,
   DUP,
+  DUP2,
 
   // Arithmetic & Logic
-  ADD,
-  SUBTRACT,
-  MULTIPLY,
-  DIVIDE,
-  MODULO,
-  EQUAL,
-  NOT_EQUAL,
-  GREATER,
-  GREATER_EQUAL,
-  LESS,
-  LESS_EQUAL,
+  ADD_I64,
+  ADD_F64,
+  SUB_I64,
+  SUB_F64,
+  MUL_I64,
+  MUL_F64,
+  DIV_I64,
+  DIV_F64,
+  MOD_I64,
+  EQ_I64,
+  EQ_F64,
+  NEQ_I64,
+  NEQ_F64,
+  GREATER_I64,
+  GREATER_F64,
+  GREATER_EQ_I64,
+  GREATER_EQ_F64,
+  LESS_I64,
+  LESS_F64,
+  LESS_EQ_I64,
+  LESS_EQ_F64,
   LOGICAL_NOT,
   NEGATE,
-  INC,
-  DEC,
+  INC_I64,
+  INC_F64,
+  DEC_I64,
+  DEC_F64,
 
   // Variables
   GET_LOCAL,
@@ -59,6 +72,7 @@ enum class OpCode : uint8_t {
   WEAK_SET_PROPERTY,
   GET_ARRAY,
   SET_ARRAY,
+  ARRAY_LENGTH,
 
   // GC (ARC)
   INC_REF,
@@ -110,21 +124,34 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::PUSH_NULL: return "PUSH_NULL";
         case OpCode::POP: return "POP";
         case OpCode::DUP: return "DUP";
-        case OpCode::ADD: return "ADD";
-        case OpCode::SUBTRACT: return "SUBTRACT";
-        case OpCode::MULTIPLY: return "MULTIPLY";
-        case OpCode::DIVIDE: return "DIVIDE";
-        case OpCode::MODULO: return "MODULO";
-        case OpCode::EQUAL: return "EQUAL";
-        case OpCode::NOT_EQUAL: return "NOT_EQUAL";
-        case OpCode::GREATER: return "GREATER";
-        case OpCode::GREATER_EQUAL: return "GREATER_EQUAL";
-        case OpCode::LESS: return "LESS";
-        case OpCode::LESS_EQUAL: return "LESS_EQUAL";
+        case OpCode::DUP2: return "DUP2";
+        case OpCode::ADD_I64: return "ADD_I64";
+        case OpCode::ADD_F64: return "ADD_F64";
+        case OpCode::SUB_I64: return "SUB_I64";
+        case OpCode::SUB_F64: return "SUB_F64";
+        case OpCode::MUL_I64: return "MUL_I64";
+        case OpCode::MUL_F64: return "MUL_F64";
+        case OpCode::DIV_I64: return "DIV_I64";
+        case OpCode::DIV_F64: return "DIV_F64";
+        case OpCode::MOD_I64: return "MOD_I64";
+        case OpCode::EQ_I64: return "EQ_I64";
+        case OpCode::EQ_F64: return "EQ_F64";
+        case OpCode::NEQ_I64: return "NEQ_I64";
+        case OpCode::NEQ_F64: return "NEQ_F64";
+        case OpCode::GREATER_I64: return "GREATER_I64";
+        case OpCode::GREATER_F64: return "GREATER_F64";
+        case OpCode::GREATER_EQ_I64: return "GREATER_EQ_I64";
+        case OpCode::GREATER_EQ_F64: return "GREATER_EQ_F64";
+        case OpCode::LESS_I64: return "LESS_I64";
+        case OpCode::LESS_F64: return "LESS_F64";
+        case OpCode::LESS_EQ_I64: return "LESS_EQ_I64";
+        case OpCode::LESS_EQ_F64: return "LESS_EQ_F64";
         case OpCode::LOGICAL_NOT: return "LOGICAL_NOT";
         case OpCode::NEGATE: return "NEGATE";
-        case OpCode::INC: return "INC";
-        case OpCode::DEC: return "DEC";
+        case OpCode::INC_I64: return "INC_I64";
+        case OpCode::INC_F64: return "INC_F64";
+        case OpCode::DEC_I64: return "DEC_I64";
+        case OpCode::DEC_F64: return "DEC_F64";
         case OpCode::GET_LOCAL: return "GET_LOCAL";
         case OpCode::SET_LOCAL: return "SET_LOCAL";
         case OpCode::GET_GLOBAL: return "GET_GLOBAL";
@@ -139,6 +166,7 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::WEAK_SET_PROPERTY: return "WEAK_SET_PROPERTY";
         case OpCode::GET_ARRAY: return "GET_ARRAY";
         case OpCode::SET_ARRAY: return "SET_ARRAY";
+        case OpCode::ARRAY_LENGTH: return "ARRAY_LENGTH";
         case OpCode::INC_REF: return "INC_REF";
         case OpCode::DEC_REF: return "DEC_REF";
         case OpCode::CONV_I8: return "CONV_I8";
@@ -183,21 +211,34 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "PUSH_NULL") return OpCode::PUSH_NULL;
     if (str == "POP") return OpCode::POP;
     if (str == "DUP") return OpCode::DUP;
-    if (str == "ADD") return OpCode::ADD;
-    if (str == "SUBTRACT") return OpCode::SUBTRACT;
-    if (str == "MULTIPLY") return OpCode::MULTIPLY;
-    if (str == "DIVIDE") return OpCode::DIVIDE;
-    if (str == "MODULO") return OpCode::MODULO;
-    if (str == "EQUAL") return OpCode::EQUAL;
-    if (str == "NOT_EQUAL") return OpCode::NOT_EQUAL;
-    if (str == "GREATER") return OpCode::GREATER;
-    if (str == "GREATER_EQUAL") return OpCode::GREATER_EQUAL;
-    if (str == "LESS") return OpCode::LESS;
-    if (str == "LESS_EQUAL") return OpCode::LESS_EQUAL;
+    if (str == "DUP2") return OpCode::DUP2;
+    if (str == "ADD_I64") return OpCode::ADD_I64;
+    if (str == "ADD_F64") return OpCode::ADD_F64;
+    if (str == "SUB_I64") return OpCode::SUB_I64;
+    if (str == "SUB_F64") return OpCode::SUB_F64;
+    if (str == "MUL_I64") return OpCode::MUL_I64;
+    if (str == "MUL_F64") return OpCode::MUL_F64;
+    if (str == "DIV_I64") return OpCode::DIV_I64;
+    if (str == "DIV_F64") return OpCode::DIV_F64;
+    if (str == "MOD_I64") return OpCode::MOD_I64;
+    if (str == "EQ_I64") return OpCode::EQ_I64;
+    if (str == "EQ_F64") return OpCode::EQ_F64;
+    if (str == "NEQ_I64") return OpCode::NEQ_I64;
+    if (str == "NEQ_F64") return OpCode::NEQ_F64;
+    if (str == "GREATER_I64") return OpCode::GREATER_I64;
+    if (str == "GREATER_F64") return OpCode::GREATER_F64;
+    if (str == "GREATER_EQ_I64") return OpCode::GREATER_EQ_I64;
+    if (str == "GREATER_EQ_F64") return OpCode::GREATER_EQ_F64;
+    if (str == "LESS_I64") return OpCode::LESS_I64;
+    if (str == "LESS_F64") return OpCode::LESS_F64;
+    if (str == "LESS_EQ_I64") return OpCode::LESS_EQ_I64;
+    if (str == "LESS_EQ_F64") return OpCode::LESS_EQ_F64;
     if (str == "LOGICAL_NOT") return OpCode::LOGICAL_NOT;
     if (str == "NEGATE") return OpCode::NEGATE;
-    if (str == "INC") return OpCode::INC;
-    if (str == "DEC") return OpCode::DEC;
+    if (str == "INC_I64") return OpCode::INC_I64;
+    if (str == "INC_F64") return OpCode::INC_F64;
+    if (str == "DEC_I64") return OpCode::DEC_I64;
+    if (str == "DEC_F64") return OpCode::DEC_F64;
     if (str == "GET_LOCAL") return OpCode::GET_LOCAL;
     if (str == "SET_LOCAL") return OpCode::SET_LOCAL;
     if (str == "GET_GLOBAL") return OpCode::GET_GLOBAL;
@@ -212,6 +253,7 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "WEAK_SET_PROPERTY") return OpCode::WEAK_SET_PROPERTY;
     if (str == "GET_ARRAY") return OpCode::GET_ARRAY;
     if (str == "SET_ARRAY") return OpCode::SET_ARRAY;
+    if (str == "ARRAY_LENGTH") return OpCode::ARRAY_LENGTH;
     if (str == "INC_REF") return OpCode::INC_REF;
     if (str == "DEC_REF") return OpCode::DEC_REF;
     if (str == "CONV_I8") return OpCode::CONV_I8;
