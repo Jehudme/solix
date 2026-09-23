@@ -331,6 +331,17 @@ class TemplateTestRunner {
         // Phase 26 Test: ARC Store & Implicit This Ownership
         IntBox box_copy = i_box1;
         if (box_copy.get_value() == 20) Engine.print("PHASE 26 ARC EMISSION OK");
+
+        // Phase 27 Test: Function and Scope Cleanup
+        int32 loop_sum = 0;
+        int32 loop_i = 0;
+        while (loop_i < 10) {
+            IntBox temp_b = new IntBox(loop_i);
+            loop_sum = loop_sum + temp_b.get_value();
+            loop_i = loop_i + 1;
+            if (loop_i == 3) break;
+        }
+        if (loop_sum == 3) Engine.print("PHASE 27 CLEANUP AND FLOW LEAKS OK");
         
         Engine.print("--- TEMPLATES OK ---");
     }
