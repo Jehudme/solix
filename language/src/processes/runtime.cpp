@@ -54,6 +54,9 @@ uint64_t Memory::dynamic_allocation(size_t size_in_words, Address address) {
 void Memory::deallocate(Address address) {
   if (address == 0)
     return;
+  if (address == 50) {
+    std::cout << "[DEBUG] Deallocating address 50!" << std::endl;
+  }
 
   if (auto it = weak_references.find(address); it != weak_references.end()) {
     for (Address weak_slot : it->second) {
@@ -669,7 +672,7 @@ op_GET_ARRAY:
     Address array_addr = static_cast<Address>(POP());
     if (array_addr == 0) throw std::runtime_error("NullPointer");
     uint32_t length = static_cast<uint32_t>(heap_data[array_addr - 1] >> 32);
-    if (index >= length) throw std::runtime_error("Out of Bounds");
+    if (index >= length) throw std::runtime_error("Out of Bounds on GET_ARRAY: index " + std::to_string(index) + " >= length " + std::to_string(length));
     PUSH(heap_data[array_addr + index]);
     DISPATCH();
   }
@@ -680,7 +683,9 @@ op_SET_ARRAY:
     Address array_addr = static_cast<Address>(POP());
     if (array_addr == 0) throw std::runtime_error("NullPointer");
     uint32_t length = static_cast<uint32_t>(heap_data[array_addr - 1] >> 32);
-    if (index >= length) throw std::runtime_error("Out of Bounds");
+    if (index >= length) {
+      throw std::runtime_error("Out of Bounds on SET_ARRAY at PC=" + std::to_string(program_counter) + ": array_addr=" + std::to_string(array_addr) + " index=" + std::to_string(index) + " >= length=" + std::to_string(length) + " (header_val=" + std::to_string(heap_data[array_addr - 1]) + ")");
+    }
     heap_data[array_addr + index] = val;
     PUSH(val);
     DISPATCH();

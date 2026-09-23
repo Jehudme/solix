@@ -11,10 +11,14 @@ namespace solix::cli {
 static void register_temp_natives(RuntimeOptions& opts) {
     opts.native_functions["com.solix.advanced.test.Engine.print(char[])"] = [](solix::RuntimeContext& ctx, uint64_t self_address, uint64_t* args, size_t count) -> uint64_t {
         solix::Address addr = static_cast<solix::Address>(args[0]);
-        uint32_t len = static_cast<uint32_t>(ctx.memory.heap[addr]);
+        if (addr == 0) {
+            std::cout << "null" << std::endl;
+            return 0;
+        }
+        uint32_t len = static_cast<uint32_t>(ctx.memory.heap[addr - 1] >> 32);
         std::string str = "";
         for (uint32_t i = 0; i < len; ++i) {
-            str += static_cast<char>(ctx.memory.heap[addr + 1 + i]);
+            str += static_cast<char>(ctx.memory.heap[addr + i]);
         }
         std::cout << str << std::endl;
         return 0; // Automatically pushed by VM

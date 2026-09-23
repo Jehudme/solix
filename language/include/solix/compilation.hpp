@@ -43,6 +43,7 @@ struct CompilationOptions {
   std::string log_pattern = "[%^%-8l%$] [%-12n] %v";
 
   std::optional<std::filesystem::path> log_file_path;
+  std::optional<std::filesystem::path> assembly_output_path;
 
   bool use_multithreading = false;
   std::chrono::seconds flush_every_seconds{0};

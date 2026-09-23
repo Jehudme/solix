@@ -98,10 +98,43 @@ Node *Binder::instantiate_template(const std::string &template_name,
             mangled_name);
 
   if (clone->node_type == NodeType::CLASS_DECL) {
-    static_cast<ClassDeclaration *>(clone)->class_name =
-        mangled_name.substr(my_prefix.length());
+    auto *cls = static_cast<ClassDeclaration *>(clone);
+    cls->class_name = mangled_name.substr(my_prefix.length());
     register_global_symbols(clone, my_prefix);
     register_members(clone, my_prefix);
+
+    std::string old_pkg = current_package;
+    current_package = my_prefix;
+    ClassDeclaration* current_class_copy = current_class;
+    current_class = cls;
+
+    int offset = (!cls->base_class_name.empty() ? 0 : 1);
+    if (!cls->base_class_name.empty()) {
+      Node *base_node = global_scope.resolve(cls->base_class_name);
+      if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
+        offset = static_cast<ClassDeclaration *>(base_node)->instance_size;
+      }
+    }
+    for (const auto &child : cls->children) {
+      if (child && child->node_type == NodeType::FIELD_DECL) {
+        auto *field = static_cast<FieldDeclaration *>(child.get());
+        field->type_info = resolve_type(field->type_info, field);
+        Node *type_decl = global_scope.resolve(field->type_info.name);
+        field->is_reference_type = !(type_decl && type_decl->is_primitive &&
+                                     field->type_info.array_depth == 0);
+        if (!field->is_static) {
+          field->memory_index = offset++;
+        }
+      } else if (child && child->node_type == NodeType::METHOD_DECL) {
+        auto *method = static_cast<MethodDeclaration *>(child.get());
+        method->return_type = resolve_type(method->return_type, method);
+      }
+    }
+    cls->instance_size = offset;
+
+    current_class = current_class_copy;
+    current_package = old_pkg;
+
     if (current_pass == BinderPass::BIND_EXECUTION ||
         current_pass == BinderPass::EVALUATE_EXPRESSION) {
       BinderPass old = current_pass;

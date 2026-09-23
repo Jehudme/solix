@@ -15,6 +15,7 @@ struct Assembler : public CompilationProcess, public NodeVisitor {
     using CompilationProcess::CompilationProcess;
     
     void execute() override;
+    std::string disassemble() const;
 
 private:
     std::vector<uint8_t>& bytecode() { return context.bytecode; }

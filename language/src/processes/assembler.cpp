@@ -61,6 +61,170 @@ void Assembler::execute() {
   }
 
   apply_linker_patches();
+  context.assembly = disassemble();
+}
+
+std::string Assembler::disassemble() const {
+  const auto &bcode = context.bytecode;
+  std::ostringstream ss;
+  size_t pc = 0;
+
+  auto read_u16_local = [&](size_t &p) -> uint16_t {
+    if (p + 2 > bcode.size()) return 0;
+    uint16_t val = (static_cast<uint16_t>(bcode[p]) << 8) | bcode[p + 1];
+    p += 2;
+    return val;
+  };
+  auto read_u32_local = [&](size_t &p) -> uint32_t {
+    if (p + 4 > bcode.size()) return 0;
+    uint32_t val = (static_cast<uint32_t>(bcode[p]) << 24) |
+                   (static_cast<uint32_t>(bcode[p + 1]) << 16) |
+                   (static_cast<uint32_t>(bcode[p + 2]) << 8) |
+                   bcode[p + 3];
+    p += 4;
+    return val;
+  };
+  auto read_u64_local = [&](size_t &p) -> uint64_t {
+    if (p + 8 > bcode.size()) return 0;
+    uint64_t val = (static_cast<uint64_t>(bcode[p]) << 56) |
+                   (static_cast<uint64_t>(bcode[p + 1]) << 48) |
+                   (static_cast<uint64_t>(bcode[p + 2]) << 40) |
+                   (static_cast<uint64_t>(bcode[p + 3]) << 32) |
+                   (static_cast<uint64_t>(bcode[p + 4]) << 24) |
+                   (static_cast<uint64_t>(bcode[p + 5]) << 16) |
+                   (static_cast<uint64_t>(bcode[p + 6]) << 8) |
+                   static_cast<uint64_t>(bcode[p + 7]);
+    p += 8;
+    return val;
+  };
+  auto read_str_local = [&](size_t &p) -> std::string {
+    uint32_t len = read_u32_local(p);
+    if (p + len > bcode.size()) return "";
+    std::string str(reinterpret_cast<const char *>(&bcode[p]), len);
+    p += len;
+    return str;
+  };
+
+  while (pc < bcode.size()) {
+    size_t start_pc = pc;
+    uint8_t op_byte = bcode[pc++];
+    OpCode op = static_cast<OpCode>(op_byte);
+
+    char buf[32];
+    std::snprintf(buf, sizeof(buf), "%06zu:  ", start_pc);
+    ss << buf;
+    ss << std::left;
+    ss.width(20);
+    ss << opcode_to_string(op_byte);
+
+    switch (op) {
+    case OpCode::PUSH_CONST_I8:
+    case OpCode::PUSH_CONST_U8: {
+      if (pc < bcode.size()) {
+        ss << static_cast<int>(bcode[pc++]);
+      }
+      break;
+    }
+    case OpCode::PUSH_CONST_I16:
+    case OpCode::PUSH_CONST_U16: {
+      ss << read_u16_local(pc);
+      break;
+    }
+    case OpCode::PUSH_CONST_I32:
+    case OpCode::PUSH_CONST_U32: {
+      uint32_t val = read_u32_local(pc);
+      ss << val << " (0x" << std::hex << val << std::dec << ")";
+      break;
+    }
+    case OpCode::PUSH_CONST_F32: {
+      uint32_t val = read_u32_local(pc);
+      float f;
+      std::memcpy(&f, &val, sizeof(f));
+      ss << f;
+      break;
+    }
+    case OpCode::PUSH_CONST_I64:
+    case OpCode::PUSH_CONST_U64: {
+      uint64_t val = read_u64_local(pc);
+      ss << val << " (0x" << std::hex << val << std::dec << ")";
+      break;
+    }
+    case OpCode::PUSH_CONST_F64: {
+      uint64_t val = read_u64_local(pc);
+      double d;
+      std::memcpy(&d, &val, sizeof(d));
+      ss << d;
+      break;
+    }
+    case OpCode::PUSH_CONST_STRING: {
+      ss << "\"" << read_str_local(pc) << "\"";
+      break;
+    }
+    case OpCode::GET_LOCAL:
+    case OpCode::SET_LOCAL:
+    case OpCode::GET_GLOBAL:
+    case OpCode::SET_GLOBAL:
+    case OpCode::GET_PROPERTY:
+    case OpCode::SET_PROPERTY:
+    case OpCode::WEAK_SET_PROPERTY:
+    case OpCode::SET_VTABLE: {
+      ss << read_u32_local(pc);
+      break;
+    }
+    case OpCode::JUMP:
+    case OpCode::JUMP_IF_FALSE:
+    case OpCode::JUMP_IF_TRUE: {
+      uint32_t target = read_u32_local(pc);
+      char tbuf[16];
+      std::snprintf(tbuf, sizeof(tbuf), "-> %06u", target);
+      ss << tbuf;
+      break;
+    }
+    case OpCode::CALL_NATIVE: {
+      uint32_t id = read_u32_local(pc);
+      uint32_t args = read_u32_local(pc);
+      bool is_st = (pc < bcode.size()) ? (bcode[pc++] != 0) : false;
+      ss << "id=" << id << ", args=" << args << ", static=" << (is_st ? "true" : "false");
+      break;
+    }
+    case OpCode::DEFINE_NATIVE: {
+      uint32_t id = read_u32_local(pc);
+      std::string name = read_str_local(pc);
+      ss << "id=" << id << " \"" << name << "\"";
+      break;
+    }
+    case OpCode::DEFINE_VTABLE: {
+      uint32_t vtid = read_u32_local(pc);
+      int32_t base_id = static_cast<int32_t>(read_u32_local(pc));
+      uint32_t count = read_u32_local(pc);
+      ss << "vtable_id=" << vtid << ", base=" << base_id << ", count=" << count << " [";
+      for (uint32_t i = 0; i < count; ++i) {
+        uint32_t slot_ip = read_u32_local(pc);
+        if (i > 0) ss << ", ";
+        ss << slot_ip;
+      }
+      ss << "]";
+      break;
+    }
+    case OpCode::CALL_VIRTUAL: {
+      uint32_t slot = read_u32_local(pc);
+      uint32_t frame_sz = read_u32_local(pc);
+      uint32_t args = read_u32_local(pc);
+      ss << "slot=" << slot << ", frame_size=" << frame_sz << ", args=" << args;
+      break;
+    }
+    case OpCode::CAST_CHECK:
+    case OpCode::INSTANCEOF: {
+      uint32_t vtid = read_u32_local(pc);
+      ss << "vtable_id=" << vtid;
+      break;
+    }
+    default:
+      break;
+    }
+    ss << "\n";
+  }
+  return ss.str();
 }
 
 void Assembler::emit_byte(uint8_t byte) { bytecode().push_back(byte); }
@@ -1308,8 +1472,7 @@ void Assembler::visit(ArrayAccessExpression &node) {
   compile_expression(arr_acc->index.get());
   emit_byte(static_cast<uint8_t>(OpCode::GET_ARRAY));
 
-  bool is_ref =
-      (arr_acc->expression_type.array_depth > 0 || !arr_acc->is_primitive);
+  bool is_ref = is_reference_type(arr_acc->expression_type);
   if (is_ref) {
     emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
   }

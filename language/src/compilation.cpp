@@ -6,6 +6,7 @@
 #include "solix/statements.hpp"
 #include "solix/utilities/diagnostic.hpp"
 #include "solix/utilities/token.hpp"
+#include <fstream>
 
 namespace solix {
 CompilationContext::CompilationContext(const CompilationOptions &opts)
@@ -27,6 +28,13 @@ std::vector<uint8_t> run(CompilationOptions& options) {
     
     Assembler assembler(context, "Assembler");
     assembler.execute();
+    
+    if (options.assembly_output_path.has_value()) {
+        std::ofstream asm_file(options.assembly_output_path.value());
+        if (asm_file) {
+            asm_file << context.assembly;
+        }
+    }
     
     return std::move(context.bytecode);
 }
