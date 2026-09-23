@@ -42,7 +42,11 @@ uint64_t Memory::dynamic_allocation(size_t size_in_words, Address address) {
   if (currently_used_words > peak_used_words)
     peak_used_words = currently_used_words;
 
-  uint64_t header = (static_cast<uint64_t>(size_in_words) << 32) | 0ULL;
+  for (size_t i = 0; i < size_in_words; ++i) {
+    heap[header_addr + 1 + i] = 0;
+  }
+
+  uint64_t header = (static_cast<uint64_t>(size_in_words) << 32) | 1ULL;
   heap[header_addr] = header;
   return header_addr + 1;
 }
@@ -320,10 +324,9 @@ op_PUSH_CONST_STRING:
     { // inner scope to avoid goto-over-destructor
       std::string str = read_string(bytecode, program_counter);
       size_t len = str.length();
-      Address addr = memory.dynamic_allocation(len + 1);
-      heap_data[addr] = len;
+      Address addr = memory.dynamic_allocation(len);
       for (size_t i = 0; i < len; ++i)
-        heap_data[addr + 1 + i] = static_cast<uint64_t>(str[i]);
+        heap_data[addr + i] = static_cast<uint64_t>(str[i]);
       push(addr);
     }
     DISPATCH();
@@ -610,6 +613,7 @@ op_GET_PROPERTY:
   {
     uint32_t offset = read_u32(bytecode, program_counter);
     Address obj = static_cast<Address>(pop());
+    if (obj == 0) throw std::runtime_error("NullPointer");
     if (obj + offset >= memory.heap.size())
       throw std::runtime_error("Heap out of bounds on GET_PROPERTY");
     push(memory.read_u64(obj, offset));
@@ -620,6 +624,7 @@ op_SET_PROPERTY:
     uint32_t offset = read_u32(bytecode, program_counter);
     Address obj = static_cast<Address>(pop());
     uint64_t val = pop();
+    if (obj == 0) throw std::runtime_error("NullPointer");
     if (obj + offset >= memory.heap.size())
       throw std::runtime_error("Heap out of bounds on SET_PROPERTY");
 
@@ -631,6 +636,7 @@ op_WEAK_SET_PROPERTY:
     uint32_t offset = read_u32(bytecode, program_counter);
     Address obj = static_cast<Address>(pop());
     uint64_t val = pop();
+    if (obj == 0) throw std::runtime_error("NullPointer");
     if (obj + offset >= memory.heap.size())
       throw std::runtime_error("Heap out of bounds on WEAK_SET_PROPERTY");
 
@@ -657,7 +663,10 @@ op_GET_ARRAY:
   {
     uint32_t index = static_cast<uint32_t>(pop());
     Address array_addr = static_cast<Address>(pop());
-    push(heap_data[array_addr + 1 + index]);
+    if (array_addr == 0) throw std::runtime_error("NullPointer");
+    uint32_t length = static_cast<uint32_t>(heap_data[array_addr - 1] >> 32);
+    if (index >= length) throw std::runtime_error("Out of Bounds");
+    push(heap_data[array_addr + index]);
     DISPATCH();
   }
 op_SET_ARRAY:
@@ -665,14 +674,19 @@ op_SET_ARRAY:
     uint64_t val = pop();
     uint32_t index = static_cast<uint32_t>(pop());
     Address array_addr = static_cast<Address>(pop());
-    heap_data[array_addr + 1 + index] = val;
+    if (array_addr == 0) throw std::runtime_error("NullPointer");
+    uint32_t length = static_cast<uint32_t>(heap_data[array_addr - 1] >> 32);
+    if (index >= length) throw std::runtime_error("Out of Bounds");
+    heap_data[array_addr + index] = val;
     push(val);
     DISPATCH();
   }
 op_ARRAY_LENGTH:
   {
     Address array_addr = static_cast<Address>(pop());
-    push(heap_data[array_addr]);
+    if (array_addr == 0) throw std::runtime_error("NullPointer");
+    uint32_t length = static_cast<uint32_t>(heap_data[array_addr - 1] >> 32);
+    push(length);
     DISPATCH();
   }
 
@@ -825,6 +839,7 @@ op_CALL_VIRTUAL:
     uint32_t arg_count = read_u32(bytecode, program_counter);
 
     Address obj = static_cast<Address>(stack[memory.stack_pointer - arg_count]);
+    if (obj == 0) throw std::runtime_error("NullPointer");
     uint32_t vtable_id = heap_data[obj];
     if (vtables.find(vtable_id) == vtables.end() ||
         vtable_index >= vtables[vtable_id].size()) {
