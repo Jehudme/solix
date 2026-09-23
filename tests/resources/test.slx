@@ -342,6 +342,12 @@ class TemplateTestRunner {
             if (loop_i == 3) break;
         }
         if (loop_sum == 3) Engine.print("PHASE 27 CLEANUP AND FLOW LEAKS OK");
+
+        // Phase 28 Test: Array Mutation & Implicit Constructor
+        int32[] mut_arr = new int32[3];
+        mut_arr[0] = 5;
+        mut_arr[0]++;
+        if (mut_arr[0] == 6) Engine.print("PHASE 28 OBJECT INIT AND ARRAY MUTATION OK");
         
         Engine.print("--- TEMPLATES OK ---");
     }
