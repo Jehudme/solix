@@ -348,6 +348,10 @@ class TemplateTestRunner {
         mut_arr[0] = 5;
         mut_arr[0]++;
         if (mut_arr[0] == 6) Engine.print("PHASE 28 OBJECT INIT AND ARRAY MUTATION OK");
+
+        // Phase 29 Test: Static String Pool
+        char[] pool_str = "STATIC STRING POOL OK";
+        Engine.print(pool_str);
         
         Engine.print("--- TEMPLATES OK ---");
     }
