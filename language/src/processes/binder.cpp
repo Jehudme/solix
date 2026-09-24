@@ -543,11 +543,25 @@ void Binder::bind_types_and_memory() {
     }
   }
 
+  auto is_exception_class = [&](ClassDeclaration *cls) -> bool {
+    std::string current_name = cls->mangled_name;
+    while (!current_name.empty()) {
+      if (current_name == "Exception" || current_name == "Throwable") return true;
+      Node *node = global_scope.resolve(current_name);
+      if (node && node->node_type == NodeType::CLASS_DECL) {
+        current_name = static_cast<ClassDeclaration *>(node)->base_class_name;
+      } else {
+        break;
+      }
+    }
+    return false;
+  };
+
   int next_vtable_id = 0;
   for (const auto &[name, node] : global_scope.symbols) {
     if (node->node_type == NodeType::CLASS_DECL) {
       auto *cls = static_cast<ClassDeclaration *>(node);
-      if (true) {
+      if (!vtables[cls->mangled_name].empty() || is_exception_class(cls)) {
         cls->vtable_id = next_vtable_id++;
         log_debug("Assigned vtable_id {} to class '{}'", cls->vtable_id,
                   cls->mangled_name);
