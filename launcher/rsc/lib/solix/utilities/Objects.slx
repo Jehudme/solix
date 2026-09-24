@@ -1,0 +1,102 @@
+// ============================================================================
+// Solix Standard Library - Objects Utility Class
+// Package: solix
+// ============================================================================
+package solix;
+
+public class Objects {
+    // ------------------------------------------------------------------------
+    // Null Checks & Validation
+    // ------------------------------------------------------------------------
+
+    public static bool is_null(String reference_object) {
+        return reference_object == null;
+    }
+
+    public static bool is_null(char[] reference_array) {
+        return reference_array == null;
+    }
+
+    public static bool non_null(String reference_object) {
+        return reference_object != null;
+    }
+
+    public static bool non_null(char[] reference_array) {
+        return reference_array != null;
+    }
+
+    public static String require_non_null(String reference_object) {
+        if (reference_object == null) {
+            throw new NullPointerException("Required reference object cannot be null.");
+        }
+        return reference_object;
+    }
+
+    public static char[] require_non_null(char[] reference_array) {
+        if (reference_array == null) {
+            throw new NullPointerException("Required reference array cannot be null.");
+        }
+        return reference_array;
+    }
+
+    public static String require_non_null_message(String reference_object, String failure_message) {
+        if (reference_object == null) {
+            throw new NullPointerException(failure_message);
+        }
+        return reference_object;
+    }
+
+    public static char[] require_non_null_message(char[] reference_array, String failure_message) {
+        if (reference_array == null) {
+            throw new NullPointerException(failure_message);
+        }
+        return reference_array;
+    }
+
+    // ------------------------------------------------------------------------
+    // Equality & Hashing
+    // ------------------------------------------------------------------------
+
+    public static bool equals(String first_string, String second_string) {
+        if (first_string == second_string) {
+            return true;
+        }
+        if (first_string == null || second_string == null) {
+            return false;
+        }
+        return first_string.equals(second_string);
+    }
+
+    public static bool equals(char[] first_chars, char[] second_chars) {
+        if (first_chars == second_chars) {
+            return true;
+        }
+        if (first_chars == null || second_chars == null) {
+            return false;
+        }
+        if (first_chars.length != second_chars.length) {
+            return false;
+        }
+        int32 characters_count = first_chars.length;
+        for (int32 check_index = 0; check_index < characters_count; check_index++) {
+            if (first_chars[check_index] != second_chars[check_index]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static int32 hash_code(String target_string) {
+        if (target_string == null) {
+            return 0;
+        }
+        return target_string.hash_code();
+    }
+
+    public static String to_string(String target_string, String null_default_string) {
+        if (target_string == null) {
+            return null_default_string;
+        }
+        return target_string;
+    }
+}

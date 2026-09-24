@@ -1,0 +1,33 @@
+// ============================================================================
+// Solix Standard Library - Native Utilities Interface
+// Package: solix
+// ============================================================================
+package solix;
+
+public class NativeUtilities {
+    // ------------------------------------------------------------------------
+    // Memory and Buffer Copy Operations
+    // ------------------------------------------------------------------------
+
+    public static native void copy_chars(char[] source_array, int32 source_offset, char[] destination_array, int32 destination_offset, int32 copy_count);
+
+    // ------------------------------------------------------------------------
+    // Number and String Conversions
+    // ------------------------------------------------------------------------
+
+    public static native char[] float64_to_chars(float64 value, int32 precision_digits);
+
+    public static native float64 chars_to_float64(char[] character_array);
+
+    public static native char[] int64_to_chars(int64 integer_value);
+
+    public static native int64 chars_to_int64(char[] character_array);
+
+    // ------------------------------------------------------------------------
+    // High-Precision Timing
+    // ------------------------------------------------------------------------
+
+    public static native int64 current_time_millis();
+
+    public static native int64 current_time_nanos();
+}

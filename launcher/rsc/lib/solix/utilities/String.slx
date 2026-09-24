@@ -69,15 +69,16 @@ public class String {
 
     public char char_at(int32 target_index) {
         if (target_index < 0 || target_index >= this.character_count) {
-            return (char)0;
+            throw new IndexOutOfBoundsException(target_index, this.character_count);
         }
         return this.character_buffer[target_index];
     }
 
     public void set_char_at(int32 target_index, char replacement_character) {
-        if (target_index >= 0 && target_index < this.character_count) {
-            this.character_buffer[target_index] = replacement_character;
+        if (target_index < 0 || target_index >= this.character_count) {
+            throw new IndexOutOfBoundsException(target_index, this.character_count);
         }
+        this.character_buffer[target_index] = replacement_character;
     }
 
     // ------------------------------------------------------------------------
@@ -385,6 +386,20 @@ public class String {
         return parsed_number_accumulator * arithmetic_sign_multiplier;
     }
 
+    public int64 to_int64() {
+        if (this.character_count == 0) {
+            return (int64)0;
+        }
+        return NativeUtilities.chars_to_int64(this.character_buffer);
+    }
+
+    public float64 to_float64() {
+        if (this.character_count == 0) {
+            return 0.0;
+        }
+        return NativeUtilities.chars_to_float64(this.character_buffer);
+    }
+
     public int32 hash_code() {
         int32 computed_hash = 0;
         for (int32 character_index = 0; character_index < this.character_count; character_index++) {
@@ -496,5 +511,20 @@ public class String {
             false_literal_characters[4] = (char)101;
             return new String(false_literal_characters);
         }
+    }
+
+    public static String from_int64(int64 integer_value) {
+        char[] character_array = NativeUtilities.int64_to_chars(integer_value);
+        return new String(character_array);
+    }
+
+    public static String from_float64(float64 float_value) {
+        char[] character_array = NativeUtilities.float64_to_chars(float_value, -1);
+        return new String(character_array);
+    }
+
+    public static String from_float64(float64 float_value, int32 precision_digits) {
+        char[] character_array = NativeUtilities.float64_to_chars(float_value, precision_digits);
+        return new String(character_array);
     }
 }

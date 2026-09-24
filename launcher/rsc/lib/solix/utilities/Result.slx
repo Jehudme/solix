@@ -1,0 +1,85 @@
+// ============================================================================
+// Solix Standard Library - Result Class Implementation
+// Package: solix
+// ============================================================================
+package solix;
+
+public class Result<TValue, TError> {
+    private TValue success_value;
+    private TError error_value;
+    private bool is_success_state;
+
+    // ------------------------------------------------------------------------
+    // Constructors
+    // ------------------------------------------------------------------------
+
+    public Result() {
+        this.is_success_state = false;
+    }
+
+    public Result(TValue value, TError error, bool is_success) {
+        this.success_value = value;
+        this.error_value = error;
+        this.is_success_state = is_success;
+    }
+
+    // ------------------------------------------------------------------------
+    // Static Factory Methods
+    // ------------------------------------------------------------------------
+
+    public static Result<TValue, TError> ok(TValue value) {
+        return new Result<TValue, TError>(value, null, true);
+    }
+
+    public static Result<TValue, TError> err(TError error) {
+        return new Result<TValue, TError>(null, error, false);
+    }
+
+    // ------------------------------------------------------------------------
+    // State Queries
+    // ------------------------------------------------------------------------
+
+    public bool is_ok() {
+        return this.is_success_state;
+    }
+
+    public bool is_err() {
+        return !this.is_success_state;
+    }
+
+    // ------------------------------------------------------------------------
+    // Value Retrieval
+    // ------------------------------------------------------------------------
+
+    public TValue unwrap() {
+        if (!this.is_success_state) {
+            throw new IllegalStateException("Called unwrap() on an Err Result.");
+        }
+        return this.success_value;
+    }
+
+    public TError unwrap_err() {
+        if (this.is_success_state) {
+            throw new IllegalStateException("Called unwrap_err() on an Ok Result.");
+        }
+        return this.error_value;
+    }
+
+    public TValue unwrap_or(TValue fallback_value) {
+        if (this.is_success_state) {
+            return this.success_value;
+        }
+        return fallback_value;
+    }
+
+    // ------------------------------------------------------------------------
+    // String Conversion
+    // ------------------------------------------------------------------------
+
+    public String to_string() {
+        if (this.is_success_state) {
+            return new String("Result.Ok");
+        }
+        return new String("Result.Err");
+    }
+}

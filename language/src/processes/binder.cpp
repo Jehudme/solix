@@ -1124,7 +1124,8 @@ void Binder::visit(AssignmentExpression &n) {
 
     Node *left_decl = global_scope.resolve(target_type.name);
     if (left_decl && left_decl->node_type == NodeType::CLASS_DECL &&
-        n.value->node_type != NodeType::NEW_INSTANCE) {
+        n.value->node_type != NodeType::NEW_INSTANCE &&
+        n.target->node_type != NodeType::MEMBER_ACCESS) {
       std::string op_name = "operator=";
       std::string base_name = left_decl->mangled_name + "." + op_name;
       std::vector<TypeInfo> args = {value_type};

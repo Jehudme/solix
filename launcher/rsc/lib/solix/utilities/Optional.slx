@@ -1,0 +1,117 @@
+// ============================================================================
+// Solix Standard Library - Optional Class Implementation
+// Package: solix
+// ============================================================================
+package solix;
+
+public class Optional<T> {
+    private T stored_value;
+    private bool value_is_present;
+
+    // ------------------------------------------------------------------------
+    // Constructors
+    // ------------------------------------------------------------------------
+
+    public Optional() {
+        this.value_is_present = false;
+    }
+
+    public Optional(T initial_value) {
+        if (initial_value == null) {
+            throw new NullPointerException("Cannot construct Optional with null value.");
+        }
+        this.stored_value = initial_value;
+        this.value_is_present = true;
+    }
+
+    public Optional(T initial_value, bool has_value) {
+        this.stored_value = initial_value;
+        this.value_is_present = has_value;
+    }
+
+    // ------------------------------------------------------------------------
+    // Static Factory Methods
+    // ------------------------------------------------------------------------
+
+    public static Optional<T> of(T non_null_value) {
+        if (non_null_value == null) {
+            throw new NullPointerException("Cannot construct Optional.of() with null value.");
+        }
+        return new Optional<T>(non_null_value, true);
+    }
+
+    public static Optional<T> of_nullable(T nullable_value) {
+        if (nullable_value == null) {
+            return new Optional<T>();
+        }
+        return new Optional<T>(nullable_value, true);
+    }
+
+    public static Optional<T> empty() {
+        return new Optional<T>();
+    }
+
+    // ------------------------------------------------------------------------
+    // State Queries
+    // ------------------------------------------------------------------------
+
+    public bool is_present() {
+        return this.value_is_present;
+    }
+
+    public bool is_empty() {
+        return !this.value_is_present;
+    }
+
+    // ------------------------------------------------------------------------
+    // Value Retrieval
+    // ------------------------------------------------------------------------
+
+    public T get() {
+        if (!this.value_is_present) {
+            throw new NoSuchElementException("No value present in Optional.");
+        }
+        return this.stored_value;
+    }
+
+    public T or_else(T fallback_value) {
+        if (this.value_is_present) {
+            return this.stored_value;
+        }
+        return fallback_value;
+    }
+
+    public T or_default(T default_value) {
+        if (this.value_is_present) {
+            return this.stored_value;
+        }
+        return default_value;
+    }
+
+    // ------------------------------------------------------------------------
+    // Equality and String Conversion
+    // ------------------------------------------------------------------------
+
+    public bool equals(Optional<T> other_optional) {
+        if (other_optional == null) {
+            return false;
+        }
+        if (this.value_is_present != other_optional.value_is_present) {
+            return false;
+        }
+        if (!this.value_is_present) {
+            return true;
+        }
+        return this.stored_value == other_optional.stored_value;
+    }
+
+    public String to_string() {
+        if (this.value_is_present) {
+            StringBuilder string_builder = new StringBuilder("Optional[");
+            string_builder.append("present");
+            string_builder.append("]");
+            return string_builder.to_string();
+        }
+        return new String("Optional.empty");
+    }
+}

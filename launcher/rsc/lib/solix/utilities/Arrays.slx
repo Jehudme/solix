@@ -1,0 +1,274 @@
+// ============================================================================
+// Solix Standard Library - Arrays Utility Class
+// Package: solix
+// ============================================================================
+package solix;
+
+public class Arrays {
+    // ------------------------------------------------------------------------
+    // Filling Operations
+    // ------------------------------------------------------------------------
+
+    public static void fill_i32(int32[] target_array, int32 fill_value) {
+        if (target_array == null) {
+            throw new NullPointerException("Target array cannot be null in Arrays.fill_i32.");
+        }
+        int32 array_length = target_array.length;
+        for (int32 fill_index = 0; fill_index < array_length; fill_index++) {
+            target_array[fill_index] = fill_value;
+        }
+    }
+
+    public static void fill_char(char[] target_array, char fill_value) {
+        if (target_array == null) {
+            throw new NullPointerException("Target array cannot be null in Arrays.fill_char.");
+        }
+        int32 array_length = target_array.length;
+        for (int32 fill_index = 0; fill_index < array_length; fill_index++) {
+            target_array[fill_index] = fill_value;
+        }
+    }
+
+    public static void fill_bool(bool[] target_array, bool fill_value) {
+        if (target_array == null) {
+            throw new NullPointerException("Target array cannot be null in Arrays.fill_bool.");
+        }
+        int32 array_length = target_array.length;
+        for (int32 fill_index = 0; fill_index < array_length; fill_index++) {
+            target_array[fill_index] = fill_value;
+        }
+    }
+
+    public static void fill_f64(float64[] target_array, float64 fill_value) {
+        if (target_array == null) {
+            throw new NullPointerException("Target array cannot be null in Arrays.fill_f64.");
+        }
+        int32 array_length = target_array.length;
+        for (int32 fill_index = 0; fill_index < array_length; fill_index++) {
+            target_array[fill_index] = fill_value;
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Copy Operations
+    // ------------------------------------------------------------------------
+
+    public static void copy_i32(int32[] source_array, int32 source_offset, int32[] destination_array, int32 destination_offset, int32 copy_count) {
+        if (source_array == null || destination_array == null) {
+            throw new NullPointerException("Array cannot be null in Arrays.copy_i32.");
+        }
+        if (source_offset < 0 || destination_offset < 0 || copy_count < 0 ||
+            source_offset + copy_count > source_array.length ||
+            destination_offset + copy_count > destination_array.length) {
+            throw new IndexOutOfBoundsException(source_offset, source_array.length);
+        }
+        for (int32 copy_index = 0; copy_index < copy_count; copy_index++) {
+            destination_array[destination_offset + copy_index] = source_array[source_offset + copy_index];
+        }
+    }
+
+    public static void copy_char(char[] source_array, int32 source_offset, char[] destination_array, int32 destination_offset, int32 copy_count) {
+        if (source_array == null || destination_array == null) {
+            throw new NullPointerException("Array cannot be null in Arrays.copy_char.");
+        }
+        if (source_offset < 0 || destination_offset < 0 || copy_count < 0 ||
+            source_offset + copy_count > source_array.length ||
+            destination_offset + copy_count > destination_array.length) {
+            throw new IndexOutOfBoundsException(source_offset, source_array.length);
+        }
+        NativeUtilities.copy_chars(source_array, source_offset, destination_array, destination_offset, copy_count);
+    }
+
+    // ------------------------------------------------------------------------
+    // Equality and Comparison
+    // ------------------------------------------------------------------------
+
+    public static bool equals_i32(int32[] first_array, int32[] second_array) {
+        if (first_array == second_array) {
+            return true;
+        }
+        if (first_array == null || second_array == null) {
+            return false;
+        }
+        if (first_array.length != second_array.length) {
+            return false;
+        }
+        int32 array_length = first_array.length;
+        for (int32 check_index = 0; check_index < array_length; check_index++) {
+            if (first_array[check_index] != second_array[check_index]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static bool equals_char(char[] first_array, char[] second_array) {
+        if (first_array == second_array) {
+            return true;
+        }
+        if (first_array == null || second_array == null) {
+            return false;
+        }
+        if (first_array.length != second_array.length) {
+            return false;
+        }
+        int32 array_length = first_array.length;
+        for (int32 check_index = 0; check_index < array_length; check_index++) {
+            if (first_array[check_index] != second_array[check_index]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // ------------------------------------------------------------------------
+    // Swap and Reverse
+    // ------------------------------------------------------------------------
+
+    public static void swap_i32(int32[] target_array, int32 first_index, int32 second_index) {
+        if (target_array == null) {
+            throw new NullPointerException("Target array cannot be null in Arrays.swap_i32.");
+        }
+        int32 array_length = target_array.length;
+        if (first_index < 0 || first_index >= array_length || second_index < 0 || second_index >= array_length) {
+            throw new IndexOutOfBoundsException(first_index, array_length);
+        }
+        int32 temporary_swap_value = target_array[first_index];
+        target_array[first_index] = target_array[second_index];
+        target_array[second_index] = temporary_swap_value;
+    }
+
+    public static void swap_char(char[] target_array, int32 first_index, int32 second_index) {
+        if (target_array == null) {
+            throw new NullPointerException("Target array cannot be null in Arrays.swap_char.");
+        }
+        int32 array_length = target_array.length;
+        if (first_index < 0 || first_index >= array_length || second_index < 0 || second_index >= array_length) {
+            throw new IndexOutOfBoundsException(first_index, array_length);
+        }
+        char temporary_swap_character = target_array[first_index];
+        target_array[first_index] = target_array[second_index];
+        target_array[second_index] = temporary_swap_character;
+    }
+
+    public static void reverse_i32(int32[] target_array) {
+        if (target_array == null) {
+            throw new NullPointerException("Target array cannot be null in Arrays.reverse_i32.");
+        }
+        int32 left_cursor = 0;
+        int32 right_cursor = target_array.length - 1;
+        while (left_cursor < right_cursor) {
+            int32 temporary_swap_value = target_array[left_cursor];
+            target_array[left_cursor] = target_array[right_cursor];
+            target_array[right_cursor] = temporary_swap_value;
+            left_cursor++;
+            right_cursor--;
+        }
+    }
+
+    public static void reverse_char(char[] target_array) {
+        if (target_array == null) {
+            throw new NullPointerException("Target array cannot be null in Arrays.reverse_char.");
+        }
+        int32 left_cursor = 0;
+        int32 right_cursor = target_array.length - 1;
+        while (left_cursor < right_cursor) {
+            char temporary_swap_character = target_array[left_cursor];
+            target_array[left_cursor] = target_array[right_cursor];
+            target_array[right_cursor] = temporary_swap_character;
+            left_cursor++;
+            right_cursor--;
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Sorting (In-Place Quicksort)
+    // ------------------------------------------------------------------------
+
+    public static void sort_i32(int32[] target_array) {
+        if (target_array == null || target_array.length <= 1) {
+            return;
+        }
+        Arrays.quicksort_internal(target_array, 0, target_array.length - 1);
+    }
+
+    private static void quicksort_internal(int32[] target_array, int32 low_index, int32 high_index) {
+        if (low_index < high_index) {
+            int32 pivot_partition_index = Arrays.partition_internal(target_array, low_index, high_index);
+            Arrays.quicksort_internal(target_array, low_index, pivot_partition_index - 1);
+            Arrays.quicksort_internal(target_array, pivot_partition_index + 1, high_index);
+        }
+    }
+
+    private static int32 partition_internal(int32[] target_array, int32 low_index, int32 high_index) {
+        int32 pivot_value = target_array[high_index];
+        int32 smaller_element_index = low_index - 1;
+
+        for (int32 scanning_index = low_index; scanning_index < high_index; scanning_index++) {
+            if (target_array[scanning_index] <= pivot_value) {
+                smaller_element_index++;
+                int32 temporary_swap_value = target_array[smaller_element_index];
+                target_array[smaller_element_index] = target_array[scanning_index];
+                target_array[scanning_index] = temporary_swap_value;
+            }
+        }
+
+        int32 partition_swap_value = target_array[smaller_element_index + 1];
+        target_array[smaller_element_index + 1] = target_array[high_index];
+        target_array[high_index] = partition_swap_value;
+
+        return smaller_element_index + 1;
+    }
+
+    // ------------------------------------------------------------------------
+    // Binary Search
+    // ------------------------------------------------------------------------
+
+    public static int32 binary_search_i32(int32[] sorted_array, int32 target_value) {
+        if (sorted_array == null || sorted_array.length == 0) {
+            return -1;
+        }
+
+        int32 search_low = 0;
+        int32 search_high = sorted_array.length - 1;
+
+        while (search_low <= search_high) {
+            int32 search_mid = search_low + ((search_high - search_low) / 2);
+            int32 mid_value = sorted_array[search_mid];
+
+            if (mid_value == target_value) {
+                return search_mid;
+            } else if (mid_value < target_value) {
+                search_low = search_mid + 1;
+            } else {
+                search_high = search_mid - 1;
+            }
+        }
+
+        return -1;
+    }
+
+    // ------------------------------------------------------------------------
+    // String Conversion
+    // ------------------------------------------------------------------------
+
+    public static String to_string_i32(int32[] target_array) {
+        if (target_array == null) {
+            return new String("null");
+        }
+        int32 array_length = target_array.length;
+        if (array_length == 0) {
+            return new String("[]");
+        }
+
+        StringBuilder string_builder = new StringBuilder("[");
+        for (int32 format_index = 0; format_index < array_length; format_index++) {
+            string_builder.append(target_array[format_index]);
+            if (format_index < array_length - 1) {
+                string_builder.append(", ");
+            }
+        }
+        string_builder.append("]");
+        return string_builder.to_string();
+    }
+}

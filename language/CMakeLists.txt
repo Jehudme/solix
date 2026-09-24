@@ -12,6 +12,7 @@ add_library(solix_language
     src/runtime.cpp
     src/natives/natives.cpp
     src/natives/console.cpp
+    src/natives/utilities.cpp
 )
 
 target_include_directories(solix_language
