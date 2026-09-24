@@ -104,3 +104,31 @@ TEST_CASE("New Assembler - Basic Variables", "[new_assembler]") {
     REQUIRE(asm_code.find("PUSH_CONST_I64 5") != std::string::npos);
     REQUIRE(asm_code.find("SET_LOCAL") != std::string::npos);
 }
+
+TEST_CASE("Try-Catch Assembler test", "[assembler]") {
+    std::string code = R"(
+        class Exception {}
+        class CustomException extends Exception {}
+        
+        class Thrower {
+            public void do_throw() {
+                throw new CustomException();
+            }
+        }
+        
+        public class Main {
+            public static void main() {
+                try {
+                    Thrower thrower = new Thrower();
+                    thrower.do_throw();
+                } catch (CustomException e) {
+                } catch (Exception e) {
+                }
+            }
+        }
+    )";
+    
+    // We just want to make sure it compiles without syntax/binder errors
+    // and doesn't segfault the assembler.
+    REQUIRE_NOTHROW(test_assemble(code));
+}

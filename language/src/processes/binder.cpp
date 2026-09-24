@@ -547,7 +547,7 @@ void Binder::bind_types_and_memory() {
   for (const auto &[name, node] : global_scope.symbols) {
     if (node->node_type == NodeType::CLASS_DECL) {
       auto *cls = static_cast<ClassDeclaration *>(node);
-      if (!vtables[cls->mangled_name].empty()) {
+      if (true) {
         cls->vtable_id = next_vtable_id++;
         log_debug("Assigned vtable_id {} to class '{}'", cls->vtable_id,
                   cls->mangled_name);

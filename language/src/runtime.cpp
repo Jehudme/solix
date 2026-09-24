@@ -921,14 +921,8 @@ op_THROW_ABSTRACT:
 
 op_REGISTER_RETURN_CLEANUP:
   {
-      Address ret_ip = code[program_counter++] << 24;
-      ret_ip |= code[program_counter++] << 16;
-      ret_ip |= code[program_counter++] << 8;
-      ret_ip |= code[program_counter++];
-      Address cleanup_ip = code[program_counter++] << 24;
-      cleanup_ip |= code[program_counter++] << 16;
-      cleanup_ip |= code[program_counter++] << 8;
-      cleanup_ip |= code[program_counter++];
+      Address ret_ip = read_u32(bytecode, program_counter);
+      Address cleanup_ip = read_u32(bytecode, program_counter);
       return_to_cleanup[ret_ip] = cleanup_ip;
       DISPATCH();
   }
@@ -975,10 +969,7 @@ op_THROW_EXCEPTION:
           memory.increase_reference(exc); // Prevent it from being garbage collected during unwinding
           active_exception = exc;
       }
-      Address innermost_cleanup_ip = code[program_counter++] << 24;
-      innermost_cleanup_ip |= code[program_counter++] << 16;
-      innermost_cleanup_ip |= code[program_counter++] << 8;
-      innermost_cleanup_ip |= code[program_counter++];
+      Address innermost_cleanup_ip = read_u32(bytecode, program_counter);
       
       if (innermost_cleanup_ip != 0xFFFFFFFF) {
           program_counter = innermost_cleanup_ip;
