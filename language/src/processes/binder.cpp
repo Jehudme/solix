@@ -759,13 +759,15 @@ void Binder::bind_tree(Node *root) {
     ClassDeclaration *pc;
     MethodDeclaration *pm;
     uint32_t pl;
+    std::string ppkg;
     StateGuard(Binder *b)
         : b(b), pc(b->current_class), pm(b->current_method),
-          pl(b->local_variable_index) {}
+          pl(b->local_variable_index), ppkg(b->current_package) {}
     ~StateGuard() {
       b->current_class = pc;
       b->current_method = pm;
       b->local_variable_index = pl;
+      b->current_package = ppkg;
     }
   } guard(this);
 
@@ -776,6 +778,9 @@ void Binder::bind_tree(Node *root) {
           "Skipping uninstantiated template class blueprint '{}' in bind_tree",
           cls->class_name);
       return;
+    }
+    if (!cls->package_context.empty()) {
+      current_package = cls->package_context;
     }
     log_debug("Binding AST tree for class '{}'", cls->class_name);
     current_class = cls;
@@ -1014,13 +1019,30 @@ void Binder::visit(IdentifierNode &n) {
       return;
     }
 
+    std::string node_pkg = (!n.package_context.empty()) ? n.package_context : current_package;
+    if (!node_pkg.empty() && node_pkg.back() != '.') node_pkg += '.';
+
     Node *declaration = current_scope->resolve(n.name);
     if (!declaration && current_class) {
-      declaration =
-          global_scope.resolve(current_class->mangled_name + "." + n.name);
+      ClassDeclaration *cls_iter = current_class;
+      while (cls_iter && !declaration) {
+        declaration = global_scope.resolve(cls_iter->mangled_name + "." + n.name);
+        if (!declaration && !cls_iter->base_class_name.empty()) {
+          Node *base_node = global_scope.resolve(cls_iter->base_class_name);
+          cls_iter = (base_node && base_node->node_type == NodeType::CLASS_DECL)
+                         ? static_cast<ClassDeclaration *>(base_node)
+                         : nullptr;
+        } else {
+          break;
+        }
+      }
+    }
+    if (!declaration && !node_pkg.empty()) {
+      declaration = global_scope.resolve(node_pkg + n.name);
     }
     if (!declaration && !current_package.empty()) {
-      declaration = global_scope.resolve(current_package + n.name);
+      std::string cur_p = (current_package.back() == '.') ? current_package : current_package + '.';
+      declaration = global_scope.resolve(cur_p + n.name);
     }
     if (!declaration) {
       declaration = global_scope.resolve(n.name);
@@ -1028,8 +1050,9 @@ void Binder::visit(IdentifierNode &n) {
     // Cross-package fallback: search all known packages (mirrors resolve_type)
     if (!declaration) {
       for (const auto &pkg : known_packages) {
-        if (pkg == current_package) continue;
-        Node *candidate = global_scope.resolve(pkg + n.name);
+        std::string p = (pkg.empty() || pkg.back() == '.') ? pkg : pkg + '.';
+        if (p == current_package || p == node_pkg) continue;
+        Node *candidate = global_scope.resolve(p + n.name);
         if (candidate) {
           declaration = candidate;
           break;

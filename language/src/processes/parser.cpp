@@ -949,11 +949,16 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
               decl->template_parameters.size());
   }
 
-  if (match(TokenType::KEYWORD_EXTENDS)) {
-    decl->base_class_name = std::get<std::string>(
+  if (match(TokenType::KEYWORD_EXTENDS) || match(TokenType::PUNCTUATION_COLON)) {
+    std::string base_name = std::get<std::string>(
         consume(TokenType::IDENTIFIER,
-                "Expected base class name after 'extends'")
+                "Expected base class name after 'extends' or ':'")
             .value);
+    while (match(TokenType::PUNCTUATION_DOT)) {
+      base_name += "." + std::get<std::string>(
+          consume(TokenType::IDENTIFIER, "Expected identifier after '.' in base class name").value);
+    }
+    decl->base_class_name = base_name;
     log_debug("Class '{}' extends '{}'", cls_name, decl->base_class_name);
   }
   decl->access_modifier = modifier;
