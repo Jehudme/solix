@@ -440,7 +440,7 @@
 
 ## 15. Continuous Integration (CI/CD) & Cross-Platform Pipelines
 
-- [ ] **Cross-Platform Multi-OS Build & Test Pipeline (`.github/workflows/ci.yml`)**
+- [x] **Cross-Platform Multi-OS Build & Test Pipeline (`.github/workflows/ci.yml`)**
   - **Goal**: Automatically build, test, and package Solix across all supported operating systems on every pull request and push to `master`.
   - **OS & Compiler Matrix**:
     - **Linux**: Ubuntu (GCC 11, GCC 12, GCC 13, and Clang 14/15/16).
