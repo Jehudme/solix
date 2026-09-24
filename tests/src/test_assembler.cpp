@@ -39,6 +39,35 @@ inline std::string test_assemble(const std::string &code) {
       ss << opcode_to_string(op);
       
       switch (static_cast<OpCode>(op)) {
+          case OpCode::INSTANCEOF:
+          case OpCode::SET_VTABLE:
+          case OpCode::CALL: {
+              uint32_t val = (bcode[i+1] << 24) | (bcode[i+2] << 16) | (bcode[i+3] << 8) | bcode[i+4];
+              ss << " " << val;
+              i += 5;
+              break;
+          }
+          case OpCode::REGISTER_RETURN_CLEANUP: {
+              uint32_t ret_ip = (bcode[i+1] << 24) | (bcode[i+2] << 16) | (bcode[i+3] << 8) | bcode[i+4];
+              uint32_t cleanup_ip = (bcode[i+5] << 24) | (bcode[i+6] << 16) | (bcode[i+7] << 8) | bcode[i+8];
+              ss << " ret_ip=" << ret_ip << " cleanup_ip=" << cleanup_ip;
+              i += 9;
+              break;
+          }
+          case OpCode::THROW_EXCEPTION: {
+              uint32_t cleanup_ip = (bcode[i+1] << 24) | (bcode[i+2] << 16) | (bcode[i+3] << 8) | bcode[i+4];
+              ss << " cleanup_ip=" << cleanup_ip;
+              i += 5;
+              break;
+          }
+          case OpCode::DEFINE_VTABLE: {
+              uint32_t vtable_id = (bcode[i+1] << 24) | (bcode[i+2] << 16) | (bcode[i+3] << 8) | bcode[i+4];
+              uint32_t base_id = (bcode[i+5] << 24) | (bcode[i+6] << 16) | (bcode[i+7] << 8) | bcode[i+8];
+              uint32_t count = (bcode[i+9] << 24) | (bcode[i+10] << 16) | (bcode[i+11] << 8) | bcode[i+12];
+              ss << " vtable_id=" << vtable_id << " base=" << base_id << " count=" << count;
+              i += 13 + count * 4;
+              break;
+          }
           case OpCode::PUSH_CONST_I32:
           case OpCode::GET_GLOBAL:
           case OpCode::SET_GLOBAL:
@@ -131,4 +160,49 @@ TEST_CASE("Try-Catch Assembler test", "[assembler]") {
     // We just want to make sure it compiles without syntax/binder errors
     // and doesn't segfault the assembler.
     REQUIRE_NOTHROW(test_assemble(code));
+}
+
+TEST_CASE("Vtable optimization: Normal classes don't get vtables", "[assembler]") {
+    std::string code = R"(
+        class NormalClass {
+            public int32 value;
+        }
+        
+        class Exception {}
+        class CustomException extends Exception {}
+        
+        public class Main {
+            public static void main() {
+                NormalClass obj = new NormalClass();
+                CustomException exc = new CustomException();
+            }
+        }
+    )";
+    
+    std::string asm_code = test_assemble(code);
+    
+    // NormalClass should not have a DEFINE_VTABLE instruction
+    // Note: In Binder, vtable IDs start at 0 and go up.
+    // We expect Exception to have one, CustomException to have one.
+    // If NormalClass doesn't have one, it will not use SET_VTABLE.
+    // Let's check the number of DEFINE_VTABLEs.
+    // Wait, test_assemble dumps all DEFINE_VTABLEs. Let's see if NormalClass gets one.
+    // If we count the number of DEFINE_VTABLE instructions...
+    
+    // The only classes that should get vtables are Exception and CustomException
+    // Main has no virtual methods. NormalClass has no virtual methods.
+    
+    // Check that SET_VTABLE is emitted for CustomException but NOT for NormalClass
+    // Since we can't easily parse the exact IDs, we can just check the number of SET_VTABLEs.
+    // There should be exactly 1 SET_VTABLE in main() for CustomException.
+    
+    int set_vtable_count = 0;
+    size_t pos = 0;
+    while ((pos = asm_code.find("SET_VTABLE", pos)) != std::string::npos) {
+        set_vtable_count++;
+        pos += 10;
+    }
+    
+    // 1 for CustomException in main
+    REQUIRE(set_vtable_count == 1);
 }
