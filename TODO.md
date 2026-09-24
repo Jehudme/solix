@@ -56,6 +56,12 @@
     - Update `copy_stdlib` dependency and target references to use `solix`.
     - Update test runners, documentation, and references expecting `solix_launcher`.
 
+- [ ] **Forward `main()` Return Value as Process Exit Code**
+  - **Issue**: `static int32 main()` returns an integer on the VM stack, but `solix::run(options)` returns `void`. The launcher CLI always exits with `0` on successful completion, ignoring the program's intended exit code (e.g. `return 42;`).
+  - **Fix**:
+    - In [`language/src/runtime.cpp`](language/src/runtime.cpp), have `run(options)` return an `int32_t` representing the top-of-stack return value on `op_HALT`.
+    - In [`launcher/src/commands/execute.cpp`](launcher/src/commands/execute.cpp), call `std::exit(exit_code)`.
+
 ---
 
 ## 4. Standard Library Architecture & Naming
