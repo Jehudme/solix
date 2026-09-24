@@ -19,10 +19,12 @@ namespace solix::cli {
         auto flush_every = std::make_shared<int>(0);
 
         auto asm_output = std::make_shared<std::string>();
-        auto import_stdlib = std::make_shared<bool>(false);
+        auto import_stdlib = std::make_shared<bool>(true);
+        auto no_stdlib = std::make_shared<bool>(false);
 
         compile_cmd->add_option("files", *files, "Source files to compile")->required()->check(CLI::ExistingFile);
-        compile_cmd->add_flag("-s,--stdlib", *import_stdlib, "Automatically import Solix standard library (solix/*)");
+        compile_cmd->add_flag("-s,--stdlib", *import_stdlib, "Explicitly enable Solix standard library (default: enabled)");
+        compile_cmd->add_flag("--no-stdlib", *no_stdlib, "Do not automatically import Solix standard library");
         compile_cmd->add_option("-e,--entry", opts->entry_point, "Entry point method name (default: main)");
         compile_cmd->add_option("-o,--output", *output, "Output bytecode file (default: out.slxb)");
         compile_cmd->add_option("-a,--asm", *asm_output, "Output assembly code to file");
@@ -36,7 +38,7 @@ namespace solix::cli {
         compile_cmd->add_flag("--multithreaded", opts->use_multithreading, "Enable multithreading");
         compile_cmd->add_option("--flush-every", *flush_every, "Flush logs every N seconds");
 
-        compile_cmd->callback([opts, files, output, asm_output, import_stdlib, log_level_str, flush_level_str, sink_type_str, log_file_path, flush_every]() {
+        compile_cmd->callback([opts, files, output, asm_output, import_stdlib, no_stdlib, log_level_str, flush_level_str, sink_type_str, log_file_path, flush_every]() {
             // Map log levels
             auto map_level = [](const std::string& s) {
                 if (s == "TRACE") return CompilationOptions::LogLevel::TRACE;
@@ -60,7 +62,8 @@ namespace solix::cli {
             if (!asm_output->empty()) opts->assembly_output_path = std::filesystem::path(*asm_output);
             opts->flush_every_seconds = std::chrono::seconds(*flush_every);
 
-            if (*import_stdlib) {
+            bool should_import_stdlib = *import_stdlib && !*no_stdlib;
+            if (should_import_stdlib) {
                 std::filesystem::path stdlib_path;
                 try {
                     auto exe_path = std::filesystem::canonical("/proc/self/exe");
@@ -69,6 +72,13 @@ namespace solix::cli {
                         stdlib_path = candidate;
                     }
                 } catch (...) {}
+
+                if (stdlib_path.empty()) {
+                    auto candidate = std::filesystem::path("build/launcher/lib/solix");
+                    if (std::filesystem::exists(candidate)) {
+                        stdlib_path = candidate;
+                    }
+                }
 
                 if (stdlib_path.empty()) {
                     auto candidate = std::filesystem::path("launcher/rsc/lib/solix");
@@ -85,7 +95,13 @@ namespace solix::cli {
                                 if (sf.is_open()) {
                                     std::stringstream sbuf;
                                     sbuf << sf.rdbuf();
-                                    opts->sources[entry.path().string()] = sbuf.str();
+                                    std::filesystem::path rel_path;
+                                    try {
+                                        rel_path = std::filesystem::relative(entry.path(), std::filesystem::current_path());
+                                    } catch (...) {
+                                        rel_path = entry.path();
+                                    }
+                                    opts->sources[rel_path.string()] = sbuf.str();
                                 }
                             }
                         }
