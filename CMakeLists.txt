@@ -21,6 +21,8 @@ if(NOT TARGET fmt AND NOT TARGET fmt::fmt)
     FetchContent_MakeAvailable(fmt)
 endif()
 
+set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "Use external fmt" FORCE)
+
 find_package(spdlog QUIET)
 if(NOT TARGET spdlog AND NOT TARGET spdlog::spdlog)
     FetchContent_Declare(

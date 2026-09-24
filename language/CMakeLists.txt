@@ -22,4 +22,7 @@ target_include_directories(solix_language
         $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(solix_language PUBLIC spdlog fmt)
+target_link_libraries(solix_language PUBLIC
+    $<IF:$<TARGET_EXISTS:spdlog::spdlog>,spdlog::spdlog,spdlog>
+    $<IF:$<TARGET_EXISTS:fmt::fmt>,fmt::fmt,fmt>
+)

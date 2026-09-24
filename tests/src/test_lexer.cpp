@@ -75,8 +75,8 @@ TEST_CASE("New Lexer - Classes, Functions and Enums", "[new_lexer]") {
 }
 
 TEST_CASE("New Lexer - Full test.slx script", "[new_lexer]") {
-  auto tokens =
-      test_tokenize_file("/home/jehud/Projects/solix/tests/resources/test.slx");
+  std::string test_path = (std::filesystem::path(__FILE__).parent_path().parent_path() / "resources" / "test.slx").string();
+  auto tokens = test_tokenize_file(test_path);
   REQUIRE(!tokens.empty());
   REQUIRE(tokens.back().type == TokenType::EOF_TOKEN);
 

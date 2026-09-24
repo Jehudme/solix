@@ -88,8 +88,8 @@ TEST_CASE("New Parser - Classes and Methods", "[new_parser]") {
 }
 
 TEST_CASE("New Parser - Full test.slx script", "[new_parser]") {
-  auto nodes =
-      test_parse_file("/home/jehud/Projects/solix/tests/resources/test.slx");
+  std::string test_path = (std::filesystem::path(__FILE__).parent_path().parent_path() / "resources" / "test.slx").string();
+  auto nodes = test_parse_file(test_path);
   // Ensure we parse successfully without exceptions
   REQUIRE(!nodes.empty());
 

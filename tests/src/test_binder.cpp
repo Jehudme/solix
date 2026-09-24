@@ -40,12 +40,11 @@ run_full_pipeline(const std::filesystem::path &path) {
 }
 
 TEST_CASE("New Binder - Full test.slx script", "[new_binder]") {
-  auto *context =
-      run_full_pipeline("/home/jehud/Projects/solix/tests/resources/test.slx");
+  std::string test_path = (std::filesystem::path(__FILE__).parent_path().parent_path() / "resources" / "test.slx").string();
+  auto *context = run_full_pipeline(test_path);
   REQUIRE(context != nullptr);
 
-  Source src_key = std::filesystem::path(
-      "/home/jehud/Projects/solix/tests/resources/test.slx");
+  Source src_key = std::filesystem::path(test_path);
   REQUIRE(!context->nodes[src_key].empty());
 
   delete context;

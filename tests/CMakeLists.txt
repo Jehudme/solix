@@ -12,7 +12,10 @@ add_executable(solix_tests
     ${TEST_SOURCES}
 )
 
-target_link_libraries(solix_tests PRIVATE Catch2::Catch2WithMain solix_language spdlog fmt)
+target_link_libraries(solix_tests PRIVATE Catch2::Catch2WithMain solix_language
+    $<IF:$<TARGET_EXISTS:spdlog::spdlog>,spdlog::spdlog,spdlog>
+    $<IF:$<TARGET_EXISTS:fmt::fmt>,fmt::fmt,fmt>
+)
 
 include(Catch)
 catch_discover_tests(solix_tests)
