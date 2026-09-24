@@ -461,9 +461,10 @@ void Assembler::compile_class(ClassDeclaration *class_node) {
   for (const auto &child : class_node->children) {
     if (child->node_type == NodeType::CLASS_DECL) {
       compile_class(static_cast<ClassDeclaration *>(child.get()));
-    } else if (child->node_type == NodeType::METHOD_DECL ||
-               child->node_type == NodeType::CONSTRUCTOR_DECL) {
+    } else if (child->node_type == NodeType::METHOD_DECL) {
       compile_function(child.get());
+    } else if (child->node_type == NodeType::CONSTRUCTOR_DECL) {
+      compile_node(child.get());
     }
   }
 }
@@ -847,6 +848,9 @@ void Assembler::visit(ReturnStatement &node) {
   auto *ret_stmt = &node;
   if (ret_stmt->value) {
     compile_expression(ret_stmt->value.get());
+    if (is_reference_type(ret_stmt->value->expression_type)) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    }
   } else {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_NULL));
   }
@@ -1056,6 +1060,9 @@ void Assembler::visit(IdentifierNode &node) {
       emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
       emit_int32(field->memory_index);
     }
+    if (field->is_reference_type) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    }
   } else if (ident->resolved_declaration->node_type == NodeType::VAR_DECL) {
     auto *var = static_cast<VariableDeclaration *>(ident->resolved_declaration);
     emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
@@ -1140,8 +1147,6 @@ void Assembler::visit(AssignmentExpression &node) {
         emit_int32(0);
 
         if (field->is_weak) {
-          emit_byte(static_cast<uint8_t>(OpCode::DUP));
-          emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
           emit_byte(static_cast<uint8_t>(OpCode::WEAK_SET_PROPERTY));
           emit_int32(field->memory_index);
         } else {
@@ -1181,8 +1186,6 @@ void Assembler::visit(AssignmentExpression &node) {
           std::to_string(mem_acc->line));
     }
     if (field->is_weak) {
-      emit_byte(static_cast<uint8_t>(OpCode::DUP));
-      emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
       emit_byte(static_cast<uint8_t>(OpCode::WEAK_SET_PROPERTY));
       emit_int32(field->memory_index);
     } else {
@@ -1314,6 +1317,12 @@ void Assembler::visit(UnaryExpression &node) {
                       : static_cast<uint8_t>(is_float ? OpCode::DEC_F64 : OpCode::DEC_I64);
     emit_byte(opc);
     emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
+    if (!uny->is_prefix) {
+      uint8_t rev_opc = (uny->op == TokenType::OPERATOR_INCREMENT)
+                            ? static_cast<uint8_t>(is_float ? OpCode::DEC_F64 : OpCode::DEC_I64)
+                            : static_cast<uint8_t>(is_float ? OpCode::INC_F64 : OpCode::INC_I64);
+      emit_byte(rev_opc);
+    }
     return;
   }
 
@@ -1332,42 +1341,79 @@ void Assembler::visit(UnaryExpression &node) {
     uint8_t opc = (uny->op == TokenType::OPERATOR_INCREMENT)
                       ? static_cast<uint8_t>(is_float ? OpCode::INC_F64 : OpCode::INC_I64)
                       : static_cast<uint8_t>(is_float ? OpCode::DEC_F64 : OpCode::DEC_I64);
-    emit_byte(opc);
 
     if (uny->operand->node_type == NodeType::IDENTIFIER) {
       auto *ident = static_cast<IdentifierNode *>(uny->operand.get());
       if (ident->resolved_declaration->node_type == NodeType::VAR_DECL) {
-        emit_byte(static_cast<uint8_t>(OpCode::DUP));
-        emit_byte(static_cast<uint8_t>(OpCode::SET_LOCAL));
-        emit_int32(
-            static_cast<VariableDeclaration *>(ident->resolved_declaration)
-                ->memory_index);
+        auto *var = static_cast<VariableDeclaration *>(ident->resolved_declaration);
+        if (uny->is_prefix) {
+          emit_byte(opc);
+          emit_byte(static_cast<uint8_t>(OpCode::DUP));
+          emit_byte(static_cast<uint8_t>(OpCode::SET_LOCAL));
+          emit_int32(var->memory_index);
+        } else {
+          // Postfix: stack currently has old_val
+          emit_byte(static_cast<uint8_t>(OpCode::DUP));
+          emit_byte(opc);
+          emit_byte(static_cast<uint8_t>(OpCode::SET_LOCAL));
+          emit_int32(var->memory_index);
+        }
       } else if (ident->resolved_declaration->node_type ==
                  NodeType::FIELD_DECL) {
         auto *field =
             static_cast<FieldDeclaration *>(ident->resolved_declaration);
-        emit_byte(static_cast<uint8_t>(OpCode::DUP));
         if (field->is_static) {
-          emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
-          emit_int32(field->memory_index);
+          if (uny->is_prefix) {
+            emit_byte(opc);
+            emit_byte(static_cast<uint8_t>(OpCode::DUP));
+            emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
+            emit_int32(field->memory_index);
+          } else {
+            emit_byte(static_cast<uint8_t>(OpCode::DUP));
+            emit_byte(opc);
+            emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
+            emit_int32(field->memory_index);
+          }
         } else {
+          emit_byte(opc);
           emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
           emit_int32(0);
           emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
           emit_int32(field->memory_index);
+          if (!uny->is_prefix) {
+            uint8_t rev_opc = (uny->op == TokenType::OPERATOR_INCREMENT)
+                                  ? static_cast<uint8_t>(is_float ? OpCode::DEC_F64 : OpCode::DEC_I64)
+                                  : static_cast<uint8_t>(is_float ? OpCode::INC_F64 : OpCode::INC_I64);
+            emit_byte(rev_opc);
+          }
         }
       }
     } else if (uny->operand->node_type == NodeType::MEMBER_ACCESS) {
       auto *mem = static_cast<MemberAccessExpression *>(uny->operand.get());
       auto *field = static_cast<FieldDeclaration *>(mem->resolved_declaration);
-      emit_byte(static_cast<uint8_t>(OpCode::DUP));
       if (field->is_static) {
-        emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
-        emit_int32(field->memory_index);
+        if (uny->is_prefix) {
+          emit_byte(opc);
+          emit_byte(static_cast<uint8_t>(OpCode::DUP));
+          emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
+          emit_int32(field->memory_index);
+        } else {
+          emit_byte(static_cast<uint8_t>(OpCode::DUP));
+          emit_byte(opc);
+          emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
+          emit_int32(field->memory_index);
+        }
       } else {
+        emit_byte(opc);
         compile_expression(mem->object.get());
         emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
         emit_int32(field->memory_index);
+        if (!uny->is_prefix) {
+          uint8_t rev_opc = (uny->op == TokenType::OPERATOR_INCREMENT)
+                                ? static_cast<uint8_t>(is_float ? OpCode::DEC_F64 : OpCode::DEC_I64)
+                                : static_cast<uint8_t>(is_float ? OpCode::INC_F64 : OpCode::INC_I64);
+          emit_byte(rev_opc);
+        }
       }
     }
   }
@@ -1625,6 +1671,9 @@ void Assembler::visit(ArrayLiteralExpression &node) {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
     emit_int32(i);
     compile_expression(arr_lit->elements[i].get());
+    if (is_reference_type(arr_lit->elements[i]->expression_type)) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    }
     emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
     emit_byte(static_cast<uint8_t>(OpCode::POP));
   }
@@ -1769,6 +1818,11 @@ void Assembler::visit(TryStatement& n) {
         
         compile_node(catch_clause->body.get());
         
+        // Decrement catch parameter variable reference count upon clause exit
+        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+        emit_int32(catch_clause->variable_memory_index);
+        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+
         emit_byte(static_cast<uint8_t>(OpCode::JUMP));
         end_try_patches.push_back(bytecode().size());
         emit_int32(0xFFFFFFFF);
@@ -1782,11 +1836,13 @@ void Assembler::visit(TryStatement& n) {
         bytecode()[patch + 2] = (current_ip >> 8) & 0xFF;
         bytecode()[patch + 3] = current_ip & 0xFF;
     }
-    emit_byte(static_cast<uint8_t>(OpCode::JUMP));
     if (!exception_cleanup_patches.empty()) {
+        emit_byte(static_cast<uint8_t>(OpCode::JUMP));
         exception_cleanup_patches.back().push_back(bytecode().size());
+        emit_int32(0xFFFFFFFF);
+    } else {
+        emit_byte(static_cast<uint8_t>(OpCode::JMP_TO_OUTER_CLEANUP));
     }
-    emit_int32(0xFFFFFFFF);
     
     // Normal exit point
     uint32_t end_ip = bytecode().size();
