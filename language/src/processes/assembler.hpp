@@ -73,6 +73,9 @@ private:
     void visit(DoWhileStatement& node) override;
     void visit(SwitchStatement& node) override;
     void visit(CaseStatement& node) override;
+    void visit(TryStatement& node) override;
+    void visit(CatchClause& node) override;
+    void visit(ThrowStatement& node) override;
     void visit(VariableDeclaration& node) override;
     void visit(ExpressionStatement& node) override;
     void visit(ReturnStatement& node) override;

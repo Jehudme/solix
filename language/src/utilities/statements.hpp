@@ -19,6 +19,7 @@ enum class NodeType {
 
     // Statements
     BLOCK, IF_STMT, FOR_STMT, WHILE_STMT, DO_WHILE_STMT, SWITCH_STMT, CASE_STMT,
+    TRY_STMT, CATCH_CLAUSE, THROW_STMT,
     VAR_DECL, EXPR_STMT, RETURN_STMT, BREAK_STMT, CONTINUE_STMT,
 
     // Top Level
@@ -274,10 +275,18 @@ struct TernaryExpression : public Node {
 // Statements
 // ==========================================
 
+enum class BlockKind {
+    NORMAL,
+    FUNCTION_BODY,
+    TRY_BODY
+};
+
 struct BlockStatement : public Node {
     std::unique_ptr<Node> clone() const override;
 
     void accept(NodeVisitor& v) override { v.visit(*this); }
+
+    BlockKind block_kind = BlockKind::NORMAL;
 
     BlockStatement(const Token& t) : Node(NodeType::BLOCK, t) {}
 };
@@ -349,6 +358,54 @@ struct CaseStatement : public Node {
     CaseStatement(const Token& t) : Node(NodeType::CASE_STMT, t) {}
 };
 
+struct CatchClause : public Node {
+    std::unique_ptr<Node> clone() const override;
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
+    std::string variable_name;
+    TypeInfo exception_type;
+    std::unique_ptr<Node> body;
+
+    // Binder sets these
+    std::unique_ptr<Node> catch_param_decl;
+    uint32_t variable_memory_index = 0;
+    int32_t target_vtable_id = -1;
+
+    CatchClause(const Token& t, std::string var_name, TypeInfo exc_type, std::unique_ptr<Node> catch_body)
+        : Node(NodeType::CATCH_CLAUSE, t), variable_name(std::move(var_name)), exception_type(std::move(exc_type)), body(std::move(catch_body)) {
+        if(body) body->parent = this;
+    }
+};
+
+struct TryStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
+    std::unique_ptr<Node> try_block;
+    std::vector<std::unique_ptr<Node>> catch_clauses;
+    std::unique_ptr<Node> finally_block;
+
+    TryStatement(const Token& t, std::unique_ptr<Node> try_b, std::vector<std::unique_ptr<Node>> catches, std::unique_ptr<Node> finally_b)
+        : Node(NodeType::TRY_STMT, t), try_block(std::move(try_b)), catch_clauses(std::move(catches)), finally_block(std::move(finally_b)) {
+        if(try_block) try_block->parent = this;
+        for(auto& c : catch_clauses) {
+            if(c) c->parent = this;
+        }
+        if(finally_block) finally_block->parent = this;
+    }
+};
+
+struct ThrowStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
+    std::unique_ptr<Node> exception_expression;
+
+    ThrowStatement(const Token& t, std::unique_ptr<Node> expr)
+        : Node(NodeType::THROW_STMT, t), exception_expression(std::move(expr)) {
+        if (exception_expression) exception_expression->parent = this;
+    }
+};
 struct VariableDeclaration : public Node {
     std::unique_ptr<Node> clone() const override;
 

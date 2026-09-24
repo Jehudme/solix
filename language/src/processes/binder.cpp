@@ -1957,4 +1957,8 @@ void Binder::visit(MethodDeclaration &n) {
   }
 }
 
+
+void Binder::visit(TryStatement& n) {}
+void Binder::visit(CatchClause& n) {}
+void Binder::visit(ThrowStatement& n) {}
 } // namespace solix

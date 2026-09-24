@@ -371,4 +371,25 @@ std::unique_ptr<Node> MethodDeclaration::clone() const {
     return cloned;
 }
 
+
+
+std::unique_ptr<Node> CatchClause::clone() const {
+    auto clone_body = body ? body->clone() : nullptr;
+    return std::make_unique<CatchClause>(Token{TokenType::UNKNOWN_TOKEN, line, column, source, std::string("")}, variable_name, exception_type, std::move(clone_body));
+}
+
+std::unique_ptr<Node> TryStatement::clone() const {
+    auto clone_try = try_block ? try_block->clone() : nullptr;
+    std::vector<std::unique_ptr<Node>> clone_catches;
+    for (const auto& c : catch_clauses) {
+        if (c) clone_catches.push_back(c->clone());
+    }
+    auto clone_finally = finally_block ? finally_block->clone() : nullptr;
+    return std::make_unique<TryStatement>(Token{TokenType::UNKNOWN_TOKEN, line, column, source, std::string("")}, std::move(clone_try), std::move(clone_catches), std::move(clone_finally));
+}
+
+std::unique_ptr<Node> ThrowStatement::clone() const {
+    auto clone_expr = exception_expression ? exception_expression->clone() : nullptr;
+    return std::make_unique<ThrowStatement>(Token{TokenType::UNKNOWN_TOKEN, line, column, source, std::string("")}, std::move(clone_expr));
+}
 } // namespace solix

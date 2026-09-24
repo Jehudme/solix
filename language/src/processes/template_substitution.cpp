@@ -135,4 +135,18 @@ void TemplateSubstitutionVisitor::visit(MethodDeclaration& n) {
     }
 }
 
+
+
+void TemplateSubstitutionVisitor::visit(TryStatement& node) {
+    if(node.try_block) node.try_block->accept(*this);
+    for(auto& c : node.catch_clauses) if(c) c->accept(*this);
+    if(node.finally_block) node.finally_block->accept(*this);
+}
+void TemplateSubstitutionVisitor::visit(CatchClause& node) {
+    substitute_type(node.exception_type);
+    if(node.body) node.body->accept(*this);
+}
+void TemplateSubstitutionVisitor::visit(ThrowStatement& node) {
+    if(node.exception_expression) node.exception_expression->accept(*this);
+}
 } // namespace solix

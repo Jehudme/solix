@@ -37,6 +37,9 @@ public:
     void visit(DoWhileStatement& n) override;
     void visit(SwitchStatement& n) override;
     void visit(CaseStatement& n) override;
+    void visit(TryStatement& n) override;
+    void visit(CatchClause& n) override;
+    void visit(ThrowStatement& n) override;
     void visit(VariableDeclaration& n) override;
     void visit(ExpressionStatement& n) override;
     void visit(ReturnStatement& n) override;

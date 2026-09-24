@@ -123,6 +123,8 @@ public:
   std::unique_ptr<Node> parse_break_statement();
   std::unique_ptr<Node> parse_continue_statement();
   std::unique_ptr<Node> parse_switch_statement();
+  std::unique_ptr<Node> parse_try_statement();
+  std::unique_ptr<Node> parse_throw_statement();
   std::unique_ptr<Node> parse_expression_statement();
   std::unique_ptr<Node> parse_variable_declaration(bool is_const, bool is_ref);
 
@@ -560,6 +562,10 @@ std::unique_ptr<Node> ParserState::parse_statement() {
     return parse_for_statement();
   if (match(TokenType::KEYWORD_SWITCH))
     return parse_switch_statement();
+  if (match(TokenType::KEYWORD_TRY))
+    return parse_try_statement();
+  if (match(TokenType::KEYWORD_THROW))
+    return parse_throw_statement();
   if (match(TokenType::KEYWORD_RETURN))
     return parse_return_statement();
   if (match(TokenType::KEYWORD_BREAK))
@@ -1070,6 +1076,9 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
       }
 
       auto body = parse_block();
+      if (auto* b = dynamic_cast<BlockStatement*>(body.get())) {
+          b->block_kind = BlockKind::FUNCTION_BODY;
+      }
       for (auto it = injected_initializers.rbegin();
            it != injected_initializers.rend(); ++it) {
         (*it)->parent = body.get();
@@ -1192,7 +1201,11 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
               "Expected ';' after native or abstract method declaration");
       log_trace("Finished native/abstract method header for '{}'", name_str);
     } else {
-      method->children.push_back(parse_block());
+      auto block = parse_block();
+      if (auto* b = dynamic_cast<BlockStatement*>(block.get())) {
+          b->block_kind = BlockKind::FUNCTION_BODY;
+      }
+      method->children.push_back(std::move(block));
     }
     return method;
   } else {
@@ -1252,4 +1265,65 @@ void Parser::execute() {
   log_info("Syntax Analysis completed.");
 }
 
+
+std::unique_ptr<Node> ParserState::parse_try_statement() {
+  Token try_tok = previous();
+  log_trace("Parsing 'try' statement at line {}", try_tok.line);
+
+  std::unique_ptr<Node> try_block = nullptr;
+  if (check(TokenType::PUNCTUATION_OPEN_BRACE)) {
+      try_block = parse_block();
+      if (auto* b = dynamic_cast<BlockStatement*>(try_block.get())) {
+          b->block_kind = BlockKind::TRY_BODY;
+      }
+  } else {
+      throw ParseError("Expected '{' after 'try'");
+  }
+
+  std::vector<std::unique_ptr<Node>> catches;
+  while (match(TokenType::KEYWORD_CATCH)) {
+      Token catch_tok = previous();
+      consume(TokenType::PUNCTUATION_OPEN_PAREN, "Expected '(' after 'catch'");
+      
+      TypeInfo exc_type = parse_type_info();
+      consume(TokenType::IDENTIFIER, "Expected exception variable name");
+      std::string var_name = std::get<std::string>(previous().value);
+      
+      consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after catch variable");
+      
+      std::unique_ptr<Node> catch_block = nullptr;
+      if (check(TokenType::PUNCTUATION_OPEN_BRACE)) {
+          catch_block = parse_block();
+      } else {
+          throw ParseError("Expected '{' after catch clause");
+      }
+      
+      catches.push_back(std::make_unique<CatchClause>(catch_tok, var_name, exc_type, std::move(catch_block)));
+  }
+
+  std::unique_ptr<Node> finally_block = nullptr;
+  if (match(TokenType::KEYWORD_FINALLY)) {
+      if (check(TokenType::PUNCTUATION_OPEN_BRACE)) {
+          finally_block = parse_block();
+      } else {
+          throw ParseError("Expected '{' after 'finally'");
+      }
+  }
+
+  if (catches.empty() && !finally_block) {
+      throw ParseError("'try' statement must have at least one 'catch' or 'finally' clause");
+  }
+
+  return std::make_unique<TryStatement>(try_tok, std::move(try_block), std::move(catches), std::move(finally_block));
+}
+
+std::unique_ptr<Node> ParserState::parse_throw_statement() {
+    Token throw_tok = previous();
+    log_trace("Parsing 'throw' statement at line {}", throw_tok.line);
+    
+    std::unique_ptr<Node> expr = parse_expression();
+    consume(TokenType::PUNCTUATION_SEMICOLON, "Expected ';' after throw expression");
+    
+    return std::make_unique<ThrowStatement>(throw_tok, std::move(expr));
+}
 } // namespace solix

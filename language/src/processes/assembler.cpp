@@ -1581,4 +1581,8 @@ void Assembler::visit(TernaryExpression &node) {
   bytecode()[end_jump_idx + 3] = end_ip & 0xFF;
 }
 
+
+void Assembler::visit(TryStatement& n) {}
+void Assembler::visit(CatchClause& n) {}
+void Assembler::visit(ThrowStatement& n) {}
 } // namespace solix
