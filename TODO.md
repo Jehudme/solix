@@ -147,3 +147,57 @@
 - [ ] **Package Imports & Alias Boilerplate Elimination**
   - **Issue**: Solix lacks an `import` keyword, forcing every collection file to repeat 6 identical `alias` lines for exceptions.
   - **Fix**: Add `import package.Symbol;` or `import package.*;` syntax in parser and binder, or allow root `package solix;` types to be implicitly visible in subpackages (`solix.collections`).
+
+---
+
+## 6. Testing Architecture & Infrastructure Overhaul
+
+- [ ] **Restructure Test Directory by Domain**
+  - **Issue**: All tests are currently dumped into `tests/src/` with legacy, arbitrary "phase" names (`test_phase20.cpp` through `test_phase31.cpp`). It is impossible to tell what each file tests without reading the source code.
+  - **Fix**: Reorganize into a clean, intuitive structure:
+    ```
+    tests/
+    ├── unit/
+    │   ├── lexer/          (Tokenization, literals, operators, comments)
+    │   ├── parser/         (Grammar, AST generation, error recovery)
+    │   ├── binder/         (Symbol resolution, type checking, generics, templates)
+    │   ├── assembler/      (Bytecode emission, label resolution, opcode verification)
+    │   └── runtime/        (VM execution, ARC memory, stack frames, exception unwinding)
+    ├── stdlib/             (Standard library verification suites: core, collections, math, sys)
+    ├── e2e/                (End-to-end full compilation & execution tests)
+    └── fixtures/           (Standalone .slx test programs with expected output files)
+    ```
+
+- [ ] **Rename and De-Phase Legacy Test Files**
+  - Replace historical `test_phaseXX.cpp` with descriptive semantic names:
+    - `test_phase20.cpp` -> `test_function_templates.cpp`
+    - `test_phase21.cpp` -> `test_template_deduction.cpp`
+    - `test_phase22.cpp` -> `test_type_resolution_and_null.cpp`
+    - `test_phase23.cpp` -> `test_reference_operators.cpp`
+    - `test_phase24.cpp` -> `test_typed_alu_opcodes.cpp`
+    - `test_phase25.cpp` -> `test_memory_integrity_arrays.cpp`
+    - `test_phase26.cpp` -> `test_arc_ownership.cpp`
+    - `test_phase27.cpp` -> `test_cleanup_and_control_flow.cpp`
+    - `test_phase28.cpp` -> `test_object_init_and_arrays.cpp`
+    - `test_phase29.cpp` -> `test_string_pool.cpp`
+    - `test_phase30.cpp` -> `test_nested_templates.cpp`
+    - `test_phase31.cpp` -> `test_engine_performance.cpp`
+
+- [ ] **Build a Data-Driven File-Based E2E Test Harness**
+  - **Issue**: Tests currently hardcode large Solix programs as raw multiline C++ strings and manually call internal compiler steps.
+  - **Fix**:
+    - Implement a test harness that executes real `.slx` files from `tests/fixtures/`.
+    - Support declarative test assertions directly in `.slx` comments:
+      ```slx
+      // RUN: solix compile %s -o %t.slxb && solix run %t.slxb
+      // EXPECT_EXIT: 0
+      // EXPECT_STDOUT: "Test Passed"
+      ```
+    - Eliminate ad-hoc manual testing in `scratch/`.
+
+- [ ] **Integrate Standard Library Regression Suite into `ctest`**
+  - Standard library tests (currently in `scratch/test_all_collections.slx` and `scratch/test_all_utilities.slx`) should be registered in CMake/CTest so `ctest` verifies all collections, strings, exceptions, and utilities on every commit.
+
+- [ ] **Clean Up `tests/CMakeLists.txt`**
+  - Remove redundant `target_sources()` calls that duplicate `file(GLOB_RECURSE TEST_SOURCES)`.
+  - Ensure Catch2 test discovery operates cleanly without duplicate source registrations.
