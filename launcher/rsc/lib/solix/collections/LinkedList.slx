@@ -1,0 +1,298 @@
+// ============================================================================
+// Solix Standard Library - Generic Doubly Linked List (LinkedList<T>)
+// Package: solix.collections
+// ============================================================================
+package solix.collections;
+
+
+public class LinkedListNode<T> {
+    public T value;
+    public LinkedListNode<T> next_node;
+    public LinkedListNode<T> previous_node;
+
+    public LinkedListNode(T node_value) {
+        this.value = node_value;
+        this.next_node = null;
+        this.previous_node = null;
+    }
+}
+
+public class LinkedList<T> {
+    private LinkedListNode<T> head_node;
+    private LinkedListNode<T> tail_node;
+    private int32 element_count = 0;
+
+    // ------------------------------------------------------------------------
+    // Constructors
+    // ------------------------------------------------------------------------
+
+    public LinkedList() {
+        this.head_node = null;
+        this.tail_node = null;
+        this.element_count = 0;
+    }
+
+    public LinkedList(T[] initial_elements) {
+        this.head_node = null;
+        this.tail_node = null;
+        this.element_count = 0;
+
+        if (initial_elements != null) {
+            for (int32 copy_index = 0; copy_index < initial_elements.length; copy_index++) {
+                this.add_last(initial_elements[copy_index]);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Sizing and State
+    // ------------------------------------------------------------------------
+
+    public int32 size() {
+        return this.element_count;
+    }
+
+    public bool is_empty() {
+        return this.element_count == 0;
+    }
+
+    public void clear() {
+        this.head_node = null;
+        this.tail_node = null;
+        this.element_count = 0;
+    }
+
+    // ------------------------------------------------------------------------
+    // Endpoint Access
+    // ------------------------------------------------------------------------
+
+    public T get_first() {
+        if (this.head_node == null) {
+            throw new EmptyCollectionException("Cannot get first element of an empty LinkedList.");
+        }
+        return this.head_node.value;
+    }
+
+    public T get_last() {
+        if (this.tail_node == null) {
+            throw new EmptyCollectionException("Cannot get last element of an empty LinkedList.");
+        }
+        return this.tail_node.value;
+    }
+
+    public void add_first(T item) {
+        LinkedListNode<T> new_node = new LinkedListNode<T>(item);
+        if (this.head_node == null) {
+            this.head_node = new_node;
+            this.tail_node = new_node;
+        } else {
+            new_node.next_node = this.head_node;
+            this.head_node.previous_node = new_node;
+            this.head_node = new_node;
+        }
+        this.element_count++;
+    }
+
+    public void add_last(T item) {
+        LinkedListNode<T> new_node = new LinkedListNode<T>(item);
+        if (this.tail_node == null) {
+            this.head_node = new_node;
+            this.tail_node = new_node;
+        } else {
+            this.tail_node.next_node = new_node;
+            new_node.previous_node = this.tail_node;
+            this.tail_node = new_node;
+        }
+        this.element_count++;
+    }
+
+    public void add(T item) {
+        this.add_last(item);
+    }
+
+    public T remove_first() {
+        if (this.head_node == null) {
+            throw new EmptyCollectionException("Cannot remove first element of an empty LinkedList.");
+        }
+
+        T removed_value = this.head_node.value;
+        this.head_node = this.head_node.next_node;
+        if (this.head_node != null) {
+            this.head_node.previous_node = null;
+        } else {
+            this.tail_node = null;
+        }
+        this.element_count--;
+        return removed_value;
+    }
+
+    public T remove_last() {
+        if (this.tail_node == null) {
+            throw new EmptyCollectionException("Cannot remove last element of an empty LinkedList.");
+        }
+
+        T removed_value = this.tail_node.value;
+        this.tail_node = this.tail_node.previous_node;
+        if (this.tail_node != null) {
+            this.tail_node.next_node = null;
+        } else {
+            this.head_node = null;
+        }
+        this.element_count--;
+        return removed_value;
+    }
+
+    // ------------------------------------------------------------------------
+    // Indexed Access and Manipulation
+    // ------------------------------------------------------------------------
+
+    private LinkedListNode<T> get_node_at(int32 target_index) {
+        if (target_index < 0 || target_index >= this.element_count) {
+            throw new IndexOutOfBoundsException(target_index, this.element_count);
+        }
+
+        if (target_index < this.element_count / 2) {
+            LinkedListNode<T> current_node = this.head_node;
+            for (int32 traverse_index = 0; traverse_index < target_index; traverse_index++) {
+                current_node = current_node.next_node;
+            }
+            return current_node;
+        } else {
+            LinkedListNode<T> current_node = this.tail_node;
+            for (int32 traverse_index = this.element_count - 1; traverse_index > target_index; traverse_index--) {
+                current_node = current_node.previous_node;
+            }
+            return current_node;
+        }
+    }
+
+    public T get(int32 index) {
+        LinkedListNode<T> target_node = this.get_node_at(index);
+        return target_node.value;
+    }
+
+    public void set(int32 index, T value) {
+        LinkedListNode<T> target_node = this.get_node_at(index);
+        target_node.value = value;
+    }
+
+    public void insert(int32 index, T item) {
+        if (index < 0 || index > this.element_count) {
+            throw new IndexOutOfBoundsException(index, this.element_count);
+        }
+
+        if (index == 0) {
+            this.add_first(item);
+            return;
+        }
+        if (index == this.element_count) {
+            this.add_last(item);
+            return;
+        }
+
+        LinkedListNode<T> current_node = this.get_node_at(index);
+        LinkedListNode<T> previous_node = current_node.previous_node;
+        LinkedListNode<T> new_node = new LinkedListNode<T>(item);
+
+        previous_node.next_node = new_node;
+        new_node.previous_node = previous_node;
+        new_node.next_node = current_node;
+        current_node.previous_node = new_node;
+
+        this.element_count++;
+    }
+
+    public T remove_at(int32 index) {
+        if (index < 0 || index >= this.element_count) {
+            throw new IndexOutOfBoundsException(index, this.element_count);
+        }
+
+        if (index == 0) {
+            return this.remove_first();
+        }
+        if (index == this.element_count - 1) {
+            return this.remove_last();
+        }
+
+        LinkedListNode<T> target_node = this.get_node_at(index);
+        LinkedListNode<T> previous_node = target_node.previous_node;
+        LinkedListNode<T> next_node = target_node.next_node;
+
+        previous_node.next_node = next_node;
+        next_node.previous_node = previous_node;
+
+        this.element_count--;
+        return target_node.value;
+    }
+
+    // ------------------------------------------------------------------------
+    // Search and Inspection
+    // ------------------------------------------------------------------------
+
+    public int32 index_of(T item) {
+        int32 current_index = 0;
+        LinkedListNode<T> current_node = this.head_node;
+        while (current_node != null) {
+            if (current_node.value == item) {
+                return current_index;
+            }
+            current_node = current_node.next_node;
+            current_index++;
+        }
+        return -1;
+    }
+
+    public bool contains(T item) {
+        return this.index_of(item) != -1;
+    }
+
+    public bool remove(T item) {
+        int32 target_index = this.index_of(item);
+        if (target_index != -1) {
+            this.remove_at(target_index);
+            return true;
+        }
+        return false;
+    }
+
+    public T[] to_array() {
+        T[] export_array = new T[this.element_count];
+        LinkedListNode<T> current_node = this.head_node;
+        int32 export_index = 0;
+        while (current_node != null) {
+            export_array[export_index] = current_node.value;
+            current_node = current_node.next_node;
+            export_index++;
+        }
+        return export_array;
+    }
+
+    public LinkedList<T> clone() {
+        LinkedList<T> duplicated_list = new LinkedList<T>();
+        LinkedListNode<T> current_node = this.head_node;
+        while (current_node != null) {
+            duplicated_list.add_last(current_node.value);
+            current_node = current_node.next_node;
+        }
+        return duplicated_list;
+    }
+
+    // ------------------------------------------------------------------------
+    // Operator Overloads
+    // ------------------------------------------------------------------------
+
+    public LinkedList<T> operator=(LinkedList<T> other_list) {
+        if (other_list == null) {
+            this.clear();
+            return this;
+        }
+
+        this.clear();
+        LinkedListNode<T> current_node = other_list.head_node;
+        while (current_node != null) {
+            this.add_last(current_node.value);
+            current_node = current_node.next_node;
+        }
+        return this;
+    }
+}

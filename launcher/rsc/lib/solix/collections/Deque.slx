@@ -1,0 +1,233 @@
+// ============================================================================
+// Solix Standard Library - Generic Double-Ended Queue (Deque<T>)
+// Package: solix.collections
+// ============================================================================
+package solix.collections;
+
+
+public class Deque<T> {
+    private T[] storage_buffer;
+    private int32 head_index = 0;
+    private int32 tail_index = 0;
+    private int32 element_count = 0;
+    private int32 buffer_capacity = 0;
+
+    // ------------------------------------------------------------------------
+    // Constructors
+    // ------------------------------------------------------------------------
+
+    public Deque() {
+        this.buffer_capacity = 8;
+        this.head_index = 0;
+        this.tail_index = 0;
+        this.element_count = 0;
+        this.storage_buffer = new T[this.buffer_capacity];
+    }
+
+    public Deque(int32 initial_capacity) {
+        if (initial_capacity < 0) {
+            throw new InvalidArgumentException("Initial capacity of Deque cannot be negative.");
+        }
+        int32 capacity_value = initial_capacity;
+        if (capacity_value < 4) {
+            capacity_value = 4;
+        }
+        this.buffer_capacity = capacity_value;
+        this.head_index = 0;
+        this.tail_index = 0;
+        this.element_count = 0;
+        this.storage_buffer = new T[this.buffer_capacity];
+    }
+
+    public Deque(T[] initial_elements) {
+        if (initial_elements == null || initial_elements.length == 0) {
+            this.buffer_capacity = 8;
+            this.head_index = 0;
+            this.tail_index = 0;
+            this.element_count = 0;
+            this.storage_buffer = new T[this.buffer_capacity];
+            return;
+        }
+
+        this.element_count = initial_elements.length;
+        this.buffer_capacity = this.element_count * 2;
+        this.storage_buffer = new T[this.buffer_capacity];
+        this.head_index = 0;
+        this.tail_index = this.element_count;
+
+        for (int32 copy_index = 0; copy_index < this.element_count; copy_index++) {
+            this.storage_buffer[copy_index] = initial_elements[copy_index];
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Capacity and Sizing
+    // ------------------------------------------------------------------------
+
+    public int32 size() {
+        return this.element_count;
+    }
+
+    public int32 capacity() {
+        return this.buffer_capacity;
+    }
+
+    public bool is_empty() {
+        return this.element_count == 0;
+    }
+
+    public void clear() {
+        this.buffer_capacity = 8;
+        this.head_index = 0;
+        this.tail_index = 0;
+        this.element_count = 0;
+        this.storage_buffer = new T[this.buffer_capacity];
+    }
+
+    private void ensure_capacity(int32 required_capacity) {
+        if (required_capacity <= this.buffer_capacity) {
+            return;
+        }
+
+        int32 new_capacity = this.buffer_capacity * 2;
+        if (new_capacity < required_capacity) {
+            new_capacity = required_capacity;
+        }
+
+        T[] new_buffer = new T[new_capacity];
+        for (int32 copy_index = 0; copy_index < this.element_count; copy_index++) {
+            int32 source_index = (this.head_index + copy_index) % this.buffer_capacity;
+            new_buffer[copy_index] = this.storage_buffer[source_index];
+        }
+
+        this.storage_buffer = new_buffer;
+        this.buffer_capacity = new_capacity;
+        this.head_index = 0;
+        this.tail_index = this.element_count;
+    }
+
+    // ------------------------------------------------------------------------
+    // Push Operations
+    // ------------------------------------------------------------------------
+
+    public void push_back(T item) {
+        this.ensure_capacity(this.element_count + 1);
+        this.storage_buffer[this.tail_index] = item;
+        this.tail_index = (this.tail_index + 1) % this.buffer_capacity;
+        this.element_count++;
+    }
+
+    public void push_front(T item) {
+        this.ensure_capacity(this.element_count + 1);
+        this.head_index = (this.head_index - 1 + this.buffer_capacity) % this.buffer_capacity;
+        this.storage_buffer[this.head_index] = item;
+        this.element_count++;
+    }
+
+    // ------------------------------------------------------------------------
+    // Pop Operations
+    // ------------------------------------------------------------------------
+
+    public T pop_front() {
+        if (this.element_count == 0) {
+            throw new EmptyCollectionException("Cannot pop_front from an empty Deque.");
+        }
+
+        T removed_item = this.storage_buffer[this.head_index];
+        this.storage_buffer[this.head_index] = (T)null;
+        this.head_index = (this.head_index + 1) % this.buffer_capacity;
+        this.element_count--;
+        return removed_item;
+    }
+
+    public T pop_back() {
+        if (this.element_count == 0) {
+            throw new EmptyCollectionException("Cannot pop_back from an empty Deque.");
+        }
+
+        this.tail_index = (this.tail_index - 1 + this.buffer_capacity) % this.buffer_capacity;
+        T removed_item = this.storage_buffer[this.tail_index];
+        this.storage_buffer[this.tail_index] = (T)null;
+        this.element_count--;
+        return removed_item;
+    }
+
+    // ------------------------------------------------------------------------
+    // Peek Operations
+    // ------------------------------------------------------------------------
+
+    public T peek_front() {
+        if (this.element_count == 0) {
+            throw new EmptyCollectionException("Cannot peek_front in an empty Deque.");
+        }
+        return this.storage_buffer[this.head_index];
+    }
+
+    public T peek_back() {
+        if (this.element_count == 0) {
+            throw new EmptyCollectionException("Cannot peek_back in an empty Deque.");
+        }
+        int32 target_index = (this.tail_index - 1 + this.buffer_capacity) % this.buffer_capacity;
+        return this.storage_buffer[target_index];
+    }
+
+    public T get(int32 index) {
+        if (index < 0 || index >= this.element_count) {
+            throw new IndexOutOfBoundsException(index, this.element_count);
+        }
+        int32 physical_index = (this.head_index + index) % this.buffer_capacity;
+        return this.storage_buffer[physical_index];
+    }
+
+    // ------------------------------------------------------------------------
+    // Search and Inspection
+    // ------------------------------------------------------------------------
+
+    public bool contains(T search_item) {
+        for (int32 search_index = 0; search_index < this.element_count; search_index++) {
+            int32 current_index = (this.head_index + search_index) % this.buffer_capacity;
+            if (this.storage_buffer[current_index] == search_item) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public T[] to_array() {
+        T[] export_array = new T[this.element_count];
+        for (int32 copy_index = 0; copy_index < this.element_count; copy_index++) {
+            int32 current_index = (this.head_index + copy_index) % this.buffer_capacity;
+            export_array[copy_index] = this.storage_buffer[current_index];
+        }
+        return export_array;
+    }
+
+    public Deque<T> clone() {
+        Deque<T> duplicated_deque = new Deque<T>(this.buffer_capacity);
+        for (int32 copy_index = 0; copy_index < this.element_count; copy_index++) {
+            int32 current_index = (this.head_index + copy_index) % this.buffer_capacity;
+            duplicated_deque.push_back(this.storage_buffer[current_index]);
+        }
+        return duplicated_deque;
+    }
+
+    // ------------------------------------------------------------------------
+    // Operator Overloads
+    // ------------------------------------------------------------------------
+
+    public Deque<T> operator=(Deque<T> other_deque) {
+        if (other_deque == null) {
+            this.clear();
+            return this;
+        }
+
+        this.clear();
+        this.ensure_capacity(other_deque.size());
+
+        for (int32 copy_index = 0; copy_index < other_deque.size(); copy_index++) {
+            int32 current_index = (other_deque.head_index + copy_index) % other_deque.buffer_capacity;
+            this.push_back(other_deque.storage_buffer[current_index]);
+        }
+        return this;
+    }
+}

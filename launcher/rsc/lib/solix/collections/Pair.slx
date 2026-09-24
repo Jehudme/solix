@@ -1,0 +1,84 @@
+// ============================================================================
+// Solix Standard Library - Generic Pair (Pair<TFirst, TSecond>)
+// Package: solix.collections
+// ============================================================================
+package solix.collections;
+
+public class Pair<TFirst, TSecond> {
+    public TFirst first;
+    public TSecond second;
+
+    // ------------------------------------------------------------------------
+    // Constructors
+    // ------------------------------------------------------------------------
+
+    public Pair() {
+        this.first = (TFirst)null;
+        this.second = (TSecond)null;
+    }
+
+    public Pair(TFirst initial_first, TSecond initial_second) {
+        this.first = initial_first;
+        this.second = initial_second;
+    }
+
+    public Pair(Pair<TFirst, TSecond> source_pair) {
+        if (source_pair != null) {
+            this.first = source_pair.first;
+            this.second = source_pair.second;
+        } else {
+            this.first = (TFirst)null;
+            this.second = (TSecond)null;
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Getters and Setters
+    // ------------------------------------------------------------------------
+
+    public TFirst get_first() {
+        return this.first;
+    }
+
+    public void set_first(TFirst new_first_value) {
+        this.first = new_first_value;
+    }
+
+    public TSecond get_second() {
+        return this.second;
+    }
+
+    public void set_second(TSecond new_second_value) {
+        this.second = new_second_value;
+    }
+
+    // ------------------------------------------------------------------------
+    // Comparison and Manipulation
+    // ------------------------------------------------------------------------
+
+    public bool equals(Pair<TFirst, TSecond> comparison_pair) {
+        if (comparison_pair == null) {
+            return false;
+        }
+        return this.first == comparison_pair.first && this.second == comparison_pair.second;
+    }
+
+    public Pair<TFirst, TSecond> clone() {
+        return new Pair<TFirst, TSecond>(this.first, this.second);
+    }
+
+    // ------------------------------------------------------------------------
+    // Operator Overloads
+    // ------------------------------------------------------------------------
+
+    public Pair<TFirst, TSecond> operator=(Pair<TFirst, TSecond> other_pair) {
+        if (other_pair == null) {
+            this.first = (TFirst)null;
+            this.second = (TSecond)null;
+            return this;
+        }
+        this.first = other_pair.first;
+        this.second = other_pair.second;
+        return this;
+    }
+}

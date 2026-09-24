@@ -175,6 +175,7 @@ std::unique_ptr<Node> TernaryExpression::clone() const {
 
 std::unique_ptr<Node> BlockStatement::clone() const {
     auto cloned = std::make_unique<BlockStatement>(make_dummy_token(this));
+    cloned->block_kind = this->block_kind;
     copy_children(this, cloned.get());
     return cloned;
 }

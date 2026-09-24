@@ -385,6 +385,14 @@ public class String {
         return parsed_number_accumulator * arithmetic_sign_multiplier;
     }
 
+    public int32 hash_code() {
+        int32 computed_hash = 0;
+        for (int32 character_index = 0; character_index < this.character_count; character_index++) {
+            computed_hash = (computed_hash * 31) + (int32)this.character_buffer[character_index];
+        }
+        return computed_hash;
+    }
+
     // ------------------------------------------------------------------------
     // Operator Overloads
     // ------------------------------------------------------------------------

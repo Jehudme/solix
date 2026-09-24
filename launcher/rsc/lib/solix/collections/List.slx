@@ -4,13 +4,20 @@
 // ============================================================================
 package solix.collections;
 
+alias IndexOutOfBoundsException = solix.IndexOutOfBoundsException;
+alias EmptyCollectionException = solix.EmptyCollectionException;
+alias InvalidArgumentException = solix.InvalidArgumentException;
+alias NoSuchElementException = solix.NoSuchElementException;
+alias KeyNotFoundException = solix.KeyNotFoundException;
+alias DuplicateKeyException = solix.DuplicateKeyException;
+
 public class List<T> {
     private T[] storage_buffer;
     private int32 element_count = 0;
     private int32 buffer_capacity = 0;
 
     // ------------------------------------------------------------------------
-    // Constructeurs
+    // Constructors
     // ------------------------------------------------------------------------
 
     public List() {
@@ -20,11 +27,14 @@ public class List<T> {
     }
 
     public List(int32 initial_capacity) {
-        int32 capacity = initial_capacity;
-        if (capacity < 4) {
-            capacity = 4;
+        if (initial_capacity < 0) {
+            throw new InvalidArgumentException("Initial capacity of List cannot be negative.");
         }
-        this.buffer_capacity = capacity;
+        int32 capacity_value = initial_capacity;
+        if (capacity_value < 4) {
+            capacity_value = 4;
+        }
+        this.buffer_capacity = capacity_value;
         this.element_count = 0;
         this.storage_buffer = new T[this.buffer_capacity];
     }
@@ -41,13 +51,13 @@ public class List<T> {
         this.buffer_capacity = this.element_count * 2;
         this.storage_buffer = new T[this.buffer_capacity];
 
-        for (int32 i = 0; i < this.element_count; i++) {
-            this.storage_buffer[i] = initial_elements[i];
+        for (int32 copy_index = 0; copy_index < this.element_count; copy_index++) {
+            this.storage_buffer[copy_index] = initial_elements[copy_index];
         }
     }
 
     // ------------------------------------------------------------------------
-    // Capacité et Dimensionnement
+    // Capacity and Sizing
     // ------------------------------------------------------------------------
 
     public int32 size() {
@@ -79,8 +89,8 @@ public class List<T> {
         }
 
         T[] new_buffer = new T[new_capacity];
-        for (int32 i = 0; i < this.element_count; i++) {
-            new_buffer[i] = this.storage_buffer[i];
+        for (int32 copy_index = 0; copy_index < this.element_count; copy_index++) {
+            new_buffer[copy_index] = this.storage_buffer[copy_index];
         }
 
         this.storage_buffer = new_buffer;
@@ -94,48 +104,47 @@ public class List<T> {
     }
 
     // ------------------------------------------------------------------------
-    // Accès aux Éléments
+    // Element Access
     // ------------------------------------------------------------------------
 
     public T get(int32 index) {
         if (index < 0 || index >= this.element_count) {
-            return (T)null;
+            throw new IndexOutOfBoundsException(index, this.element_count);
         }
         return this.storage_buffer[index];
     }
 
-    public bool set(int32 index, T value) {
+    public void set(int32 index, T value) {
         if (index < 0 || index >= this.element_count) {
-            return false;
+            throw new IndexOutOfBoundsException(index, this.element_count);
         }
         this.storage_buffer[index] = value;
-        return true;
     }
 
     public T first() {
         if (this.element_count == 0) {
-            return (T)null;
+            throw new EmptyCollectionException("Cannot retrieve first element from an empty List.");
         }
         return this.storage_buffer[0];
     }
 
     public T last() {
         if (this.element_count == 0) {
-            return (T)null;
+            throw new EmptyCollectionException("Cannot retrieve last element from an empty List.");
         }
         return this.storage_buffer[this.element_count - 1];
     }
 
     public T[] to_array() {
         T[] export_array = new T[this.element_count];
-        for (int32 i = 0; i < this.element_count; i++) {
-            export_array[i] = this.storage_buffer[i];
+        for (int32 copy_index = 0; copy_index < this.element_count; copy_index++) {
+            export_array[copy_index] = this.storage_buffer[copy_index];
         }
         return export_array;
     }
 
     // ------------------------------------------------------------------------
-    // Insertion et Suppression
+    // Insertion and Removal
     // ------------------------------------------------------------------------
 
     public void add(T item) {
@@ -144,21 +153,19 @@ public class List<T> {
         this.element_count++;
     }
 
-    public bool insert(int32 index, T item) {
+    public void insert(int32 index, T item) {
         if (index < 0 || index > this.element_count) {
-            return false;
+            throw new IndexOutOfBoundsException(index, this.element_count);
         }
 
         this.ensure_capacity(this.element_count + 1);
 
-        // Décalage des éléments vers la droite
-        for (int32 shift = this.element_count; shift > index; shift--) {
-            this.storage_buffer[shift] = this.storage_buffer[shift - 1];
+        for (int32 shift_index = this.element_count; shift_index > index; shift_index--) {
+            this.storage_buffer[shift_index] = this.storage_buffer[shift_index - 1];
         }
 
         this.storage_buffer[index] = item;
         this.element_count++;
-        return true;
     }
 
     public void add_all(List<T> items) {
@@ -169,22 +176,21 @@ public class List<T> {
         int32 incoming_count = items.size();
         this.ensure_capacity(this.element_count + incoming_count);
 
-        for (int32 i = 0; i < incoming_count; i++) {
-            this.storage_buffer[this.element_count + i] = items.get(i);
+        for (int32 copy_index = 0; copy_index < incoming_count; copy_index++) {
+            this.storage_buffer[this.element_count + copy_index] = items.get(copy_index);
         }
         this.element_count = this.element_count + incoming_count;
     }
 
     public T remove_at(int32 index) {
         if (index < 0 || index >= this.element_count) {
-            return (T)null;
+            throw new IndexOutOfBoundsException(index, this.element_count);
         }
 
         T removed_item = this.storage_buffer[index];
 
-        // Décalage des éléments vers la gauche
-        for (int32 shift = index; shift < this.element_count - 1; shift++) {
-            this.storage_buffer[shift] = this.storage_buffer[shift + 1];
+        for (int32 shift_index = index; shift_index < this.element_count - 1; shift_index++) {
+            this.storage_buffer[shift_index] = this.storage_buffer[shift_index + 1];
         }
 
         this.storage_buffer[this.element_count - 1] = (T)null;
@@ -194,28 +200,28 @@ public class List<T> {
 
     public T pop() {
         if (this.element_count == 0) {
-            return (T)null;
+            throw new EmptyCollectionException("Cannot pop an element from an empty List.");
         }
         return this.remove_at(this.element_count - 1);
     }
 
     // ------------------------------------------------------------------------
-    // Recherche et Consultation
+    // Search and Inspection
     // ------------------------------------------------------------------------
 
     public int32 index_of(T item) {
-        for (int32 i = 0; i < this.element_count; i++) {
-            if (this.storage_buffer[i] == item) {
-                return i;
+        for (int32 search_index = 0; search_index < this.element_count; search_index++) {
+            if (this.storage_buffer[search_index] == item) {
+                return search_index;
             }
         }
         return -1;
     }
 
     public int32 last_index_of(T item) {
-        for (int32 i = this.element_count - 1; i >= 0; i--) {
-            if (this.storage_buffer[i] == item) {
-                return i;
+        for (int32 search_index = this.element_count - 1; search_index >= 0; search_index--) {
+            if (this.storage_buffer[search_index] == item) {
+                return search_index;
             }
         }
         return -1;
@@ -235,52 +241,50 @@ public class List<T> {
     }
 
     // ------------------------------------------------------------------------
-    // Algorithmes & Manipulations Avancées
+    // Algorithms and Manipulations
     // ------------------------------------------------------------------------
 
     public void reverse() {
-        int32 left_idx = 0;
-        int32 right_idx = this.element_count - 1;
+        int32 left_index = 0;
+        int32 right_index = this.element_count - 1;
 
-        while (left_idx < right_idx) {
-            T temporary = this.storage_buffer[left_idx];
-            this.storage_buffer[left_idx] = this.storage_buffer[right_idx];
-            this.storage_buffer[right_idx] = temporary;
+        while (left_index < right_index) {
+            T temporary_element = this.storage_buffer[left_index];
+            this.storage_buffer[left_index] = this.storage_buffer[right_index];
+            this.storage_buffer[right_index] = temporary_element;
 
-            left_idx++;
-            right_idx--;
+            left_index++;
+            right_index--;
         }
     }
 
     public List<T> slice(int32 start_index, int32 end_index) {
-        int32 start = start_index;
-        int32 end = end_index;
-
-        if (start < 0) start = 0;
-        if (end > this.element_count) end = this.element_count;
+        if (start_index < 0 || end_index > this.element_count || start_index > end_index) {
+            throw new IndexOutOfBoundsException("Invalid slice bounds specified for List.");
+        }
 
         List<T> sublist = new List<T>();
-        if (start >= end) {
+        if (start_index == end_index) {
             return sublist;
         }
 
-        sublist.reserve(end - start);
-        for (int32 i = start; i < end; i++) {
-            sublist.add(this.storage_buffer[i]);
+        sublist.reserve(end_index - start_index);
+        for (int32 copy_index = start_index; copy_index < end_index; copy_index++) {
+            sublist.add(this.storage_buffer[copy_index]);
         }
         return sublist;
     }
 
     public List<T> clone() {
-        List<T> duplicated = new List<T>(this.buffer_capacity);
-        for (int32 i = 0; i < this.element_count; i++) {
-            duplicated.add(this.storage_buffer[i]);
+        List<T> duplicated_list = new List<T>(this.buffer_capacity);
+        for (int32 copy_index = 0; copy_index < this.element_count; copy_index++) {
+            duplicated_list.add(this.storage_buffer[copy_index]);
         }
-        return duplicated;
+        return duplicated_list;
     }
 
     // ------------------------------------------------------------------------
-    // Surcharges d'Opérateurs
+    // Operator Overloads
     // ------------------------------------------------------------------------
 
     public List<T> operator=(List<T> other) {
@@ -293,8 +297,8 @@ public class List<T> {
         this.buffer_capacity = other.buffer_capacity;
         this.storage_buffer = new T[this.buffer_capacity];
 
-        for (int32 i = 0; i < this.element_count; i++) {
-            this.storage_buffer[i] = other.storage_buffer[i];
+        for (int32 copy_index = 0; copy_index < this.element_count; copy_index++) {
+            this.storage_buffer[copy_index] = other.storage_buffer[copy_index];
         }
         return this;
     }

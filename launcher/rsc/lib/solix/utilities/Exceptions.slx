@@ -212,10 +212,7 @@ public class IndexOutOfBoundsException extends RuntimeException {
     public IndexOutOfBoundsException(int32 attempted_index, int32 collection_size) {
         this.invalid_index = attempted_index;
         this.valid_size = collection_size;
-        this.detailed_message = new String("Index out of bounds: attempted index ")
-            .concat(new String(attempted_index))
-            .concat(" for collection size ")
-            .concat(new String(collection_size));
+        this.detailed_message = new String("Index was out of range.");
         this.underlying_cause = (Exception)null;
         this.error_code = 0;
     }

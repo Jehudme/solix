@@ -1,0 +1,190 @@
+// ============================================================================
+// Solix Standard Library - Generic FIFO Queue (Queue<T>)
+// Package: solix.collections
+// ============================================================================
+package solix.collections;
+
+
+public class Queue<T> {
+    private T[] storage_buffer;
+    private int32 head_index = 0;
+    private int32 tail_index = 0;
+    private int32 element_count = 0;
+    private int32 buffer_capacity = 0;
+
+    // ------------------------------------------------------------------------
+    // Constructors
+    // ------------------------------------------------------------------------
+
+    public Queue() {
+        this.buffer_capacity = 8;
+        this.head_index = 0;
+        this.tail_index = 0;
+        this.element_count = 0;
+        this.storage_buffer = new T[this.buffer_capacity];
+    }
+
+    public Queue(int32 initial_capacity) {
+        if (initial_capacity < 0) {
+            throw new InvalidArgumentException("Initial capacity of Queue cannot be negative.");
+        }
+        int32 capacity_value = initial_capacity;
+        if (capacity_value < 4) {
+            capacity_value = 4;
+        }
+        this.buffer_capacity = capacity_value;
+        this.head_index = 0;
+        this.tail_index = 0;
+        this.element_count = 0;
+        this.storage_buffer = new T[this.buffer_capacity];
+    }
+
+    public Queue(T[] initial_elements) {
+        if (initial_elements == null || initial_elements.length == 0) {
+            this.buffer_capacity = 8;
+            this.head_index = 0;
+            this.tail_index = 0;
+            this.element_count = 0;
+            this.storage_buffer = new T[this.buffer_capacity];
+            return;
+        }
+
+        this.element_count = initial_elements.length;
+        this.buffer_capacity = this.element_count * 2;
+        this.storage_buffer = new T[this.buffer_capacity];
+        this.head_index = 0;
+        this.tail_index = this.element_count;
+
+        for (int32 copy_index = 0; copy_index < this.element_count; copy_index++) {
+            this.storage_buffer[copy_index] = initial_elements[copy_index];
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Capacity and Sizing
+    // ------------------------------------------------------------------------
+
+    public int32 size() {
+        return this.element_count;
+    }
+
+    public int32 capacity() {
+        return this.buffer_capacity;
+    }
+
+    public bool is_empty() {
+        return this.element_count == 0;
+    }
+
+    public void clear() {
+        this.buffer_capacity = 8;
+        this.head_index = 0;
+        this.tail_index = 0;
+        this.element_count = 0;
+        this.storage_buffer = new T[this.buffer_capacity];
+    }
+
+    private void ensure_capacity(int32 required_capacity) {
+        if (required_capacity <= this.buffer_capacity) {
+            return;
+        }
+
+        int32 new_capacity = this.buffer_capacity * 2;
+        if (new_capacity < required_capacity) {
+            new_capacity = required_capacity;
+        }
+
+        T[] new_buffer = new T[new_capacity];
+        for (int32 copy_index = 0; copy_index < this.element_count; copy_index++) {
+            int32 source_index = (this.head_index + copy_index) % this.buffer_capacity;
+            new_buffer[copy_index] = this.storage_buffer[source_index];
+        }
+
+        this.storage_buffer = new_buffer;
+        this.buffer_capacity = new_capacity;
+        this.head_index = 0;
+        this.tail_index = this.element_count;
+    }
+
+    // ------------------------------------------------------------------------
+    // Queue Operations
+    // ------------------------------------------------------------------------
+
+    public void enqueue(T item) {
+        this.ensure_capacity(this.element_count + 1);
+        this.storage_buffer[this.tail_index] = item;
+        this.tail_index = (this.tail_index + 1) % this.buffer_capacity;
+        this.element_count++;
+    }
+
+    public T dequeue() {
+        if (this.element_count == 0) {
+            throw new EmptyCollectionException("Cannot dequeue from an empty Queue.");
+        }
+
+        T removed_item = this.storage_buffer[this.head_index];
+        this.storage_buffer[this.head_index] = (T)null;
+        this.head_index = (this.head_index + 1) % this.buffer_capacity;
+        this.element_count--;
+        return removed_item;
+    }
+
+    public T peek() {
+        if (this.element_count == 0) {
+            throw new EmptyCollectionException("Cannot peek at an element in an empty Queue.");
+        }
+        return this.storage_buffer[this.head_index];
+    }
+
+    // ------------------------------------------------------------------------
+    // Search and Inspection
+    // ------------------------------------------------------------------------
+
+    public bool contains(T search_item) {
+        for (int32 search_index = 0; search_index < this.element_count; search_index++) {
+            int32 current_index = (this.head_index + search_index) % this.buffer_capacity;
+            if (this.storage_buffer[current_index] == search_item) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public T[] to_array() {
+        T[] export_array = new T[this.element_count];
+        for (int32 copy_index = 0; copy_index < this.element_count; copy_index++) {
+            int32 current_index = (this.head_index + copy_index) % this.buffer_capacity;
+            export_array[copy_index] = this.storage_buffer[current_index];
+        }
+        return export_array;
+    }
+
+    public Queue<T> clone() {
+        Queue<T> duplicated_queue = new Queue<T>(this.buffer_capacity);
+        for (int32 copy_index = 0; copy_index < this.element_count; copy_index++) {
+            int32 current_index = (this.head_index + copy_index) % this.buffer_capacity;
+            duplicated_queue.enqueue(this.storage_buffer[current_index]);
+        }
+        return duplicated_queue;
+    }
+
+    // ------------------------------------------------------------------------
+    // Operator Overloads
+    // ------------------------------------------------------------------------
+
+    public Queue<T> operator=(Queue<T> other_queue) {
+        if (other_queue == null) {
+            this.clear();
+            return this;
+        }
+
+        this.clear();
+        this.ensure_capacity(other_queue.size());
+
+        for (int32 copy_index = 0; copy_index < other_queue.size(); copy_index++) {
+            int32 current_index = (other_queue.head_index + copy_index) % other_queue.buffer_capacity;
+            this.enqueue(other_queue.storage_buffer[current_index]);
+        }
+        return this;
+    }
+}

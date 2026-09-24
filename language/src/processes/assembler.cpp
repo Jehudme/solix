@@ -213,6 +213,17 @@ std::string Assembler::disassemble() const {
       ss << "slot=" << slot << ", frame_size=" << frame_sz << ", args=" << args;
       break;
     }
+    case OpCode::REGISTER_RETURN_CLEANUP: {
+      uint32_t ret_ip = read_u32_local(pc);
+      uint32_t cleanup_ip = read_u32_local(pc);
+      ss << "ret_ip=" << ret_ip << ", cleanup_ip=" << cleanup_ip;
+      break;
+    }
+    case OpCode::THROW_EXCEPTION: {
+      uint32_t cleanup_ip = read_u32_local(pc);
+      ss << "cleanup_ip=" << cleanup_ip;
+      break;
+    }
     case OpCode::CAST_CHECK:
     case OpCode::INSTANCEOF: {
       uint32_t vtid = read_u32_local(pc);
@@ -609,24 +620,31 @@ void Assembler::visit(BlockStatement &node) {
   // Do the local variable cleanup for unwinding
   emit_cleanup_for_node(&node);
 
-  if (node.block_kind == BlockKind::FUNCTION_BODY) {
+  bool is_func_body = (node.block_kind == BlockKind::FUNCTION_BODY) ||
+                      (node.parent != nullptr && (node.parent->node_type == NodeType::METHOD_DECL || node.parent->node_type == NodeType::CONSTRUCTOR_DECL));
+
+  if (is_func_body) {
       emit_byte(static_cast<uint8_t>(OpCode::JMP_TO_OUTER_CLEANUP));
   } else if (node.block_kind == BlockKind::TRY_BODY) {
       // The TryStatement will need to patch this to jump to the Catch matching block!
       // To easily expose this, we can just push it to the OUTER block's patch list TEMPORARILY.
       // And the TryStatement will pop it.
-      emit_byte(static_cast<uint8_t>(OpCode::JUMP));
       if (!exception_cleanup_patches.empty()) {
+          emit_byte(static_cast<uint8_t>(OpCode::JUMP));
           exception_cleanup_patches.back().push_back(bytecode().size());
+          emit_int32(0xFFFFFFFF);
+      } else {
+          emit_byte(static_cast<uint8_t>(OpCode::JMP_TO_OUTER_CLEANUP));
       }
-      emit_int32(0xFFFFFFFF);
   } else {
       // Normal nested block. Jump to the next outer cleanup block!
-      emit_byte(static_cast<uint8_t>(OpCode::JUMP));
       if (!exception_cleanup_patches.empty()) {
+          emit_byte(static_cast<uint8_t>(OpCode::JUMP));
           exception_cleanup_patches.back().push_back(bytecode().size());
+          emit_int32(0xFFFFFFFF);
+      } else {
+          emit_byte(static_cast<uint8_t>(OpCode::JMP_TO_OUTER_CLEANUP));
       }
-      emit_int32(0xFFFFFFFF);
   }
 
   // Patch the skip for normal execution
