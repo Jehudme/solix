@@ -40,8 +40,7 @@ inline std::string test_assemble(const std::string &code) {
       
       switch (static_cast<OpCode>(op)) {
           case OpCode::INSTANCEOF:
-          case OpCode::SET_VTABLE:
-          case OpCode::CALL: {
+          case OpCode::SET_VTABLE: {
               uint32_t val = (bcode[i+1] << 24) | (bcode[i+2] << 16) | (bcode[i+3] << 8) | bcode[i+4];
               ss << " " << val;
               i += 5;

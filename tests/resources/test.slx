@@ -407,9 +407,49 @@ public class ExtendedConsoleTestRunner {
         Console.println("Console.input_line() and typed inputs available");
 
         Console.println("=== EXTENDED CONSOLE TESTS OK ===");
+        TryCatchTestRunner.run();
     }
 }
 
 
 
 
+
+// ============================================================================
+// Phase X: Try-Catch Exceptions
+// ============================================================================
+
+class Exception {}
+class CustomException extends Exception {
+    public int32 code;
+    public CustomException(int32 c) {
+        this.code = c;
+    }
+}
+
+public class TryCatchTestRunner {
+    public static void run() {
+        Console.println("=== TESTING TRY-CATCH ===");
+        
+        bool caught = false;
+        try {
+            Console.println("Throwing exception...");
+            throw new CustomException(404);
+            Console.println("THIS SHOULD NOT BE REACHED");
+        } catch (CustomException e) {
+            Console.print("Caught CustomException! Code: ");
+            Console.println(e.code);
+            if (e.code == 404) {
+                caught = true;
+            }
+        } catch (Exception e) {
+            Console.println("Caught generic Exception! (WRONG)");
+        }
+        
+        if (caught) {
+            Console.println("=== TRY-CATCH TESTS OK ===");
+        } else {
+            Console.println("=== TRY-CATCH TESTS FAILED ===");
+        }
+    }
+}
