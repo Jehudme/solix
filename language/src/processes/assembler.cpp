@@ -580,10 +580,61 @@ void Assembler::visit(ConstructorDeclaration &node) {
 }
 
 void Assembler::visit(BlockStatement &node) {
+  exception_cleanup_patches.emplace_back();
+
   for (const auto &child : node.children) {
     compile_node(child.get());
   }
+
+  // Normal execution cleanup
   emit_cleanup_for_node(&node);
+
+  // Jump over exception cleanup
+  emit_byte(static_cast<uint8_t>(OpCode::JUMP));
+  uint32_t skip_cleanup_idx = bytecode().size();
+  emit_int32(0xFFFFFFFF);
+
+  // --- Exception Cleanup Segment ---
+  uint32_t cleanup_ip = bytecode().size();
+
+  // Patch all inner exceptions to jump here
+  for (uint32_t patch_idx : exception_cleanup_patches.back()) {
+      bytecode()[patch_idx] = (cleanup_ip >> 24) & 0xFF;
+      bytecode()[patch_idx + 1] = (cleanup_ip >> 16) & 0xFF;
+      bytecode()[patch_idx + 2] = (cleanup_ip >> 8) & 0xFF;
+      bytecode()[patch_idx + 3] = cleanup_ip & 0xFF;
+  }
+  exception_cleanup_patches.pop_back();
+
+  // Do the local variable cleanup for unwinding
+  emit_cleanup_for_node(&node);
+
+  if (node.block_kind == BlockKind::FUNCTION_BODY) {
+      emit_byte(static_cast<uint8_t>(OpCode::JMP_TO_OUTER_CLEANUP));
+  } else if (node.block_kind == BlockKind::TRY_BODY) {
+      // The TryStatement will need to patch this to jump to the Catch matching block!
+      // To easily expose this, we can just push it to the OUTER block's patch list TEMPORARILY.
+      // And the TryStatement will pop it.
+      emit_byte(static_cast<uint8_t>(OpCode::JUMP));
+      if (!exception_cleanup_patches.empty()) {
+          exception_cleanup_patches.back().push_back(bytecode().size());
+      }
+      emit_int32(0xFFFFFFFF);
+  } else {
+      // Normal nested block. Jump to the next outer cleanup block!
+      emit_byte(static_cast<uint8_t>(OpCode::JUMP));
+      if (!exception_cleanup_patches.empty()) {
+          exception_cleanup_patches.back().push_back(bytecode().size());
+      }
+      emit_int32(0xFFFFFFFF);
+  }
+
+  // Patch the skip for normal execution
+  uint32_t skip_ip = bytecode().size();
+  bytecode()[skip_cleanup_idx] = (skip_ip >> 24) & 0xFF;
+  bytecode()[skip_cleanup_idx + 1] = (skip_ip >> 16) & 0xFF;
+  bytecode()[skip_cleanup_idx + 2] = (skip_ip >> 8) & 0xFF;
+  bytecode()[skip_cleanup_idx + 3] = skip_ip & 0xFF;
 }
 
 void Assembler::visit(VariableDeclaration &node) {
@@ -1361,10 +1412,26 @@ void Assembler::visit(MethodCallExpression &node) {
   if (call->is_virtual_call) {
     auto *target_method =
         static_cast<MethodDeclaration *>(call->resolved_declaration);
-    emit_byte(static_cast<uint8_t>(OpCode::CALL_VIRTUAL));
+
+    uint32_t reg_inst = bytecode().size();
+    if (!exception_cleanup_patches.empty()) {
+        emit_byte(static_cast<uint8_t>(OpCode::REGISTER_RETURN_CLEANUP));
+        emit_int32(0); // ret_ip
+        exception_cleanup_patches.back().push_back(bytecode().size());
+        emit_int32(0xFFFFFFFF); // cleanup_ip
+    }
+        emit_byte(static_cast<uint8_t>(OpCode::CALL_VIRTUAL));
     emit_int32(target_method->vtable_index);
     emit_int32(target_method->frame_size);
     emit_int32(total_args);
+    if (!exception_cleanup_patches.empty()) {
+        uint32_t ret_ip = bytecode().size();
+        bytecode()[reg_inst + 1] = (ret_ip >> 24) & 0xFF;
+        bytecode()[reg_inst + 2] = (ret_ip >> 16) & 0xFF;
+        bytecode()[reg_inst + 3] = (ret_ip >> 8) & 0xFF;
+        bytecode()[reg_inst + 4] = ret_ip & 0xFF;
+    }
+    
   } else if (is_native) {
     emit_byte(static_cast<uint8_t>(OpCode::CALL_NATIVE));
     emit_int32(memory_index);
@@ -1381,8 +1448,24 @@ void Assembler::visit(MethodCallExpression &node) {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
     emit_int32(total_args);
 
-    emit_byte(static_cast<uint8_t>(OpCode::CALL));
-  }
+
+    uint32_t reg_inst = bytecode().size();
+    if (!exception_cleanup_patches.empty()) {
+        emit_byte(static_cast<uint8_t>(OpCode::REGISTER_RETURN_CLEANUP));
+        emit_int32(0); // ret_ip
+        exception_cleanup_patches.back().push_back(bytecode().size());
+        emit_int32(0xFFFFFFFF); // cleanup_ip
+    }
+        emit_byte(static_cast<uint8_t>(OpCode::CALL));
+
+    if (!exception_cleanup_patches.empty()) {
+        uint32_t ret_ip = bytecode().size();
+        bytecode()[reg_inst + 1] = (ret_ip >> 24) & 0xFF;
+        bytecode()[reg_inst + 2] = (ret_ip >> 16) & 0xFF;
+        bytecode()[reg_inst + 3] = (ret_ip >> 8) & 0xFF;
+        bytecode()[reg_inst + 4] = ret_ip & 0xFF;
+    }
+      }
 }
 
 void Assembler::visit(NewInstanceExpression &node) {
@@ -1435,8 +1518,24 @@ void Assembler::visit(NewInstanceExpression &node) {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
     emit_int32(inst->arguments.size() + 1);
 
-    emit_byte(static_cast<uint8_t>(OpCode::CALL));
-    emit_byte(static_cast<uint8_t>(
+
+    uint32_t reg_inst = bytecode().size();
+    if (!exception_cleanup_patches.empty()) {
+        emit_byte(static_cast<uint8_t>(OpCode::REGISTER_RETURN_CLEANUP));
+        emit_int32(0); // ret_ip
+        exception_cleanup_patches.back().push_back(bytecode().size());
+        emit_int32(0xFFFFFFFF); // cleanup_ip
+    }
+        emit_byte(static_cast<uint8_t>(OpCode::CALL));
+
+    if (!exception_cleanup_patches.empty()) {
+        uint32_t ret_ip = bytecode().size();
+        bytecode()[reg_inst + 1] = (ret_ip >> 24) & 0xFF;
+        bytecode()[reg_inst + 2] = (ret_ip >> 16) & 0xFF;
+        bytecode()[reg_inst + 3] = (ret_ip >> 8) & 0xFF;
+        bytecode()[reg_inst + 4] = ret_ip & 0xFF;
+    }
+        emit_byte(static_cast<uint8_t>(
         OpCode::POP)); // Pop the NULL returned by the constructor
   }
 }
@@ -1582,7 +1681,112 @@ void Assembler::visit(TernaryExpression &node) {
 }
 
 
-void Assembler::visit(TryStatement& n) {}
-void Assembler::visit(CatchClause& n) {}
-void Assembler::visit(ThrowStatement& n) {}
+void Assembler::visit(TryStatement& n) {
+    if (n.try_block) {
+        compile_node(n.try_block.get());
+    }
+    
+    // Jump over catch clauses for normal execution
+    emit_byte(static_cast<uint8_t>(OpCode::JUMP));
+    uint32_t normal_exit_patch = bytecode().size();
+    emit_int32(0xFFFFFFFF);
+    
+    // Catch matching segment
+    if (!exception_cleanup_patches.empty() && !exception_cleanup_patches.back().empty()) {
+        uint32_t try_body_jump_patch = exception_cleanup_patches.back().back();
+        exception_cleanup_patches.back().pop_back();
+        
+        uint32_t catch_start_ip = bytecode().size();
+        bytecode()[try_body_jump_patch] = (catch_start_ip >> 24) & 0xFF;
+        bytecode()[try_body_jump_patch + 1] = (catch_start_ip >> 16) & 0xFF;
+        bytecode()[try_body_jump_patch + 2] = (catch_start_ip >> 8) & 0xFF;
+        bytecode()[try_body_jump_patch + 3] = catch_start_ip & 0xFF;
+    }
+    
+    std::vector<uint32_t> next_catch_patches;
+    std::vector<uint32_t> end_try_patches;
+    
+    for (auto& c : n.catch_clauses) {
+        if (!c) continue;
+        
+        for (uint32_t patch : next_catch_patches) {
+            uint32_t current_ip = bytecode().size();
+            bytecode()[patch] = (current_ip >> 24) & 0xFF;
+            bytecode()[patch + 1] = (current_ip >> 16) & 0xFF;
+            bytecode()[patch + 2] = (current_ip >> 8) & 0xFF;
+            bytecode()[patch + 3] = current_ip & 0xFF;
+        }
+        next_catch_patches.clear();
+        
+        auto* catch_clause = static_cast<CatchClause*>(c.get());
+        
+        emit_byte(static_cast<uint8_t>(OpCode::GET_EXCEPTION));
+        emit_byte(static_cast<uint8_t>(OpCode::INSTANCEOF));
+        emit_int32(catch_clause->target_vtable_id);
+        
+        emit_byte(static_cast<uint8_t>(OpCode::JUMP_IF_FALSE));
+        next_catch_patches.push_back(bytecode().size());
+        emit_int32(0xFFFFFFFF);
+        
+        emit_byte(static_cast<uint8_t>(OpCode::GET_EXCEPTION));
+        emit_byte(static_cast<uint8_t>(OpCode::SET_LOCAL));
+        emit_int32(catch_clause->variable_memory_index);
+        
+        emit_byte(static_cast<uint8_t>(OpCode::CLEAR_EXCEPTION));
+        
+        compile_node(catch_clause->body.get());
+        
+        emit_byte(static_cast<uint8_t>(OpCode::JUMP));
+        end_try_patches.push_back(bytecode().size());
+        emit_int32(0xFFFFFFFF);
+    }
+    
+    // If no catch matched, jump to next outer cleanup block
+    for (uint32_t patch : next_catch_patches) {
+        uint32_t current_ip = bytecode().size();
+        bytecode()[patch] = (current_ip >> 24) & 0xFF;
+        bytecode()[patch + 1] = (current_ip >> 16) & 0xFF;
+        bytecode()[patch + 2] = (current_ip >> 8) & 0xFF;
+        bytecode()[patch + 3] = current_ip & 0xFF;
+    }
+    emit_byte(static_cast<uint8_t>(OpCode::JUMP));
+    if (!exception_cleanup_patches.empty()) {
+        exception_cleanup_patches.back().push_back(bytecode().size());
+    }
+    emit_int32(0xFFFFFFFF);
+    
+    // Normal exit point
+    uint32_t end_ip = bytecode().size();
+    bytecode()[normal_exit_patch] = (end_ip >> 24) & 0xFF;
+    bytecode()[normal_exit_patch + 1] = (end_ip >> 16) & 0xFF;
+    bytecode()[normal_exit_patch + 2] = (end_ip >> 8) & 0xFF;
+    bytecode()[normal_exit_patch + 3] = end_ip & 0xFF;
+    
+    for (uint32_t patch : end_try_patches) {
+        bytecode()[patch] = (end_ip >> 24) & 0xFF;
+        bytecode()[patch + 1] = (end_ip >> 16) & 0xFF;
+        bytecode()[patch + 2] = (end_ip >> 8) & 0xFF;
+        bytecode()[patch + 3] = end_ip & 0xFF;
+    }
+    
+    if (n.finally_block) {
+        // Finally block runs during normal execution
+        // Note: For unwinding, we need the finally block to also run.
+        // But for this phase, let's keep it simple.
+        compile_node(n.finally_block.get());
+    }
+}
+
+void Assembler::visit(CatchClause& n) {} // Handled by TryStatement
+
+void Assembler::visit(ThrowStatement& n) {
+    if (n.exception_expression) {
+        compile_expression(n.exception_expression.get());
+    }
+    emit_byte(static_cast<uint8_t>(OpCode::THROW_EXCEPTION));
+    if (!exception_cleanup_patches.empty()) {
+        exception_cleanup_patches.back().push_back(bytecode().size());
+    }
+    emit_int32(0xFFFFFFFF); // Will be patched by the containing BlockStatement to point to its cleanup segment!
+}
 } // namespace solix

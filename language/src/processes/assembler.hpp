@@ -28,6 +28,7 @@ private:
     
     std::vector<std::vector<uint32_t>> loop_break_patches;
     std::vector<std::vector<uint32_t>> loop_continue_patches;
+    std::vector<std::vector<uint32_t>> exception_cleanup_patches;
     
     uint32_t native_id_counter = 1;
 
