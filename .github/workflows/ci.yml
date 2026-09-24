@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main, "feature-*" ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.os }} (${{ matrix.compiler }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            compiler: gcc
+            cxx: g++
+            c: gcc
+          - os: ubuntu-latest
+            compiler: clang
+            cxx: clang++
+            c: clang
+          - os: macos-latest
+            compiler: apple-clang
+            cxx: clang++
+            c: clang
+          - os: windows-latest
+            compiler: clang
+            cxx: clang++
+            c: clang
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libspdlog-dev libfmt-dev ninja-build
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install spdlog fmt ninja
+
+      - name: Configure CMake (Linux & macOS)
+        if: runner.os != 'Windows'
+        env:
+          CC: ${{ matrix.c }}
+          CXX: ${{ matrix.cxx }}
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_STANDARD=20
+
+      - name: Configure CMake (Windows)
+        if: runner.os == 'Windows'
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_STANDARD=20
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Run Tests
+        run: ctest --test-dir build -C Release --output-on-failure
