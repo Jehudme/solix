@@ -23,6 +23,23 @@ static bool is_reference_type(const TypeInfo &t) {
 }
 
 void Assembler::throw_error(Node *node, const std::string &msg) {
+  if (context.diagnostic) {
+    Report report;
+    report.severity = ReportSeverity::ERROR;
+    report.code = "E_ASM";
+    report.message = msg;
+    report.line = node ? node->line : 0;
+    report.column = node ? node->column : 0;
+    if (node && node->source) {
+      if (std::holds_alternative<std::filesystem::path>(*node->source)) {
+        report.source_path =
+            std::get<std::filesystem::path>(*node->source).string();
+      } else {
+        report.source_path = std::get<std::string>(*node->source);
+      }
+    }
+    context.diagnostic->record_report(report);
+  }
   throw std::runtime_error(msg);
 }
 

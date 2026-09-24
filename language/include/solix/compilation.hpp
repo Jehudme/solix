@@ -26,6 +26,12 @@ struct Binder;
 struct Assembler;
 class Diagnostic;
 
+class CompilationFailedException : public std::runtime_error {
+public:
+  explicit CompilationFailedException(const std::string &message)
+      : std::runtime_error(message) {}
+};
+
 struct CompilationOptions {
   enum class LogLevel { TRACE, DEBUG, INFO, WARN, ERR, CRITICAL, OFF };
   enum class LogSinkType {

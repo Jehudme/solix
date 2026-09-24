@@ -1,5 +1,6 @@
 #include "processes/parser.hpp"
 #include "solix/compilation.hpp"
+#include "utilities/diagnostic.hpp"
 #include "utilities/statements.hpp"
 #include <stdexcept>
 
@@ -7,7 +8,10 @@ namespace solix {
 
 class ParseError : public std::runtime_error {
 public:
-  ParseError(const std::string &msg) : std::runtime_error(msg) {}
+  uint32_t line = 0;
+  uint32_t column = 0;
+  ParseError(const std::string &msg, uint32_t line = 0, uint32_t column = 0)
+      : std::runtime_error(msg), line(line), column(column) {}
 };
 
 class ParserState {
@@ -95,7 +99,8 @@ public:
     if (check(type))
       return advance();
     throw ParseError(message + " at line " + std::to_string(peek().line) +
-                     " col " + std::to_string(peek().column));
+                     " col " + std::to_string(peek().column),
+                     peek().line, peek().column);
   }
 
   // Expression parsing
@@ -1261,6 +1266,28 @@ void Parser::execute() {
       }
     } catch (const ParseError &e) {
       log_error("Syntax Error in {}: {}", source_name, e.what());
+      if (context.diagnostic) {
+        Report report;
+        report.severity = ReportSeverity::ERROR;
+        report.code = "E_PARSE";
+        report.message = e.what();
+        report.source_path = source_name;
+        report.line = e.line;
+        report.column = e.column;
+        context.diagnostic->record_report(report);
+      }
+    } catch (const std::exception &e) {
+      log_error("Syntax Error in {}: {}", source_name, e.what());
+      if (context.diagnostic) {
+        Report report;
+        report.severity = ReportSeverity::ERROR;
+        report.code = "E_PARSE";
+        report.message = e.what();
+        report.source_path = source_name;
+        report.line = 0;
+        report.column = 0;
+        context.diagnostic->record_report(report);
+      }
     }
 
     log_info("Completed parsing {}: generated {} top-level AST nodes",

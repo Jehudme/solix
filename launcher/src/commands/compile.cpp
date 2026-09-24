@@ -132,6 +132,8 @@ namespace solix::cli {
                 std::cout << "Successfully compiled to " << *output << std::endl;
                 
             } catch (const std::exception& e) {
+                std::error_code ec;
+                std::filesystem::remove(*output, ec);
                 std::cerr << "Compilation failed: " << e.what() << std::endl;
                 exit(1);
             }

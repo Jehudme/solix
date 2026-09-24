@@ -19,15 +19,35 @@ std::vector<uint8_t> run(CompilationOptions& options) {
     
     Lexer lexer(context, "Lexer");
     lexer.execute();
+    if (context.diagnostic->has_errors()) {
+        throw CompilationFailedException("Lexical analysis failed with errors");
+    }
     
     Parser parser(context, "Parser");
     parser.execute();
+    if (context.diagnostic->has_errors()) {
+        throw CompilationFailedException("Syntax analysis failed with errors");
+    }
     
     Binder binder(context, "Binder");
-    binder.execute();
+    try {
+        binder.execute();
+    } catch (const std::exception &e) {
+        throw CompilationFailedException(std::string("Semantic analysis failed: ") + e.what());
+    }
+    if (context.diagnostic->has_errors()) {
+        throw CompilationFailedException("Semantic analysis failed with errors");
+    }
     
     Assembler assembler(context, "Assembler");
-    assembler.execute();
+    try {
+        assembler.execute();
+    } catch (const std::exception &e) {
+        throw CompilationFailedException(std::string("Assembly failed: ") + e.what());
+    }
+    if (context.diagnostic->has_errors()) {
+        throw CompilationFailedException("Assembly failed with errors");
+    }
     
     if (options.assembly_output_path.has_value()) {
         std::ofstream asm_file(options.assembly_output_path.value());

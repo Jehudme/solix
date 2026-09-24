@@ -1,5 +1,6 @@
 #include "processes/lexer.hpp"
 #include "solix/compilation.hpp"
+#include "utilities/diagnostic.hpp"
 #include "utilities/token.hpp"
 #include <fstream>
 #include <sstream>
@@ -231,16 +232,55 @@ void Lexer::execute() {
                     content = ss.str();
                 } else {
                     log_error("Failed to read file: {}", source_name);
+                    if (context.diagnostic) {
+                        Report report;
+                        report.severity = ReportSeverity::ERROR;
+                        report.code = "E_LEX_FILE";
+                        report.message = "Failed to read file: " + source_name;
+                        report.source_path = source_name;
+                        report.line = 1;
+                        report.column = 1;
+                        context.diagnostic->record_report(report);
+                    }
                     continue;
                 }
             } else {
                 log_error("Source '{}' is a string identifier but no content was provided", source_name);
+                if (context.diagnostic) {
+                    Report report;
+                    report.severity = ReportSeverity::ERROR;
+                    report.code = "E_LEX_NO_CONTENT";
+                    report.message = "Source '" + source_name + "' is a string identifier but no content was provided";
+                    report.source_path = source_name;
+                    report.line = 1;
+                    report.column = 1;
+                    context.diagnostic->record_report(report);
+                }
                 continue;
             }
         }
 
         LexerState state(content, &source);
         TokenList tokens = state.tokenize();
+
+        if (context.diagnostic) {
+            for (const auto &tok : tokens) {
+                if (tok.type == TokenType::UNKNOWN_TOKEN) {
+                    std::string msg = "Unknown token";
+                    if (std::holds_alternative<std::string>(tok.value)) {
+                        msg = "Lexical error: " + std::get<std::string>(tok.value);
+                    }
+                    Report report;
+                    report.severity = ReportSeverity::ERROR;
+                    report.code = "E_LEX";
+                    report.message = msg;
+                    report.source_path = source_name;
+                    report.line = tok.line;
+                    report.column = tok.column;
+                    context.diagnostic->record_report(report);
+                }
+            }
+        }
         
         log_debug("Tokenized {} with {} tokens", source_name, tokens.size());
         context.tokens[source].push_back(std::move(tokens));
