@@ -74,18 +74,18 @@ struct Memory {
   void deallocate(Address address);
 
   // ARC Reference Counting Methods (Replaces GarbageCollector class)
-  inline void increase_reference(Address address);
-  inline void decrease_reference(Address address);
+  void increase_reference(Address address);
+  void decrease_reference(Address address);
 
   // Casting Helpers for 64-bit blocks
-  inline void write_u64(Address address, uint32_t offset, uint64_t value);
-  inline uint64_t read_u64(Address address, uint32_t offset) const;
+  void write_u64(Address address, uint32_t offset, uint64_t value);
+  uint64_t read_u64(Address address, uint32_t offset) const;
 
-  inline void write_f64(Address address, uint32_t offset, double value);
-  inline double read_f64(Address address, uint32_t offset) const;
+  void write_f64(Address address, uint32_t offset, double value);
+  double read_f64(Address address, uint32_t offset) const;
 
-  inline void write_char(Address address, uint32_t offset, char value);
-  inline char read_char(Address address, uint32_t offset) const;
+  void write_char(Address address, uint32_t offset, char value);
+  char read_char(Address address, uint32_t offset) const;
 };
 
 void run(RuntimeOptions &options);

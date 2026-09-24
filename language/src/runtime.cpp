@@ -91,33 +91,33 @@ void Memory::deallocate(Address address) {
   free_blocks.push_back(header_addr);
 }
 
-inline void Memory::write_u64(Address address, uint32_t offset,
+void Memory::write_u64(Address address, uint32_t offset,
                               uint64_t value) {
   heap[address + offset] = value;
 }
-inline uint64_t Memory::read_u64(Address address, uint32_t offset) const {
+uint64_t Memory::read_u64(Address address, uint32_t offset) const {
   return heap[address + offset];
 }
-inline void Memory::write_f64(Address address, uint32_t offset, double value) {
+void Memory::write_f64(Address address, uint32_t offset, double value) {
   heap[address + offset] = std::bit_cast<uint64_t>(value);
 }
-inline double Memory::read_f64(Address address, uint32_t offset) const {
+double Memory::read_f64(Address address, uint32_t offset) const {
   return std::bit_cast<double>(heap[address + offset]);
 }
-inline void Memory::write_char(Address address, uint32_t offset, char value) {
+void Memory::write_char(Address address, uint32_t offset, char value) {
   heap[address + offset] = static_cast<uint64_t>(value);
 }
-inline char Memory::read_char(Address address, uint32_t offset) const {
+char Memory::read_char(Address address, uint32_t offset) const {
   return static_cast<char>(heap[address + offset]);
 }
 
-inline void Memory::increase_reference(Address address) {
+void Memory::increase_reference(Address address) {
   if (address == 0)
     return;
   heap[address - 1]++;
 }
 
-inline void Memory::decrease_reference(Address address) {
+void Memory::decrease_reference(Address address) {
   if (address == 0)
     return;
   uint64_t &header = heap[address - 1];
