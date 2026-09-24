@@ -201,3 +201,67 @@
 - [ ] **Clean Up `tests/CMakeLists.txt`**
   - Remove redundant `target_sources()` calls that duplicate `file(GLOB_RECURSE TEST_SOURCES)`.
   - Ensure Catch2 test discovery operates cleanly without duplicate source registrations.
+
+---
+
+## 7. Performance Benchmarking Suite
+
+- [ ] **Create Dedicated Benchmark Suite (`benchmarks/`)**
+  - **Goal**: Measure VM execution throughput, memory overhead, and compiler performance with repeatable, automated benchmarks.
+  - **Micro-Benchmarks**:
+    - **ALU & Loops**: Tight loops performing `int32`, `int64`, and `float64` operations to measure pure opcode dispatch overhead.
+    - **Function Calls**: Cost of direct calls, virtual vtable dispatch, and native C++ call boundary transitions.
+    - **Memory & ARC**: Heap allocation churn, object creation, array allocation, and reference counter (`retain`/`release`) latency.
+    - **Array Access**: Bounds check overhead and sequential vs. random indexing throughput.
+    - **Exception Handling**: Unwinding latency and `try-catch` setup/teardown impact on hot paths.
+    - **String Manipulation**: `String` concatenation vs. `StringBuilder` append throughput.
+  - **Macro-Benchmarks**:
+    - Recursive Fibonacci (`fib(35)`).
+    - Prime Sieve of Eratosthenes ($10^6$ elements).
+    - Matrix multiplication ($256 \times 256$ float64).
+    - Large collection operations: inserting, looking up, and sorting $100,000$ elements in `List`, `Map`, and `HashSet`.
+  - **Benchmark Runner & Tooling**:
+    - Implement a benchmark runner CLI or target producing structured execution metrics (time elapsed, peak memory, throughput).
+    - Provide baseline comparison scripts against CPython, LuaJIT, and Native C++.
+
+---
+
+## 8. Language User Guide & Keyword Wiki
+
+- [ ] **Complete Keyword Wiki (`docs/wiki/keywords.md`)**
+  - Document every Solix keyword with syntax rules, semantic behavior, and code examples:
+    - **Control Flow**: `if`, `else`, `for`, `while`, `do`, `switch`, `case`, `default`, `break`, `continue`, `return`.
+    - **Exception Handling**: `try`, `catch`, `finally`, `throw`.
+    - **Object-Oriented Programming**: `class`, `extends`, `super`, `new`, `virtual`, `override`, `abstract`, `interface`, `implements`, `instanceof`.
+    - **Access & Scope Modifiers**: `public`, `private`, `protected`, `internal`, `static`, `inline`, `native`, `const`, `weak`.
+    - **Modularity & Types**: `package`, `alias`, `enum`, `operator`.
+  - Include common pitfalls and best practices for each keyword.
+
+- [ ] **Language User Guide & Tutorial (`docs/guide/`)**
+  - **Getting Started**: Installing Solix, using the CLI (`solix compile`, `solix run`), creating a first project.
+  - **Type System**: Primitive numeric types (`int8` through `uint64`), floating-point types, `bool`, `char`, and arrays (`T[]`).
+  - **Generics & Templates**: Writing template classes, generic methods, type deduction, and explicit specialization.
+  - **Memory Management (ARC)**: Understanding Solix's reference counting, scope-based cleanup, and using `weak` to break circular references.
+  - **Error Handling Guide**: Structuring custom exceptions, catching hierarchy levels, and resource guarantees with `finally`.
+
+---
+
+## 9. Internal Architecture & Feature Implementation Documentation
+
+- [ ] **Compiler Pipeline Architecture Guide (`docs/architecture/pipeline.md`)**
+  - Detailed documentation of each compilation process:
+    1. **Lexer**: Token streaming, scanner states, character literal handling, keyword mapping.
+    2. **Parser**: Recursive descent architecture, operator precedence climbing, AST node taxonomy (`statements.hpp`), and syntax error recording.
+    3. **Binder (Semantic Analysis)**:
+       - **Pass 1a**: Global symbol table construction, package scoping, class & function template blueprint registration.
+       - **Pass 1b**: Class member registration, method signature mangling, operator overload cataloging.
+       - **Pass 2**: Type resolution, inheritance DAG validation, memory frame sizing.
+       - **Pass 3**: Expression type checking, template monomorphization, ARC lifecycle hook insertion, and method call resolution.
+    4. **Assembler**: Bytecode layout, opcode generation, label jump resolution, literal pool serialization, `.slxb` binary header and section format.
+    5. **Runtime (VM)**: Stack frame activation, operand stack, ARC heap management, native function registry, and exception unwinding tables.
+
+- [ ] **Feature Implementation Deep Dives (`docs/architecture/features/`)**
+  - **Try-Catch & Exception Unwinding**: Bytecode opcodes (`SETUP_TRY_BLOCK`, `TEARDOWN_TRY_BLOCK`, `THROW_EXCEPTION`), runtime handler table lookup, stack unwinding, and `finally` execution guarantees.
+  - **Generics & Monomorphization**: Blueprint AST copying, generic parameter substitution, mangled name generation, and deduction algorithms.
+  - **Automatic Reference Counting (ARC)**: Compiler-inserted retain/release points, assignment semantics, temporary expression destruction, and weak reference handling.
+  - **Polymorphism & Vtables**: Vtable layout, method indexing, and the optimization where vtables are omitted for non-polymorphic, non-throwable classes.
