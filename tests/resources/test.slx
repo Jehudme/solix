@@ -497,6 +497,79 @@ public class Phase32TestRunner {
         }
 
         Console.println("=== PHASE 32 TESTS OK ===");
+        Phase33TestRunner.run();
     }
 }
+
+// ============================================================================
+// Phase 33: Assembler CodeGen & ARC Safety Integration Test
+// ============================================================================
+
+public class Phase33Node {
+    public int32 value = 77;
+    public int32 extra = 88;
+    public Phase33Node(int32 v) {
+        this.value = v;
+    }
+}
+
+public class Phase33DefaultNode {
+    public int32 default_a = 42;
+    public int32 default_b = 99;
+    public Phase33DefaultNode() {}
+}
+
+public class Phase33TestRunner {
+    public static Phase33Node return_local_node() {
+        Phase33Node n = new Phase33Node(1234);
+        return n;
+    }
+
+    public static void run() {
+        Console.println("=== TESTING PHASE 33 ASSEMBLER CODEGEN & ARC ===");
+
+        // Test 1: Field initializers in default constructor
+        Phase33DefaultNode def_node = new Phase33DefaultNode();
+        if (def_node.default_a == 42 && def_node.default_b == 99) {
+            Console.println("Default constructor field initializers OK!");
+        } else {
+            Console.println("Default constructor field initializers FAILED!");
+        }
+
+        // Test 2: Postfix increment and decrement
+        int32 counter = 10;
+        int32 post_val = counter++;
+        if (post_val == 10 && counter == 11) {
+            Console.println("Postfix increment OK!");
+        } else {
+            Console.println("Postfix increment FAILED!");
+        }
+
+        int32 post_dec_val = counter--;
+        if (post_dec_val == 11 && counter == 10) {
+            Console.println("Postfix decrement OK!");
+        } else {
+            Console.println("Postfix decrement FAILED!");
+        }
+
+        // Test 3: Returning local reference without use-after-free
+        Phase33Node ret = return_local_node();
+        if (ret.value == 1234 && ret.extra == 88) {
+            Console.println("Returning local reference OK!");
+        } else {
+            Console.println("Returning local reference FAILED!");
+        }
+
+        // Test 4: Array literals with reference types
+        Phase33Node[] arr = { new Phase33Node(101), new Phase33Node(202) };
+        if (arr[0].value == 101 && arr[1].value == 202) {
+            Console.println("Array literal reference elements OK!");
+        } else {
+            Console.println("Array literal reference elements FAILED!");
+        }
+
+        Console.println("=== PHASE 33 TESTS OK ===");
+    }
+}
+
 

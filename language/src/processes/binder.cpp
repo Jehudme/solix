@@ -855,6 +855,12 @@ void Binder::bind_tree(Node *root) {
               ctor->class_name, ctor->frame_size);
     exit_scope();
     return;
+  } else if (root->node_type == NodeType::FIELD_DECL) {
+    auto *field = static_cast<FieldDeclaration *>(root);
+    if (field->initializer) {
+      evaluate_expression(field->initializer.get());
+    }
+    return;
   }
 
   for (const auto &child : root->children) {
