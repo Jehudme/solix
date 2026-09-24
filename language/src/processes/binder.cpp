@@ -1958,7 +1958,66 @@ void Binder::visit(MethodDeclaration &n) {
 }
 
 
-void Binder::visit(TryStatement& n) {}
-void Binder::visit(CatchClause& n) {}
-void Binder::visit(ThrowStatement& n) {}
+void Binder::visit(TryStatement& n) {
+    if (current_pass == BinderPass::REGISTER_GLOBALS) {
+        if (n.try_block) register_global_symbols(n.try_block.get(), current_prefix);
+        for (auto& c : n.catch_clauses) if (c) register_global_symbols(c.get(), current_prefix);
+        if (n.finally_block) register_global_symbols(n.finally_block.get(), current_prefix);
+    } else if (current_pass == BinderPass::REGISTER_MEMBERS) {
+        if (n.try_block) register_members(n.try_block.get(), current_prefix);
+        for (auto& c : n.catch_clauses) if (c) register_members(c.get(), current_prefix);
+        if (n.finally_block) register_members(n.finally_block.get(), current_prefix);
+    } else if (current_pass == BinderPass::BIND_EXECUTION) {
+        if (n.try_block) bind_node(n.try_block.get());
+        for (auto& c : n.catch_clauses) if (c) bind_node(c.get());
+        if (n.finally_block) bind_node(n.finally_block.get());
+    }
+}
+
+void Binder::visit(CatchClause& n) {
+    if (current_pass == BinderPass::REGISTER_GLOBALS) {
+        if (n.body) register_global_symbols(n.body.get(), current_prefix);
+    } else if (current_pass == BinderPass::REGISTER_MEMBERS) {
+        if (n.body) register_members(n.body.get(), current_prefix);
+    } else if (current_pass == BinderPass::BIND_EXECUTION) {
+        TypeInfo exc_type = resolve_type(n.exception_type, &n);
+        n.exception_type = exc_type;
+        
+        Node *target_class = global_scope.resolve(n.exception_type.name);
+        if (target_class && target_class->node_type == NodeType::CLASS_DECL) {
+            n.target_vtable_id = static_cast<ClassDeclaration *>(target_class)->vtable_id;
+        } else {
+            record_error(&n, "Catch clause exception type '" + exc_type.name + "' is not a class.");
+        }
+        
+        Token dummy_tok;
+        dummy_tok.type = TokenType::UNKNOWN_TOKEN;
+        n.catch_param_decl = std::make_unique<VariableDeclaration>(dummy_tok, n.variable_name, exc_type);
+        auto* decl = static_cast<VariableDeclaration*>(n.catch_param_decl.get());
+        decl->is_reference_type = true;
+        decl->resolved_declaration = decl;
+        decl->memory_index = local_variable_index++;
+        n.variable_memory_index = decl->memory_index;
+        
+        SymbolTable catch_scope;
+        enter_scope(&catch_scope);
+        declare_local(n.variable_name, decl);
+        
+        if (n.body) bind_node(n.body.get());
+        
+        exit_scope();
+    }
+}
+
+void Binder::visit(ThrowStatement& n) {
+    if (current_pass == BinderPass::REGISTER_GLOBALS) {
+        if (n.exception_expression) register_global_symbols(n.exception_expression.get(), current_prefix);
+    } else if (current_pass == BinderPass::REGISTER_MEMBERS) {
+        if (n.exception_expression) register_members(n.exception_expression.get(), current_prefix);
+    } else if (current_pass == BinderPass::BIND_EXECUTION) {
+        if (n.exception_expression) {
+            evaluate_expression(n.exception_expression.get());
+        }
+    }
+}
 } // namespace solix
