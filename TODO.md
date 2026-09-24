@@ -333,3 +333,36 @@
       - Thread-safe heap allocation: thread-local allocation blocks or fine-grained allocator mutexes.
     - **CLI & Compiler Integration**:
       - Connect compiler flag `--multithreaded` (already present in `CompilationOptions::use_multithreading`) to enable thread-safe atomic bytecode emission and VM runtime threading support.
+
+---
+
+## 12. Examples Project & Code Showcase (`examples/`)
+
+- [ ] **Create Dedicated Examples Project (`examples/`)**
+  - **Goal**: Provide a clean, rich collection of runnable Solix sample programs demonstrating language features from basics to advanced real-world applications.
+  - **Showcase Structure & Sample Programs**:
+    - **`examples/01_basics/`**:
+      - `hello_world.slx`: Basic `Console.println()`, command-line arguments handling (`main(char[][] args)`), and exit codes.
+      - `primitives.slx`: Numeric types, floats, chars, booleans, and raw array operations.
+      - `control_flow.slx`: `if-else`, `while`, `do-while`, `for`, and `switch-case` branches.
+      - `functions.slx`: Static methods, top-level functions, default parameters, and recursion.
+    - **`examples/02_oop/`**:
+      - `classes_and_objects.slx`: Encapsulation, constructors, member fields, and `this`.
+      - `inheritance_polymorphism.slx`: Base classes, `extends`, `virtual`, `override`, and `super` calls.
+      - `operator_overloading.slx`: Custom `operator==`, `operator+`, and `operator=` implementations.
+    - **`examples/03_generics/`**:
+      - `generic_containers.slx`: Defining and using class templates (`Box<T>`, `Pair<K, V>`).
+      - `template_functions.slx`: Top-level generic methods and implicit type deduction.
+    - **`examples/04_exceptions/`**:
+      - `exception_handling.slx`: `try`, `catch`, `finally`, and re-throwing exceptions.
+      - `custom_exceptions.slx`: Subclassing `Exception` and building domain-specific error hierarchies.
+    - **`examples/05_stdlib/`**:
+      - `collections_demo.slx`: Practical usage of `List<T>`, `Map<K, V>`, `HashSet<T>`, `Queue<T>`, and `Stack<T>`.
+      - `string_builder_demo.slx`: High-performance string manipulation and formatting.
+      - `optional_result_demo.slx`: Functional error handling using `Optional<T>` and `Result<T, E>`.
+    - **`examples/06_applications/`**:
+      - `calculator.slx`: Interactive console arithmetic expression calculator.
+      - `todo_app.slx`: Console task manager demonstrating collections, user input, and string processing.
+      - `algorithms.slx`: Quicksort, merge sort, binary search, and recursive tree traversals.
+  - **Automated Example Runner**:
+    - Provide a runner script (`examples/run_all.sh`) or CMake target (`make run_examples`) that compiles and runs every example script to prevent regression.
