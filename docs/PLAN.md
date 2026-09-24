@@ -1026,69 +1026,25 @@ We can remediate these findings in targeted stages:
 
 ---
 
-## Phase 32 — Runtime VM & Memory Safety
+## Phase 32 — Runtime VM & Memory Safety [COMPLETED]
 
-**Branch:** `phase-32-runtime-vm-memory`  
+**Branch:** `phase-32-runtime-vm-memory` (Merged to `master`)  
 **Criticality:** 🔴 Critical  
 **Difficulty:** ⭐⭐ Medium  
 
-### 32.1 — Dynamic Allocation Free-List Sizing Check
-- **File:** `language/src/runtime.cpp`
-- In `Memory::dynamic_allocation(size_in_words)`, verify that a recycled block from `free_blocks` satisfies `block_size >= size_in_words`. If no fitting block exists, allocate from `next_free_dynamic`.
-
-### 32.2 — Integer and Float Negation Fix
-- **Files:** `language/src/runtime.cpp`, `language/src/processes/assembler.cpp`
-- In `assembler.cpp:visit(UnaryExpression)`, differentiate integer vs floating-point negation. For integers, emit `0` then operand then `SUB_I64` (or emit `NEGATE` only for floating-point and integer subtract for integer).
-- In `runtime.cpp:op_NEGATE`, ensure floating-point negate operates on `double` values correctly, or support integer negation.
-
-### 32.3 — Implement Primitive Type Conversions in `op_CONV_*`
-- **File:** `language/src/runtime.cpp`
-- In `op_CONV_I8`, `op_CONV_I16`, `op_CONV_I32`, `op_CONV_I64`, `op_CONV_U8`, `op_CONV_U16`, `op_CONV_U32`, `op_CONV_U64`, `op_CONV_F32`, `op_CONV_F64`, implement proper bit masking, sign extension, and float/int conversions instead of no-op dispatches.
-
-### 32.4 — Cleanup Unhandled Exception Reference Leak & Remove Debug Prints
-- **File:** `language/src/runtime.cpp`
-- In top-level unhandled exception handler, decrement ref count for `active_exception` to prevent leak.
-- Remove leftover debug print at `address == 50`.
-
 ---
 
-## Phase 33 — Assembler CodeGen & ARC Safety
+## Phase 33 — Assembler CodeGen & ARC Safety [COMPLETED]
 
-**Branch:** `phase-33-assembler-codegen-arc`  
+**Branch:** `phase-33-assembler-codegen-arc` (Merged to `master`)  
 **Criticality:** 🔴 Critical  
 **Difficulty:** ⭐⭐⭐ Hard  
 
-### 33.1 — Constructor Visitor Dispatch for Field Initializers
-- **File:** `language/src/processes/assembler.cpp`
-- In `compile_class`, call `compile_node(child.get())` on `CONSTRUCTOR_DECL` so that `visit(ConstructorDeclaration&)` runs and emits non-static field initializers.
-
-### 33.2 — Fix Weak Property Assignment Over-Decrement
-- **File:** `language/src/processes/assembler.cpp`
-- Remove the spurious `DUP` and `DEC_REF` instructions in `visit(AssignmentExpression)` before `WEAK_SET_PROPERTY`.
-
-### 33.3 — Prevent Premature Deallocation on Returning Local References
-- **File:** `language/src/processes/assembler.cpp`
-- In `visit(ReturnStatement)`, check if the return expression is a reference type and emit `INC_REF` before emitting block cleanup, preventing returned objects from being deallocated.
-
-### 33.4 — Emit Missing `INC_REF` on Identifier Field Reads & Array Literals
-- **File:** `language/src/processes/assembler.cpp`
-- In `visit(IdentifierNode)`, emit `INC_REF` when reading reference-typed fields.
-- In `visit(ArrayLiteralExpression)`, emit `INC_REF` for reference-typed elements before `SET_ARRAY`.
-
-### 33.5 — Support Postfix Increment and Decrement
-- **File:** `language/src/processes/assembler.cpp`
-- In `visit(UnaryExpression)`, inspect `uny->is_prefix`. For postfix operations, duplicate the original value before updating the target so the original value is left on the stack.
-
-### 33.6 — Exception Cleanup Patches & Catch Variable ARC Management
-- **File:** `language/src/processes/assembler.cpp`
-- In `visit(TryStatement)`, emit `OpCode::JMP_TO_OUTER_CLEANUP` when `exception_cleanup_patches.empty()`.
-- Emit cleanup (`GET_LOCAL` + `DEC_REF`) for `catch_clause->variable_memory_index` upon exiting catch clauses.
-
 ---
 
-## Phase 34 — Semantic Analysis & Type System Binding
+## Phase 34 — Semantic Analysis & Type System Binding [COMPLETED]
 
-**Branch:** `phase-34-binder-types-vtables`  
+**Branch:** `phase-34-binder-types-vtables` (Merged to `master`)  
 **Criticality:** 🔴 Critical  
 **Difficulty:** ⭐⭐⭐ Hard  
 
