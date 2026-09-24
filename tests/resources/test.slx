@@ -569,7 +569,82 @@ public class Phase33TestRunner {
         }
 
         Console.println("=== PHASE 33 TESTS OK ===");
+        Phase34TestRunner.run();
     }
 }
+
+// ============================================================================
+// Phase 34: Semantic Analysis & Type System Binding Integration Test
+// ============================================================================
+
+public class Phase34BaseEntity {
+    public int32 base_val = 100;
+    public Phase34BaseEntity() {}
+    public virtual int32 get_code() {
+        return this.base_val;
+    }
+}
+
+public class Phase34DerivedEntity : Phase34BaseEntity {
+    public int32 extra_val = 200;
+    public Phase34DerivedEntity() {
+        this.base_val = 150;
+    }
+    public override int32 get_code() {
+        return this.base_val + this.extra_val;
+    }
+}
+
+public class Phase34Holder {
+    public Phase34BaseEntity entity;
+    public Phase34Holder(Phase34BaseEntity e) {
+        this.entity = e;
+    }
+}
+
+public class Phase34Helper {
+    public static T identity<T>(T val) {
+        return val;
+    }
+
+    public static int32 process_entity(Phase34BaseEntity e) {
+        return e.get_code();
+    }
+}
+
+public class Phase34TestRunner {
+    public static void run() {
+        Console.println("=== TESTING PHASE 34 SEMANTIC ANALYSIS & BINDING ===");
+
+        // Test 1: Method template instantiation idempotency
+        int32 id1 = Phase34Helper.identity<int32>(555);
+        int32 id2 = Phase34Helper.identity<int32>(777);
+        if (id1 == 555 && id2 == 777) {
+            Console.println("Method template idempotency OK!");
+        } else {
+            Console.println("Method template idempotency FAILED!");
+        }
+
+        // Test 2: Subtype polymorphism in method calls
+        Phase34DerivedEntity derived = new Phase34DerivedEntity();
+        int32 code = Phase34Helper.process_entity(derived);
+        if (code == 350) {
+            Console.println("Subtype polymorphism in method calls OK!");
+        } else {
+            Console.println("Subtype polymorphism in method calls FAILED!");
+        }
+
+        // Test 3: Subtype polymorphism in constructor calls
+        Phase34Holder holder = new Phase34Holder(derived);
+        if (holder.entity.get_code() == 350) {
+            Console.println("Subtype polymorphism in constructor calls OK!");
+        } else {
+            Console.println("Subtype polymorphism in constructor calls FAILED!");
+        }
+
+        Console.println("=== PHASE 34 TESTS OK ===");
+    }
+}
+
 
 

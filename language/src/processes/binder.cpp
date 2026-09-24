@@ -159,6 +159,9 @@ Node *Binder::instantiate_template(const std::string &template_name,
     static_cast<MethodDeclaration *>(clone)->method_name =
         mangled_name.substr(my_prefix.length());
     register_members(clone, my_prefix);
+    if (!global_scope.symbols.count(mangled_name)) {
+      global_scope.define(mangled_name, clone);
+    }
     if (current_pass == BinderPass::BIND_EXECUTION ||
         current_pass == BinderPass::EVALUATE_EXPRESSION) {
       BinderPass old = current_pass;
@@ -467,8 +470,59 @@ void Binder::bind_types_and_memory() {
     }
   }
 
+  auto resolve_base_class = [&](ClassDeclaration *cls) -> Node * {
+    if (cls->base_class_name.empty()) return nullptr;
+    Node *node = global_scope.resolve(cls->base_class_name);
+    if (node) return node;
+    std::string simple_name = cls->base_class_name;
+    size_t last_dot = simple_name.rfind('.');
+    if (last_dot != std::string::npos) {
+      simple_name = simple_name.substr(last_dot + 1);
+    }
+    node = global_scope.resolve(simple_name);
+    if (node) {
+      cls->base_class_name = simple_name;
+      return node;
+    }
+    std::string solix_name = "solix." + simple_name;
+    node = global_scope.resolve(solix_name);
+    if (node) {
+      cls->base_class_name = solix_name;
+      return node;
+    }
+    for (const auto &[sym_name, sym_node] : global_scope.symbols) {
+      if (sym_node->node_type == NodeType::CLASS_DECL) {
+        auto *candidate = static_cast<ClassDeclaration *>(sym_node);
+        if (candidate->class_name == simple_name) {
+          cls->base_class_name = candidate->mangled_name;
+          return candidate;
+        }
+      }
+    }
+    return nullptr;
+  };
+
+  for (const auto &[name, node] : global_scope.symbols) {
+    if (node->node_type == NodeType::CLASS_DECL) {
+      resolve_base_class(static_cast<ClassDeclaration *>(node));
+    }
+  }
+
   std::unordered_map<std::string, std::vector<MethodDeclaration *>> vtables;
   std::unordered_set<std::string> vtable_calculated;
+
+  auto get_method_sig = [](const std::string &mangled) -> std::string {
+    size_t paren = mangled.find('(');
+    if (paren == std::string::npos) {
+      size_t last_dot = mangled.rfind('.');
+      return (last_dot == std::string::npos) ? mangled : mangled.substr(last_dot + 1);
+    }
+    size_t last_dot = mangled.rfind('.', paren);
+    if (last_dot == std::string::npos) {
+      return mangled;
+    }
+    return mangled.substr(last_dot + 1);
+  };
 
   std::function<void(ClassDeclaration *)> calculate_vtable =
       [&](ClassDeclaration *cls) {
@@ -492,10 +546,8 @@ void Binder::bind_types_and_memory() {
             if (method->is_override) {
               bool found = false;
               for (size_t i = 0; i < vtable.size(); ++i) {
-                std::string base_sig = vtable[i]->mangled_name.substr(
-                    vtable[i]->mangled_name.rfind('.') + 1);
-                std::string drv_sig = method->mangled_name.substr(
-                    method->mangled_name.rfind('.') + 1);
+                std::string base_sig = get_method_sig(vtable[i]->mangled_name);
+                std::string drv_sig = get_method_sig(method->mangled_name);
                 if (base_sig == drv_sig) {
                   vtable[i] = method;
                   method->vtable_index = i;
@@ -540,44 +592,6 @@ void Binder::bind_types_and_memory() {
           break;
         }
       }
-    }
-  }
-
-  auto resolve_base_class = [&](ClassDeclaration *cls) -> Node * {
-    if (cls->base_class_name.empty()) return nullptr;
-    Node *node = global_scope.resolve(cls->base_class_name);
-    if (node) return node;
-    std::string simple_name = cls->base_class_name;
-    size_t last_dot = simple_name.rfind('.');
-    if (last_dot != std::string::npos) {
-      simple_name = simple_name.substr(last_dot + 1);
-    }
-    node = global_scope.resolve(simple_name);
-    if (node) {
-      cls->base_class_name = simple_name;
-      return node;
-    }
-    std::string solix_name = "solix." + simple_name;
-    node = global_scope.resolve(solix_name);
-    if (node) {
-      cls->base_class_name = solix_name;
-      return node;
-    }
-    for (const auto &[sym_name, sym_node] : global_scope.symbols) {
-      if (sym_node->node_type == NodeType::CLASS_DECL) {
-        auto *candidate = static_cast<ClassDeclaration *>(sym_node);
-        if (candidate->class_name == simple_name) {
-          cls->base_class_name = candidate->mangled_name;
-          return candidate;
-        }
-      }
-    }
-    return nullptr;
-  };
-
-  for (const auto &[name, node] : global_scope.symbols) {
-    if (node->node_type == NodeType::CLASS_DECL) {
-      resolve_base_class(static_cast<ClassDeclaration *>(node));
     }
   }
 
@@ -745,13 +759,15 @@ void Binder::bind_tree(Node *root) {
     ClassDeclaration *pc;
     MethodDeclaration *pm;
     uint32_t pl;
+    std::string ppkg;
     StateGuard(Binder *b)
         : b(b), pc(b->current_class), pm(b->current_method),
-          pl(b->local_variable_index) {}
+          pl(b->local_variable_index), ppkg(b->current_package) {}
     ~StateGuard() {
       b->current_class = pc;
       b->current_method = pm;
       b->local_variable_index = pl;
+      b->current_package = ppkg;
     }
   } guard(this);
 
@@ -762,6 +778,9 @@ void Binder::bind_tree(Node *root) {
           "Skipping uninstantiated template class blueprint '{}' in bind_tree",
           cls->class_name);
       return;
+    }
+    if (!cls->package_context.empty()) {
+      current_package = cls->package_context;
     }
     log_debug("Binding AST tree for class '{}'", cls->class_name);
     current_class = cls;
@@ -856,10 +875,7 @@ void Binder::bind_tree(Node *root) {
     exit_scope();
     return;
   } else if (root->node_type == NodeType::FIELD_DECL) {
-    auto *field = static_cast<FieldDeclaration *>(root);
-    if (field->initializer) {
-      evaluate_expression(field->initializer.get());
-    }
+    bind_node(root);
     return;
   }
 
@@ -881,13 +897,35 @@ bool Binder::is_assignable(const TypeInfo &target, const TypeInfo &source) {
     Node *tgt_node = global_scope.resolve(target.name);
     if (tgt_node && tgt_node->node_type == NodeType::CLASS_DECL) return true;
   }
+  // Allow numeric conversions
+  auto is_integer = [](const std::string &name) {
+    return name == "int8" || name == "int16" || name == "int32" || name == "int64" ||
+           name == "uint8" || name == "uint16" || name == "uint32" || name == "uint64";
+  };
+  auto is_floating = [](const std::string &name) {
+    return name == "float32" || name == "float64";
+  };
+  if (target.array_depth == 0 && source.array_depth == 0) {
+    if (is_integer(target.name) && is_integer(source.name))
+      return true;
+    if (is_floating(target.name) && is_floating(source.name))
+      return true;
+  }
+  // Allow char[] to String object assignment / parameter passing
+  if (target.array_depth == 0 && (target.name == "String" || target.name.ends_with(".String"))) {
+    if (source.array_depth == 1 && source.name == "char") {
+      return true;
+    }
+  }
+
   if (target.array_depth != source.array_depth)
     return false;
 
+  Node *target_node = global_scope.resolve(target.name);
   Node *src_node = global_scope.resolve(source.name);
   while (src_node && src_node->node_type == NodeType::CLASS_DECL) {
     auto *cls = static_cast<ClassDeclaration *>(src_node);
-    if (cls->mangled_name == target.name)
+    if (src_node == target_node || cls->mangled_name == target.name || cls->class_name == target.name)
       return true;
     if (cls->base_class_name.empty())
       break;
@@ -981,13 +1019,30 @@ void Binder::visit(IdentifierNode &n) {
       return;
     }
 
+    std::string node_pkg = (!n.package_context.empty()) ? n.package_context : current_package;
+    if (!node_pkg.empty() && node_pkg.back() != '.') node_pkg += '.';
+
     Node *declaration = current_scope->resolve(n.name);
     if (!declaration && current_class) {
-      declaration =
-          global_scope.resolve(current_class->mangled_name + "." + n.name);
+      ClassDeclaration *cls_iter = current_class;
+      while (cls_iter && !declaration) {
+        declaration = global_scope.resolve(cls_iter->mangled_name + "." + n.name);
+        if (!declaration && !cls_iter->base_class_name.empty()) {
+          Node *base_node = global_scope.resolve(cls_iter->base_class_name);
+          cls_iter = (base_node && base_node->node_type == NodeType::CLASS_DECL)
+                         ? static_cast<ClassDeclaration *>(base_node)
+                         : nullptr;
+        } else {
+          break;
+        }
+      }
+    }
+    if (!declaration && !node_pkg.empty()) {
+      declaration = global_scope.resolve(node_pkg + n.name);
     }
     if (!declaration && !current_package.empty()) {
-      declaration = global_scope.resolve(current_package + n.name);
+      std::string cur_p = (current_package.back() == '.') ? current_package : current_package + '.';
+      declaration = global_scope.resolve(cur_p + n.name);
     }
     if (!declaration) {
       declaration = global_scope.resolve(n.name);
@@ -995,8 +1050,9 @@ void Binder::visit(IdentifierNode &n) {
     // Cross-package fallback: search all known packages (mirrors resolve_type)
     if (!declaration) {
       for (const auto &pkg : known_packages) {
-        if (pkg == current_package) continue;
-        Node *candidate = global_scope.resolve(pkg + n.name);
+        std::string p = (pkg.empty() || pkg.back() == '.') ? pkg : pkg + '.';
+        if (p == current_package || p == node_pkg) continue;
+        Node *candidate = global_scope.resolve(p + n.name);
         if (candidate) {
           declaration = candidate;
           break;
@@ -1319,10 +1375,80 @@ void Binder::visit(MethodCallExpression &n) {
       while (!method_decl && current_resolve_class) {
         base_name = current_resolve_class->mangled_name + "." +
                     member_access->member_name;
+        if (!n.type_args.empty()) {
+          std::vector<TypeInfo> resolved_targs;
+          for (auto &t : n.type_args)
+            resolved_targs.push_back(resolve_type(t, &n));
+          instantiate_template(base_name, resolved_targs, &n);
+          base_name += "<";
+          for (size_t i = 0; i < resolved_targs.size(); ++i) {
+            base_name += resolved_targs[i].to_string();
+            if (i < resolved_targs.size() - 1)
+              base_name += ",";
+          }
+          base_name += ">";
+        }
         mangled_name = mangle_method_call(base_name, argument_types);
         method_decl = global_scope.resolve(mangled_name);
         if (!method_decl)
           method_decl = global_scope.resolve(base_name);
+
+        // Implicit generic deduction for member method templates
+        if (!method_decl && n.type_args.empty() &&
+            template_registry.count(base_name)) {
+          Node *blueprint = template_registry[base_name];
+          if (blueprint->node_type == NodeType::METHOD_DECL) {
+            auto *method_bp = static_cast<MethodDeclaration *>(blueprint);
+            std::vector<TypeInfo> param_types;
+            for (const auto &p : method_bp->parameters) {
+              param_types.push_back(
+                  static_cast<VariableDeclaration *>(p.get())->type_info);
+            }
+
+            std::vector<TypeInfo> deduced_args;
+            if (deduce_template_arguments(param_types, argument_types,
+                                          method_bp->template_parameters,
+                                          deduced_args)) {
+              std::string instantiated_base = base_name + "<";
+              for (size_t i = 0; i < deduced_args.size(); ++i) {
+                instantiated_base += deduced_args[i].to_string();
+                if (i < deduced_args.size() - 1)
+                  instantiated_base += ",";
+              }
+              instantiated_base += ">";
+              mangled_name =
+                  mangle_method_call(instantiated_base, argument_types);
+              method_decl = global_scope.resolve(mangled_name);
+              if (!method_decl) {
+                instantiate_template(base_name, deduced_args, &n);
+                method_decl = global_scope.resolve(mangled_name);
+              }
+            }
+          }
+        }
+
+        if (!method_decl) {
+          for (const auto &child : current_resolve_class->children) {
+            if (child && child->node_type == NodeType::METHOD_DECL) {
+              auto *m = static_cast<MethodDeclaration *>(child.get());
+              if (m->method_name == member_access->member_name &&
+                  m->parameters.size() == argument_types.size()) {
+                bool match = true;
+                for (size_t i = 0; i < argument_types.size(); ++i) {
+                  auto *p_var = static_cast<VariableDeclaration *>(m->parameters[i].get());
+                  if (!is_assignable(p_var->type_info, argument_types[i])) {
+                    match = false;
+                    break;
+                  }
+                }
+                if (match) {
+                  method_decl = m;
+                  break;
+                }
+              }
+            }
+          }
+        }
 
         if (!method_decl && !current_resolve_class->base_class_name.empty() &&
             !member_access->is_scope_resolution) {
@@ -1391,6 +1517,27 @@ void Binder::visit(MethodCallExpression &n) {
           method_decl = global_scope.resolve(mangled_name);
           if (!method_decl)
             method_decl = global_scope.resolve(base_name);
+          if (!method_decl) {
+            for (const auto &child : current_resolve_class->children) {
+              if (child && child->node_type == NodeType::CONSTRUCTOR_DECL) {
+                auto *c = static_cast<ConstructorDeclaration *>(child.get());
+                if (c->parameters.size() == argument_types.size()) {
+                  bool match = true;
+                  for (size_t i = 0; i < argument_types.size(); ++i) {
+                    auto *p_var = static_cast<VariableDeclaration *>(c->parameters[i].get());
+                    if (!is_assignable(p_var->type_info, argument_types[i])) {
+                      match = false;
+                      break;
+                    }
+                  }
+                  if (match) {
+                    method_decl = c;
+                    break;
+                  }
+                }
+              }
+            }
+          }
         } else {
           while (!method_decl && current_resolve_class) {
             base_name = current_resolve_class->mangled_name + "." + id->name;
@@ -1411,6 +1558,29 @@ void Binder::visit(MethodCallExpression &n) {
             method_decl = global_scope.resolve(mangled_name);
             if (!method_decl)
               method_decl = global_scope.resolve(base_name);
+
+            if (!method_decl) {
+              for (const auto &child : current_resolve_class->children) {
+                if (child && child->node_type == NodeType::METHOD_DECL) {
+                  auto *m = static_cast<MethodDeclaration *>(child.get());
+                  if (m->method_name == id->name &&
+                      m->parameters.size() == argument_types.size()) {
+                    bool match = true;
+                    for (size_t i = 0; i < argument_types.size(); ++i) {
+                      auto *p_var = static_cast<VariableDeclaration *>(m->parameters[i].get());
+                      if (!is_assignable(p_var->type_info, argument_types[i])) {
+                        match = false;
+                        break;
+                      }
+                    }
+                    if (match) {
+                      method_decl = m;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
 
             if (!method_decl &&
                 !current_resolve_class->base_class_name.empty()) {
@@ -1494,6 +1664,30 @@ void Binder::visit(MethodCallExpression &n) {
             }
           }
         }
+
+        if (!method_decl) {
+          std::string search_prefix = base_name + "(";
+          for (const auto &[sym_name, sym_node] : global_scope.symbols) {
+            if (sym_node->node_type == NodeType::METHOD_DECL &&
+                sym_name.find(search_prefix) == 0) {
+              auto *candidate = static_cast<MethodDeclaration *>(sym_node);
+              if (candidate->parameters.size() == argument_types.size()) {
+                bool match = true;
+                for (size_t i = 0; i < argument_types.size(); ++i) {
+                  auto *p_var = static_cast<VariableDeclaration *>(candidate->parameters[i].get());
+                  if (!is_assignable(p_var->type_info, argument_types[i])) {
+                    match = false;
+                    break;
+                  }
+                }
+                if (match) {
+                  method_decl = candidate;
+                  break;
+                }
+              }
+            }
+          }
+        }
       }
 
       if (!method_decl) {
@@ -1560,8 +1754,18 @@ void Binder::visit(NewInstanceExpression &n) {
           auto *candidate = static_cast<ConstructorDeclaration *>(sym_node);
           if (static_cast<int>(candidate->parameters.size()) ==
               expected_param_count) {
-            ctor = sym_node;
-            break;
+            bool match = true;
+            for (size_t p = 0; p < argument_types.size(); ++p) {
+              auto *p_var = static_cast<VariableDeclaration *>(candidate->parameters[p].get());
+              if (!is_assignable(p_var->type_info, argument_types[p])) {
+                match = false;
+                break;
+              }
+            }
+            if (match) {
+              ctor = sym_node;
+              break;
+            }
           }
         }
       }
@@ -1970,6 +2174,15 @@ void Binder::visit(FieldDeclaration &n) {
     n.package_context = current_package;
     global_scope.define(full_name, &n);
     log_trace("Registered class field: '{}'", full_name);
+  } else if (current_pass == BinderPass::BIND_EXECUTION) {
+    if (n.initializer) {
+      TypeInfo init_type = evaluate_expression(n.initializer.get());
+      if (!is_assignable(n.type_info, init_type)) {
+        record_error(&n, "Type mismatch in field initialization: expected '" +
+                              n.type_info.name + "', got '" +
+                              init_type.name + "'");
+      }
+    }
   }
 }
 
