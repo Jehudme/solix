@@ -435,3 +435,31 @@
       - Detect objects that remain allocated at program shutdown with non-zero reference counts.
       - Report offending class types, allocation addresses, and remaining reference counts to help developers identify missing `weak` references.
     - **Allocation Heatmaps**: Log high-frequency allocation hotspots to guide optimization efforts.
+
+---
+
+## 15. Continuous Integration (CI/CD) & Cross-Platform Pipelines
+
+- [ ] **Cross-Platform Multi-OS Build & Test Pipeline (`.github/workflows/ci.yml`)**
+  - **Goal**: Automatically build, test, and package Solix across all supported operating systems on every pull request and push to `master`.
+  - **OS & Compiler Matrix**:
+    - **Linux**: Ubuntu (GCC 11, GCC 12, GCC 13, and Clang 14/15/16).
+    - **macOS**: macOS latest (Apple Clang, ARM64 Apple Silicon and x86_64).
+    - **Windows**: Windows Server latest (MSVC v143 / Visual Studio 2022 and MinGW-w64).
+  - **Build Configurations**:
+    - Both `Debug` (with assertions and sanitizers: ASan, UBSan) and `Release` (optimized) build configurations.
+  - **Pipeline Verification Steps**:
+    1. **Dependency Resolution**: Fetch and configure external dependencies (Catch2, CLI11, spdlog, fmt).
+    2. **Compilation**: Multi-threaded build via `cmake --build build -j`.
+    3. **Unit Tests**: Run full test suite via `ctest --test-dir build --output-on-failure`.
+    4. **Integration & Stdlib Tests**: Execute end-to-end compilations of standard library test suites.
+    5. **Static Analysis & Formatting**: Run `clang-format --dry-run --Werror` and `clang-tidy` linter checks.
+  - **Automated Release Artifacts Packaging (`.github/workflows/release.yml`)**:
+    - On Git version tags (e.g. `v1.0.0`):
+      - Build stripped release binaries.
+      - Bundle `solix` executable, standard library folder (`lib/solix/`), and license.
+      - Package into platform-specific archives:
+        - `solix-linux-x86_64.tar.gz`
+        - `solix-macos-arm64.tar.gz` / `solix-macos-x86_64.tar.gz`
+        - `solix-windows-x64.zip`
+      - Automatically draft GitHub Release with changelog and attached binaries.
