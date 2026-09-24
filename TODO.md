@@ -47,7 +47,18 @@
 
 ---
 
-## 3. Standard Library Architecture & Naming
+## 3. Launcher Executable & Build System
+
+- [ ] **Rename Launcher Executable to `solix` in CMake**
+  - **Issue**: The CLI tool binary is currently named `solix_launcher`. It should be `solix` for a clean, idiomatic user-facing CLI (e.g., `solix compile file.slx -o app.slxb` and `solix run app.slxb`).
+  - **Fix**:
+    - In [`launcher/CMakeLists.txt`](launcher/CMakeLists.txt), rename executable target from `solix_launcher` to `solix` (or set `OUTPUT_NAME "solix"`).
+    - Update `copy_stdlib` dependency and target references to use `solix`.
+    - Update test runners, documentation, and references expecting `solix_launcher`.
+
+---
+
+## 4. Standard Library Architecture & Naming
 
 - [ ] **Rename `utilities/` to `core/` (or `base/`)**
   - **Issue**: "Utilities" is a vague junk-drawer name. Files inside `utilities/` declare `package solix;`, creating a mismatch between directory structure and package name.
@@ -72,7 +83,26 @@
 
 ---
 
-## 4. Standard Library Fixes & Modernization
+## 5. Standard Library Fixes & Modernization
+
+- [ ] **Implement Primitives & Array Wrappers (`solix.primitives` / `solix.core`)**
+  - **Issue**: Solix lacks object-oriented wrapper classes for primitive values and raw arrays, limiting generic collection storage and object-oriented operations.
+  - **Fix**:
+    - Create wrapper classes for all primitive scalar types:
+      - `Bool` (wrapping `bool`)
+      - `Char` (wrapping `char`)
+      - `Int8`, `Int16`, `Int32`, `Int64` (wrapping signed integers)
+      - `UInt8`, `UInt16`, `UInt32`, `UInt64` (wrapping unsigned integers)
+      - `Float32`, `Float64` (wrapping floating-point numbers)
+    - Provide standard features on each primitive wrapper:
+      - Constructors for boxing (`new Int32(42)`) and accessor `get_value()`.
+      - Parsing methods (e.g. `Int32.parse(String)`).
+      - Conversion methods (`to_string()`, `to_int64()`, `to_float64()`).
+      - Value equality (`equals`), comparison (`compare_to`), and hashing (`hash_code`).
+      - Static constants: `MIN_VALUE`, `MAX_VALUE`, `BYTES`, `BITS`.
+    - Implement array wrappers:
+      - Generic `Array<T>` wrapping raw `T[]` with bounds checking, `size()`, slicing, cloning, mapping, and conversion to/from raw arrays.
+      - Primitive-specialized array wrappers (e.g. `IntArray`, `CharArray`, `FloatArray`) if unboxed performance is desired.
 
 - [ ] **Rewrite `Objects.slx` with Generics / Templates**
   - **Issue**: `Objects.slx` currently hardcodes only `String` and `char[]`. Calling `Objects.require_non_null()` or `Objects.is_null()` on user classes fails to compile.
