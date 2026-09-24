@@ -419,7 +419,7 @@ public class ExtendedConsoleTestRunner {
 // Phase X: Try-Catch Exceptions
 // ============================================================================
 
-class Exception {}
+
 class CustomException extends Exception {
     public int32 code;
     public CustomException(int32 c) {

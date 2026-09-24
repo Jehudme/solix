@@ -1,0 +1,636 @@
+// ============================================================================
+// Solix Standard Library - Comprehensive Exception Hierarchy
+// Package: solix
+// ============================================================================
+package solix;
+
+alias Console = solix.systems.Console;
+
+// ============================================================================
+// Base Exception Class
+// ============================================================================
+public class Exception {
+    protected String detailed_message;
+    protected Exception underlying_cause;
+    protected int32 error_code = 0;
+
+    public Exception() {
+        this.detailed_message = new String("An exception has occurred.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public Exception(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public Exception(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public Exception(char[] message_text, Exception cause_exception) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = cause_exception;
+        this.error_code = 0;
+    }
+
+    public Exception(String message_string, Exception cause_exception) {
+        this.detailed_message = message_string;
+        this.underlying_cause = cause_exception;
+        this.error_code = 0;
+    }
+
+    public Exception(char[] message_text, int32 code_value) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = code_value;
+    }
+
+    public Exception(String message_string, int32 code_value) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = code_value;
+    }
+
+    public Exception(char[] message_text, Exception cause_exception, int32 code_value) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = cause_exception;
+        this.error_code = code_value;
+    }
+
+    public Exception(String message_string, Exception cause_exception, int32 code_value) {
+        this.detailed_message = message_string;
+        this.underlying_cause = cause_exception;
+        this.error_code = code_value;
+    }
+
+    // ------------------------------------------------------------------------
+    // Virtual Methods
+    // ------------------------------------------------------------------------
+
+    public virtual String get_message() {
+        return this.detailed_message;
+    }
+
+    public virtual char[] message() {
+        if (this.detailed_message != null) {
+            return this.detailed_message.raw();
+        }
+        return "Unknown Exception";
+    }
+
+    public virtual Exception get_cause() {
+        return this.underlying_cause;
+    }
+
+    public virtual int32 get_error_code() {
+        return this.error_code;
+    }
+
+    public virtual String to_string() {
+        if (this.detailed_message != null) {
+            return new String("Exception: ").concat(this.detailed_message);
+        }
+        return new String("Exception");
+    }
+
+    public virtual void print_stack_trace() {
+        Console.error("Exception: ");
+        if (this.detailed_message != null) {
+            Console.errorln(this.detailed_message);
+        } else {
+            Console.errorln("Unknown error");
+        }
+        if (this.underlying_cause != null) {
+            Console.error("Caused by: ");
+            this.underlying_cause.print_stack_trace();
+        }
+    }
+}
+
+// ============================================================================
+// Runtime Exception
+// ============================================================================
+public class RuntimeException extends Exception {
+    public RuntimeException() {
+        this.detailed_message = new String("A runtime exception has occurred.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public RuntimeException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public RuntimeException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public RuntimeException(char[] message_text, Exception cause_exception) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = cause_exception;
+        this.error_code = 0;
+    }
+
+    public RuntimeException(String message_string, Exception cause_exception) {
+        this.detailed_message = message_string;
+        this.underlying_cause = cause_exception;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("RuntimeException: ").concat(this.detailed_message);
+        }
+        return new String("RuntimeException");
+    }
+}
+
+// ============================================================================
+// Null Pointer Exception
+// ============================================================================
+public class NullPointerException extends RuntimeException {
+    public NullPointerException() {
+        this.detailed_message = new String("Null pointer dereference attempt.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public NullPointerException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public NullPointerException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("NullPointerException: ").concat(this.detailed_message);
+        }
+        return new String("NullPointerException");
+    }
+}
+
+// ============================================================================
+// Index Out Of Bounds Exception
+// ============================================================================
+public class IndexOutOfBoundsException extends RuntimeException {
+    protected int32 invalid_index = -1;
+    protected int32 valid_size = -1;
+
+    public IndexOutOfBoundsException() {
+        this.detailed_message = new String("Index was out of range.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public IndexOutOfBoundsException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public IndexOutOfBoundsException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public IndexOutOfBoundsException(int32 attempted_index, int32 collection_size) {
+        this.invalid_index = attempted_index;
+        this.valid_size = collection_size;
+        this.detailed_message = new String("Index out of bounds: attempted index ")
+            .concat(new String(attempted_index))
+            .concat(" for collection size ")
+            .concat(new String(collection_size));
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public int32 get_invalid_index() {
+        return this.invalid_index;
+    }
+
+    public int32 get_collection_size() {
+        return this.valid_size;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("IndexOutOfBoundsException: ").concat(this.detailed_message);
+        }
+        return new String("IndexOutOfBoundsException");
+    }
+}
+
+// ============================================================================
+// Invalid Argument Exception
+// ============================================================================
+public class InvalidArgumentException extends RuntimeException {
+    public InvalidArgumentException() {
+        this.detailed_message = new String("Invalid argument supplied.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public InvalidArgumentException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public InvalidArgumentException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("InvalidArgumentException: ").concat(this.detailed_message);
+        }
+        return new String("InvalidArgumentException");
+    }
+}
+
+// ============================================================================
+// Illegal State Exception
+// ============================================================================
+public class IllegalStateException extends RuntimeException {
+    public IllegalStateException() {
+        this.detailed_message = new String("The object is in an illegal state for this operation.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public IllegalStateException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public IllegalStateException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("IllegalStateException: ").concat(this.detailed_message);
+        }
+        return new String("IllegalStateException");
+    }
+}
+
+// ============================================================================
+// No Such Element Exception
+// ============================================================================
+public class NoSuchElementException extends RuntimeException {
+    public NoSuchElementException() {
+        this.detailed_message = new String("Requested element does not exist.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public NoSuchElementException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public NoSuchElementException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("NoSuchElementException: ").concat(this.detailed_message);
+        }
+        return new String("NoSuchElementException");
+    }
+}
+
+// ============================================================================
+// Empty Collection Exception
+// ============================================================================
+public class EmptyCollectionException extends NoSuchElementException {
+    public EmptyCollectionException() {
+        this.detailed_message = new String("Operation cannot be performed on an empty collection.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public EmptyCollectionException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public EmptyCollectionException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("EmptyCollectionException: ").concat(this.detailed_message);
+        }
+        return new String("EmptyCollectionException");
+    }
+}
+
+// ============================================================================
+// Key Not Found Exception
+// ============================================================================
+public class KeyNotFoundException extends NoSuchElementException {
+    public KeyNotFoundException() {
+        this.detailed_message = new String("The specified key was not found in the collection.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public KeyNotFoundException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public KeyNotFoundException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("KeyNotFoundException: ").concat(this.detailed_message);
+        }
+        return new String("KeyNotFoundException");
+    }
+}
+
+// ============================================================================
+// Duplicate Key Exception
+// ============================================================================
+public class DuplicateKeyException extends RuntimeException {
+    public DuplicateKeyException() {
+        this.detailed_message = new String("An element with the same key already exists.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public DuplicateKeyException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public DuplicateKeyException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("DuplicateKeyException: ").concat(this.detailed_message);
+        }
+        return new String("DuplicateKeyException");
+    }
+}
+
+// ============================================================================
+// Unsupported Operation Exception
+// ============================================================================
+public class UnsupportedOperationException extends RuntimeException {
+    public UnsupportedOperationException() {
+        this.detailed_message = new String("The requested operation is not supported.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public UnsupportedOperationException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public UnsupportedOperationException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("UnsupportedOperationException: ").concat(this.detailed_message);
+        }
+        return new String("UnsupportedOperationException");
+    }
+}
+
+// ============================================================================
+// Arithmetic Exception
+// ============================================================================
+public class ArithmeticException extends RuntimeException {
+    public ArithmeticException() {
+        this.detailed_message = new String("An arithmetic calculation error occurred.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public ArithmeticException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public ArithmeticException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("ArithmeticException: ").concat(this.detailed_message);
+        }
+        return new String("ArithmeticException");
+    }
+}
+
+// ============================================================================
+// Divide By Zero Exception
+// ============================================================================
+public class DivideByZeroException extends ArithmeticException {
+    public DivideByZeroException() {
+        this.detailed_message = new String("Division by zero error.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public DivideByZeroException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public DivideByZeroException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("DivideByZeroException: ").concat(this.detailed_message);
+        }
+        return new String("DivideByZeroException");
+    }
+}
+
+// ============================================================================
+// Overflow & Underflow Exceptions
+// ============================================================================
+public class OverflowException extends ArithmeticException {
+    public OverflowException() {
+        this.detailed_message = new String("Arithmetic operation caused an overflow.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public OverflowException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public OverflowException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("OverflowException: ").concat(this.detailed_message);
+        }
+        return new String("OverflowException");
+    }
+}
+
+public class UnderflowException extends ArithmeticException {
+    public UnderflowException() {
+        this.detailed_message = new String("Arithmetic operation caused an underflow.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public UnderflowException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public UnderflowException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("UnderflowException: ").concat(this.detailed_message);
+        }
+        return new String("UnderflowException");
+    }
+}
+
+// ============================================================================
+// Format Exception
+// ============================================================================
+public class FormatException extends RuntimeException {
+    public FormatException() {
+        this.detailed_message = new String("Invalid format specification encountered.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public FormatException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public FormatException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("FormatException: ").concat(this.detailed_message);
+        }
+        return new String("FormatException");
+    }
+}
+
+// ============================================================================
+// IO Exception
+// ============================================================================
+public class IOException extends Exception {
+    public IOException() {
+        this.detailed_message = new String("An input/output error has occurred.");
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public IOException(char[] message_text) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public IOException(String message_string) {
+        this.detailed_message = message_string;
+        this.underlying_cause = (Exception)null;
+        this.error_code = 0;
+    }
+
+    public IOException(char[] message_text, Exception cause_exception) {
+        this.detailed_message = new String(message_text);
+        this.underlying_cause = cause_exception;
+        this.error_code = 0;
+    }
+
+    public IOException(String message_string, Exception cause_exception) {
+        this.detailed_message = message_string;
+        this.underlying_cause = cause_exception;
+        this.error_code = 0;
+    }
+
+    public override String to_string() {
+        if (this.detailed_message != null) {
+            return new String("IOException: ").concat(this.detailed_message);
+        }
+        return new String("IOException");
+    }
+}

@@ -543,10 +543,49 @@ void Binder::bind_types_and_memory() {
     }
   }
 
+  auto resolve_base_class = [&](ClassDeclaration *cls) -> Node * {
+    if (cls->base_class_name.empty()) return nullptr;
+    Node *node = global_scope.resolve(cls->base_class_name);
+    if (node) return node;
+    std::string simple_name = cls->base_class_name;
+    size_t last_dot = simple_name.rfind('.');
+    if (last_dot != std::string::npos) {
+      simple_name = simple_name.substr(last_dot + 1);
+    }
+    node = global_scope.resolve(simple_name);
+    if (node) {
+      cls->base_class_name = simple_name;
+      return node;
+    }
+    std::string solix_name = "solix." + simple_name;
+    node = global_scope.resolve(solix_name);
+    if (node) {
+      cls->base_class_name = solix_name;
+      return node;
+    }
+    for (const auto &[sym_name, sym_node] : global_scope.symbols) {
+      if (sym_node->node_type == NodeType::CLASS_DECL) {
+        auto *candidate = static_cast<ClassDeclaration *>(sym_node);
+        if (candidate->class_name == simple_name) {
+          cls->base_class_name = candidate->mangled_name;
+          return candidate;
+        }
+      }
+    }
+    return nullptr;
+  };
+
+  for (const auto &[name, node] : global_scope.symbols) {
+    if (node->node_type == NodeType::CLASS_DECL) {
+      resolve_base_class(static_cast<ClassDeclaration *>(node));
+    }
+  }
+
   auto is_exception_class = [&](ClassDeclaration *cls) -> bool {
     std::string current_name = cls->mangled_name;
     while (!current_name.empty()) {
-      if (current_name == "Exception" || current_name == "Throwable") return true;
+      if (current_name == "Exception" || current_name == "Throwable" ||
+          current_name.ends_with(".Exception") || current_name.ends_with(".Throwable")) return true;
       Node *node = global_scope.resolve(current_name);
       if (node && node->node_type == NodeType::CLASS_DECL) {
         current_name = static_cast<ClassDeclaration *>(node)->base_class_name;
