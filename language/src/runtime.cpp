@@ -29,9 +29,31 @@ uint64_t Memory::dynamic_allocation(size_t size_in_words, Address address) {
     next_free_dynamic = heap.size() / 2;
   }
   Address header_addr = 0;
-  if (!free_blocks.empty()) {
-    header_addr = free_blocks.back();
-    free_blocks.pop_back();
+  // Search free_blocks for a best-fit block with capacity >= size_in_words
+  size_t best_idx = static_cast<size_t>(-1);
+  uint32_t best_size = UINT32_MAX;
+
+  for (size_t i = 0; i < free_blocks.size(); ++i) {
+    Address blk = free_blocks[i];
+    uint32_t blk_size = static_cast<uint32_t>(heap[blk] >> 32);
+    if (blk_size >= size_in_words && blk_size < best_size) {
+      best_idx = i;
+      best_size = blk_size;
+      if (blk_size == size_in_words) break; // Exact match
+    }
+  }
+
+  if (best_idx != static_cast<size_t>(-1)) {
+    header_addr = free_blocks[best_idx];
+    free_blocks.erase(free_blocks.begin() + best_idx);
+
+    // If block is significantly larger (at least 1 header + 1 payload word), split remainder
+    if (best_size >= size_in_words + 2) {
+      uint32_t rem_size = best_size - static_cast<uint32_t>(size_in_words) - 1;
+      Address rem_addr = header_addr + static_cast<Address>(size_in_words) + 1;
+      heap[rem_addr] = (static_cast<uint64_t>(rem_size) << 32);
+      free_blocks.push_back(rem_addr);
+    }
   } else {
     header_addr = next_free_dynamic;
     next_free_dynamic += (size_in_words + 1);
@@ -54,9 +76,6 @@ uint64_t Memory::dynamic_allocation(size_t size_in_words, Address address) {
 void Memory::deallocate(Address address) {
   if (address == 0)
     return;
-  if (address == 50) {
-    std::cout << "[DEBUG] Deallocating address 50!" << std::endl;
-  }
 
   if (auto it = weak_references.find(address); it != weak_references.end()) {
     for (Address weak_slot : it->second) {
@@ -72,33 +91,33 @@ void Memory::deallocate(Address address) {
   free_blocks.push_back(header_addr);
 }
 
-inline void Memory::write_u64(Address address, uint32_t offset,
+void Memory::write_u64(Address address, uint32_t offset,
                               uint64_t value) {
   heap[address + offset] = value;
 }
-inline uint64_t Memory::read_u64(Address address, uint32_t offset) const {
+uint64_t Memory::read_u64(Address address, uint32_t offset) const {
   return heap[address + offset];
 }
-inline void Memory::write_f64(Address address, uint32_t offset, double value) {
+void Memory::write_f64(Address address, uint32_t offset, double value) {
   heap[address + offset] = std::bit_cast<uint64_t>(value);
 }
-inline double Memory::read_f64(Address address, uint32_t offset) const {
+double Memory::read_f64(Address address, uint32_t offset) const {
   return std::bit_cast<double>(heap[address + offset]);
 }
-inline void Memory::write_char(Address address, uint32_t offset, char value) {
+void Memory::write_char(Address address, uint32_t offset, char value) {
   heap[address + offset] = static_cast<uint64_t>(value);
 }
-inline char Memory::read_char(Address address, uint32_t offset) const {
+char Memory::read_char(Address address, uint32_t offset) const {
   return static_cast<char>(heap[address + offset]);
 }
 
-inline void Memory::increase_reference(Address address) {
+void Memory::increase_reference(Address address) {
   if (address == 0)
     return;
   heap[address - 1]++;
 }
 
-inline void Memory::decrease_reference(Address address) {
+void Memory::decrease_reference(Address address) {
   if (address == 0)
     return;
   uint64_t &header = heap[address - 1];
@@ -308,6 +327,9 @@ vm_dispatch:
     case 84: goto op_THROW_EXCEPTION;
     case 85: goto op_GET_EXCEPTION;
     case 86: goto op_CLEAR_EXCEPTION;
+    case 87: goto op_CONV_I_TO_F;
+    case 88: goto op_CONV_F_TO_I;
+    case 89: goto op_NEGATE_I64;
     default: goto op_HALT;
   }
 #else
@@ -398,7 +420,10 @@ vm_dispatch:
       &&op_JMP_TO_OUTER_CLEANUP,
       &&op_THROW_EXCEPTION,
       &&op_GET_EXCEPTION,
-      &&op_CLEAR_EXCEPTION
+      &&op_CLEAR_EXCEPTION,
+      &&op_CONV_I_TO_F,
+      &&op_CONV_F_TO_I,
+      &&op_NEGATE_I64
   };
 
 #define DISPATCH() goto *dispatch_table[code[program_counter++]]
@@ -815,17 +840,84 @@ op_DEC_REF:
   }
 
 op_CONV_I8:
+  {
+    uint64_t v = POP();
+    int8_t conv = static_cast<int8_t>(v);
+    PUSH(static_cast<uint64_t>(static_cast<int64_t>(conv)));
+    DISPATCH();
+  }
 op_CONV_I16:
+  {
+    uint64_t v = POP();
+    int16_t conv = static_cast<int16_t>(v);
+    PUSH(static_cast<uint64_t>(static_cast<int64_t>(conv)));
+    DISPATCH();
+  }
 op_CONV_I32:
+  {
+    uint64_t v = POP();
+    int32_t conv = static_cast<int32_t>(v);
+    PUSH(static_cast<uint64_t>(static_cast<int64_t>(conv)));
+    DISPATCH();
+  }
 op_CONV_I64:
+  {
+    DISPATCH();
+  }
 op_CONV_U8:
+  {
+    uint64_t v = POP();
+    uint8_t conv = static_cast<uint8_t>(v);
+    PUSH(static_cast<uint64_t>(conv));
+    DISPATCH();
+  }
 op_CONV_U16:
+  {
+    uint64_t v = POP();
+    uint16_t conv = static_cast<uint16_t>(v);
+    PUSH(static_cast<uint64_t>(conv));
+    DISPATCH();
+  }
 op_CONV_U32:
+  {
+    uint64_t v = POP();
+    uint32_t conv = static_cast<uint32_t>(v);
+    PUSH(static_cast<uint64_t>(conv));
+    DISPATCH();
+  }
 op_CONV_U64:
+  {
+    DISPATCH();
+  }
 op_CONV_F32:
+  {
+    double d = bit_cast_from_u64<double>(POP());
+    float f = static_cast<float>(d);
+    PUSH(bit_cast_to_u64(static_cast<double>(f)));
+    DISPATCH();
+  }
 op_CONV_F64:
   {
-    // Everything is stored as 64-bit float/int natively, pass through for now
+    DISPATCH();
+  }
+op_CONV_I_TO_F:
+  {
+    int64_t i = static_cast<int64_t>(POP());
+    double d = static_cast<double>(i);
+    PUSH(bit_cast_to_u64(d));
+    DISPATCH();
+  }
+op_CONV_F_TO_I:
+  {
+    double d = bit_cast_from_u64<double>(POP());
+    int64_t i = static_cast<int64_t>(d);
+    PUSH(static_cast<uint64_t>(i));
+    DISPATCH();
+  }
+op_NEGATE_I64:
+  {
+    int64_t a = static_cast<int64_t>(POP());
+    PUSH(static_cast<uint64_t>(-a));
     DISPATCH();
   }
 
@@ -1025,6 +1117,10 @@ op_REGISTER_RETURN_CLEANUP:
 op_JMP_TO_OUTER_CLEANUP:
   {
       if (call_depth == 0) {
+          if (active_exception != 0) {
+              memory.decrease_reference(active_exception);
+              active_exception = 0;
+          }
           throw std::runtime_error("Unhandled exception reached top level.");
       }
       Frame current_frame = call_stack[call_depth - 1];
@@ -1034,6 +1130,10 @@ op_JMP_TO_OUTER_CLEANUP:
       sp = stack + current_frame.frame_pointer; // Pop locals
       
       if (call_depth == 0) {
+          if (active_exception != 0) {
+              memory.decrease_reference(active_exception);
+              active_exception = 0;
+          }
           throw std::runtime_error("Unhandled exception reached top level.");
       }
       
@@ -1045,7 +1145,13 @@ op_JMP_TO_OUTER_CLEANUP:
           // We can simulate this by putting program_counter just before a JMP_TO_OUTER_CLEANUP
           // Or just recursively pop frames.
           while (true) {
-              if (call_depth == 0) throw std::runtime_error("Unhandled exception reached top level.");
+              if (call_depth == 0) {
+                  if (active_exception != 0) {
+                      memory.decrease_reference(active_exception);
+                      active_exception = 0;
+                  }
+                  throw std::runtime_error("Unhandled exception reached top level.");
+              }
               Frame caller = call_stack[call_depth - 1];
               auto it2 = return_to_cleanup.find(caller.return_ip);
               if (it2 != return_to_cleanup.end()) {

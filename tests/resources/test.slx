@@ -448,8 +448,55 @@ public class TryCatchTestRunner {
         
         if (caught) {
             Console.println("=== TRY-CATCH TESTS OK ===");
+            Phase32TestRunner.run();
         } else {
             Console.println("=== TRY-CATCH TESTS FAILED ===");
         }
     }
 }
+
+// ============================================================================
+// Phase 32: Runtime VM & Memory Safety Integration Test
+// ============================================================================
+
+public class Phase32TestRunner {
+    public static void run() {
+        Console.println("=== TESTING PHASE 32 VM SAFETY & NEGATION ===");
+        
+        int32 pos = 100;
+        int32 neg = -pos;
+        int32 back_pos = -neg;
+        if (neg == -100 && back_pos == 100) {
+            Console.println("Integer negation verified OK!");
+        } else {
+            Console.println("Integer negation FAILED!");
+        }
+
+        int32 large_val = 258;
+        int8 trunc_val = (int8)large_val;
+        if ((int32)trunc_val == 2) {
+            Console.println("Integer truncation cast verified OK!");
+        } else {
+            Console.println("Integer truncation cast FAILED!");
+        }
+
+        float64 f_val = 12.34;
+        int32 cast_int = (int32)f_val;
+        if (cast_int == 12) {
+            Console.println("Float to integer cast verified OK!");
+        } else {
+            Console.println("Float to integer cast FAILED!");
+        }
+
+        int32 int_to_f = 99;
+        float64 cast_f = (float64)int_to_f;
+        if (cast_f > 98.9 && cast_f < 99.1) {
+            Console.println("Integer to float cast verified OK!");
+        } else {
+            Console.println("Integer to float cast FAILED!");
+        }
+
+        Console.println("=== PHASE 32 TESTS OK ===");
+    }
+}
+

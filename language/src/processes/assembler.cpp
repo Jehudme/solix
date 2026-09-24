@@ -1322,7 +1322,11 @@ void Assembler::visit(UnaryExpression &node) {
   if (uny->op == TokenType::OPERATOR_LOGICAL_NOT) {
     emit_byte(static_cast<uint8_t>(OpCode::LOGICAL_NOT));
   } else if (uny->op == TokenType::OPERATOR_MINUS) {
-    emit_byte(static_cast<uint8_t>(OpCode::NEGATE));
+    if (is_float) {
+      emit_byte(static_cast<uint8_t>(OpCode::NEGATE));
+    } else {
+      emit_byte(static_cast<uint8_t>(OpCode::NEGATE_I64));
+    }
   } else if (uny->op == TokenType::OPERATOR_INCREMENT ||
              uny->op == TokenType::OPERATOR_DECREMENT) {
     uint8_t opc = (uny->op == TokenType::OPERATOR_INCREMENT)
@@ -1630,7 +1634,18 @@ void Assembler::visit(CastExpression &node) {
   auto *cast_expr = &node;
   compile_expression(cast_expr->expression.get());
 
+  std::string src_type = cast_expr->expression->expression_type.name;
   std::string t = cast_expr->target_type.name;
+
+  bool src_is_float = (src_type == "float32" || src_type == "float64");
+  bool tgt_is_float = (t == "float32" || t == "float64");
+
+  if (!src_is_float && tgt_is_float) {
+    emit_byte(static_cast<uint8_t>(OpCode::CONV_I_TO_F));
+  } else if (src_is_float && !tgt_is_float) {
+    emit_byte(static_cast<uint8_t>(OpCode::CONV_F_TO_I));
+  }
+
   if (t == "int8")
     emit_byte(static_cast<uint8_t>(OpCode::CONV_I8));
   else if (t == "int16")
