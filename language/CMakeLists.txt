@@ -26,3 +26,5 @@ target_link_libraries(solix_language PUBLIC
     $<IF:$<TARGET_EXISTS:spdlog::spdlog>,spdlog::spdlog,spdlog>
     $<IF:$<TARGET_EXISTS:fmt::fmt>,fmt::fmt,fmt>
 )
+
+target_compile_definitions(solix_language PUBLIC SPDLOG_NO_COMPILED_STRING)

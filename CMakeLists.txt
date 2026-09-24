@@ -22,6 +22,8 @@ if(NOT TARGET fmt AND NOT TARGET fmt::fmt)
 endif()
 
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "Use external fmt" FORCE)
+set(SPDLOG_NO_COMPILED_STRING ON CACHE BOOL "Disable compiled string in spdlog" FORCE)
+add_compile_definitions(SPDLOG_NO_COMPILED_STRING)
 
 find_package(spdlog QUIET)
 if(NOT TARGET spdlog AND NOT TARGET spdlog::spdlog)
