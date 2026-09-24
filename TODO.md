@@ -275,3 +275,61 @@
   - **Generics & Monomorphization**: Blueprint AST copying, generic parameter substitution, mangled name generation, and deduction algorithms.
   - **Automatic Reference Counting (ARC)**: Compiler-inserted retain/release points, assignment semantics, temporary expression destruction, and weak reference handling.
   - **Polymorphism & Vtables**: Vtable layout, method indexing, and the optimization where vtables are omitted for non-polymorphic, non-throwable classes.
+
+- [ ] **Create Root Project `README.md`**
+  - **Issue**: The project repository lacks a root `README.md` introducing Solix.
+  - **Fix**: Author a comprehensive, professional `README.md` including:
+    - Language elevator pitch and design philosophy (statically typed, ARC memory model, bytecode VM, C++20).
+    - Architecture summary diagram (Lexer -> Parser -> Binder -> Assembler -> Bytecode -> VM).
+    - Build instructions and prerequisites (CMake 3.20+, C++20 compiler, Catch2, CLI11).
+    - Quickstart guide: compiling and running a "Hello World" Solix program with command-line arguments.
+    - Key language features overview (Classes, Templates, Exceptions, Native bridges).
+    - Project structure map and links to `TODO.md` and documentation.
+
+---
+
+## 10. Lambda Functions & Functional Programming
+
+- [ ] **First-Class Functions, Closures & Lambda Expressions**
+  - **Goal**: Enable modern functional programming idioms with lambda expressions and higher-order functions.
+  - **Language Syntax**:
+    - Arrow syntax: `(int32 a, int32 b) => a + b` and multiline: `(item) => { ... }`.
+    - Functional type signatures: `(int32, int32) -> int32` or delegate interfaces `Func<T, R>`, `Action<T>`, `Predicate<T>`.
+  - **Compiler Implementation**:
+    - **Lexer**: Add arrow token `=>` (`TokenType::OPERATOR_ARROW`).
+    - **Parser**: Parse lambda expressions (`LambdaExpressionNode`) with parameter lists and expression/block bodies.
+    - **Binder**:
+      - Scope capture analysis: identify outer local variables captured by the lambda.
+      - Synthesize anonymous closure classes implementing callable methods (`invoke(...)`), capturing local variables by value or reference.
+      - Type inference: deduce return and parameter types when omitted.
+    - **Assembler & Bytecode**:
+      - Emit closure instantiation and environment capture bytecode.
+      - Support indirect function invocation opcode (`CALL_INDIRECT` / `CALL_CLOSURE`).
+  - **Standard Library Integration**:
+    - Add functional algorithms to `List<T>`: `list.map((x) => x * 2)`, `list.filter((x) => x > 0)`, `list.reduce(...)`, `list.for_each(...)`.
+    - Add functional operators to `Optional<T>` and `Result<T, E>`: `optional.map(...)`, `optional.filter(...)`.
+    - Add custom comparator support to `Arrays.sort_by<T>(array, (a, b) => ...)`.
+
+---
+
+## 11. Multithreading & Concurrency Runtime
+
+- [ ] **Multithreaded Execution & Concurrency System**
+  - **Goal**: Provide safe, high-performance multithreading and parallel execution in Solix.
+  - **Standard Library Concurrency API (`solix.threading` / `solix.sys`)**:
+    - **`Thread` Class**:
+      - `Thread.spawn(() => { ... })` or `new Thread(runnable).start()`.
+      - Methods: `join()`, `detach()`, `sleep(int64 millis)`, `yield()`, `is_alive()`, `id()`.
+    - **Synchronization Primitives**:
+      - `Mutex` / `Lock`: `acquire()`, `release()`, `try_acquire()`, with scoped auto-release syntax.
+      - `ConditionVariable`: `wait(mutex)`, `notify_one()`, `notify_all()`.
+      - `Atomic<T>`: Atomic integers and booleans with lock-free compare-and-swap (`load()`, `store()`, `compare_and_set()`, `fetch_add()`).
+  - **Runtime & VM Architecture for Concurrency**:
+    - **Thread-Safe ARC**:
+      - Introduce atomic reference counting (`std::atomic<uint32_t>`) for object headers when running multithreaded mode.
+      - Emit atomic retain/release bytecode opcodes (`ATOMIC_RETAIN`, `ATOMIC_RELEASE`).
+    - **Per-Thread Call Stacks & Frames**:
+      - Allocate isolated `call_stack` and operand stack per OS thread.
+      - Thread-safe heap allocation: thread-local allocation blocks or fine-grained allocator mutexes.
+    - **CLI & Compiler Integration**:
+      - Connect compiler flag `--multithreaded` (already present in `CompilationOptions::use_multithreading`) to enable thread-safe atomic bytecode emission and VM runtime threading support.
