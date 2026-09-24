@@ -1,0 +1,124 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for the release (e.g. v0.1.0)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build-artifacts:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: solix-linux-x86_64
+            archive_name: solix-linux-x86_64.tar.gz
+          - os: macos-latest
+            artifact_name: solix-macos-arm64
+            archive_name: solix-macos-arm64.tar.gz
+          - os: windows-latest
+            artifact_name: solix-windows-x64
+            archive_name: solix-windows-x64.zip
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libspdlog-dev libfmt-dev ninja-build
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install spdlog fmt ninja
+
+      - name: Configure CMake (Linux & macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_STANDARD=20
+
+      - name: Set up MSVC environment (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure CMake (Windows)
+        if: runner.os == 'Windows'
+        run: >
+          cmake -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_C_COMPILER=clang
+          -DCMAKE_CXX_COMPILER=clang++
+          -DCMAKE_CXX_STANDARD=20
+
+      - name: Build
+        run: cmake --build build --config Release --target solix_launcher --parallel
+
+      - name: Package (Linux & macOS)
+        if: runner.os != 'Windows'
+        run: |
+          strip build/launcher/solix_launcher || true
+          mkdir -p dist/lib
+          cp build/launcher/solix_launcher dist/solix
+          cp -r launcher/rsc/lib/solix dist/lib/
+          [ -f LICENSE ] && cp LICENSE dist/
+          [ -f README.md ] && cp README.md dist/
+          tar -czvf ${{ matrix.archive_name }} -C dist .
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist\lib
+          Copy-Item build\launcher\solix_launcher.exe -Destination dist\solix.exe
+          Copy-Item -Recurse launcher\rsc\lib\solix -Destination dist\lib\solix
+          if (Test-Path LICENSE) { Copy-Item LICENSE -Destination dist\ }
+          if (Test-Path README.md) { Copy-Item README.md -Destination dist\ }
+          Compress-Archive -Path dist\* -DestinationPath ${{ matrix.archive_name }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.archive_name }}
+          if-no-files-found: error
+
+  create-release:
+    name: Create GitHub Release
+    needs: build-artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: List downloaded artifacts
+        run: ls -lh release-artifacts/
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag_name != '' && github.event.inputs.tag_name || github.ref_name }}
+          files: release-artifacts/*
+          generate_release_notes: true
+          draft: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag_name == '' }}

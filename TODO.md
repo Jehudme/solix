@@ -454,7 +454,7 @@
     3. **Unit Tests**: Run full test suite via `ctest --test-dir build --output-on-failure`.
     4. **Integration & Stdlib Tests**: Execute end-to-end compilations of standard library test suites.
     5. **Static Analysis & Formatting**: Run `clang-format --dry-run --Werror` and `clang-tidy` linter checks.
-  - **Automated Release Artifacts Packaging (`.github/workflows/release.yml`)**:
+  - [x] **Automated Release Artifacts Packaging (`.github/workflows/release.yml`)**:
     - On Git version tags (e.g. `v1.0.0`):
       - Build stripped release binaries.
       - Bundle `solix` executable, standard library folder (`lib/solix/`), and license.
