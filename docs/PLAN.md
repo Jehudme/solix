@@ -29,37 +29,6 @@ Each phase must strictly adhere to the following development lifecycle:
 9. **Full Test Suite Run**: Run `ctest --test-dir build --output-on-failure`.
 10. **Merge**: Merge into `master` via `git checkout master && git merge --no-ff phase-N-descriptive-name`.
 
----
-
-## Master Priority & Phase Matrix
-
-| Phase | Category | Title | Scope & Components | Complexity |
-| :--- | :--- | :--- | :--- | :--- |
-| **Phase 1** | Fixes & Stabilization | Compiler Pipeline Integrity & Strict Stage Halting | `compilation.cpp`, `Diagnostic`, `launcher` | ⭐⭐ Medium |
-| **Phase 2** | Fixes & Stabilization | Compiler Logging Demotion & Diagnostics Context Overhaul | `compilation.hpp`, `lexer.cpp`, `parser.cpp`, `binder.cpp`, `diagnostic.cpp` | ⭐⭐ Medium |
-| **Phase 3** | Fixes & Stabilization | CLI Binary Ergonomics & Program Exit Code Propagation | `launcher/CMakeLists.txt`, `runtime.cpp`, `execute.cpp` | ⭐ Easy |
-| **Phase 4** | Fixes & Stabilization | Lexer Scalar Character Literal & Type Discrimination | `lexer.cpp`, `lexer.hpp`, `token.hpp`, `binder.cpp` | ⭐ Easy |
-| **Phase 5** | Fixes & Stabilization | Standard Library Architecture, Directory & Packaging Cleanup | `launcher/rsc/lib/solix/`, CMake build scripts | ⭐⭐ Medium |
-| **Phase 6** | Fixes & Stabilization | Standard Library API Modernization & Algorithm Refactoring | `Objects.slx`, `Arrays.slx`, Collections, Package imports | ⭐⭐⭐ Hard |
-| **Phase 7** | Fixes & Stabilization | Test Suite Modernization & Infrastructure Overhaul | `tests/`, `CMakeLists.txt`, E2E test harness | ⭐⭐⭐ Hard |
-| **Phase 8** | Documentation | Root Project Documentation & Onboarding (`README.md`) | `README.md`, diagrams, quickstart tutorial | ⭐ Easy |
-| **Phase 9** | Documentation | Complete Language Keyword Wiki (`docs/wiki/keywords.md`) | `docs/wiki/keywords.md` | ⭐⭐ Medium |
-| **Phase 10** | Documentation | Official Language User Guide & Tutorial (`docs/guide/`) | `docs/guide/*.md` | ⭐⭐ Medium |
-| **Phase 11** | Documentation | Compiler Pipeline & Internal Architecture Deep Dives | `docs/architecture/*.md` | ⭐⭐⭐ Hard |
-| **Phase 12** | New Features | Object-Oriented Primitive & Array Boxed Wrappers | `solix.core` primitives, `Array<T>` wrapper | ⭐⭐ Medium |
-| **Phase 13** | New Features | Core System & Mathematics Standard Library Modules | `Environment`, `FileSystem`, `Process`, `Time`, `Math` | ⭐⭐⭐ Hard |
-| **Phase 14** | New Features | Dedicated Performance Benchmarking Suite (`benchmarks/`) | `benchmarks/`, micro/macro runners, multi-lang benchmarks | ⭐⭐ Medium |
-| **Phase 15** | New Features | Developer Tooling: Project Manifest & Build System | `solix.toml`, `solix new`, `solix build`, `solix run` | ⭐⭐⭐ Hard |
-| **Phase 16** | New Features | Developer Tooling: Language Server Protocol (LSP) | `solix lsp`, JSON-RPC, diagnostics, hover, VS Code plugin | ⭐⭐⭐⭐ Very Hard |
-| **Phase 17** | New Features | Developer Tooling: Interactive REPL (`solix repl`) | `solix repl`, REPL session environment | ⭐⭐ Medium |
-| **Phase 18** | New Features | Developer Tooling: Code Formatter (`solix fmt`) | `solix fmt`, AST code printer, `--check` CI rule | ⭐⭐⭐ Hard |
-| **Phase 19** | New Features | Functional Programming: Lambdas, Closures & First-Class Functions | Lexer arrow, Parser lambda, Binder closure synthesis, VM opcode | ⭐⭐⭐⭐ Very Hard |
-| **Phase 20** | New Features | Multithreading & Concurrency Runtime | Thread-safe ARC, per-thread stacks, `solix.threading` | ⭐⭐⭐⭐ Very Hard |
-| **Phase 21** | New Features | Compiler & VM Optimizations: Bytecode Optimizer & Profiler | Assembler peephole optimizer, ARC memory leak detector | ⭐⭐⭐ Hard |
-| **Phase 22** | New Features | Runnable Examples Showcase (`examples/`) | `examples/`, automated verification script | ⭐ Easy |
-
----
-
 # Part I: Fixes & Stabilization
 
 ---
