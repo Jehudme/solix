@@ -158,7 +158,7 @@ TEST_CASE("Phase 33 - Assembler CodeGen & ARC Safety", "[phase33]") {
 
             public class ArrayLitRefTest {
                 public static int32 main() {
-                    Element[] arr = [new Element(10), new Element(20), new Element(30)];
+                    Element[] arr = { new Element(10), new Element(20), new Element(30) };
                     if (arr[0].id != 10) return 1;
                     if (arr[1].id != 20) return 2;
                     if (arr[2].id != 30) return 3;
