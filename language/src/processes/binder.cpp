@@ -1352,10 +1352,57 @@ void Binder::visit(MethodCallExpression &n) {
       while (!method_decl && current_resolve_class) {
         base_name = current_resolve_class->mangled_name + "." +
                     member_access->member_name;
+        if (!n.type_args.empty()) {
+          std::vector<TypeInfo> resolved_targs;
+          for (auto &t : n.type_args)
+            resolved_targs.push_back(resolve_type(t, &n));
+          instantiate_template(base_name, resolved_targs, &n);
+          base_name += "<";
+          for (size_t i = 0; i < resolved_targs.size(); ++i) {
+            base_name += resolved_targs[i].to_string();
+            if (i < resolved_targs.size() - 1)
+              base_name += ",";
+          }
+          base_name += ">";
+        }
         mangled_name = mangle_method_call(base_name, argument_types);
         method_decl = global_scope.resolve(mangled_name);
         if (!method_decl)
           method_decl = global_scope.resolve(base_name);
+
+        // Implicit generic deduction for member method templates
+        if (!method_decl && n.type_args.empty() &&
+            template_registry.count(base_name)) {
+          Node *blueprint = template_registry[base_name];
+          if (blueprint->node_type == NodeType::METHOD_DECL) {
+            auto *method_bp = static_cast<MethodDeclaration *>(blueprint);
+            std::vector<TypeInfo> param_types;
+            for (const auto &p : method_bp->parameters) {
+              param_types.push_back(
+                  static_cast<VariableDeclaration *>(p.get())->type_info);
+            }
+
+            std::vector<TypeInfo> deduced_args;
+            if (deduce_template_arguments(param_types, argument_types,
+                                          method_bp->template_parameters,
+                                          deduced_args)) {
+              std::string instantiated_base = base_name + "<";
+              for (size_t i = 0; i < deduced_args.size(); ++i) {
+                instantiated_base += deduced_args[i].to_string();
+                if (i < deduced_args.size() - 1)
+                  instantiated_base += ",";
+              }
+              instantiated_base += ">";
+              mangled_name =
+                  mangle_method_call(instantiated_base, argument_types);
+              method_decl = global_scope.resolve(mangled_name);
+              if (!method_decl) {
+                instantiate_template(base_name, deduced_args, &n);
+                method_decl = global_scope.resolve(mangled_name);
+              }
+            }
+          }
+        }
 
         if (!method_decl) {
           for (const auto &child : current_resolve_class->children) {
