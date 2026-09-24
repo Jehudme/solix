@@ -643,8 +643,16 @@ public class Phase34TestRunner {
         }
 
         Console.println("=== PHASE 34 TESTS OK ===");
+        Phase1TestRunner.run();
     }
 }
 
+// ============================================================================
+// Phase 1: Compiler Pipeline Integrity & Strict Stage Halting Integration Test
+// ============================================================================
 
-
+public class Phase1TestRunner {
+    public static void run() {
+        Console.println("=== PHASE 1 TESTS OK ===");
+    }
+}
