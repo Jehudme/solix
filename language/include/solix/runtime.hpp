@@ -104,6 +104,11 @@ struct RuntimeContext {
 
   std::array<Frame, 65536> call_stack;
   size_t call_depth = 0;
+  
+  // Exception handling state
+  Address active_exception = 0;
+  std::unordered_map<Address, Address> return_to_cleanup;
+  
   std::unordered_map<uint32_t, NativeFunction> native_registry;
   std::unordered_map<uint32_t, std::vector<uint32_t>> vtables;
   std::unordered_map<uint32_t, int32_t> vtable_bases;

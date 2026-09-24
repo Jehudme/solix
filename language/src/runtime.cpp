@@ -299,6 +299,11 @@ void RuntimeContext::execute() {
       &&op_RETURN,
       &&op_HALT,
       &&op_THROW_ABSTRACT,
+      &&op_REGISTER_RETURN_CLEANUP,
+      &&op_JMP_TO_OUTER_CLEANUP,
+      &&op_THROW_EXCEPTION,
+      &&op_GET_EXCEPTION,
+      &&op_CLEAR_EXCEPTION
   };
 
 #define DISPATCH() goto *dispatch_table[code[program_counter++]]
@@ -914,6 +919,88 @@ op_HALT:
 op_THROW_ABSTRACT:
   throw std::runtime_error("Called abstract method");
 
+op_REGISTER_RETURN_CLEANUP:
+  {
+      Address ret_ip = code[program_counter++] << 24;
+      ret_ip |= code[program_counter++] << 16;
+      ret_ip |= code[program_counter++] << 8;
+      ret_ip |= code[program_counter++];
+      Address cleanup_ip = code[program_counter++] << 24;
+      cleanup_ip |= code[program_counter++] << 16;
+      cleanup_ip |= code[program_counter++] << 8;
+      cleanup_ip |= code[program_counter++];
+      return_to_cleanup[ret_ip] = cleanup_ip;
+      DISPATCH();
+  }
+op_JMP_TO_OUTER_CLEANUP:
+  {
+      if (call_depth == 0) {
+          throw std::runtime_error("Unhandled exception reached top level.");
+      }
+      Frame current_frame = call_stack[call_depth - 1];
+      Address ret_ip = current_frame.return_ip;
+      
+      call_depth--;
+      sp = stack + current_frame.frame_pointer; // Pop locals
+      
+      if (call_depth == 0) {
+          throw std::runtime_error("Unhandled exception reached top level.");
+      }
+      
+      auto it = return_to_cleanup.find(ret_ip);
+      if (it != return_to_cleanup.end()) {
+          program_counter = it->second;
+      } else {
+          // If the caller has NO cleanup, just loop JMP_TO_OUTER_CLEANUP again!
+          // We can simulate this by putting program_counter just before a JMP_TO_OUTER_CLEANUP
+          // Or just recursively pop frames.
+          while (true) {
+              if (call_depth == 0) throw std::runtime_error("Unhandled exception reached top level.");
+              Frame caller = call_stack[call_depth - 1];
+              auto it2 = return_to_cleanup.find(caller.return_ip);
+              if (it2 != return_to_cleanup.end()) {
+                  program_counter = it2->second;
+                  break;
+              }
+              call_depth--;
+              sp = stack + caller.frame_pointer;
+          }
+      }
+      DISPATCH();
+  }
+op_THROW_EXCEPTION:
+  {
+      uint64_t exc = POP();
+      if (exc != 0) {
+          memory.increase_reference(exc); // Prevent it from being garbage collected during unwinding
+          active_exception = exc;
+      }
+      Address innermost_cleanup_ip = code[program_counter++] << 24;
+      innermost_cleanup_ip |= code[program_counter++] << 16;
+      innermost_cleanup_ip |= code[program_counter++] << 8;
+      innermost_cleanup_ip |= code[program_counter++];
+      
+      if (innermost_cleanup_ip != 0xFFFFFFFF) {
+          program_counter = innermost_cleanup_ip;
+      } else {
+          // No local cleanup, immediately trigger cross-frame bubbling
+          goto op_JMP_TO_OUTER_CLEANUP;
+      }
+      DISPATCH();
+  }
+op_GET_EXCEPTION:
+  {
+      PUSH(active_exception);
+      DISPATCH();
+  }
+op_CLEAR_EXCEPTION:
+  {
+      if (active_exception != 0) {
+          memory.decrease_reference(active_exception);
+          active_exception = 0;
+      }
+      DISPATCH();
+  }
 #undef PUSH
 #undef POP
 #undef PEEK

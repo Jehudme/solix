@@ -103,7 +103,14 @@ enum class OpCode : uint8_t {
 
   // End
   HALT,
-  THROW_ABSTRACT
+  THROW_ABSTRACT,
+  
+  // Exception Handling
+  REGISTER_RETURN_CLEANUP,
+  JMP_TO_OUTER_CLEANUP,
+  THROW_EXCEPTION,
+  GET_EXCEPTION,
+  CLEAR_EXCEPTION
 };
 
 inline const char* opcode_to_string(uint8_t op) {
@@ -190,6 +197,11 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::RETURN: return "RETURN";
         case OpCode::HALT: return "HALT";
         case OpCode::THROW_ABSTRACT: return "THROW_ABSTRACT";
+        case OpCode::REGISTER_RETURN_CLEANUP: return "REGISTER_RETURN_CLEANUP";
+        case OpCode::JMP_TO_OUTER_CLEANUP: return "JMP_TO_OUTER_CLEANUP";
+        case OpCode::THROW_EXCEPTION: return "THROW_EXCEPTION";
+        case OpCode::GET_EXCEPTION: return "GET_EXCEPTION";
+        case OpCode::CLEAR_EXCEPTION: return "CLEAR_EXCEPTION";
         default: return "UNKNOWN";
     }
 }
@@ -277,6 +289,11 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "RETURN") return OpCode::RETURN;
     if (str == "HALT") return OpCode::HALT;
     if (str == "THROW_ABSTRACT") return OpCode::THROW_ABSTRACT;
+    if (str == "REGISTER_RETURN_CLEANUP") return OpCode::REGISTER_RETURN_CLEANUP;
+    if (str == "JMP_TO_OUTER_CLEANUP") return OpCode::JMP_TO_OUTER_CLEANUP;
+    if (str == "THROW_EXCEPTION") return OpCode::THROW_EXCEPTION;
+    if (str == "GET_EXCEPTION") return OpCode::GET_EXCEPTION;
+    if (str == "CLEAR_EXCEPTION") return OpCode::CLEAR_EXCEPTION;
     return OpCode::HALT; // fallback
 }
 
