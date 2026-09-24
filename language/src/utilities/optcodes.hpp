@@ -110,7 +110,12 @@ enum class OpCode : uint8_t {
   JMP_TO_OUTER_CLEANUP,
   THROW_EXCEPTION,
   GET_EXCEPTION,
-  CLEAR_EXCEPTION
+  CLEAR_EXCEPTION,
+
+  // Extended Type Conversions & Negation
+  CONV_I_TO_F,
+  CONV_F_TO_I,
+  NEGATE_I64
 };
 
 inline const char* opcode_to_string(uint8_t op) {
@@ -202,6 +207,9 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::THROW_EXCEPTION: return "THROW_EXCEPTION";
         case OpCode::GET_EXCEPTION: return "GET_EXCEPTION";
         case OpCode::CLEAR_EXCEPTION: return "CLEAR_EXCEPTION";
+        case OpCode::CONV_I_TO_F: return "CONV_I_TO_F";
+        case OpCode::CONV_F_TO_I: return "CONV_F_TO_I";
+        case OpCode::NEGATE_I64: return "NEGATE_I64";
         default: return "UNKNOWN";
     }
 }
@@ -294,6 +302,9 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "THROW_EXCEPTION") return OpCode::THROW_EXCEPTION;
     if (str == "GET_EXCEPTION") return OpCode::GET_EXCEPTION;
     if (str == "CLEAR_EXCEPTION") return OpCode::CLEAR_EXCEPTION;
+    if (str == "CONV_I_TO_F") return OpCode::CONV_I_TO_F;
+    if (str == "CONV_F_TO_I") return OpCode::CONV_F_TO_I;
+    if (str == "NEGATE_I64") return OpCode::NEGATE_I64;
     return OpCode::HALT; // fallback
 }
 
