@@ -56,11 +56,15 @@
     - Update `copy_stdlib` dependency and target references to use `solix`.
     - Update test runners, documentation, and references expecting `solix_launcher`.
 
-- [ ] **Forward `main()` Return Value as Process Exit Code**
-  - **Issue**: `static int32 main()` returns an integer on the VM stack, but `solix::run(options)` returns `void`. The launcher CLI always exits with `0` on successful completion, ignoring the program's intended exit code (e.g. `return 42;`).
+- [ ] **Fix 'run' Command to Return Exit Code from Program (`main`)**
+  - **Issue**: The `solix run` (or `solix_launcher run`) command currently always terminates with exit code `0` on successful completion, completely discarding the integer return value from `main()` (e.g. `return 42;`). Shell scripts checking `$?` cannot detect program exit codes.
   - **Fix**:
-    - In [`language/src/runtime.cpp`](language/src/runtime.cpp), have `run(options)` return an `int32_t` representing the top-of-stack return value on `op_HALT`.
-    - In [`launcher/src/commands/execute.cpp`](launcher/src/commands/execute.cpp), call `std::exit(exit_code)`.
+    - In [`language/include/solix/runtime.hpp`](language/include/solix/runtime.hpp) and [`language/src/runtime.cpp`](language/src/runtime.cpp):
+      - Update `run(RuntimeOptions &options)` to return `int32_t` (or store exit code in `RuntimeOptions::exit_code`).
+      - In `op_HALT`, inspect the VM stack: if `main()` returned an integer value, pop it and use it as the return code. If `main()` has a `void` return type, default to `0`.
+    - In [`launcher/src/commands/execute.cpp`](launcher/src/commands/execute.cpp):
+      - Capture the integer exit code returned from `run(*opts)` and invoke `std::exit(exit_code)` (or propagate it through the CLI app callback to `main()`).
+      - Ensure unhandled exceptions continue exiting with non-zero error code (`1`).
 
 ---
 
