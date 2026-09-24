@@ -216,6 +216,101 @@ void RuntimeContext::execute() {
   }
   PUSH(args_array);
 
+#if defined(_MSC_VER) && !defined(__clang__)
+#define DISPATCH() goto vm_dispatch
+  goto vm_dispatch;
+vm_dispatch:
+  switch (code[program_counter++]) {
+    case 0: goto op_PUSH_CONST_I8;
+    case 1: goto op_PUSH_CONST_I16;
+    case 2: goto op_PUSH_CONST_I32;
+    case 3: goto op_PUSH_CONST_I64;
+    case 4: goto op_PUSH_CONST_U8;
+    case 5: goto op_PUSH_CONST_U16;
+    case 6: goto op_PUSH_CONST_U32;
+    case 7: goto op_PUSH_CONST_U64;
+    case 8: goto op_PUSH_CONST_F32;
+    case 9: goto op_PUSH_CONST_F64;
+    case 10: goto op_PUSH_CONST_STRING;
+    case 11: goto op_PUSH_TRUE;
+    case 12: goto op_PUSH_FALSE;
+    case 13: goto op_PUSH_NULL;
+    case 14: goto op_POP;
+    case 15: goto op_DUP;
+    case 16: goto op_DUP2;
+    case 17: goto op_ADD_I64;
+    case 18: goto op_ADD_F64;
+    case 19: goto op_SUB_I64;
+    case 20: goto op_SUB_F64;
+    case 21: goto op_MUL_I64;
+    case 22: goto op_MUL_F64;
+    case 23: goto op_DIV_I64;
+    case 24: goto op_DIV_F64;
+    case 25: goto op_MOD_I64;
+    case 26: goto op_EQ_I64;
+    case 27: goto op_EQ_F64;
+    case 28: goto op_NEQ_I64;
+    case 29: goto op_NEQ_F64;
+    case 30: goto op_GREATER_I64;
+    case 31: goto op_GREATER_F64;
+    case 32: goto op_GREATER_EQ_I64;
+    case 33: goto op_GREATER_EQ_F64;
+    case 34: goto op_LESS_I64;
+    case 35: goto op_LESS_F64;
+    case 36: goto op_LESS_EQ_I64;
+    case 37: goto op_LESS_EQ_F64;
+    case 38: goto op_LOGICAL_NOT;
+    case 39: goto op_NEGATE;
+    case 40: goto op_INC_I64;
+    case 41: goto op_INC_F64;
+    case 42: goto op_DEC_I64;
+    case 43: goto op_DEC_F64;
+    case 44: goto op_GET_LOCAL;
+    case 45: goto op_SET_LOCAL;
+    case 46: goto op_GET_GLOBAL;
+    case 47: goto op_SET_GLOBAL;
+    case 48: goto op_JUMP;
+    case 49: goto op_JUMP_IF_FALSE;
+    case 50: goto op_JUMP_IF_TRUE;
+    case 51: goto op_ALLOC_STATIC;
+    case 52: goto op_ALLOC_DYNAMIC;
+    case 53: goto op_GET_PROPERTY;
+    case 54: goto op_SET_PROPERTY;
+    case 55: goto op_WEAK_SET_PROPERTY;
+    case 56: goto op_GET_ARRAY;
+    case 57: goto op_SET_ARRAY;
+    case 58: goto op_ARRAY_LENGTH;
+    case 59: goto op_INC_REF;
+    case 60: goto op_DEC_REF;
+    case 61: goto op_CONV_I8;
+    case 62: goto op_CONV_I16;
+    case 63: goto op_CONV_I32;
+    case 64: goto op_CONV_I64;
+    case 65: goto op_CONV_U8;
+    case 66: goto op_CONV_U16;
+    case 67: goto op_CONV_U32;
+    case 68: goto op_CONV_U64;
+    case 69: goto op_CONV_F32;
+    case 70: goto op_CONV_F64;
+    case 71: goto op_CALL;
+    case 72: goto op_CALL_NATIVE;
+    case 73: goto op_DEFINE_NATIVE;
+    case 74: goto op_CALL_VIRTUAL;
+    case 75: goto op_DEFINE_VTABLE;
+    case 76: goto op_SET_VTABLE;
+    case 77: goto op_CAST_CHECK;
+    case 78: goto op_INSTANCEOF;
+    case 79: goto op_RETURN;
+    case 80: goto op_HALT;
+    case 81: goto op_THROW_ABSTRACT;
+    case 82: goto op_REGISTER_RETURN_CLEANUP;
+    case 83: goto op_JMP_TO_OUTER_CLEANUP;
+    case 84: goto op_THROW_EXCEPTION;
+    case 85: goto op_GET_EXCEPTION;
+    case 86: goto op_CLEAR_EXCEPTION;
+    default: goto op_HALT;
+  }
+#else
   static const void *dispatch_table[] = {
       &&op_PUSH_CONST_I8,
       &&op_PUSH_CONST_I16,
@@ -253,7 +348,7 @@ void RuntimeContext::execute() {
       &&op_GREATER_EQ_F64,
       &&op_LESS_I64,
       &&op_LESS_F64,
-      &&op_LESS_EQ_F64,
+      &&op_LESS_EQ_I64,
       &&op_LESS_EQ_F64,
       &&op_LOGICAL_NOT,
       &&op_NEGATE,
@@ -309,6 +404,7 @@ void RuntimeContext::execute() {
 #define DISPATCH() goto *dispatch_table[code[program_counter++]]
 
   DISPATCH();
+#endif
 op_PUSH_CONST_I8:
 op_PUSH_CONST_I16:
 op_PUSH_CONST_I32:

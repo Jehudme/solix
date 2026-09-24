@@ -6,8 +6,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_compile_definitions(SPDLOG_NO_COMPILED_STRING FMT_USE_CONSTEVAL=0)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSPDLOG_NO_COMPILED_STRING -DFMT_USE_CONSTEVAL=0")
 
 include(FetchContent)
 
@@ -19,21 +17,19 @@ if(NOT TARGET fmt AND NOT TARGET fmt::fmt)
     FetchContent_Declare(
         fmt
         GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-        GIT_TAG        10.2.1
+        GIT_TAG        11.1.4
     )
     FetchContent_MakeAvailable(fmt)
 endif()
 
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "Use external fmt" FORCE)
-set(SPDLOG_NO_COMPILED_STRING ON CACHE BOOL "Disable compiled string in spdlog" FORCE)
-add_compile_definitions(SPDLOG_NO_COMPILED_STRING)
 
 find_package(spdlog QUIET)
 if(NOT TARGET spdlog AND NOT TARGET spdlog::spdlog)
     FetchContent_Declare(
         spdlog
         GIT_REPOSITORY https://github.com/gabime/spdlog.git
-        GIT_TAG        v1.13.0
+        GIT_TAG        v1.15.1
     )
     FetchContent_MakeAvailable(spdlog)
 endif()
