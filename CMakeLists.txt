@@ -11,6 +11,26 @@ include(FetchContent)
 # Enable testing
 enable_testing()
 
+find_package(fmt QUIET)
+if(NOT TARGET fmt AND NOT TARGET fmt::fmt)
+    FetchContent_Declare(
+        fmt
+        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_TAG        10.2.1
+    )
+    FetchContent_MakeAvailable(fmt)
+endif()
+
+find_package(spdlog QUIET)
+if(NOT TARGET spdlog AND NOT TARGET spdlog::spdlog)
+    FetchContent_Declare(
+        spdlog
+        GIT_REPOSITORY https://github.com/gabime/spdlog.git
+        GIT_TAG        v1.13.0
+    )
+    FetchContent_MakeAvailable(spdlog)
+endif()
+
 add_subdirectory(language)
 add_subdirectory(launcher)
 add_subdirectory(tests)
