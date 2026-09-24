@@ -561,7 +561,7 @@ public class Phase33TestRunner {
         }
 
         // Test 4: Array literals with reference types
-        Phase33Node[] arr = [new Phase33Node(101), new Phase33Node(202)];
+        Phase33Node[] arr = { new Phase33Node(101), new Phase33Node(202) };
         if (arr[0].value == 101 && arr[1].value == 202) {
             Console.println("Array literal reference elements OK!");
         } else {
