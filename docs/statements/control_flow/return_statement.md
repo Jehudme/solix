@@ -35,43 +35,5 @@ RETURN                      // Pops frame; 42 remains at stack top for caller
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Early Return from Nested Scopes
-```solix
-int32 find(bool fast) {
-    String a = new String("a");
-    {
-        String b = new String("b");
-        if (fast) return 1;
-    }
-    return 0;
-}
-```
-*Expected Result*: Returns 1; both `b` and `a` are deallocated.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Missing Return Value in Non-Void Method
-```solix
-int32 get_val() {
-    return; // Error: must return a value
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Must return a value from non-void method
-```
-
-### Case 4.2: Return Type Mismatch
-```solix
-int32 get_num() {
-    return "text"; // Error: String cannot convert to int32
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Return type mismatch: expected 'int32', got 'String'
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [ReturnStatement in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#returnstatement).

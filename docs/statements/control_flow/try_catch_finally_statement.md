@@ -41,40 +41,5 @@ JUMP <try_end_ip>
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Specific Catch Hierarchy
-```solix
-class CustomError extends std.Exception { CustomError() : super("Custom") {} }
-
-int32 result = 0;
-try {
-    throw new CustomError();
-} catch (CustomError c) {
-    result = 1; // Matches here
-} catch (std.Exception e) {
-    result = 2;
-}
-```
-*Expected Result*: `result` equals 1.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Unreachable Catch Clause
-```solix
-class SubErr extends std.Exception {}
-
-void test() {
-    try {
-        work();
-    } catch (std.Exception e) {
-    } catch (SubErr s) { // Error: unreachable catch
-    }
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Unreachable catch clause: 'SubErr' is already handled by preceding catch for 'std.Exception'
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [TryCatchFinallyStatement in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#trycatchfinallystatement).

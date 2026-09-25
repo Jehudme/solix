@@ -16,31 +16,5 @@ Interface variables are reference types managed by ARC. Methods called on interf
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Multiple Interface Conformance
-```solix
-interface Printable { void print(); }
-interface Serializable { void save(); }
-
-class Doc implements Printable, Serializable {
-    void print() { Console.println("print"); }
-    void save() { Console.println("save"); }
-}
-```
-*Expected Result*: Compiles cleanly; instances can be passed to functions taking either `Printable` or `Serializable`.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Interface Method with Body
-```solix
-interface Reader {
-    int32 read() { return 0; } // Error: method cannot have body
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] parser.cpp: Interface methods cannot have a body
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [InterfaceDeclaration in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#interfacedeclaration).

@@ -29,42 +29,5 @@ JUMP <block_cleanup_ip>         // Jump to block cleanup segment to free 'msg'
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Throw Handled by Catch
-```solix
-bool caught = false;
-try {
-    throw new std.Exception("test");
-} catch (std.Exception e) {
-    caught = true;
-}
-```
-*Expected Result*: `caught` is `true`.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Throwing Primitive Value
-```solix
-void test() {
-    throw 404; // Error: cannot throw primitive
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Cannot throw type 'int32': must inherit from 'std.Exception'
-```
-
-### Case 4.2: Throwing Null Reference at Runtime
-```solix
-void test() {
-    std.Exception e = null;
-    throw e; // Throws NullReferenceException
-}
-```
-*Expected Runtime Exception*:
-```text
-[FATAL VM PANIC] NullReferenceException: Attempted to throw null exception reference
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [ThrowStatement in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#throwstatement).

@@ -35,24 +35,5 @@ SET_LOCAL 1                 // primes = array pointer
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Dual Literal Syntax
-```solix
-int32[] a = [10, 20];
-int32[] b = {10, 20}; // Both bracket and brace syntax supported
-```
-*Expected Result*: Both arrays initialize with identical elements.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Incompatible Literal Elements
-```solix
-var arr = [10, "text"]; // Incompatible types
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Incompatible types in array literal
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [ArrayLiteralExpression in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#arrayliteralexpression).

@@ -28,26 +28,5 @@ SET_PROPERTY 0              // Stores pointer (and decrements old value internal
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Chained Assignment
-```solix
-int32 a; int32 b; int32 c;
-a = b = c = 10;
-```
-*Expected Result*: `a`, `b`, and `c` all equal 10.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Assigning to Literal / RValue
-```solix
-void test() {
-    10 = x; // Error: invalid lvalue
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] parser.cpp: Invalid assignment target
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [AssignmentExpression in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#assignmentexpression).

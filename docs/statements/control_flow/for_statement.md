@@ -45,30 +45,5 @@ JUMP <loop_start_ip>
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Standard For Loop with Continue
-```solix
-int32 evens = 0;
-for (int32 i = 0; i < 10; i++) {
-    if (i % 2 != 0) continue; // Jumps to i++
-    evens++;
-}
-```
-*Expected Result*: `evens` equals 5.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Induction Variable Leakage
-```solix
-void test() {
-    for (int32 i = 0; i < 5; i++) {}
-    Console.println(i); // Error: i is out of scope
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Undefined identifier: i
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [ForStatement in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#forstatement).

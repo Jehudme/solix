@@ -15,31 +15,5 @@ A `MethodDeclaration` defines a callable member function. Methods support parame
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Virtual Method Overriding
-```solix
-class Parent { String name() { return "parent"; } }
-class Child extends Parent { String name() { return "child"; } }
-
-void test() {
-    Parent p = new Child();
-    Console.println(p.name()); // Prints: child
-}
-```
-*Expected Result*: Dispatches dynamically to `Child.name()`.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Abstract Method with Body
-```solix
-abstract class Base {
-    abstract void run() {} // Error: cannot have body
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] parser.cpp: Abstract method 'run' cannot have a body
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [MethodDeclaration in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#methoddeclaration).

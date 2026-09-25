@@ -23,29 +23,5 @@ SET_LOCAL 2                 // age
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Chained Member Access
-```solix
-class Address { String city; }
-class Person { Address addr; }
-
-void test(Person p) {
-    String city = p.addr.city;
-}
-```
-*Expected Result*: Resolves offsets sequentially; compiles cleanly.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Member Access on Null Reference (Runtime Fault)
-```solix
-Person p = null;
-String c = p.addr; // Throws NullReferenceException
-```
-*Expected Runtime Exception*:
-```text
-[FATAL VM PANIC] NullReferenceException: Attempted to read property from null object reference
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [MemberAccessExpression in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#memberaccessexpression).

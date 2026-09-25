@@ -24,29 +24,5 @@ SET_LOCAL 1                 // Stored into 's' (value type, 0 ARC)
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Enum Equality and Switch
-```solix
-enum Color { RED, GREEN, BLUE }
-
-void test(Color c) {
-    if (c == Color.RED) {
-        Console.println("Red");
-    }
-}
-```
-*Expected Result*: Compiles and compares correctly via `EQ_I64`.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Duplicate Enum Member
-```solix
-enum State { READY, READY }
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Duplicate enum member 'READY' in enum 'State'
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [EnumDeclaration in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#enumdeclaration).

@@ -40,31 +40,5 @@ JUMP_IF_TRUE <loop_head_ip> // Loop back if true
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Guaranteed Initial Pass with False Condition
-```solix
-int32 ran = 0;
-do {
-    ran++;
-} while (false);
-```
-*Expected Result*: `ran` equals 1; body ran exactly once.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Accessing Body Variable in Condition
-Variables declared inside the `do` block are not in scope in the condition.
-```solix
-void test() {
-    do {
-        int32 inner = 10;
-    } while (inner > 0); // Error: inner undefined
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Undefined identifier: inner
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [DoWhileStatement in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#dowhilestatement).

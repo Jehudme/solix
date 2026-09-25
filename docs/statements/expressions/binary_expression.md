@@ -24,25 +24,5 @@ SET_LOCAL 3                 // sum
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Short-Circuit Logical AND
-```solix
-bool result = false && (10 / 0 == 0); // Division by zero avoided
-```
-*Expected Result*: `result` is `false`.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Division by Zero (Runtime Fault)
-```solix
-void test() {
-    int32 x = 10 / 0;
-}
-```
-*Expected Runtime Exception*:
-```text
-[FATAL VM PANIC] ArithmeticException: Division by zero
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [BinaryExpression in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#binaryexpression).

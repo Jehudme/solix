@@ -1,12 +1,13 @@
-# Solix Statement & Construct Reference & Test Specification
+# Solix Language Reference: Statements & Constructs
 
-This directory contains the practical, code-first language reference and test specification for all 37 statements and expressions in Solix.
+This directory contains the practical, code-first language reference for all 37 statements, declarations, and expressions in Solix.
 
-Each specification document provides:
-1. **Overview & Purpose**: Direct, plain-English explanation of what the construct does, why it exists, and its core rules.
+Each document focuses strictly on the architecture and mechanics of the construct:
+1. **Overview & Purpose**: Direct, plain-English explanation of what the construct does, why it exists, and its core language rules.
 2. **Compilation & Runtime Mechanics (With Real Bytecode)**: How the Solix compiler lowers the code, showing side-by-side Solix source code and compiled VM bytecode, along with stack and ARC refcount operations.
-3. **Valid Test Cases (Positive Scenarios)**: A code-first catalog of all valid variations (simple, nested, and edge cases) that must compile and run cleanly.
-4. **Invalid Test Cases & Expected Errors (Negative Scenarios)**: All ways the construct can fail, split into Parser syntax errors, Binder semantic errors, and VM runtime panics, complete with exact error text.
+
+> [!NOTE]
+> All positive test scenarios (valid variations) and negative test scenarios (expected compiler errors and runtime exceptions) are centralized in the master [TEST_SPECIFICATION.md](../TEST_SPECIFICATION.md).
 
 ---
 

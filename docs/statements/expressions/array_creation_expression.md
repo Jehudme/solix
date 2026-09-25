@@ -23,24 +23,5 @@ SET_LOCAL 1                 // Stored into arr
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Zero-Initialized Array
-```solix
-int32[] data = new int32[5];
-int32 first = data[0]; // 0
-```
-*Expected Result*: `first` is 0.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Negative Size at Runtime (Runtime Fault)
-```solix
-int32[] bad = new int32[-1];
-```
-*Expected Runtime Exception*:
-```text
-[FATAL VM PANIC] NegativeArraySizeException: Attempted to create array with negative size -1
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [ArrayCreationExpression in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#arraycreationexpression).

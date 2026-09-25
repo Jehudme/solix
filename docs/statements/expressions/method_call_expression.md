@@ -24,34 +24,5 @@ CALL_VIRTUAL <add_slot>     // Dispatches via VTable
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Overloaded Method Selection
-```solix
-class Printer {
-    void print(int32 x) { Console.println("int"); }
-    void print(String s) { Console.println("str"); }
-}
-
-void test() {
-    Printer p = new Printer();
-    p.print(42);       // Calls print(int32)
-    p.print("hello");  // Calls print(String)
-}
-```
-*Expected Result*: First prints `"int"`, second prints `"str"`.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: No Matching Overload
-```solix
-void test(Printer p) {
-    p.print(true); // Error: no boolean overload
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: No matching overload for method 'print' with arguments (bool)
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [MethodCallExpression in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#methodcallexpression).

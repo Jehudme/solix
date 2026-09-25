@@ -28,24 +28,5 @@ SET_LOCAL 2                 // Stored into val
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Safe Guard with Null Check
-```solix
-String s = null;
-int32 len = (s != null) ? s.length() : 0; // Short-circuits; does not call s.length()!
-```
-*Expected Result*: `len` equals 0; no null pointer exception occurs.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Non-Boolean Condition
-```solix
-int32 res = 5 ? 1 : 2; // Error
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Ternary condition must be of type 'bool', got 'int32'
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [TernaryExpression in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#ternaryexpression).

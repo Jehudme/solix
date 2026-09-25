@@ -34,25 +34,5 @@ SET_LOCAL 5
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: All Literal Types
-```solix
-int64 big = 10000000000L;
-char letter = 'Z';
-String empty = "";
-```
-*Expected Result*: All primitives compile and load accurately.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Integer Literal Overflow
-```solix
-int32 x = 99999999999999999999;
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] lexer.cpp: Integer literal out of range for type 'int32'
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [LiteralNode in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#literalnode).

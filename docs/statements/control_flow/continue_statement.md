@@ -30,29 +30,5 @@ JUMP <loop_condition_ip>    // Jump to condition check
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Continue Advances Loop Variable
-```solix
-int32 hits = 0;
-for (int32 i = 0; i < 6; i++) {
-    if (i % 2 == 0) continue;
-    hits++;
-}
-```
-*Expected Result*: `hits` equals 3 (processed for 1, 3, 5).
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Continue Outside Loop
-```solix
-void test() {
-    continue; // Error: not in loop
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: 'continue' statement not allowed outside of loop
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [ContinueStatement in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#continuestatement).

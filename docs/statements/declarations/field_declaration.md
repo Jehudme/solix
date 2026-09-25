@@ -37,46 +37,5 @@ WEAK_SET_PROPERTY 8         // Stores weak pointer (NO INC_REF!)
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Cycle Breaking with Weak References
-```solix
-class Parent { Child c; }
-class Child { weak Parent p; }
-
-void test() {
-    Parent p = new Parent();
-    Child c = new Child();
-    p.c = c;
-    c.p = p; // Weak back-pointer: cycle is broken!
-}
-```
-*Expected Result*: Both objects are deallocated when `p` and `c` exit scope.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Duplicate Field Identifier
-```solix
-class Item {
-    int32 count;
-    float64 count; // Error: duplicate
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Field 'count' is already declared in class 'Item'
-```
-
-### Case 4.2: Field Access on Null Reference (Runtime Fault)
-```solix
-void test() {
-    Item item = null;
-    item.count = 5; // Null dereference
-}
-```
-*Expected Runtime Exception*:
-```text
-[FATAL VM PANIC] NullReferenceException: Attempted to write field on null object reference
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [FieldDeclaration in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#fielddeclaration).

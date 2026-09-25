@@ -25,33 +25,5 @@ SET_LOCAL 1                 // Stored into w
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Instantiation with Overloaded Constructor
-```solix
-class Item {
-    int32 val;
-    Item() { this.val = 0; }
-    Item(int32 v) { this.val = v; }
-}
-
-void test() {
-    Item i1 = new Item();
-    Item i2 = new Item(42);
-}
-```
-*Expected Result*: `i1.val` is 0; `i2.val` is 42.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Instantiating Abstract Class
-```solix
-abstract class Base {}
-Base b = new Base(); // Error
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Cannot instantiate abstract class 'Base'
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [NewInstanceExpression in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#newinstanceexpression).

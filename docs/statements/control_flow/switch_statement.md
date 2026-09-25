@@ -49,34 +49,5 @@ JUMP <switch_exit_ip>
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Switch with Explicit Break
-```solix
-int32 value = 2;
-String name = "";
-switch (value) {
-    case 1: name = "one"; break;
-    case 2: name = "two"; break;
-    default: name = "other"; break;
-}
-```
-*Expected Result*: `name` equals `"two"`.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Duplicate Case Constant
-```solix
-void test(int32 x) {
-    switch (x) {
-        case 1: break;
-        case 1: break; // Error: duplicate
-    }
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Duplicate case value '1' in switch statement
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [SwitchStatement in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#switchstatement).

@@ -29,26 +29,5 @@ RETURN                      // Constructor returns 'this'
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Chained Super Constructor
-```solix
-class Base { int32 id; Base(int32 id) { this.id = id; } }
-class Sub extends Base { Sub(int32 id) : super(id) {} }
-```
-*Expected Result*: Invokes `Base` constructor before running `Sub` constructor.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Constructor Name Mismatch
-```solix
-class Widget {
-    Gadget() {} // Error: name mismatch
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Constructor name 'Gadget' does not match enclosing class 'Widget'
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [ConstructorDeclaration in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#constructordeclaration).

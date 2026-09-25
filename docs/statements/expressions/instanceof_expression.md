@@ -23,24 +23,5 @@ SET_LOCAL 2
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Safe Null Evaluation
-```solix
-Animal a = null;
-bool check = a instanceof Dog; // false, no panic!
-```
-*Expected Result*: `check` is `false`.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Primitive Target
-```solix
-bool b = 10 instanceof int32; // Error
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: 'instanceof' cannot be applied to primitive types
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [InstanceOfExpression in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#instanceofexpression).

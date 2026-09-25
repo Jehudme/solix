@@ -32,27 +32,5 @@ SET_ARRAY                   // Bounds checks & writes element
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: In-Bounds Read and Write
-```solix
-int32[] buffer = new int32[3];
-buffer[0] = 100;
-buffer[1] = 200;
-int32 sum = buffer[0] + buffer[1]; // 300
-```
-*Expected Result*: `sum` equals 300.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Index Out of Bounds (Runtime Fault)
-```solix
-int32[] data = new int32[2];
-int32 fail = data[5]; // Out of bounds
-```
-*Expected Runtime Exception*:
-```text
-[FATAL VM PANIC] IndexOutOfBoundsException: Index 5 out of bounds for array length 2
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [ArrayAccessExpression in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#arrayaccessexpression).

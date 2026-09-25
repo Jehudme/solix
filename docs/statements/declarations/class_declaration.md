@@ -46,40 +46,5 @@ CALL_VIRTUAL <speak_slot_id>// Dynamic dispatch queries Dog VTable!
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Single Inheritance and Dynamic Dispatch
-```solix
-class Animal { String sound() { return "generic"; } }
-class Cat extends Animal { String sound() { return "meow"; } }
-
-void test() {
-    Animal pet = new Cat();
-    Console.println(pet.sound()); // Prints: meow
-}
-```
-*Expected Result*: Dispatches dynamically to `Cat.sound()`.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Circular Class Inheritance
-```solix
-class A extends B {}
-class B extends A {}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Circular inheritance detected for class 'A'
-```
-
-### Case 4.2: Unimplemented Abstract Method
-```solix
-abstract class Shape { abstract float64 area(); }
-class Circle extends Shape {} // Error: missing area()
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Class 'Circle' must implement abstract method 'area()' from 'Shape'
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [ClassDeclaration in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#classdeclaration).

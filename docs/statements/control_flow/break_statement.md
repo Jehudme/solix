@@ -36,32 +36,5 @@ JUMP <loop_exit>            // Jump out of while loop
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Breaking Out of Deep Nested Blocks
-```solix
-while (true) {
-    String s1 = new String("s1");
-    {
-        String s2 = new String("s2");
-        break; // Cleans up s2 and s1
-    }
-}
-```
-*Expected Result*: `s2` and `s1` are freed cleanly; 0 memory leaks.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Break Outside Loop or Switch
-```solix
-void test() {
-    int32 x = 10;
-    break; // Error: break not inside loop/switch
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: 'break' statement not allowed outside of loop or switch
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [BreakStatement in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#breakstatement).

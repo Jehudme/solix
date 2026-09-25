@@ -43,45 +43,5 @@ CALL_NATIVE Console.println
 
 ---
 
-## 3. Valid Test Cases (Positive Scenarios)
-
-### Case 3.1: Single Branch If
-```solix
-int32 x = 10;
-if (x > 5) {
-    x = 20;
-}
-```
-*Expected Result*: `x` becomes 20.
-
-### Case 3.2: If-Else Chain
-```solix
-int32 score = 85;
-char grade = 'F';
-if (score >= 90) {
-    grade = 'A';
-} else if (score >= 80) {
-    grade = 'B';
-} else {
-    grade = 'C';
-}
-```
-*Expected Result*: `grade` evaluates to `'B'`.
-
----
-
-## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
-
-### Case 4.1: Non-Boolean Condition Type
-```solix
-void test() {
-    int32 count = 1;
-    if (count) { // Error: int32 not allowed as condition
-        Console.println("yes");
-    }
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: If condition must be of type 'bool', got 'int32'
-```
+> [!NOTE]
+> For all positive test scenarios and negative failure cases for this construct, see [IfStatement in TEST_SPECIFICATION.md](../../TEST_SPECIFICATION.md#ifstatement).
