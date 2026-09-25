@@ -1,36 +1,65 @@
-# InstanceOfExpression (`NodeType::INSTANCEOF_EXPR`)
+# §29 InstanceOfExpression
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-The `instanceof` expression (`expr instanceof Type`) evaluates whether an object instance conforms at runtime to a specified class or interface type. It inspects the target object's VTable ID and ancestor hierarchy table. The expression yields a boolean `true` if the instance inherits from or implements the target type, and `false` otherwise (or if the evaluated reference is `null`).
+An `InstanceOfExpression` (`expr instanceof TargetType`) evaluates whether an object instance conforms at runtime to a specified class or interface type. It yields a boolean `true` if the object inherits from or implements the target type, and `false` otherwise (or if the evaluated reference is `null`).
 
-## 2. Syntax & Grammar
+---
 
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-<expression> 'instanceof' <class-type>
+InstanceOfExpression ::= Expression 'instanceof' QualifiedType
 ```
 
-## 3. Underlying Systems & Mechanics
+---
 
-- Evaluates expression. If null, evaluates to `false`.
-- Reads `vtable_id` from instance word 0.
-- Traverses base vtable pointers in runtime metadata table to check if target type is an ancestor.
-- Leaves `bool` on stack.
+## 3. Scope & Declaration Space (Static Semantics)
 
-## 4. Positive Test Scenarios (Valid Variations)
+The LHS must be a reference type; the RHS must be a declared class or interface.
 
-1. **Class Hierarchy Query**:
-   ```solix
-   if (entity instanceof Enemy) {
-       Enemy e = (Enemy)entity;
-   }
-   ```
+---
 
-## 5. Negative Test Scenarios (Invalid Variations)
+## 4. Operational Semantics (Dynamic Execution)
 
-1. **Left Hand Side is Primitive**:
-   - `if (10 instanceof int32)`  
-     *Error*: `instanceof requires an object reference on left-hand side`
-2. **Right Hand Side is Not a Class**:
-   - `if (obj instanceof int32)`  
-     *Error*: `Right-hand side of instanceof must be a class type`
+1. Evaluates LHS expression onto operand stack.
+2. Emits `OpCode::INSTANCEOF <target_vtable_id>`.
+3. If reference is `null`, returns `false`.
+4. Otherwise, checks target type against instance VTable hierarchy table. Pushes `bool`.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+Pushes scalar `bool`. Incurs 0 ARC refcount changes.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: InstanceOf with Primitive Type
+```solix
+bool b = 10 instanceof int32; // Error
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: 'instanceof' cannot be applied to primitive types
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+None; null references safely evaluate to `false`.
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Safe Hierarchy Query
+```solix
+Animal a = null;
+bool is_dog = a instanceof Dog; // Evaluates to false safely
+```
+*Verification Invariant*: `is_dog` is `false`.

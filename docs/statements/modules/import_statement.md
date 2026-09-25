@@ -1,41 +1,122 @@
-# ImportStatement (`NodeType::IMPORT_STMT`)
+# §2 ImportStatement
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-The `import` statement brings external symbols or entire package namespaces into the current lexical scope. Solix supports both wildcards (`import package.*;`) for bulk symbol importation and selective imports (`import package.Class;`) to prevent namespace pollution. Imports are resolved at compile time during the symbol resolution passes (Pass 1a and Pass 1b), allowing unqualified references to imported types and functions while retaining strict disambiguation rules if naming collisions occur.
+An `ImportStatement` introduces external symbols or entire package namespaces into the current compilation unit's lexical scope. Imports allow programmers to refer to types, functions, and global constants defined in other files or libraries without using verbose, fully qualified package paths.
 
-## 2. Syntax & Grammar
+Solix supports two forms of importation:
+1. **Selective Imports**: Imports a specific named type or symbol (e.g. `import std.collections.List;`), preventing namespace pollution.
+2. **Wildcard Imports**: Imports all publicly exported symbols from a package (e.g. `import std.io.*;`), enabling bulk symbol availability.
 
+### Syntactic Placement
+An `ImportStatement` is legally permitted only at the top of a compilation unit, occurring immediately after the optional `PackageStatement` and before any type, variable, or function declarations.
+
+---
+
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-import <package-path> ('.' '*' | ('.' | '::') <symbol>) ';'
+ImportStatement     ::= 'import' QualifiedIdentifier ('.' '*' | '.' Identifier)? ';'
+QualifiedIdentifier ::= Identifier ('.' Identifier)*
 ```
 
-## 3. Underlying Systems & Mechanics
+### Canonical Code Patterns
+```solix
+// 1. Selective Single-Type Import
+import std.collections.List;
 
-- Collected in Pass 1a into `pending_imports` and bound after all packages and symbols are cataloged (`process_imports`).
-- Individual symbol imports register `imported_symbols[symbol_name] = full_mangled_name`.
-- Wildcard imports register `known_packages.insert(target_pkg)`.
-- Symbol lookups check `imported_symbols` before falling back to cross-package suffix searches, enabling explicit conflict resolution.
+// 2. Wildcard Package Import
+import std.io.*;
 
-## 4. Positive Test Scenarios (Valid Variations)
+// 3. Importing Custom Application Subsystems
+import my_project.services.AuthenticationService;
+```
 
-1. **Full Symbol Import**: `import solix.core.String;`
-2. **Sub-Namespace Symbol Import**: `import core.String;`
-3. **Wildcard Package Import**: `import solix.collections.*;` or `import collections.*;`
-4. **C++ Scope Resolution Import**: `import solix::core::Objects;`
-5. **Multiple Imports in Single File**: Importing dozens of modules sequentially.
+---
 
-## 5. Negative Test Scenarios (Invalid Variations)
+## 3. Scope & Declaration Space (Static Semantics)
 
-1. **Importing Non-Existent Symbol**:
-   - `import solix.core.NonExistentClass;`  
-     *Error*: `Cannot resolve imported symbol: solix.core.NonExistentClass`
-2. **Importing Non-Existent Wildcard Package**:
-   - `import fake.unknown.pkg.*;`  
-     *Error*: `Cannot resolve imported package: fake.unknown.pkg`
-3. **Wildcard Not at Tail**:
-   - `import solix.*.String;`  
-     *Error*: `Expected identifier or '*' after '.'`
-4. **Wildcard Ambiguity Conflict**:
-   - `import pkg_a.*; import pkg_b.*;` where both define `Widget`, accessed as unqualified `Widget w = ...;`  
-     *Error*: `Ambiguous symbol 'Widget': multiple candidates found (pkg_a.Widget, pkg_b.Widget). Specify full package or use import to disambiguate.`
+### 3.1 Unqualified Symbol Lookup Resolution
+- When an unqualified identifier (e.g. `List`) is resolved by the binder, the lookup resolution order is:
+  1. Local scope / enclosing block declarations.
+  2. Member declarations of current class and inherited ancestors.
+  3. Declarations within the current package.
+  4. Explicitly imported selective symbols (`import a.b.Type;`).
+  5. Wildcard-imported package symbols (`import a.b.*;`).
+- If an identifier cannot be found across these stages, compilation halts with an `Undefined identifier` error.
+
+### 3.2 Collision & Disambiguation Rules
+- If two wildcard imports supply an identical unqualified type name (e.g. `import pkgA.*; import pkgB.*;` where both define `Widget`):
+  - Referencing `Widget` unqualified produces an `Ambiguous symbol reference` compile-time error.
+  - The programmer must disambiguate by using the fully qualified name `pkgA.Widget` or adding an explicit selective import.
+
+---
+
+## 4. Operational Semantics (Dynamic Execution)
+
+### 4.1 Normal Completion
+- An `ImportStatement` is a purely static compile-time directive.
+- It produces **zero bytecode opcodes** and emits no runtime structures.
+- During semantic analysis (Pass 1a and 1b), the binder populates the file's import table and completes processing immediately.
+
+### 4.2 Abrupt Completion
+- An `ImportStatement` cannot complete abruptly at runtime.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+### 5.1 Zero Runtime Footprint
+- Imports exist exclusively within the compiler's symbol table lookup pipeline and incur 0 bytes of memory or execution time at runtime.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Non-Existent Package Import
+Attempting to import a package that is not present in the compilation project is rejected.
+```solix
+import non_existent_library.Module;
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Cannot resolve import 'non_existent_library.Module': package or symbol not found
+```
+
+### Rule 6.2: Ambiguous Symbol Collision
+Using an unqualified type that exists in multiple wildcard-imported packages is rejected.
+```solix
+import pkg_a.*; // defines Token
+import pkg_b.*; // also defines Token
+
+void test() {
+    Token t; // Error: ambiguous
+}
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Reference to 'Token' is ambiguous: matches 'pkg_a.Token' and 'pkg_b.Token'
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+An `ImportStatement` generates no dynamic runtime faults; validation is entirely static.
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Disambiguation via Explicit Qualification
+```solix
+import pkg_a.*;
+import pkg_b.*;
+
+void verify_qualification() {
+    pkg_a.Token t1 = new pkg_a.Token(); // Fully qualified: succeeds
+    pkg_b.Token t2 = new pkg_b.Token(); // Fully qualified: succeeds
+}
+```
+*Verification Invariant*: Static analysis succeeds without ambiguity errors.

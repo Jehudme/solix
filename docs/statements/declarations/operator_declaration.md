@@ -1,41 +1,94 @@
-# OperatorDeclaration (`NodeType::OPERATOR`)
+# §10 OperatorDeclaration
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-The `operator` declaration enables operator overloading for user-defined classes, allowing customized behavior when instances are used with mathematical or assignment operators. Solix strictly regulates operator overloading, permitting only the canonical arithmetic operators (`+`, `-`, `*`, `/`) and assignment (`=`). Operator methods are compiled into specialized member functions and dispatched dynamically or statically depending on receiver context.
+An `OperatorDeclaration` enables operator overloading for user-defined classes, allowing instances to be used with natural mathematical and assignment syntax. Solix strictly regulates operator overloading, permitting only the canonical arithmetic operators (`+`, `-`, `*`, `/`) and the assignment operator (`=`).
 
-## 2. Syntax & Grammar
+Operator declarations are compiled as specialized member functions and invoked dynamically when binary expressions evaluate operands of the declaring class type.
 
+### Syntactic Placement
+An `OperatorDeclaration` is permitted only directly within class declaration bodies.
+
+---
+
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-[access-modifier] <return-type> 'operator' <operator-symbol> '(' <parameter> ')' <block>
-// where <operator-symbol> is one of: '+', '-', '*', '/', '='
+OperatorDeclaration ::= TypeSpecifier 'operator' OperatorSymbol '(' ParameterList ')' BlockStatement
+OperatorSymbol      ::= '+' | '-' | '*' | '/' | '='
 ```
 
-## 3. Underlying Systems & Mechanics
+### Canonical Code Patterns
+```solix
+class Complex {
+    float64 re;
+    float64 im;
 
-- Compiles as a specialized member method with mangled name `operator<op>(param_type)`.
-- Specifically supported operators: `+`, `-`, `*`, `/`, and `=`.
-- When the parser encounters binary operators (`a + b`, `a = b`) where `a` is a class type, the binder transforms the binary expression into a method call on `a` passing `b`.
-- ARC retains return values from operators properly.
+    Complex(float64 r, float64 i) { this.re = r; this.im = i; }
 
-## 4. Positive Test Scenarios (Valid Variations)
+    Complex operator+(Complex other) {
+        return new Complex(this.re + other.re, this.im + other.im);
+    }
+}
+```
 
-1. **Addition Overload**: `public Vector2 operator+(Vector2 other) { return new Vector2(this.x + other.x, this.y + other.y); }`
-2. **Subtraction Overload**: `public Vector2 operator-(Vector2 other) { return new Vector2(this.x - other.x, this.y - other.y); }`
-3. **Multiplication Overload**: `public Vector2 operator*(float64 scalar) { return new Vector2(this.x * scalar, this.y * scalar); }`
-4. **Division Overload**: `public Vector2 operator/(float64 scalar) { return new Vector2(this.x / scalar, this.y / scalar); }`
-5. **Assignment Overload**: `public Vector2 operator=(Vector2 other) { this.x = other.x; this.y = other.y; return this; }`
+---
 
-## 5. Negative Test Scenarios (Invalid Variations)
+## 3. Scope & Declaration Space (Static Semantics)
 
-1. **Overloading Unsupported Operator Symbol**:
-   - `public void operator%() {}` or `public void operator==() {}` or `public void operator.() {}`  
-     *Error*: Parse error: `Invalid operator for overloading`
-2. **Operator Overload Declared Outside Class**:
-   - `Vector2 operator+(Vector2 a, Vector2 b) { ... }`  
-     *Error*: `Operator overloads must be declared as member methods within a class`
-3. **Binary Operator with Wrong Parameter Count**:
-   - `public Vector2 operator+() {}` (takes 0 args)  
-     *Error*: `Binary operator overload must take exactly one argument`
-   - `public Vector2 operator+(Vector2 a, Vector2 b) {}` (takes 2 args)  
-     *Error*: `Binary operator overload must take exactly one argument`
+### 3.1 Operator Arity Invariants
+- Binary arithmetic operators (`+`, `-`, `*`, `/`) must accept exactly one parameter (with the receiver `this` acting as the left-hand operand).
+- The assignment operator (`=`) must accept exactly one parameter.
+
+---
+
+## 4. Operational Semantics (Dynamic Execution)
+
+### 4.1 Expression Lowering
+When the compiler encounters `a + b` where `a` is of type `Complex`:
+1. Evaluates `a` onto stack.
+2. Evaluates `b` onto stack.
+3. Emits virtual or direct call to `Complex.operator+(Complex)`.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+### 5.1 Assignment Operator ARC Balance
+Overloading the assignment operator (`=`) must balance reference counts of overwritten fields within the receiver instance.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Unsupported Operator Overload
+Attempting to overload unsupported operators (such as `&&`, `||`, or `[]`) is rejected.
+```solix
+class Test {
+    bool operator&&(Test other) {} // Error: unsupported operator
+}
+```
+*Diagnostic Message*:
+```text
+[ERROR] parser.cpp: Operator '&&' cannot be overloaded
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+### Fault 7.1: Operator Call on Null Receiver
+Executing `a + b` when `a` is `null` triggers a `NullReferenceException`.
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Vector Arithmetic Overload
+```solix
+Complex c1 = new Complex(1.0, 2.0);
+Complex c2 = new Complex(3.0, 4.0);
+Complex c3 = c1 + c2; // Invokes operator+
+```
+*Verification Invariant*: `c3.re` is 4.0 and `c3.im` is 6.0.

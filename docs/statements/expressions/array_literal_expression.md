@@ -1,30 +1,66 @@
-# ArrayLiteralExpression (`NodeType::ARRAY_LITERAL`)
+# §33 ArrayLiteralExpression
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-The `array literal` expression constructs and populates an array inline using either bracket notation (`[elem1, elem2]`) or brace notation (`{elem1, elem2}`). The compiler infers the array's element type from common ancestor unification of the elements, allocates the heap array buffer, and populates the elements in sequence.
+An `ArrayLiteralExpression` constructs and populates an array inline using bracket notation (`[elem1, elem2]`) or brace notation (`{elem1, elem2}`). The compiler infers element type from element unification and allocates the heap array.
 
-## 2. Syntax & Grammar
+---
 
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-'[' <expression> (',' <expression>)* [','] ']'
-'{' <expression> (',' <expression>)* [','] '}'
+ArrayLiteralExpression ::= '[' ElementList? ']'
+                         | '{' ElementList? '}'
+ElementList            ::= Expression (',' Expression)* ','?
 ```
 
-## 3. Underlying Systems & Mechanics
+---
 
-- Compiler infers element type from expressions.
-- Polymorphic deduction: finds most specific common base class.
-- Emits `ARRAY_ALLOC` with literal length followed by sequential stores.
+## 3. Scope & Declaration Space (Static Semantics)
 
-## 4. Positive Test Scenarios (Valid Variations)
+Element expressions must unify to a common type.
 
-1. **Square Bracket Primitive Array Literal**: `int32[] arr = [1, 2, 3, 4, 5];`
-2. **Curly Brace Primitive Array Literal**: `int32[] arr2 = {10, 20, 30};`
-3. **Polymorphic Object Array Literal**: `Animal[] pets = [new Dog(), new Cat()];`
+---
 
-## 5. Negative Test Scenarios (Invalid Variations)
+## 4. Operational Semantics (Dynamic Execution)
 
-1. **Heterogeneous Incompatible Elements**:
-   - `auto arr = [1, "two", new Dog()];`  
-     *Error*: `Mixed types in array literal`
+1. Computes literal length $N$.
+2. Allocates heap array buffer of size $N$.
+3. Evaluates and stores each element in sequential index order.
+4. Pushes array reference to stack top.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+Creates array reference with `ref_count = 1`.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Incompatible Element Types
+```solix
+var arr = [10, "string"]; // Error: incompatible elements
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Incompatible types in array literal
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+None.
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Inline Array Instantiation
+```solix
+int32[] primes = [2, 3, 5, 7, 11];
+```
+*Verification Invariant*: Array allocated with length 5 containing prime numbers.

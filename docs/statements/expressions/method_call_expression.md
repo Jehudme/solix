@@ -1,35 +1,76 @@
-# MethodCallExpression (`NodeType::METHOD_CALL`)
+# §35 MethodCallExpression
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-The `method call` expression (`target.method(arg1, arg2)`) invokes a function or method. The compiler resolves the target overload based on argument types, sets up arguments on the operand stack, and emits either a direct call (for static functions / final methods) or an indirect virtual call via VTable lookup for polymorphic instance methods.
+A `MethodCallExpression` (`target.method(args)`) invokes a function or method. The compiler performs overload resolution, prepares arguments on the operand stack, and emits either direct call opcodes (for static/final methods) or virtual dynamic dispatch via VTable lookup.
 
-## 2. Syntax & Grammar
+---
 
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-<callee-expr> ['<' <type-args...> '>'] '(' <arguments...> ')'
+MethodCallExpression ::= (Expression '.')? Identifier '(' ArgumentList? ')'
+ArgumentList         ::= Expression (',' Expression)*
 ```
 
-## 3. Underlying Systems & Mechanics
+---
 
-- Resolves callee signature matching argument count and types.
-- If virtual, dispatches dynamically via vtable (`INVOKE_VIRTUAL`).
-- If static, dispatches via `INVOKE_STATIC`.
-- Template calls trigger monomorphization if concrete instantiation is not yet compiled.
-- Return value pushed to operand stack.
+## 3. Scope & Declaration Space (Static Semantics)
 
-## 4. Positive Test Scenarios (Valid Variations)
+Overload resolution selects the most specific method matching the argument types.
 
-1. **Instance Method Call**: `player.take_damage(25);`
-2. **Static Method Call**: `Math.max(10, 20);`
-3. **Generic Method Call with Explicit Type**: `Arrays.swap<int32>(arr, 0, 1);`
-4. **Generic Method Call with Implicit Deduction**: `min(10, 20);`
+---
 
-## 5. Negative Test Scenarios (Invalid Variations)
+## 4. Operational Semantics (Dynamic Execution)
 
-1. **No Matching Method Signature**:
-   - `player.take_damage("twenty");`  
-     *Error*: `No matching method: Player.take_damage(char[])`
-2. **Calling Method on Null Reference (Runtime)**:
-   - `String s = (String)null; s.size();`  
-     *Runtime Exception*: `NullPointer`
+1. Evaluates receiver (for instance methods). Checks for null.
+2. Evaluates arguments in left-to-right order.
+3. Dispatches via direct call or VTable slot lookup.
+4. Pops arguments, allocates callee frame, executes method body.
+5. Pushes return value (if non-void) to stack top.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+Arguments are decremented upon callee return. Return value is preserved on stack.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: No Matching Overload
+```solix
+void print(int32 x) {}
+print("hello"); // Error: no matching overload
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: No matching overload for method 'print' with arguments (String)
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+### Fault 7.1: Method Call on Null
+```solix
+String s = null;
+s.length(); // Throws NullReferenceException
+```
+*Runtime Fault*:
+```text
+[FATAL VM PANIC] NullReferenceException: Attempted to invoke method on null object reference
+```
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Virtual Dynamic Dispatch
+```solix
+Animal a = new Dog();
+a.speak(); // Dispatches dynamically to Dog.speak
+```
+*Verification Invariant*: Invokes `Dog.speak` via VTable slot.

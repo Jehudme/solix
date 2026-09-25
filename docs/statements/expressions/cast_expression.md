@@ -1,34 +1,76 @@
-# CastExpression (`NodeType::CAST_EXPR`)
+# §28 CastExpression
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-The `cast` expression explicitly converts a value of one type to another target type using prefix syntax `(TargetType)expr`. Solix supports numeric conversions (e.g. `int32` to `float64`), identity casts, and object hierarchy upcasting/downcasting. Downcasting reference types emits a runtime `CAST_CHECK` opcode that validates class hierarchy conformance, throwing a `TypeCastException` on mismatch.
+A `CastExpression` (`(TargetType)expr`) explicitly converts a value from one type to another. Solix supports numeric primitive conversions, identity casts, and reference type upcasting and downcasting.
 
-## 2. Syntax & Grammar
+For reference types, downcasting emits a runtime `CAST_CHECK` opcode that validates class hierarchy conformance, throwing a `TypeCastException` if the instance does not conform.
 
+---
+
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-'(' <target-type> ')' <expression>
+CastExpression ::= '(' TypeSpecifier ')' Expression
 ```
 
-## 3. Underlying Systems & Mechanics
+---
 
-- Evaluates operand expression.
-- Numeric cast emits conversion opcode (`I32_TO_I64`, `F64_TO_I32`, etc.).
-- Upcast: zero runtime cost; verified by compiler via inheritance tree.
-- Downcast: compiler verifies type hierarchy; runtime checks `vtable_id`.
+## 3. Scope & Declaration Space (Static Semantics)
 
-## 4. Positive Test Scenarios (Valid Variations)
+### 3.1 Cast Validity
+- Casting between unrelated class hierarchies (where neither extends the other) is rejected at compile time.
 
-1. **Numeric Truncation & Extension**: `int32 i = (int32)3.99; float64 f = (float64)10;`
-2. **Scalar Char Conversion**: `int32 code = (int32)'A'; char c = (char)65;`
-3. **Class Upcast**: `Animal a = (Animal)new Dog();`
-4. **Class Downcast**: `Dog d = (Dog)animal_ref;`
+---
 
-## 5. Negative Test Scenarios (Invalid Variations)
+## 4. Operational Semantics (Dynamic Execution)
 
-1. **Cast Between Primitive and Class**:
-   - `Dog d = (Dog)42;`  
-     *Error*: `Cannot cast between primitive and class types`
-2. **Cast Between Unrelated Classes**:
-   - `Dog d = new Dog(); Engine e = (Engine)d;`  
-     *Error*: `Cannot cast 'Dog' to 'Engine' - no inheritance relationship`
+### 4.1 Execution
+- **Primitive Conversion**: Emits conversion opcode (e.g. `I32_TO_F64`).
+- **Reference Downcast**: Emits `OpCode::CAST_CHECK <vtable_id>`. The VM inspects the instance header; if incompatible, throws `TypeCastException`.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+Reference casting preserves the underlying object pointer; refcount is unchanged.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Unrelated Hierarchy Cast
+```solix
+class A {} class B {}
+void test() { A a = new A(); B b = (B)a; }
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Cannot cast from 'A' to unrelated type 'B'
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+### Fault 7.1: Invalid Dynamic Downcast
+```solix
+Animal a = new Animal();
+Dog d = (Dog)a; // Throws at runtime
+```
+*Runtime Fault*:
+```text
+[FATAL VM PANIC] TypeCastException: Cannot cast 'Animal' to 'Dog'
+```
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Polymorphic Downcast
+```solix
+Animal a = new Dog();
+Dog d = (Dog)a; // Succeeds
+```
+*Verification Invariant*: `d` holds valid reference to `Dog`.

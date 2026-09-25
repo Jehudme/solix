@@ -1,37 +1,97 @@
-# EnumDeclaration (`NodeType::ENUM_DECL`)
+# §6 EnumDeclaration
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-The `enum` declaration introduces a strongly typed, discrete enumeration containing a fixed set of named constant identifiers. Each enumeration member maps to an underlying integral value (assigned sequentially starting from 0 unless explicitly specified). Enums provide type-safe alternatives to magic numbers and can be used in pattern matching, switch statements, and conditional expressions.
+An `EnumDeclaration` defines a strongly typed, discrete enumeration containing a fixed set of named constant identifiers. Each member maps to an underlying integral ordinal value (assigned sequentially starting from 0 unless explicitly specified).
 
-## 2. Syntax & Grammar
+Enums in Solix are value types. They provide type-safe alternatives to magic numbers, preventing accidental assignment of arbitrary integers, and integrate directly with `SwitchStatement` constructs.
 
+### Syntactic Placement
+An `EnumDeclaration` is legally permitted at global package scope or nested directly inside a class.
+
+---
+
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-[access-modifier] enum <identifier> '{' <identifier> (',' <identifier>)* [','] '}'
+EnumDeclaration   ::= 'enum' Identifier '{' EnumMemberList '}'
+EnumMemberList    ::= EnumMember (',' EnumMember)* ','?
+EnumMember        ::= Identifier ('=' IntegerLiteral)?
 ```
 
-## 3. Underlying Systems & Mechanics
+### Canonical Code Patterns
+```solix
+// 1. Sequential Enum (0, 1, 2)
+enum Direction {
+    NORTH,
+    SOUTH,
+    EAST,
+    WEST
+}
 
-- Registered in `global_scope.symbols` as an `EnumDeclaration`.
-- Members assigned integer ordinal indices (0, 1, 2, ...).
-- Emitted in bytecode as integer constants.
-- Supports switch dispatch and equality comparisons.
+// 2. Explicit Value Enum
+enum StatusCode {
+    OK = 200,
+    NOT_FOUND = 404,
+    SERVER_ERROR = 500
+}
+```
 
-## 4. Positive Test Scenarios (Valid Variations)
+---
 
-1. **Standard Enum**: `enum State { IDLE, RUNNING, PAUSED, STOPPED }`
-2. **Trailing Comma Enum**: `enum Level { LOW, HIGH, }`
-3. **Qualified Member Access**: `State s = State.RUNNING;`
-4. **Enum In Switch**: `switch (s) { case State.IDLE: ... }`
+## 3. Scope & Declaration Space (Static Semantics)
 
-## 5. Negative Test Scenarios (Invalid Variations)
+### 3.1 Member Resolution & Type Safety
+- Members are accessed via qualified syntax: `Direction.NORTH`.
+- An enum type is distinct from raw `int32`. Assigning an arbitrary integer to an enum variable without an explicit cast is rejected.
 
-1. **Duplicate Enum Constants**:
-   - `enum Mode { ON, OFF, ON }`  
-     *Error*: `Duplicate enum constant 'ON'`
-2. **Accessing Non-Existent Member**:
-   - `State s = State.UNKNOWN;`  
-     *Error*: `Undefined enum member: UNKNOWN`
-3. **Assigning Integer to Enum Without Cast**:
-   - `State s = 0;`  
-     *Error*: `Type mismatch in variable declaration: expected 'State', got 'int32'`
+---
+
+## 4. Operational Semantics (Dynamic Execution)
+
+### 4.1 Value Representation
+- At runtime, enum members are represented as 64-bit integer scalars (`int64`).
+- Evaluation emits immediate integer load opcodes (`PUSH_INT`).
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+### 5.1 Value Type Invariant
+- Enums are non-reference types. They incur **zero ARC overhead** and require no heap allocations.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Duplicate Member Identifier
+```solix
+enum Status {
+    ACTIVE,
+    ACTIVE // Error: duplicate member
+}
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Duplicate enum member 'ACTIVE' in enum 'Status'
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+Enums generate no runtime faults; all validations are static.
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Enum Equality & Switch Matching
+```solix
+Direction d = Direction.EAST;
+if (d == Direction.EAST) {
+    Console.println("Facing East");
+}
+```
+*Verification Invariant*: Emits `EQ_I64` comparison; evaluates to `true`.

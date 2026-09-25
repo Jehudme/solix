@@ -1,35 +1,69 @@
-# UnaryExpression (`NodeType::UNARY_EXPR`)
+# §27 UnaryExpression
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-A `unary` expression applies an operation to a single operand. Solix supports prefix logical negation (`!`), bitwise inversion (`~`), arithmetic negation (`-`), unary plus (`+`), as well as prefix and postfix increment (`++`) and decrement (`--`) operators. Prefix operations update and yield the new value, whereas postfix operations yield the original value before mutating the underlying lvalue.
+A `UnaryExpression` applies an operation to a single operand. Solix supports prefix logical negation (`!`), bitwise complement (`~`), arithmetic negation (`-`), unary plus (`+`), as well as prefix and postfix increment (`++`) and decrement (`--`).
 
-## 2. Syntax & Grammar
+---
 
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-('-' | '+' | '!' | '++' | '--') <expr>   // Prefix
-<expr> ('++' | '--')                    // Postfix
+UnaryExpression ::= PrefixOperator Expression
+                  | LValue PostfixOperator
+PrefixOperator  ::= '!' | '~' | '-' | '+' | '++' | '--'
+PostfixOperator ::= '++' | '--'
 ```
 
-## 3. Underlying Systems & Mechanics
+---
 
-- Negation (`-`): emits `NEG_I32`, `NEG_I64`, or `NEG_F64`.
-- Inversion (`!`): requires `bool`, emits `LOGICAL_NOT`.
-- Postfix `++`: evaluates value, duplicates, increments lvalue in place, leaves original value on stack.
-- Prefix `++`: increments lvalue in place, leaves incremented value on stack.
+## 3. Scope & Declaration Space (Static Semantics)
 
-## 4. Positive Test Scenarios (Valid Variations)
+### 3.1 Mutability Requirement for Increment/Decrement
+- Prefix and postfix `++`/`--` require an assignable lvalue.
 
-1. **Prefix Increment / Decrement**: `++count; --count;`
-2. **Postfix Increment / Decrement**: `int32 old = count++;`
-3. **Numeric Negation**: `int64 neg = -big_val;`
-4. **Boolean Inversion**: `bool opposite = !flag;`
+---
 
-## 5. Negative Test Scenarios (Invalid Variations)
+## 4. Operational Semantics (Dynamic Execution)
 
-1. **Unary Not on Non-Bool**:
-   - `int32 x = !0;`  
-     *Error*: `Unary operator '!' requires bool operand`
-2. **Incrementing Literal or R-Value**:
-   - `5++;` or `(a + b)++;`  
-     *Error*: `Increment/decrement operand must be an assignable variable (lvalue)`
+### 4.1 Prefix vs Postfix
+- **Prefix (`++x`)**: Increments value in storage and pushes the new value.
+- **Postfix (`x++`)**: Pushes original value to stack, then increments storage.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+Direct scalar register mutation. Zero heap allocations.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Increment on Constant/Literal
+```solix
+++10; // Error: lvalue required
+```
+*Diagnostic Message*:
+```text
+[ERROR] parser.cpp: Invalid operand for increment operator: expected lvalue
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+None under normal operation.
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Postfix vs Prefix Evaluation
+```solix
+int32 a = 5;
+int32 b = a++; // b = 5, a = 6
+int32 c = ++a; // c = 7, a = 7
+```
+*Verification Invariant*: `b` is 5, `c` is 7, `a` is 7.

@@ -1,37 +1,72 @@
-# IdentifierNode (`NodeType::IDENTIFIER`)
+# §36 IdentifierNode
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-An `identifier` node represents a symbolic name reference within source code, addressing a local variable, function parameter, class field, global variable, function, or type name. The symbol binder resolves the identifier against the active scope hierarchy, determining its storage category (stack index, global slot, or field offset) and type.
+An `IdentifierNode` represents a symbolic name reference within source code, addressing a local variable, parameter, class field, global variable, function, or type name.
 
-## 2. Syntax & Grammar
+---
 
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-<identifier>
+Identifier ::= [a-zA-Z_][a-zA-Z0-9_]*
 ```
 
-## 3. Underlying Systems & Mechanics
+---
 
-- Resolved via `resolve_symbol`:
-  1. Active local scopes (variables, parameters).
-  2. Current class fields / methods (`this`).
-  3. Imported symbols table.
-  4. Active package prefix.
-  5. Global scope exact match.
-  6. Sub-namespace suffix search across all registered symbols.
-- Emits ambiguity error if multiple packages define the same name without explicit import.
+## 3. Scope & Declaration Space (Static Semantics)
 
-## 4. Positive Test Scenarios (Valid Variations)
+Resolved against the active lexical scope hierarchy:
+1. Local variables and parameters.
+2. Instance/static class fields.
+3. Global package variables.
 
-1. **Local Variable Identifier**: `x`
-2. **Unqualified Unique Class Name**: `String s = ...;`
-3. **Explicitly Imported Name**: `import core.String; String s = ...;`
+---
 
-## 5. Negative Test Scenarios (Invalid Variations)
+## 4. Operational Semantics (Dynamic Execution)
 
-1. **Undefined Identifier**:
-   - `x = 10;` (without `int32 x;`)  
-     *Error*: `Undefined identifier: x`
-2. **Ambiguous Identifier Collision**:
-   - `Item.code();` where both `pkg_a.Item` and `pkg_b.Item` exist  
-     *Error*: `Ambiguous symbol 'Item': multiple candidates found (pkg_a.Item, pkg_b.Item). Specify full package or use import to disambiguate.`
+- Local variable/parameter: Emits `OpCode::GET_LOCAL <memory_index>`.
+- Global variable: Emits `OpCode::GET_GLOBAL <global_index>`.
+- Instance field: Emits `OpCode::GET_PROPERTY <offset>`.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+Pushes value or reference pointer to operand stack.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Undefined Identifier
+```solix
+int32 x = undeclared_variable; // Error
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Undefined identifier: undeclared_variable
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+None under normal operation.
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Local Scope Precedence Over Field
+```solix
+class Test {
+    int32 x = 10;
+    void run() {
+        int32 x = 20;
+        Console.println(x); // Resolves to local x (20)
+    }
+}
+```
+*Verification Invariant*: Outputs 20; resolves to local slot.

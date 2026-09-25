@@ -1,43 +1,92 @@
-# FieldDeclaration (`NodeType::FIELD_DECL`)
+# §7 FieldDeclaration
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-The `field` declaration defines state storage either within a class instance (instance fields) or globally across the program / class (static fields or top-level global variables). Fields support access modifiers (`public`, `private`, `protected`), optional initializers, and memory ownership modifiers such as `weak`. Solix provides the `weak` keyword specifically for fields to prevent strong reference cycles in object graphs, automatically managing weak reference pointers in the runtime ARC engine.
+A `FieldDeclaration` defines state storage either within a class instance (instance fields) or globally across a class/package (static fields). Fields support access modifiers (`public`, `private`, `protected`), type specifiers, and optional initializers.
 
-## 2. Syntax & Grammar
+Solix provides special support for the `weak` ownership modifier on reference fields. Marking a field as `weak` prevents Automatic Reference Counting (ARC) reference cycles (such as parent-child object graphs) from leaking memory.
 
+### Syntactic Placement
+A `FieldDeclaration` is permitted inside class bodies or at global package scope (for top-level global variables).
+
+---
+
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-[access-modifier] ['static'] ['const'] ['weak'] <type-info> <name> ['=' <initializer-expr>] ';'
+FieldDeclaration ::= Modifier* 'weak'? TypeSpecifier Identifier ('=' Expression)? ';'
+Modifier         ::= 'public' | 'private' | 'protected' | 'static'
 ```
 
-## 3. Underlying Systems & Mechanics
+### Canonical Code Patterns
+```solix
+class Node {
+    public int32 id;
+    public Node next;      // Strong reference (increments ref_count)
+    public weak Node prev; // Weak reference (breaks cyclic dependency!)
+}
+```
 
-- **Instance Fields**: Assigned memory index offsets in instance layout (`memory_index = 1 .. N`). Field initializers are compiled into bytecode and injected into constructor preambles before user code runs. Emits `SET_PROPERTY` (or `WEAK_SET_PROPERTY` for weak fields).
-- **Static Fields**: Assigned global memory index in `static_variable_index`. Evaluated in global data section; accessed via `GET_GLOBAL` and `SET_GLOBAL`.
-- **Top-Level Global Variables**: Can be declared directly outside classes in compilation units; stored in global memory index.
-- **ARC Lifecycle**: Reference-typed fields trigger `INC_REF` upon assignment. When the parent object is destroyed (`RELEASE`), the VM iterates reference field offsets and triggers `DEC_REF`.
-- **Weak Fields (`weak`)**: Non-owning pointer flag set (`is_weak = true`). Emits `WEAK_SET_PROPERTY`, which skips `INC_REF` to prevent cyclic memory leaks.
+---
 
-## 4. Positive Test Scenarios (Valid Variations)
+## 3. Scope & Declaration Space (Static Semantics)
 
-1. **Instance Field Uninitialized**: `public int32 health;`
-2. **Instance Field with Initializer**: `private float64 scale = 1.0;`
-3. **Static Class Field**: `public static int32 count = 0;`
-4. **Top-Level Global Variable**: `int32 global_counter = 42;`
-5. **Const Immutable Field**: `public const int32 BUFFER_SIZE = 1024;`
-6. **Weak Reference Pointer**: `protected weak TreeNode parent_node;`
+### 3.1 Field Visibility & Access Control
+- Evaluated during Pass 1b (`REGISTER_MEMBERS`).
+- Member access checks enforce `private` and `protected` boundaries during semantic analysis.
 
-## 5. Negative Test Scenarios (Invalid Variations)
+---
 
-1. **Initializer Type Mismatch**:
-   - `int32 score = "top";`  
-     *Error*: `Type mismatch in field initialization: expected 'int32', got 'char[]'`
-2. **Weak Modifier on Primitive**:
-   - `weak int32 count;`  
-     *Error*: `'weak' modifier only valid on reference types`
-3. **Duplicate Field Name in Class**:
-   - `int32 x; float64 x;`  
-     *Error*: `Duplicate member 'x' in class`
-4. **Accessing Uninstantiated `this` in Field Initializer**:
-   - `int32 y = this.compute();`  
-     *Error*: `Cannot access 'this' in field initializer`
+## 4. Operational Semantics (Dynamic Execution)
+
+### 4.1 Instance Field Offsets
+- Each instance field is assigned a memory byte offset within the class layout.
+- Access emits `GET_PROPERTY <offset>` or `SET_PROPERTY <offset>`.
+- For `weak` fields, writing emits `WEAK_SET_PROPERTY <offset>`, which records the pointer without incrementing the target object's `ref_count`.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+### 5.1 Strong vs Weak Reference Fields
+- **Strong Reference Field**: Writing an object pointer increments `ref_count` via `INC_REF`; overwriting or destroying decrements old value via `DEC_REF`.
+- **Weak Reference Field**: Writing does not increment `ref_count`, preventing cyclic leaks.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Duplicate Field Identifier
+```solix
+class Test {
+    int32 count;
+    float64 count; // Error: duplicate
+}
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Field 'count' is already declared in class 'Test'
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+### Fault 7.1: Field Access on Null Receiver
+Reading or writing a field on a null reference triggers an immediate `NullReferenceException`.
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Cyclic Memory Reclamation with Weak Field
+```solix
+class Parent {
+    Child child;
+}
+class Child {
+    weak Parent parent; // Weak back-pointer
+}
+```
+*Verification Invariant*: When `Parent` reference count drops to 0, both `Parent` and `Child` are deallocated cleanly.

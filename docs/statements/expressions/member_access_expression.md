@@ -1,38 +1,66 @@
-# MemberAccessExpression (`NodeType::MEMBER_ACCESS`)
+# §34 MemberAccessExpression
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-The `member access` expression (`object.property`) accesses a field, nested member, or enum value on an object instance or type namespace. For instance access, the compiler resolves the field's byte offset within the object layout. At runtime, the VM checks for `null` receivers and reads or writes the target memory offset using `GET_PROPERTY` or `SET_PROPERTY` opcodes.
+A `MemberAccessExpression` (`receiver.member`) accesses a field, nested member, or enum value on an object instance or type namespace. For instance fields, the compiler resolves the byte offset within the instance memory layout.
 
-## 2. Syntax & Grammar
+---
 
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-<expression> '.' <identifier>
-<namespace-path> '::' <identifier>
+MemberAccessExpression ::= Expression '.' Identifier
 ```
 
-## 3. Underlying Systems & Mechanics
+---
 
-- Checks if LHS is a symbol path (`extract_symbol_path`): if it resolves to a `ClassDeclaration` or `EnumDeclaration`, accesses static member without instance evaluation.
-- If instance, calculates field memory offset or dispatches method.
-- Special property `.length` on arrays reads length header.
+## 3. Scope & Declaration Space (Static Semantics)
 
-## 4. Positive Test Scenarios (Valid Variations)
+Resolves member against receiver type's symbol table, verifying access modifiers (`public`, `private`, `protected`).
 
-1. **Instance Field Access**: `int32 hp = player.hp;`
-2. **Array Length Access**: `int32 len = arr.length;`
-3. **Static Member via Full Path**: `solix.core.Objects.is_null(obj);`
-4. **Static Member via Partial Path**: `core.Objects.is_null(obj);`
-5. **Static Member via C++ Scope Operator**: `core::Objects::is_null(obj);`
+---
 
-## 5. Negative Test Scenarios (Invalid Variations)
+## 4. Operational Semantics (Dynamic Execution)
 
-1. **Accessing Private Member Outside Class**:
-   - `class A { private int32 x; } A a = new A(); a.x = 10;`  
-     *Error*: `Cannot access private member of class 'A'`
-2. **Accessing Non-Existent Property on Array**:
-   - `int32 s = arr.size;`  
-     *Error*: `Arrays only have the 'length' property`
-3. **Dereferencing Null Object (Runtime)**:
-   - `Player p = (Player)null; int32 hp = p.health;`  
-     *Runtime Exception*: `NullPointer`
+1. Evaluates receiver expression.
+2. Checks for `null` receiver.
+3. Emits `OpCode::GET_PROPERTY <offset>` or `OpCode::SET_PROPERTY <offset>`.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+Reading a reference field onto the stack does not increment refcount until stored in an owning lvalue.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Inaccessible Private Field
+```solix
+class A { private int32 x; }
+void test() { A a = new A(); a.x = 5; } // Error: private
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Cannot access private field 'x' of class 'A'
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+### Fault 7.1: Null Receiver Dereference
+Accessing a member on `null` triggers `NullReferenceException`.
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Instance Field Access
+```solix
+Point p = new Point(10, 20);
+int32 x_coord = p.x;
+```
+*Verification Invariant*: `x_coord` equals 10.

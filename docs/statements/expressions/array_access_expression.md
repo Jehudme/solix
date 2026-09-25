@@ -1,35 +1,76 @@
-# ArrayAccessExpression (`NodeType::ARRAY_ACCESS`)
+# §32 ArrayAccessExpression
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-The `array access` expression (`array[index]`) accesses or modifies an element in a contiguous array. It functions both as an rvalue (reading an element value onto the stack) and as an lvalue (acting as the target for an assignment). The VM performs mandatory runtime bounds checking against the array length, throwing an `IndexOutOfBoundsException` if violated.
+An `ArrayAccessExpression` (`array[index]`) accesses or modifies an element in a contiguous array. It functions as an rvalue (reading an element value) and as an lvalue (target of assignment).
 
-## 2. Syntax & Grammar
+The VM performs mandatory runtime bounds checking against the array length, throwing `IndexOutOfBoundsException` on violation.
 
+---
+
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-<array-expr> '[' <index-expr> ']'
+ArrayAccessExpression ::= Expression '[' Expression ']'
 ```
 
-## 3. Underlying Systems & Mechanics
+---
 
-- Evaluates array reference. If null, VM raises `NullPointer`.
-- Evaluates index (must be `int32`).
-- VM executes hardware/software bounds check: verifies `0 <= index < length`.
-- Emits `ARRAY_LOAD` or prepares destination for `ARRAY_STORE`.
+## 3. Scope & Declaration Space (Static Semantics)
 
-## 4. Positive Test Scenarios (Valid Variations)
+LHS must be an array type (`array_depth > 0`). Index must be integral.
 
-1. **1D Array Access**: `int32 val = arr[0]; arr[0] = 5;`
-2. **Multidimensional Access**: `int32 cell = grid[row][col];`
+---
 
-## 5. Negative Test Scenarios (Invalid Variations)
+## 4. Operational Semantics (Dynamic Execution)
 
-1. **Non-Integer Index**:
-   - `int32 v = arr["first"];`  
-     *Error*: `Array index must be int32`
-2. **Indexing Non-Array**:
-   - `int32 x = 42; int32 v = x[0];`  
-     *Error*: `Cannot index a non-array value`
-3. **Out-of-Bounds Subscript (Runtime)**:
-   - `int32[] arr = new int32[3]; int32 v = arr[10];`  
-     *Runtime Exception*: `IndexOutOfBounds`
+1. Evaluates array reference. If `null`, raises `NullReferenceException`.
+2. Evaluates index. If `index < 0 || index >= length`, raises `IndexOutOfBoundsException`.
+3. Reads or writes target memory offset.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+Reading reference element increments refcount if stored in local variable.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Subscript on Non-Array
+```solix
+int32 x = 10;
+x[0] = 5; // Error: x is not array
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Array subscript cannot be applied to non-array type 'int32'
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+### Fault 7.1: Index Out of Bounds
+```solix
+int32[] arr = new int32[5];
+int32 bad = arr[10]; // Runtime fault
+```
+*Runtime Fault*:
+```text
+[FATAL VM PANIC] IndexOutOfBoundsException: Index 10 out of bounds for array length 5
+```
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Array Mutation
+```solix
+int32[] data = new int32[2];
+data[0] = 10;
+data[1] = 20;
+```
+*Verification Invariant*: `data[0]` is 10 and `data[1]` is 20.

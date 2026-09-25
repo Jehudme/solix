@@ -1,40 +1,77 @@
-# LiteralNode (`NodeType::LITERAL`)
+# §37 LiteralNode
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-A `literal` node represents a constant scalar or string value embedded directly in the program source text. Solix supports integral literals (`int8`, `int16`, `int32`, `int64`, and unsigned variants), floating-point literals (`float32`, `float64`), boolean literals (`true`, `false`), character literals (`'a'`), string literals (`"text"`), and the `null` pointer literal. Literals are loaded onto the operand stack via immediate load opcodes (e.g. `PUSH_INT`, `PUSH_FLOAT`, `PUSH_NULL`).
+A `LiteralNode` represents a constant scalar or string value embedded directly in program source text. Solix supports integer, floating-point, boolean, character, string, and `null` literals.
 
-## 2. Syntax & Grammar
+---
 
-- Integer: `123`, `0xFF`
-- Float: `3.14`, `0.5`
-- Character: `'a'`, `'\n'`
-- String: `"hello"`
-- Boolean: `true`, `false`
-- Null: `null`
+## 2. Syntax & Production Rules
 
-## 3. Underlying Systems & Mechanics
+### Production Rules
+```solix
+Literal ::= IntegerLiteral
+          | FloatLiteral
+          | BooleanLiteral
+          | CharacterLiteral
+          | StringLiteral
+          | 'null'
+```
 
-- Primitive literals emitted directly as immediate bytecode operands (`PUSH_I32`, `PUSH_I64`, `PUSH_F64`).
-- String literals interned in bytecode header constant pool.
-- Null emitted as `PUSH_NULL` (reference address 0).
+---
 
-## 4. Positive Test Scenarios (Valid Variations)
+## 3. Scope & Declaration Space (Static Semantics)
 
-1. **Numeric Literals**: `100`, `0x1F`, `3.14159`
-2. **Escaped Chars**: `'\n'`, `'\t'`, `'\\'`, `'\''`
-3. **String Literals**: `"Solix Language"`
-4. **Bool Literals**: `true`, `false`
-5. **Null Literal**: `null`
+Literals carry intrinsic types:
+- `10`: `int32`
+- `10L`: `int64`
+- `3.14`: `float64`
+- `true`, `false`: `bool`
+- `'a'`: `char`
+- `"text"`: `String`
+- `null`: `null` (assignable to any reference type)
 
-## 5. Negative Test Scenarios (Invalid Variations)
+---
 
-1. **Unterminated String**:
-   - `"hello`  
-     *Error*: `Unterminated string literal`
-2. **Empty Character Literal**:
-   - `''`  
-     *Error*: `Empty character literal`
-3. **Multi-Character Character Literal**:
-   - `'abc'`  
-     *Error*: `Character literal contains multiple characters`
+## 4. Operational Semantics (Dynamic Execution)
+
+Emits immediate push instructions: `PUSH_INT`, `PUSH_FLOAT`, `PUSH_STRING`, `PUSH_NULL`.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+- String literals are pooled in the static string pool.
+- `null` is represented by pointer `0x0`.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Numeric Overflow in Literal
+```solix
+int32 x = 99999999999999999999; // Overflow
+```
+*Diagnostic Message*:
+```text
+[ERROR] lexer.cpp: Integer literal out of range for type 'int32'
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+None.
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Null Reference Assignment
+```solix
+String s = null;
+if (s == null) {
+    Console.println("is null");
+}
+```
+*Verification Invariant*: `s == null` evaluates to `true`.

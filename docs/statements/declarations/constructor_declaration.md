@@ -1,56 +1,97 @@
-# ConstructorDeclaration (`NodeType::CONSTRUCTOR_DECL`)
+# §8 ConstructorDeclaration
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-The `constructor` declaration defines the initialization routine invoked immediately after an object instance is allocated in heap memory. Constructors share the exact name of their enclosing class and support parameter overloading, member initializer lists (`: super(args), field(val)`), and superclass constructor chaining. If a class defines no constructors, the compiler automatically synthesizes a default zero-parameter constructor.
+A `ConstructorDeclaration` defines the initialization routine invoked immediately after an object instance is allocated in heap memory. Constructors share the exact name of their enclosing class, support parameter overloading, superclass constructor chaining, and member initializer lists (`: super(args), field(val)`).
 
-## 2. Syntax & Grammar
+In Solix, constructors allocate local register slot 0 to the implicit `this` instance pointer. The constructor is responsible for initializing all fields before the newly allocated object reference is returned to the caller.
 
+### Syntactic Placement
+A `ConstructorDeclaration` is permitted only directly within class declaration bodies.
+
+---
+
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-[access-modifier] <class-name> '(' <parameters...> ')' [':' <init-item> (',' <init-item>)*] <block>
-// where <init-item> is either 'super' '(' <args...> ')' or <field-name> '(' <expr> ')'
+ConstructorDeclaration ::= Identifier '(' ParameterList? ')' MemberInitList? BlockStatement
+MemberInitList         ::= ':' MemberInitializer (',' MemberInitializer)*
+MemberInitializer      ::= Identifier '(' ArgumentList? ')'
 ```
 
-## 3. Underlying Systems & Mechanics
+### Canonical Code Patterns
+```solix
+class Point3D extends Point2D {
+    int32 z;
 
-- Sets up activation frame with `this` at register 0.
-- If `: super(...)` is present, compiles arguments and emits `INVOKE_DIRECT` to the base constructor.
-- Evaluates member initializer items (`: field_name(expr)`), compiling them as direct assignments (`this.field_name = expr;`) in the constructor preamble.
-- Injects field default initializers into the bytecode stream directly following the super call and member initializer list.
-- Executes user constructor body.
-- Returns `this` reference.
+    Point3D(int32 x, int32 y, int32 z) : super(x, y), z(z) {
+        Console.println("Point3D initialized");
+    }
+}
+```
 
-## 4. Positive Test Scenarios (Valid Variations)
+---
 
-1. **Parameterless Constructor**: `public Player() { this.hp = 100; }`
-2. **Parameterized Constructor**: `public Player(int32 hp) { this.hp = hp; }`
-3. **Explicit Base Constructor Chaining**:
-   ```solix
-   public Dog(char[] name, int32 age) : super(name) {
-       this.age = age;
-   }
-   ```
-4. **C++ Style Member Initializer List**:
-   ```solix
-   public Vector2(float64 x, float64 y) : x(x), y(y) {}
-   ```
-5. **Combined Base Constructor and Member Initializers**:
-   ```solix
-   public Dog(char[] name, int32 age) : super(name), age(age) {}
-   ```
-6. **Multiple Overloaded Constructors**: Overloading constructors by parameter arity and types.
+## 3. Scope & Declaration Space (Static Semantics)
 
-## 5. Negative Test Scenarios (Invalid Variations)
+### 3.1 Initializer List Scope
+- The member initializer list evaluates expressions in the scope of constructor parameters.
+- `super(...)` must appear as the very first initializer if the class extends a base class.
 
-1. **Constructor Name Mismatch**:
-   - In class `Player`: `public User() {}`  
-     *Error*: Treated as method with missing return type
-2. **Returning a Value**:
-   - `public Player() { return 10; }`  
-     *Error*: `Constructors cannot return a value`
-3. **Super Constructor Argument Mismatch**:
-   - `public Dog() : super(10, 20, 30) {}` where `Animal` has only `Animal(char[])`  
-     *Error*: `No matching constructor: Animal.ctor(int32,int32,int32)`
-4. **Placing `super()` Inside Body Statements**:
-   - `public Dog() { int32 x = 0; super(); }`  
-     *Error*: Parse error: unexpected token `super`
+---
+
+## 4. Operational Semantics (Dynamic Execution)
+
+### 4.1 Execution Sequence
+1. Heap memory is allocated (`OpCode::ALLOC <size>`).
+2. Object header is initialized (`ref_count = 1`, `vtable_id`).
+3. Instance pointer stored in slot 0 (`this`).
+4. Superclass constructor executes.
+5. Member initializers execute, populating field offsets.
+6. Constructor block statements execute.
+7. Instance reference returned to stack top.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+### 5.1 Constructor Abort Deallocation
+If an exception is thrown inside a constructor body, the partially initialized instance in slot 0 is decremented and deallocated, ensuring no orphan heap memory is leaked.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Constructor Name Mismatch
+A constructor must share the exact name of the enclosing class.
+```solix
+class Item {
+    Widget() {} // Error: constructor name mismatch
+}
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Constructor name 'Widget' does not match enclosing class 'Item'
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+### Fault 7.1: Super Constructor Invocation Failure
+Runtime faults inside chained constructors unwind and abort object creation.
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Member Initializer List Execution
+```solix
+class Vector {
+    int32 x;
+    int32 y;
+    Vector(int32 x, int32 y) : x(x), y(y) {}
+}
+```
+*Verification Invariant*: Field offsets for `x` and `y` are populated prior to entering the body.

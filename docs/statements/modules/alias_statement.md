@@ -1,44 +1,116 @@
-# AliasStatement (`NodeType::ALIAS_STMT`)
+# §3 AliasStatement
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-The `alias` statement introduces a type synonym or parameterized generic type alias into the symbol table. Aliases enhance code clarity and reusability by creating concise aliases for complex types, generic specializations (e.g., `alias StringList = List<String>;`), or primitive aliases. Solix aliases are transparently substituted during the semantic analysis pass (Pass 2: Type Checking and Resolution), incurring zero runtime performance overhead.
+An `AliasStatement` introduces a type synonym or a parameterized generic alias into the symbol table. It allows programmers to define concise, meaningful aliases for complex types, long generic specializations, or platform-specific primitive types.
 
-## 2. Syntax & Grammar
+In Solix's compiler pipeline, aliases are transparently substituted during semantic analysis (Pass 2: Type Checking and Resolution). Aliases are not new types; they share identical type identities and memory layouts with their underlying target types, incurring zero runtime performance overhead and requiring no boxing or wrapper objects.
 
+### Syntactic Placement
+An `AliasStatement` is legally permitted at top-level translation-unit scope (global alias) or within class and interface declaration bodies (member alias).
+
+---
+
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-alias <identifier> ['<' <T...> '>'] '=' <type-info> ';'
+AliasStatement   ::= 'alias' Identifier ('<' TypeParameterList '>')? '=' TypeSpecifier ';'
+TypeParameterList::= Identifier (',' Identifier)*
 ```
 
-## 3. Underlying Systems & Mechanics
+### Canonical Code Patterns
+```solix
+// 1. Primitive Type Synonym
+alias Byte = uint8;
+alias Real = float64;
 
-- Registered in Pass 1a in `global_scope.symbols` as an `AliasStatement` node.
-- Supports generic parameterization: if template parameters `<T...>` are present, stored as a parameterized alias blueprint.
-- In Pass 2, `target_type` is resolved and `resolved_declaration` is linked directly to the underlying `ClassDeclaration`, `EnumDeclaration`, or template blueprint.
-- Re-export alias deduplication: unifies multiple aliases referencing the same underlying type so that re-exports (such as `solix.NullPointerException` aliasing `solix.core.NullPointerException`) never cause false-positive collision errors.
-- Monomorphizes lazily upon instantiation if the alias targets a generic template.
+// 2. Concrete Generic Specialization
+alias StringList = List<String>;
+alias CoordinateMap = Map<int32, int32>;
 
-## 4. Positive Test Scenarios (Valid Variations)
+// 3. Parameterized Generic Alias
+alias IntMap<V> = Map<int32, V>;
+alias Callback<T> = Function<T, void>;
+```
 
-1. **Primitive Array Shorthand**: `alias Matrix = float64[][];`
-2. **Full Symbol Namespace Alias**: `alias Str = solix.core.String;`
-3. **Partial Symbol Namespace Alias**: `alias Str = core.String;`
-4. **Template Blueprint Alias**: `alias List = solix.collections.List;`
-5. **Templated Generic Alias**: `alias IntMap<V> = Map<int32, V>;`
-6. **Re-Export Backward Compatibility Alias**:
-   - In `package solix; alias String = solix.core.String;`
+---
 
-## 5. Negative Test Scenarios (Invalid Variations)
+## 3. Scope & Declaration Space (Static Semantics)
 
-1. **Aliasing Undefined Type**:
-   - `alias Bad = nonexistent.Type;`  
-     *Error*: `Unknown type: nonexistent.Type`
-2. **Duplicate Alias Name in Scope**:
-   - `alias Item = int32; alias Item = float64;`  
-     *Error*: `Duplicate global symbol: Item`
-3. **Cyclic Alias Reference**:
-   - `alias A = B; alias B = A;`  
-     *Error*: `Cyclic type alias definition detected: A -> B -> A`
-4. **Missing Semicolon**:
-   - `alias ID = uint64`  
-     *Error*: `Expected ';' after alias declaration`
+### 3.1 Symbol Table Binding & Substitution
+- The alias identifier is registered in the symbol table during Pass 1a (`REGISTER_GLOBALS`).
+- When the binder encounters an alias during type resolution (`resolve_type`), it recursively substitutes the alias with its underlying `TypeSpecifier`.
+- For parameterized aliases (`alias IntMap<V> = Map<int32, V>;`), the binder verifies that type arguments provided at the usage site match the declared generic parameter count and substitutes generic parameters accordingly.
+
+### 3.2 Circular Alias Detection
+- Aliases cannot be recursively or cyclically defined (e.g. `alias A = B; alias B = A;`). The compiler maintains a cycle-detection set during alias resolution and reports a diagnostic if a cycle is detected.
+
+---
+
+## 4. Operational Semantics (Dynamic Execution)
+
+### 4.1 Normal Completion
+- An `AliasStatement` is a purely static compile-time declaration.
+- It produces **zero bytecode opcodes** and emits no runtime dispatch or metadata.
+- After type substitution in Pass 2, the compiler treats all usages of the alias identically to the target type.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+### 5.1 Inherited Target Memory Layout
+- An alias possesses the exact memory layout, alignment, and ARC reference-counting rules of its resolved target type:
+  - If target is primitive (e.g. `alias Byte = uint8;`), instances are stored inline as value types with 0 ARC overhead.
+  - If target is a reference type (e.g. `alias UserList = List<User>;`), instances are tracked via ARC (`INC_REF` / `DEC_REF`) identically to `List<User>`.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Circular Alias Definition
+Defining an alias that directly or indirectly references itself is illegal.
+```solix
+alias Alpha = Beta;
+alias Beta = Alpha; // Error: circular alias
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Circular alias detected in 'Alpha'
+```
+
+### Rule 6.2: Generic Parameter Count Mismatch
+Using a generic alias with an incorrect number of type arguments is rejected.
+```solix
+alias Pair<K, V> = Map<K, V>;
+
+void test() {
+    Pair<String> invalid; // Error: expected 2 type arguments
+}
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Alias 'Pair' expects 2 generic type arguments, got 1
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+An `AliasStatement` generates no dynamic runtime faults; substitution is performed entirely at compile time.
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Generic Parameterized Alias Substitution
+```solix
+alias IntMap<V> = Map<int32, V>;
+
+void verify_alias() {
+    IntMap<String> cache = new IntMap<String>();
+    cache.put(1, "one");
+    String val = cache.get(1);
+}
+```
+*Verification Invariant*: The compiler substitutes `IntMap<String>` with `Map<int32, String>`. Bytecode instantiation and method invocations target `Map` directly.

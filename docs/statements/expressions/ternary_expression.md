@@ -1,36 +1,78 @@
-# TernaryExpression (`NodeType::TERNARY_EXPR`)
+# §25 TernaryExpression
 
-## 1. Description & Purpose
+## 1. Overview & Scope
 
-The `ternary` expression (`condition ? true_expr : false_expr`) is an inline conditional operator yielding one of two expressions based on the boolean outcome of a condition predicate. It evaluates lazily: only the branch corresponding to the evaluated condition is executed, with short-circuiting preventing evaluation or side effects of the unused branch.
+A `TernaryExpression` (`condition ? true_expr : false_expr`) is an inline conditional operator that yields one of two expressions based on the boolean outcome of a predicate condition. Evaluation is strictly lazy and short-circuiting: only the branch corresponding to the evaluated condition is executed.
 
-## 2. Syntax & Grammar
+### Syntactic Placement
+Permitted anywhere an expression is syntactically valid.
 
+---
+
+## 2. Syntax & Production Rules
+
+### Production Rules
 ```solix
-<condition-expr> '?' <true-expr> ':' <false-expr>
+TernaryExpression ::= Expression '?' Expression ':' Expression
 ```
 
-## 3. Underlying Systems & Mechanics
+### Canonical Code Patterns
+```solix
+String status = is_connected ? "Online" : "Offline";
+int32 max_val = a > b ? a : b;
+```
 
-- Evaluates condition: must evaluate strictly to `bool`.
-- Emits conditional jump past true branch.
-- Validates that `true-expr` and `false-expr` yield matching types.
-- Evaluates only the chosen branch at runtime.
+---
 
-## 4. Positive Test Scenarios (Valid Variations)
+## 3. Scope & Declaration Space (Static Semantics)
 
-1. **Primitive Numeric Ternary**: `int32 max = (a > b) ? a : b;`
-2. **Reference Ternary**: `String s = (p != null) ? p.name : "Default";`
-3. **Nested Ternary**: `int32 sign = (x > 0) ? 1 : ((x < 0) ? -1 : 0);`
+### 3.1 Condition & Branch Type Unification
+- The condition expression must evaluate to primitive `bool`.
+- The true and false branches must unify to a common ancestor type (`is_assignable`).
 
-## 5. Negative Test Scenarios (Invalid Variations)
+---
 
-1. **Condition Is Not Bool**:
-   - `int32 v = 1 ? 10 : 20;`  
-     *Error*: `Ternary condition must be bool`
-2. **Mismatched Branch Types**:
-   - `auto v = (flag) ? 10 : "text";`  
-     *Error*: `Ternary branches must have the same type`
-3. **Missing Colon**:
-   - `int32 v = (flag) ? 10;`  
-     *Error*: `Expected ':' in ternary expression`
+## 4. Operational Semantics (Dynamic Execution)
+
+### 4.1 Short-Circuit Execution
+1. Evaluates condition expression.
+2. Emits `OpCode::JUMP_IF_FALSE <false_branch_ip>`.
+3. If true, evaluates true expression, emits `OpCode::JUMP <end_ip>`.
+4. If false, evaluates false expression.
+5. The result of the executed branch remains on the operand stack.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+### 5.1 Lazy Evaluation Invariant
+- The unselected branch is never evaluated. Any allocations or ARC increments in the unselected branch do not occur.
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Non-Boolean Condition
+```solix
+int32 x = 5 ? 1 : 2; // Error: condition not bool
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Ternary condition must be of type 'bool', got 'int32'
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+Faults in the evaluated branch propagate normally; faults in the unselected branch are never triggered.
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Short-Circuit Side-Effect Avoidance
+```solix
+String safe = (obj != null) ? obj.name : "default";
+```
+*Verification Invariant*: When `obj == null`, `obj.name` is never evaluated, preventing `NullReferenceException`.
