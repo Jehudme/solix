@@ -34,6 +34,7 @@ std::unique_ptr<Node> IdentifierNode::clone() const {
 
 std::unique_ptr<Node> LiteralNode::clone() const {
     auto cloned = std::make_unique<LiteralNode>(make_dummy_token(this), value);
+    cloned->token_type = token_type;
     copy_children(this, cloned.get());
     return cloned;
 }

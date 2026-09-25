@@ -55,8 +55,7 @@ class LexerState {
     }
 
     void handle_string() {
-        char quote_type = source_code[current_pos - 1]; // " or '
-        while (peek() != quote_type && !is_at_end()) {
+        while (peek() != '"' && !is_at_end()) {
             if (peek() == '\n') {
                 current_line++;
                 current_column = 1;
@@ -72,6 +71,65 @@ class LexerState {
         advance(); // consume closing quote
         std::string parsed_string = source_code.substr(start_pos + 1, current_pos - start_pos - 2);
         add_token(TokenType::STRING, parsed_string);
+    }
+
+    void handle_character() {
+        if (is_at_end()) {
+            add_token(TokenType::UNKNOWN_TOKEN, std::string("Unterminated character literal"));
+            return;
+        }
+
+        uint64_t codepoint = 0;
+        char c = advance();
+        if (c == '\\') {
+            if (is_at_end()) {
+                add_token(TokenType::UNKNOWN_TOKEN, std::string("Unterminated character literal"));
+                return;
+            }
+            char esc = advance();
+            switch (esc) {
+                case 'n': codepoint = '\n'; break;
+                case 't': codepoint = '\t'; break;
+                case 'r': codepoint = '\r'; break;
+                case '\\': codepoint = '\\'; break;
+                case '\'': codepoint = '\''; break;
+                case '\"': codepoint = '\"'; break;
+                case '0': codepoint = '\0'; break;
+                case 'x': {
+                    int hex_val = 0;
+                    for (int i = 0; i < 2; ++i) {
+                        if (is_at_end()) {
+                            add_token(TokenType::UNKNOWN_TOKEN, std::string("Unterminated hex escape"));
+                            return;
+                        }
+                        char h = advance();
+                        hex_val <<= 4;
+                        if (h >= '0' && h <= '9') hex_val |= (h - '0');
+                        else if (h >= 'a' && h <= 'f') hex_val |= (h - 'a' + 10);
+                        else if (h >= 'A' && h <= 'F') hex_val |= (h - 'A' + 10);
+                        else {
+                            add_token(TokenType::UNKNOWN_TOKEN, std::string("Invalid hex character"));
+                            return;
+                        }
+                    }
+                    codepoint = static_cast<uint64_t>(hex_val);
+                    break;
+                }
+                default:
+                    codepoint = static_cast<uint64_t>(esc);
+                    break;
+            }
+        } else {
+            codepoint = static_cast<uint8_t>(c);
+        }
+
+        if (is_at_end() || peek() != '\'') {
+            add_token(TokenType::UNKNOWN_TOKEN, std::string("Unterminated character literal"));
+            return;
+        }
+        advance(); // consume closing quote
+
+        add_token(TokenType::CHAR, static_cast<int64_t>(codepoint));
     }
 
     void handle_number() {
@@ -126,8 +184,10 @@ public:
                 handle_identifier();
             } else if (std::isdigit(current_character)) {
                 handle_number();
-            } else if (current_character == '"' || current_character == '\'') {
+            } else if (current_character == '"') {
                 handle_string();
+            } else if (current_character == '\'') {
+                handle_character();
             } else {
                 switch (current_character) {
                     case '(': add_token(TokenType::PUNCTUATION_OPEN_PAREN); break;

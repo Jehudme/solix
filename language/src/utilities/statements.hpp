@@ -97,8 +97,9 @@ struct LiteralNode : public Node {
 
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
+    TokenType token_type = TokenType::UNKNOWN_TOKEN;
     Value value;
-    LiteralNode(const Token& t, Value v) : Node(NodeType::LITERAL, t), value(std::move(v)) {}
+    LiteralNode(const Token& t, Value v) : Node(NodeType::LITERAL, t), token_type(t.type), value(std::move(v)) {}
 };
 
 struct BinaryExpression : public Node {

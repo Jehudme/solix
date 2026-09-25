@@ -452,7 +452,7 @@ std::unique_ptr<Node> ParserState::parse_call_or_access() {
 }
 
 std::unique_ptr<Node> ParserState::parse_primary() {
-  if (match(TokenType::NUMBER) || match(TokenType::STRING)) {
+  if (match(TokenType::NUMBER) || match(TokenType::STRING) || match(TokenType::CHAR)) {
     return std::make_unique<LiteralNode>(previous(), previous().value);
   }
 

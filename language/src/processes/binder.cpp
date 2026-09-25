@@ -929,7 +929,8 @@ bool Binder::is_assignable(const TypeInfo &target, const TypeInfo &source) {
   // Allow numeric conversions
   auto is_integer = [](const std::string &name) {
     return name == "int8" || name == "int16" || name == "int32" || name == "int64" ||
-           name == "uint8" || name == "uint16" || name == "uint32" || name == "uint64";
+           name == "uint8" || name == "uint16" || name == "uint32" || name == "uint64" ||
+           name == "char";
   };
   auto is_floating = [](const std::string &name) {
     return name == "float32" || name == "float64";
@@ -1125,7 +1126,9 @@ void Binder::visit(IdentifierNode &n) {
 
 void Binder::visit(LiteralNode &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
-    if (std::holds_alternative<int64_t>(n.value))
+    if (n.token_type == TokenType::CHAR)
+      n.expression_type = {"char", 0};
+    else if (std::holds_alternative<int64_t>(n.value))
       n.expression_type = {"int32", 0};
     else if (std::holds_alternative<double>(n.value))
       n.expression_type = {"float64", 0};
@@ -1184,7 +1187,14 @@ void Binder::visit(BinaryExpression &n) {
     {
       bool is_null_compare = (n.op == TokenType::OPERATOR_EQUAL || n.op == TokenType::OPERATOR_NOT_EQUAL) &&
                              (left_type.name == "void" || right_type.name == "void");
-      if (left_type != right_type && !is_null_compare) {
+      auto is_integer = [](const std::string &name) {
+        return name == "int8" || name == "int16" || name == "int32" || name == "int64" ||
+               name == "uint8" || name == "uint16" || name == "uint32" || name == "uint64" ||
+               name == "char";
+      };
+      bool is_integer_math = left_type.array_depth == 0 && right_type.array_depth == 0 &&
+                             is_integer(left_type.name) && is_integer(right_type.name);
+      if (left_type != right_type && !is_null_compare && !is_integer_math) {
         record_error(&n, "Binary operands type mismatch: '" + left_type.name +
                              "' vs '" + right_type.name + "'");
       }
