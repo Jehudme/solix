@@ -182,11 +182,11 @@ TypeInfo ParserState::parse_type_info() {
       type.name = "char";
   } else if (t.type == TokenType::IDENTIFIER) {
     type.name = std::get<std::string>(t.value);
-    while (match(TokenType::PUNCTUATION_DOT)) {
+    while (match(TokenType::PUNCTUATION_DOT) || match(TokenType::PUNCTUATION_DOUBLE_COLON)) {
       type.name += ".";
       type.name +=
           std::get<std::string>(consume(TokenType::IDENTIFIER,
-                                        "Expected identifier after '.' in type")
+                                        "Expected identifier after '.' or '::' in type")
                                     .value);
     }
 
@@ -593,7 +593,8 @@ std::unique_ptr<Node> ParserState::parse_statement() {
            tokens[temp]->type == TokenType::IDENTIFIER) {
       temp++;
       if (temp < tokens.size() &&
-          tokens[temp]->type == TokenType::PUNCTUATION_DOT) {
+          (tokens[temp]->type == TokenType::PUNCTUATION_DOT ||
+           tokens[temp]->type == TokenType::PUNCTUATION_DOUBLE_COLON)) {
         temp++;
       } else {
         break;
@@ -919,14 +920,14 @@ std::unique_ptr<Node> ParserState::parse_import_statement() {
   std::string full_path = std::get<std::string>(
       consume(TokenType::IDENTIFIER, "Expected package or type name after 'import'").value);
   bool is_wildcard = false;
-  while (match(TokenType::PUNCTUATION_DOT)) {
+  while (match(TokenType::PUNCTUATION_DOT) || match(TokenType::PUNCTUATION_DOUBLE_COLON)) {
     if (match(TokenType::OPERATOR_MULTIPLY)) {
       is_wildcard = true;
       break;
     }
     full_path += ".";
     full_path += std::get<std::string>(
-        consume(TokenType::IDENTIFIER, "Expected identifier or '*' after '.'").value);
+        consume(TokenType::IDENTIFIER, "Expected identifier or '*' after '.' or '::'").value);
   }
   consume(TokenType::PUNCTUATION_SEMICOLON, "Expected ';' after import statement");
 
@@ -995,9 +996,9 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
         consume(TokenType::IDENTIFIER,
                 "Expected base class name after 'extends' or ':'")
             .value);
-    while (match(TokenType::PUNCTUATION_DOT)) {
+    while (match(TokenType::PUNCTUATION_DOT) || match(TokenType::PUNCTUATION_DOUBLE_COLON)) {
       base_name += "." + std::get<std::string>(
-          consume(TokenType::IDENTIFIER, "Expected identifier after '.' in base class name").value);
+          consume(TokenType::IDENTIFIER, "Expected identifier after '.' or '::' in base class name").value);
     }
     decl->base_class_name = base_name;
     log_debug("Class '{}' extends '{}'", cls_name, decl->base_class_name);

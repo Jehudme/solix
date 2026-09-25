@@ -140,6 +140,11 @@ public:
     
     // Evaluators
     TypeInfo resolve_type(const TypeInfo& raw_type, Node* error_node);
+    Node* resolve_symbol(const std::string& name, Node* error_node = nullptr, bool report_ambiguity = true);
+    std::string resolve_template_name(const std::string& template_name, Node* error_node = nullptr);
+    bool extract_symbol_path(Node* node, std::string& out_path, std::string& out_root_name);
+    void process_imports();
+    std::vector<ImportStatement*> pending_imports;
     Node* instantiate_template(const std::string& template_name, const std::vector<TypeInfo>& type_args, Node* error_node);
     bool is_assignable(const TypeInfo& target, const TypeInfo& source);
     TypeInfo evaluate_expression(Node* expr);

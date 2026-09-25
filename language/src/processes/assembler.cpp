@@ -1194,8 +1194,6 @@ void Assembler::visit(AssignmentExpression &node) {
     }
   } else if (assign->target->node_type == NodeType::MEMBER_ACCESS) {
     auto *mem_acc = static_cast<MemberAccessExpression *>(assign->target.get());
-    compile_expression(mem_acc->object.get());
-
     auto *field =
         static_cast<FieldDeclaration *>(mem_acc->resolved_declaration);
     if (!field) {
@@ -1203,19 +1201,30 @@ void Assembler::visit(AssignmentExpression &node) {
           "MEMBER_ACCESS resolved_declaration is null at line " +
           std::to_string(mem_acc->line));
     }
-    if (field->is_weak) {
-      emit_byte(static_cast<uint8_t>(OpCode::WEAK_SET_PROPERTY));
-      emit_int32(field->memory_index);
-    } else {
+    if (field->is_static) {
       if (field->is_reference_type) {
-        emit_byte(static_cast<uint8_t>(OpCode::DUP));
-        emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
+        emit_byte(static_cast<uint8_t>(OpCode::GET_GLOBAL));
         emit_int32(field->memory_index);
         emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
       }
-
-      emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
+      emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
       emit_int32(field->memory_index);
+    } else {
+      compile_expression(mem_acc->object.get());
+      if (field->is_weak) {
+        emit_byte(static_cast<uint8_t>(OpCode::WEAK_SET_PROPERTY));
+        emit_int32(field->memory_index);
+      } else {
+        if (field->is_reference_type) {
+          emit_byte(static_cast<uint8_t>(OpCode::DUP));
+          emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
+          emit_int32(field->memory_index);
+          emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+        }
+
+        emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
+        emit_int32(field->memory_index);
+      }
     }
   }
 }

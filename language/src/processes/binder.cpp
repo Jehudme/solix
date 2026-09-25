@@ -402,83 +402,326 @@ TypeInfo Binder::evaluate_expression(Node *expr) {
   return evaluated_type;
 }
 
-// ─── Type Resolution ─────────────────────────────────────────────────────────
+// ─── Symbol Resolution Helpers ───────────────────────────────────────────────
 
-TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
-  if (raw_type.name.empty())
-    return raw_type;
-
-  log_trace("Resolving type '{}' (depth: {}, type_args: {})", raw_type.name,
-            raw_type.array_depth, raw_type.type_args.size());
-
-  // Use the node's stamped package_context if available, otherwise fall back
-  // to current_package. This prevents context-loss during flat Pass 2 iteration.
-  std::string node_pkg = (error_node && !error_node->package_context.empty())
-                             ? error_node->package_context
-                             : current_package;
-
-  Node *resolved = global_scope.resolve(raw_type.name);
-  if (!resolved && !node_pkg.empty()) {
-    resolved = global_scope.resolve(node_pkg + raw_type.name);
+bool Binder::extract_symbol_path(Node *node, std::string &out_path,
+                                 std::string &out_root_name) {
+  if (!node)
+    return false;
+  if (node->node_type == NodeType::IDENTIFIER) {
+    auto *id = static_cast<IdentifierNode *>(node);
+    out_path = id->name;
+    out_root_name = id->name;
+    return true;
   }
-  if (!resolved) {
-    auto it = imported_symbols.find(raw_type.name);
-    if (it != imported_symbols.end()) {
-      resolved = global_scope.resolve(it->second);
+  if (node->node_type == NodeType::MEMBER_ACCESS) {
+    auto *mem = static_cast<MemberAccessExpression *>(node);
+    std::string prefix;
+    if (!extract_symbol_path(mem->object.get(), prefix, out_root_name)) {
+      return false;
     }
+    out_path = prefix + "." + mem->member_name;
+    return true;
   }
-  if (!resolved && current_class) {
-    resolved =
-        global_scope.resolve(current_class->mangled_name + "." + raw_type.name);
-  }
-  // Cross-package fallback: search all known packages (enables multi-file compilation)
-  if (!resolved) {
-    for (const auto &pkg : known_packages) {
-      if (pkg == node_pkg) continue; // already tried
-      Node *candidate = global_scope.resolve(pkg + raw_type.name);
-      if (candidate) {
-        resolved = candidate;
-        log_trace("Cross-package resolution: '{}' -> '{}{}'", raw_type.name, pkg, raw_type.name);
-        break;
-      }
+  return false;
+}
+
+Node *Binder::resolve_symbol(const std::string &name, Node *error_node,
+                             bool report_ambiguity) {
+  if (name.empty())
+    return nullptr;
+
+  // 1. Direct local scope and class hierarchy (only for unqualified names)
+  if (name.find('.') == std::string::npos) {
+    if (current_scope) {
+      Node *declaration = current_scope->resolve(name);
+      if (declaration)
+        return declaration;
     }
-  }
-
-  TypeInfo result = raw_type;
-
-  if (!resolved && !result.type_args.empty()) {
-    std::string template_name = result.name;
-    auto it = imported_symbols.find(template_name);
-    if (it != imported_symbols.end() && template_registry.count(it->second)) {
-      template_name = it->second;
-    } else if (template_registry.count(template_name)) {
-    } else if (!node_pkg.empty() &&
-               template_registry.count(node_pkg + template_name)) {
-      template_name = node_pkg + template_name;
-    } else {
-      // Cross-package template search
-      for (const auto &pkg : known_packages) {
-        if (pkg == node_pkg) continue;
-        if (template_registry.count(pkg + template_name)) {
-          template_name = pkg + template_name;
+    if (current_class) {
+      ClassDeclaration *cls_iter = current_class;
+      while (cls_iter) {
+        Node *decl = global_scope.resolve(cls_iter->mangled_name + "." + name);
+        if (decl)
+          return decl;
+        if (!cls_iter->base_class_name.empty()) {
+          Node *base_node = global_scope.resolve(cls_iter->base_class_name);
+          cls_iter = (base_node && base_node->node_type == NodeType::CLASS_DECL)
+                         ? static_cast<ClassDeclaration *>(base_node)
+                         : nullptr;
+        } else {
           break;
         }
       }
     }
+  }
 
-    log_debug("Resolving type arguments for potential template '{}'",
-              template_name);
-    std::vector<TypeInfo> resolved_args;
-    for (const auto &arg : result.type_args) {
-      resolved_args.push_back(resolve_type(arg, error_node));
+  // 2. Check imported symbols table
+  auto it = imported_symbols.find(name);
+  if (it != imported_symbols.end()) {
+    Node *decl = global_scope.resolve(it->second);
+    if (decl)
+      return decl;
+  }
+
+  // 3. Current package context
+  std::string node_pkg = (error_node && !error_node->package_context.empty())
+                             ? error_node->package_context
+                             : current_package;
+  if (!node_pkg.empty() && node_pkg.back() != '.')
+    node_pkg += '.';
+  if (!node_pkg.empty()) {
+    Node *decl = global_scope.resolve(node_pkg + name);
+    if (decl)
+      return decl;
+  }
+
+  // 4. Exact match in global scope (e.g. fully qualified "solix.core.String")
+  Node *decl = global_scope.resolve(name);
+  if (decl)
+    return decl;
+
+  // 5. Cross-package search in known_packages
+  for (const auto &pkg : known_packages) {
+    std::string p = (pkg.empty() || pkg.back() == '.') ? pkg : pkg + '.';
+    if (p == node_pkg)
+      continue;
+    Node *candidate = global_scope.resolve(p + name);
+    if (candidate)
+      return candidate;
+  }
+
+  // 6. Sub-namespace suffix matching across all registered symbols (Class, Enum, Alias)
+  std::vector<std::pair<std::string, Node *>> matches;
+  std::string suffix = "." + name;
+  for (const auto &[sym_name, sym_node] : global_scope.symbols) {
+    if (sym_node->node_type != NodeType::CLASS_DECL &&
+        sym_node->node_type != NodeType::ENUM_DECL &&
+        sym_node->node_type != NodeType::ALIAS_STMT) {
+      continue;
     }
-    result.type_args = resolved_args;
+    if (sym_name == name ||
+        (sym_name.length() > name.length() &&
+         sym_name.compare(sym_name.length() - suffix.length(), suffix.length(),
+                          suffix) == 0)) {
+      matches.push_back({sym_name, sym_node});
+    }
+  }
 
-    resolved = instantiate_template(template_name, resolved_args, error_node);
-    if (resolved) {
-      result.name = resolved->mangled_name;
-      result.type_args.clear();
-      log_debug("Resolved instantiated template type to '{}'", result.name);
+  if (matches.empty()) {
+    return nullptr;
+  }
+
+  if (matches.size() == 1) {
+    return matches[0].second;
+  }
+
+  // If multiple matches, prefer current package if present
+  if (!node_pkg.empty()) {
+    for (const auto &m : matches) {
+      if (m.first.rfind(node_pkg, 0) == 0) {
+        return m.second;
+      }
+    }
+  }
+
+  // Ambiguity detected across multiple packages
+  if (report_ambiguity && error_node) {
+    std::string cand_str;
+    for (size_t i = 0; i < matches.size(); ++i) {
+      if (i > 0)
+        cand_str += ", ";
+      cand_str += matches[i].first;
+    }
+    record_error(error_node, "Ambiguous symbol '" + name +
+                                 "': multiple candidates found (" + cand_str +
+                                 "). Specify full package or use import to disambiguate.");
+  }
+  return nullptr;
+}
+
+std::string Binder::resolve_template_name(const std::string &template_name,
+                                          Node *error_node) {
+  if (template_name.empty())
+    return "";
+
+  // 1. Check imported symbols
+  auto it = imported_symbols.find(template_name);
+  if (it != imported_symbols.end() && template_registry.count(it->second)) {
+    return it->second;
+  }
+
+  // 2. Exact match in template_registry
+  if (template_registry.count(template_name)) {
+    return template_name;
+  }
+
+  // 3. Current package context
+  std::string node_pkg = (error_node && !error_node->package_context.empty())
+                             ? error_node->package_context
+                             : current_package;
+  if (!node_pkg.empty() && node_pkg.back() != '.')
+    node_pkg += '.';
+  if (!node_pkg.empty() && template_registry.count(node_pkg + template_name)) {
+    return node_pkg + template_name;
+  }
+
+  // 4. Cross-package search in known_packages
+  for (const auto &pkg : known_packages) {
+    std::string p = (pkg.empty() || pkg.back() == '.') ? pkg : pkg + '.';
+    if (p == node_pkg)
+      continue;
+    if (template_registry.count(p + template_name)) {
+      return p + template_name;
+    }
+  }
+
+  // 5. Sub-namespace suffix matching across template_registry
+  std::vector<std::string> matches;
+  std::string suffix = "." + template_name;
+  for (const auto &[key, node] : template_registry) {
+    if (key == template_name ||
+        (key.length() > template_name.length() &&
+         key.compare(key.length() - suffix.length(), suffix.length(), suffix) ==
+             0)) {
+      matches.push_back(key);
+    }
+  }
+
+  if (matches.empty()) {
+    return template_name;
+  }
+
+  if (matches.size() == 1) {
+    return matches[0];
+  }
+
+  if (!node_pkg.empty()) {
+    for (const auto &m : matches) {
+      if (m.rfind(node_pkg, 0) == 0) {
+        return m;
+      }
+    }
+  }
+
+  if (error_node) {
+    std::string cand_str;
+    for (size_t i = 0; i < matches.size(); ++i) {
+      if (i > 0)
+        cand_str += ", ";
+      cand_str += matches[i];
+    }
+    record_error(error_node, "Ambiguous template symbol '" + template_name +
+                                 "': multiple candidates found (" + cand_str +
+                                 ").");
+  }
+  return "";
+}
+
+void Binder::process_imports() {
+  for (auto *n : pending_imports) {
+    if (n->symbol_name == "*") {
+      std::string target_pkg = n->package_name;
+      if (target_pkg.empty())
+        continue;
+      if (target_pkg.back() != '.')
+        target_pkg += '.';
+      if (known_packages.count(target_pkg)) {
+        // Already exact match
+      } else {
+        std::vector<std::string> matches;
+        for (const auto &pkg : known_packages) {
+          if (pkg.length() > target_pkg.length() &&
+              pkg.substr(pkg.length() - target_pkg.length()) == target_pkg) {
+            matches.push_back(pkg);
+          }
+        }
+        if (matches.size() == 1) {
+          known_packages.insert(matches[0]);
+          log_debug("Wildcard import resolved '{}' -> '{}'", target_pkg,
+                    matches[0]);
+        } else if (matches.size() > 1) {
+          std::string cand_str;
+          for (const auto &m : matches) {
+            if (!cand_str.empty())
+              cand_str += ", ";
+            cand_str += m;
+          }
+          record_error(n, "Ambiguous wildcard import '" + n->package_name +
+                              ".*': matches multiple packages (" + cand_str +
+                              ")");
+        } else {
+          known_packages.insert(target_pkg);
+        }
+      }
+    } else {
+      std::string query = n->package_name + "." + n->symbol_name;
+      Node *sym = resolve_symbol(query, n, true);
+      if (sym) {
+        imported_symbols[n->symbol_name] = sym->mangled_name;
+        size_t dot = sym->mangled_name.rfind('.');
+        if (dot != std::string::npos) {
+          known_packages.insert(sym->mangled_name.substr(0, dot + 1));
+        }
+        log_debug("Symbol import resolved: '{}' -> '{}'", n->symbol_name,
+                  sym->mangled_name);
+      } else {
+        std::string tmpl = resolve_template_name(query, n);
+        if (!tmpl.empty()) {
+          imported_symbols[n->symbol_name] = tmpl;
+          size_t dot = tmpl.rfind('.');
+          if (dot != std::string::npos) {
+            known_packages.insert(tmpl.substr(0, dot + 1));
+          }
+          log_debug("Template import resolved: '{}' -> '{}'", n->symbol_name,
+                    tmpl);
+        } else {
+          record_error(n, "Cannot resolve imported symbol: " + query);
+        }
+      }
+    }
+  }
+  pending_imports.clear();
+}
+
+TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
+  if (raw_type.name.empty()) {
+    return raw_type;
+  }
+  if (raw_type.name == "void" || raw_type.name == "bool" ||
+      raw_type.name == "char" || raw_type.name == "int8" ||
+      raw_type.name == "uint8" || raw_type.name == "int16" ||
+      raw_type.name == "uint16" || raw_type.name == "int32" ||
+      raw_type.name == "uint32" || raw_type.name == "int64" ||
+      raw_type.name == "uint64" || raw_type.name == "float32" ||
+      raw_type.name == "float64") {
+    return raw_type;
+  }
+
+  log_trace("Resolving type '{}' (depth: {}, type_args: {})", raw_type.name,
+            raw_type.array_depth, raw_type.type_args.size());
+
+  Node *resolved = resolve_symbol(raw_type.name, error_node, true);
+
+  TypeInfo result = raw_type;
+
+  if (!resolved && !result.type_args.empty()) {
+    std::string template_name = resolve_template_name(result.name, error_node);
+    if (!template_name.empty()) {
+      log_debug("Resolving type arguments for potential template '{}'",
+                template_name);
+      std::vector<TypeInfo> resolved_args;
+      for (const auto &arg : result.type_args) {
+        resolved_args.push_back(resolve_type(arg, error_node));
+      }
+      result.type_args = resolved_args;
+
+      resolved = instantiate_template(template_name, resolved_args, error_node);
+      if (resolved) {
+        result.name = resolved->mangled_name;
+        result.type_args.clear();
+        log_debug("Resolved instantiated template type to '{}'", result.name);
+      }
     }
   }
 
@@ -506,6 +749,14 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
 void Binder::bind_types_and_memory() {
   log_debug("Starting Pass 2: Type and Memory Binding...");
   static_variable_index = 1;
+
+  for (const auto &[name, node] : global_scope.symbols) {
+    if (node->node_type == NodeType::ALIAS_STMT) {
+      auto *alias = static_cast<AliasStatement *>(node);
+      alias->target_type = resolve_type(alias->target_type, alias);
+      alias->resolved_declaration = resolve_symbol(alias->target_type.name, alias, false);
+    }
+  }
 
   for (const auto &[name, node] : global_scope.symbols) {
     if (node->node_type == NodeType::FIELD_DECL) {
@@ -549,7 +800,8 @@ void Binder::bind_types_and_memory() {
       if (alias_stmt->resolved_declaration) {
         n = alias_stmt->resolved_declaration;
       } else {
-        n = global_scope.resolve(alias_stmt->target_type.name);
+        n = resolve_symbol(alias_stmt->target_type.name, alias_stmt, false);
+        alias_stmt->resolved_declaration = n;
       }
     }
     return n;
@@ -557,43 +809,13 @@ void Binder::bind_types_and_memory() {
 
   auto resolve_base_class = [&](ClassDeclaration *cls) -> Node * {
     if (cls->base_class_name.empty()) return nullptr;
-    Node *node = unwrap_alias(global_scope.resolve(cls->base_class_name));
+    Node *node = resolve_symbol(cls->base_class_name, cls, true);
+    node = unwrap_alias(node);
     if (node && node->node_type == NodeType::CLASS_DECL) {
       cls->base_class_name = static_cast<ClassDeclaration *>(node)->mangled_name;
       return node;
     }
-    std::string simple_name = cls->base_class_name;
-    size_t last_dot = simple_name.rfind('.');
-    if (last_dot != std::string::npos) {
-      simple_name = simple_name.substr(last_dot + 1);
-    }
-    node = unwrap_alias(global_scope.resolve(simple_name));
-    if (node && node->node_type == NodeType::CLASS_DECL) {
-      cls->base_class_name = static_cast<ClassDeclaration *>(node)->mangled_name;
-      return node;
-    }
-    std::string core_name = "solix.core." + simple_name;
-    node = unwrap_alias(global_scope.resolve(core_name));
-    if (node && node->node_type == NodeType::CLASS_DECL) {
-      cls->base_class_name = static_cast<ClassDeclaration *>(node)->mangled_name;
-      return node;
-    }
-    std::string solix_name = "solix." + simple_name;
-    node = unwrap_alias(global_scope.resolve(solix_name));
-    if (node && node->node_type == NodeType::CLASS_DECL) {
-      cls->base_class_name = static_cast<ClassDeclaration *>(node)->mangled_name;
-      return node;
-    }
-    for (const auto &[sym_name, sym_node] : global_scope.symbols) {
-      Node *unwrapped = unwrap_alias(sym_node);
-      if (unwrapped && unwrapped->node_type == NodeType::CLASS_DECL) {
-        auto *candidate = static_cast<ClassDeclaration *>(unwrapped);
-        if (candidate->class_name == simple_name) {
-          cls->base_class_name = candidate->mangled_name;
-          return candidate;
-        }
-      }
-    }
+    record_error(cls, "Base class not found: " + cls->base_class_name);
     return nullptr;
   };
 
@@ -794,6 +1016,8 @@ void Binder::execute() {
       }
     }
   }
+
+  process_imports();
 
   log_debug("Pass 1b: Registering class members and signatures...");
   for (const auto &[source, nodes] : context.nodes) {
@@ -1115,52 +1339,7 @@ void Binder::visit(IdentifierNode &n) {
       return;
     }
 
-    std::string node_pkg = (!n.package_context.empty()) ? n.package_context : current_package;
-    if (!node_pkg.empty() && node_pkg.back() != '.') node_pkg += '.';
-
-    Node *declaration = current_scope->resolve(n.name);
-    if (!declaration && current_class) {
-      ClassDeclaration *cls_iter = current_class;
-      while (cls_iter && !declaration) {
-        declaration = global_scope.resolve(cls_iter->mangled_name + "." + n.name);
-        if (!declaration && !cls_iter->base_class_name.empty()) {
-          Node *base_node = global_scope.resolve(cls_iter->base_class_name);
-          cls_iter = (base_node && base_node->node_type == NodeType::CLASS_DECL)
-                         ? static_cast<ClassDeclaration *>(base_node)
-                         : nullptr;
-        } else {
-          break;
-        }
-      }
-    }
-    if (!declaration && !node_pkg.empty()) {
-      declaration = global_scope.resolve(node_pkg + n.name);
-    }
-    if (!declaration && !current_package.empty()) {
-      std::string cur_p = (current_package.back() == '.') ? current_package : current_package + '.';
-      declaration = global_scope.resolve(cur_p + n.name);
-    }
-    if (!declaration) {
-      declaration = global_scope.resolve(n.name);
-    }
-    if (!declaration) {
-      auto it = imported_symbols.find(n.name);
-      if (it != imported_symbols.end()) {
-        declaration = global_scope.resolve(it->second);
-      }
-    }
-    // Cross-package fallback: search all known packages (mirrors resolve_type)
-    if (!declaration) {
-      for (const auto &pkg : known_packages) {
-        std::string p = (pkg.empty() || pkg.back() == '.') ? pkg : pkg + '.';
-        if (p == current_package || p == node_pkg) continue;
-        Node *candidate = global_scope.resolve(p + n.name);
-        if (candidate) {
-          declaration = candidate;
-          break;
-        }
-      }
-    }
+    Node *declaration = resolve_symbol(n.name, &n, true);
 
     if (!declaration) {
       record_error(&n, "Undefined identifier: " + n.name);
@@ -1342,16 +1521,53 @@ void Binder::visit(ArrayAccessExpression &n) {
 
 void Binder::visit(MemberAccessExpression &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
-    TypeInfo object_type = evaluate_expression(n.object.get());
-    if (object_type.array_depth > 0) {
-      if (n.member_name == "length") {
-        n.expression_type = {"int32", 0};
-        evaluated_type = n.expression_type;
-        return;
+    TypeInfo object_type;
+    Node *type_decl = nullptr;
+
+    std::string sym_path, root_name;
+    bool is_static_path = false;
+    if (extract_symbol_path(n.object.get(), sym_path, root_name)) {
+      bool is_local_var = false;
+      if (current_scope) {
+        Node *local_sym = current_scope->resolve(root_name);
+        if (local_sym && local_sym->node_type == NodeType::VAR_DECL) {
+          is_local_var = true;
+        }
       }
-      record_error(&n, "Arrays only have the 'length' property");
+      if (!is_local_var && current_class) {
+        Node *cls_field = global_scope.resolve(current_class->mangled_name + "." + root_name);
+        if (cls_field && cls_field->node_type == NodeType::FIELD_DECL &&
+            !static_cast<FieldDeclaration *>(cls_field)->is_static) {
+          is_local_var = true;
+        }
+      }
+      if (!is_local_var) {
+        Node *target = resolve_symbol(sym_path, &n, false);
+        while (target && target->node_type == NodeType::ALIAS_STMT) {
+          auto *al = static_cast<AliasStatement *>(target);
+          target = al->resolved_declaration ? al->resolved_declaration : resolve_symbol(al->target_type.name, al, false);
+        }
+        if (target && (target->node_type == NodeType::CLASS_DECL || target->node_type == NodeType::ENUM_DECL)) {
+          type_decl = target;
+          object_type = {type_decl->mangled_name, 0};
+          is_static_path = true;
+        }
+      }
     }
-    Node *type_decl = global_scope.resolve(object_type.name);
+
+    if (!is_static_path) {
+      object_type = evaluate_expression(n.object.get());
+      if (object_type.array_depth > 0) {
+        if (n.member_name == "length") {
+          n.expression_type = {"int32", 0};
+          evaluated_type = n.expression_type;
+          return;
+        }
+        record_error(&n, "Arrays only have the 'length' property");
+      }
+      type_decl = global_scope.resolve(object_type.name);
+    }
+
     if (!type_decl) {
       record_error(&n, "Cannot access members on unknown type: " +
                            object_type.name);
@@ -1434,56 +1650,89 @@ void Binder::visit(MethodCallExpression &n) {
     if (n.callee->node_type == NodeType::MEMBER_ACCESS) {
       auto *member_access =
           static_cast<MemberAccessExpression *>(n.callee.get());
-      TypeInfo receiver_type;
+      TypeInfo receiver_type = {"void", 0};
       ClassDeclaration *current_resolve_class = nullptr;
 
-      if (member_access->is_scope_resolution) {
-        if (member_access->object->node_type == NodeType::IDENTIFIER) {
-          auto *id = static_cast<IdentifierNode *>(member_access->object.get());
-          std::string class_name = resolve_type(TypeInfo{id->name, 0}, &n).name;
-          Node *decl = global_scope.resolve(class_name);
-          if (!decl || decl->node_type != NodeType::CLASS_DECL) {
-            record_error(&n, "Invalid class name for scope resolution: " +
-                                 class_name);
-            evaluated_type = {"void", 0};
-            return;
+      std::string sym_path, root_name;
+      bool is_static_path = false;
+      if (extract_symbol_path(member_access->object.get(), sym_path, root_name)) {
+        bool is_local_var = false;
+        if (current_scope) {
+          Node *local_sym = current_scope->resolve(root_name);
+          if (local_sym && local_sym->node_type == NodeType::VAR_DECL) {
+            is_local_var = true;
           }
-          current_resolve_class = static_cast<ClassDeclaration *>(decl);
-          receiver_type = {"void", 0};
-        } else if (member_access->object->node_type ==
-                   NodeType::MEMBER_ACCESS) {
-          auto *inner_access = static_cast<MemberAccessExpression *>(
-              member_access->object.get());
-          receiver_type = evaluate_expression(inner_access->object.get());
-          std::string class_name =
-              resolve_type(TypeInfo{inner_access->member_name, 0}, &n).name;
-          Node *decl = global_scope.resolve(class_name);
-          if (!decl || decl->node_type != NodeType::CLASS_DECL) {
-            record_error(&n, "Invalid class name for scope resolution: " +
-                                 class_name);
-            evaluated_type = {"void", 0};
-            return;
-          }
-          current_resolve_class = static_cast<ClassDeclaration *>(decl);
-          member_access->object = std::move(inner_access->object);
-        } else {
-          record_error(&n, "Invalid syntax for scope resolution");
-          evaluated_type = {"void", 0};
-          return;
         }
-      } else {
-        receiver_type = evaluate_expression(member_access->object.get());
-        Node *type_decl = global_scope.resolve(receiver_type.name);
-        while (type_decl && type_decl->node_type == NodeType::ALIAS_STMT) {
-          auto *alias_stmt = static_cast<AliasStatement *>(type_decl);
-          if (alias_stmt->resolved_declaration) {
-            type_decl = alias_stmt->resolved_declaration;
+        if (!is_local_var && current_class) {
+          Node *cls_field = global_scope.resolve(current_class->mangled_name + "." + root_name);
+          if (cls_field && cls_field->node_type == NodeType::FIELD_DECL &&
+              !static_cast<FieldDeclaration *>(cls_field)->is_static) {
+            is_local_var = true;
+          }
+        }
+        if (!is_local_var) {
+          Node *target = resolve_symbol(sym_path, &n, false);
+          while (target && target->node_type == NodeType::ALIAS_STMT) {
+            auto *al = static_cast<AliasStatement *>(target);
+            target = al->resolved_declaration ? al->resolved_declaration : resolve_symbol(al->target_type.name, al, false);
+          }
+          if (target && target->node_type == NodeType::CLASS_DECL) {
+            current_resolve_class = static_cast<ClassDeclaration *>(target);
+            receiver_type = {current_resolve_class->mangled_name, 0};
+            is_static_path = true;
+          }
+        }
+      }
+
+      if (!is_static_path) {
+        if (member_access->is_scope_resolution) {
+          if (member_access->object->node_type == NodeType::IDENTIFIER) {
+            auto *id = static_cast<IdentifierNode *>(member_access->object.get());
+            std::string class_name = resolve_type(TypeInfo{id->name, 0}, &n).name;
+            Node *decl = global_scope.resolve(class_name);
+            if (!decl || decl->node_type != NodeType::CLASS_DECL) {
+              record_error(&n, "Invalid class name for scope resolution: " +
+                                   class_name);
+              evaluated_type = {"void", 0};
+              return;
+            }
+            current_resolve_class = static_cast<ClassDeclaration *>(decl);
+            receiver_type = {"void", 0};
+          } else if (member_access->object->node_type ==
+                     NodeType::MEMBER_ACCESS) {
+            auto *inner_access = static_cast<MemberAccessExpression *>(
+                member_access->object.get());
+            receiver_type = evaluate_expression(inner_access->object.get());
+            std::string class_name =
+                resolve_type(TypeInfo{inner_access->member_name, 0}, &n).name;
+            Node *decl = global_scope.resolve(class_name);
+            if (!decl || decl->node_type != NodeType::CLASS_DECL) {
+              record_error(&n, "Invalid class name for scope resolution: " +
+                                   class_name);
+              evaluated_type = {"void", 0};
+              return;
+            }
+            current_resolve_class = static_cast<ClassDeclaration *>(decl);
+            member_access->object = std::move(inner_access->object);
           } else {
-            type_decl = global_scope.resolve(alias_stmt->target_type.name);
+            record_error(&n, "Invalid syntax for scope resolution");
+            evaluated_type = {"void", 0};
+            return;
           }
-        }
-        if (type_decl && type_decl->node_type == NodeType::CLASS_DECL) {
-          current_resolve_class = static_cast<ClassDeclaration *>(type_decl);
+        } else {
+          receiver_type = evaluate_expression(member_access->object.get());
+          Node *type_decl = global_scope.resolve(receiver_type.name);
+          while (type_decl && type_decl->node_type == NodeType::ALIAS_STMT) {
+            auto *alias_stmt = static_cast<AliasStatement *>(type_decl);
+            if (alias_stmt->resolved_declaration) {
+              type_decl = alias_stmt->resolved_declaration;
+            } else {
+              type_decl = resolve_symbol(alias_stmt->target_type.name, alias_stmt, false);
+            }
+          }
+          if (type_decl && type_decl->node_type == NodeType::CLASS_DECL) {
+            current_resolve_class = static_cast<ClassDeclaration *>(type_decl);
+          }
         }
       }
 
@@ -2226,23 +2475,7 @@ void Binder::visit(AliasStatement &n) {
 
 void Binder::visit(ImportStatement &n) {
   if (current_pass == BinderPass::REGISTER_GLOBALS) {
-    if (n.symbol_name == "*") {
-      std::string pkg = n.package_name;
-      if (!pkg.empty() && pkg.back() != '.') {
-        pkg += ".";
-      }
-      known_packages.insert(pkg);
-      log_debug("Imported package wildcard: '{}'", pkg);
-    } else {
-      std::string full_name = n.package_name + "." + n.symbol_name;
-      imported_symbols[n.symbol_name] = full_name;
-      std::string pkg = n.package_name;
-      if (!pkg.empty() && pkg.back() != '.') {
-        pkg += ".";
-      }
-      known_packages.insert(pkg);
-      log_debug("Imported symbol: '{}' -> '{}'", n.symbol_name, full_name);
-    }
+    pending_imports.push_back(&n);
   }
 }
 
@@ -2282,8 +2515,6 @@ void Binder::visit(ClassDeclaration &n) {
   if (current_pass == BinderPass::REGISTER_GLOBALS) {
     std::string full_name = current_prefix + n.class_name;
     n.package_context = current_prefix;
-    if (!n.base_class_name.empty())
-      n.base_class_name = current_prefix + n.base_class_name;
     if (global_scope.symbols.count(full_name))
       record_error(&n, "Duplicate global symbol: " + full_name);
     n.mangled_name = full_name;

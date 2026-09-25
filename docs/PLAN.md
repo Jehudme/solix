@@ -2,9 +2,9 @@
 
 > **Source**: Generated directly from `TODO.md`, synthesized and structured into a cohesive development plan.  
 > **Order of Execution**:  
-> 1. **Fixes & Stabilization** (Phases 1–7)  
-> 2. **Documentation & Knowledge Base** (Phases 8–11)  
-> 3. **New Features & System Expansion** (Phases 12–22)
+> 1. **Fixes & Stabilization** (Phases 1–8)  
+> 2. **Documentation & Knowledge Base** (Phases 9–12)  
+> 3. **New Features & System Expansion** (Phases 13–21)
 
 ---
 
@@ -241,7 +241,43 @@ Consequently:
 
 ---
 
-## Phase 7: Test Suite Modernization & Infrastructure Overhaul
+## Phase 7: Full & Partial Symbol Path Resolution & Flexible Namespace Disambiguation
+
+### Issue
+1. **Dotted Identifiers Rejected as Runtime Expressions**:
+   - When referencing static methods or static properties via qualified paths (e.g. `solix.core.Objects.is_null(...)` or `core.Objects.is_null(...)`), the parser structures the callee as nested `MemberAccessExpression` chains. During semantic analysis in `Binder`, the root identifier (`"solix"` or `"core"`) is looked up as a variable in the local/class scope, failing with `Invalid identifier usage: solix` or `Undefined identifier: core`.
+2. **Lack of Sub-Namespace Suffix Matching for Types**:
+   - In `resolve_type()`, types are matched either by exact mangled name (`global_scope.resolve(raw_type.name)`) or by prefixing known root packages (`pkg + raw_type.name`). If a package is deep (e.g. `com.mycompany.service`) and the user writes a partial sub-namespace (e.g. `service.User` or `mycompany.service.User`), lookup fails because prepending `com.mycompany.service.` yields `com.mycompany.service.service.User`.
+3. **Overly Eager Package Prepending on Base Classes (`extends`)**:
+   - In `Binder::visit(ClassDeclaration &n)` during Pass 1a, `cls->base_class_name` was unconditionally prepended with `current_prefix`. Extending a class from another package using an unqualified or partial name (e.g. `class MyEx extends Exception` or `extends core.Exception`) mangled the name to `my_pkg.Exception` or `my_pkg.core.Exception`.
+4. **Imports Order Sensitivity and Partial Package Imports**:
+   - `import core.String;` or `import core.*;` failed to resolve `"core"` to the full package `"solix.core."` if the imported package was defined in a file parsed after the importing file, or if only a package suffix was specified.
+
+### Solution
+1. **Static Symbol Path Extraction (`extract_symbol_path`)**:
+   - In `binder.cpp`, implement `extract_symbol_path(Node* node, std::string& path)` to reconstruct dotted/scoped paths (`a.b.c` or `a::b::c`) from nested `MemberAccessExpression` and `IdentifierNode` trees.
+   - In `MethodCallExpression` and `MemberAccessExpression`, if the root identifier is not a local variable/parameter in `current_scope` and the extracted path resolves to a `ClassDeclaration` or `EnumDeclaration`, treat the target as a static class/enum access without attempting runtime expression evaluation of the package prefixes.
+2. **Suffix-Based Symbol & Type Resolution (`resolve_symbol` & `resolve_template_name`)**:
+   - Search order:
+     1. Local variables, parameters, and current class members (for simple unqualified names).
+     2. Explicit imports in `imported_symbols`.
+     3. Active package (`node_pkg`).
+     4. Exact match in `global_scope`.
+     5. Registered `known_packages` prefixes.
+     6. Flexible sub-namespace suffix matching across all registered classes, enums, and aliases (`cand_name.ends_with("." + name)`).
+     7. Ambiguity detection: if multiple candidates from different packages match without an explicit import or local package priority, emit a clear diagnostic detailing all candidates and prompting disambiguation.
+3. **Template Blueprint Suffix Resolution**:
+   - Extend `resolve_template_name` to support suffix lookups in `template_registry`, enabling `collections.List<T>`, `solix.collections.List<T>`, and `List<T>`.
+4. **Deferred Global Import Binding**:
+   - Collect import statements during Pass 1a and bind them after all top-level symbols and packages are registered, supporting full paths, partial package prefixes, and wildcards reliably across compilation units.
+5. **Class Inheritance Resolution**:
+   - Defer base class resolution to `resolve_base_class` in Pass 2 using `resolve_symbol`, resolving `Exception`, `core.Exception`, and `solix.core.Exception` to canonical mangled names.
+6. **Parser Support for Scope Resolution Operator `::`**:
+   - Allow `::` in `parse_type_info()` and `parse_import_statement()` to seamlessly interoperate with C++ style namespaces (`solix::core::String`, `core::Objects::is_null`).
+
+---
+
+## Phase 8: Test Suite Modernization & Infrastructure Overhaul
 
 ### Issue
 1. **Unstructured Test Organization**:
@@ -302,7 +338,7 @@ Consequently:
 
 ---
 
-## Phase 8: Root Project Documentation & Onboarding (`README.md`)
+## Phase 9: Root Project Documentation & Onboarding (`README.md`)
 
 ### Issue
 The project repository currently lacks a top-level `README.md`. New contributors or developers inspecting the project have no overview of language semantics, memory model, architecture, build prerequisites, or CLI instructions.
@@ -328,7 +364,7 @@ Author a comprehensive, professional `README.md` at the project root containing:
 
 ---
 
-## Phase 9: Complete Language Keyword Wiki (`docs/wiki/keywords.md`)
+## Phase 10: Complete Language Keyword Wiki (`docs/wiki/keywords.md`)
 
 ### Issue
 Solix has dozens of language keywords and modifiers across control flow, object-oriented programming, memory management, and typing. Currently, there is no centralized language specification or wiki detailing their syntax, grammar rules, semantics, and edge cases.
@@ -355,7 +391,7 @@ Author `docs/wiki/keywords.md` providing an exhaustive reference catalog:
 
 ---
 
-## Phase 10: Official Language User Guide & Tutorial (`docs/guide/`)
+## Phase 11: Official Language User Guide & Tutorial (`docs/guide/`)
 
 ### Issue
 Developers learning Solix have no structured, progressive user guide explaining language mechanics from beginner to advanced topics.
@@ -378,7 +414,7 @@ Create a multi-chapter user manual in `docs/guide/`:
 
 ---
 
-## Phase 11: Compiler Pipeline & Internal Architecture Deep Dives (`docs/architecture/`)
+## Phase 12: Compiler Pipeline & Internal Architecture Deep Dives (`docs/architecture/`)
 
 ### Issue
 Engineers contributing to the Solix compiler, VM, or runtime have no architectural documentation detailing the multi-pass compilation pipeline, bytecode format, or runtime memory model.
@@ -407,7 +443,7 @@ Author comprehensive internal technical documentation:
 
 ---
 
-## Phase 12: Object-Oriented Primitive & Array Boxed Wrappers
+## Phase 13: Object-Oriented Primitive & Array Boxed Wrappers
 
 ### Issue
 In Solix, primitive types (`int32`, `float64`, etc.) and raw arrays (`int32[]`) are primitive values and cannot be treated as first-class objects. They lack object-oriented methods like `to_string()`, `parse()`, `hash_code()`, `equals()`, and cannot be directly stored in collections that require object reference types without ad-hoc conversion.
@@ -436,7 +472,7 @@ In Solix, primitive types (`int32`, `float64`, etc.) and raw arrays (`int32[]`) 
 
 ---
 
-## Phase 13: Core System & Mathematics Standard Library Modules
+## Phase 14: Core System & Mathematics Standard Library Modules
 
 ### Issue
 Seven critical standard library modules exist only as empty 0-byte stubs or are missing essential OS, I/O, process, and mathematical operations:
@@ -474,7 +510,7 @@ Implement complete, robust APIs backed by native C++ runtime bridges in `languag
 
 ---
 
-## Phase 14: Dedicated Performance Benchmarking Suite (`benchmarks/`)
+## Phase 15: Dedicated Performance Benchmarking Suite (`benchmarks/`)
 
 ### Issue
 Performance validation is currently performed via ad-hoc scripts in `scratch_bench/`. There is no version-controlled, automated benchmarking framework to track VM execution speed, ARC overhead, and compiler throughput across commits or against other language runtimes.
@@ -501,7 +537,7 @@ Performance validation is currently performed via ad-hoc scripts in `scratch_ben
 
 ---
 
-## Phase 15: Developer Tooling: Project Manifest & Build System (`solix.toml`)
+## Phase 16: Developer Tooling: Project Manifest & Build System (`solix.toml`)
 
 ### Issue
 Compiling Solix projects requires specifying individual source files via the command line (`solix compile src/a.slx src/b.slx ...`). There is no project-level configuration file to specify dependencies, package names, compilation targets, or compiler flags.
@@ -535,7 +571,7 @@ Compiling Solix projects requires specifying individual source files via the com
 
 ---
 
-## Phase 16: Developer Tooling: Language Server Protocol (LSP) & Editor Extension
+## Phase 17: Developer Tooling: Language Server Protocol (LSP) & Editor Extension
 
 ### Issue
 Solix lacks IDE developer tooling. Developers editing `.slx` files have no syntax highlighting, real-time diagnostic errors, hover information, or go-to-definition in editors like VS Code, Cursor, or Neovim.
@@ -557,7 +593,7 @@ Solix lacks IDE developer tooling. Developers editing `.slx` files have no synta
 
 ---
 
-## Phase 17: Functional Programming: Lambdas, Closures & First-Class Functions
+## Phase 18: Functional Programming: Lambdas, Closures & First-Class Functions
 
 ### Issue
 Solix lacks first-class functions, anonymous closures, and lambda expressions. Developers cannot write functional code or use higher-order functions like `list.map(...)`, `list.filter(...)`, or custom comparators `sort_by(...)`.
@@ -588,7 +624,7 @@ Solix lacks first-class functions, anonymous closures, and lambda expressions. D
 
 ---
 
-## Phase 18: Multithreading & Concurrency Runtime
+## Phase 19: Multithreading & Concurrency Runtime
 
 ### Issue
 The Solix runtime VM is currently single-threaded. There are no language constructs or runtime threading mechanisms to utilize multi-core processors, spawn threads, or synchronize shared resources.
@@ -614,7 +650,7 @@ The Solix runtime VM is currently single-threaded. There are no language constru
 
 ---
 
-## Phase 19: Compiler & VM Optimizations: Bytecode Optimizer & Profiler
+## Phase 20: Compiler & VM Optimizations: Bytecode Optimizer & Profiler
 
 ### Issue
 1. **Unoptimized Bytecode Sequences**:
@@ -647,7 +683,7 @@ The Solix runtime VM is currently single-threaded. There are no language constru
 
 ---
 
-## Phase 20: Runnable Examples Showcase (`examples/`)
+## Phase 21: Runnable Examples Showcase (`examples/`)
 
 ### Issue
 The repository lacks clean, runnable sample programs demonstrating language features to new users. Existing sample code is scattered across internal test cases and scratch files.
