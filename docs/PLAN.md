@@ -33,7 +33,9 @@ Each phase must strictly adhere to the following development lifecycle:
 
 ---
 
-## Phase 1: Compiler Pipeline Integrity & Strict Stage Halting
+## Phase 1: Compiler Pipeline Integrity & Strict Stage Halting [COMPLETED]
+
+### Status: COMPLETED & MERGED TO MASTER
 
 ### Issue
 When the Solix compiler runs into syntax or binding errors (such as `Syntax Error in file.slx: Expected expression`), the error message is printed to the diagnostic sink, but the compilation pipeline blindly proceeds into the subsequent stages (`Binder`, `Assembler`). As a result, the assembler generates incomplete or corrupted bytecode, writes out `out.slxb`, and the CLI tool announces:
@@ -60,7 +62,9 @@ The CLI command exits with return code `0`. This breaks CI/CD pipelines, shell s
 
 ---
 
-## Phase 2: Compiler Logging Demotion & Diagnostics Context Overhaul
+## Phase 2: Compiler Logging Demotion & Diagnostics Context Overhaul [COMPLETED]
+
+### Status: COMPLETED & MERGED TO MASTER
 
 ### Issue
 1. **Noisy Info-Level Logging**:
