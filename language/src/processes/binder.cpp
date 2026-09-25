@@ -132,11 +132,12 @@ Node *Binder::instantiate_template(const std::string &template_name,
   if (clone->node_type == NodeType::CLASS_DECL) {
     auto *cls = static_cast<ClassDeclaration *>(clone);
     cls->class_name = mangled_name.substr(my_prefix.length());
+    cls->package_context = my_prefix;
+    current_package = my_prefix;
+    current_prefix = my_prefix;
     register_global_symbols(clone, my_prefix);
     register_members(clone, my_prefix);
 
-    std::string old_pkg = current_package;
-    current_package = my_prefix;
     ClassDeclaration* current_class_copy = current_class;
     current_class = cls;
 
@@ -165,7 +166,6 @@ Node *Binder::instantiate_template(const std::string &template_name,
     cls->instance_size = offset;
 
     current_class = current_class_copy;
-    current_package = old_pkg;
 
     if (current_pass == BinderPass::BIND_EXECUTION ||
         current_pass == BinderPass::EVALUATE_EXPRESSION) {
@@ -188,6 +188,9 @@ Node *Binder::instantiate_template(const std::string &template_name,
       current_pass = old;
     }
   } else if (clone->node_type == NodeType::METHOD_DECL) {
+    current_package = my_prefix;
+    current_prefix = my_prefix;
+    static_cast<MethodDeclaration *>(clone)->package_context = my_prefix;
     static_cast<MethodDeclaration *>(clone)->method_name =
         mangled_name.substr(my_prefix.length());
     register_members(clone, my_prefix);
