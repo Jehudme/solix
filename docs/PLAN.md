@@ -107,7 +107,9 @@ The CLI command exits with return code `0`. This breaks CI/CD pipelines, shell s
 
 ---
 
-## Phase 3: CLI Binary Ergonomics & Program Exit Code Propagation
+## Phase 3: CLI Binary Ergonomics & Program Exit Code Propagation [COMPLETED]
+
+### Status: COMPLETED & MERGED TO MASTER
 
 ### Issue
 1. **Binary Name**:
@@ -136,7 +138,9 @@ The CLI command exits with return code `0`. This breaks CI/CD pipelines, shell s
 
 ---
 
-## Phase 4: Lexer Scalar Character Literal & Type Discrimination
+## Phase 4: Lexer Scalar Character Literal & Type Discrimination [COMPLETED]
+
+### Status: COMPLETED & MERGED TO MASTER
 
 ### Issue
 In [`language/src/processes/lexer.cpp`](language/src/processes/lexer.cpp), single-quoted characters (`'a'`) are handled by `handle_string()` and emitted as `TokenType::STRING` with a `char[]` string payload. There is no scalar `char` literal token in the lexer.
@@ -161,7 +165,9 @@ Consequently:
 
 ---
 
-## Phase 5: Standard Library Architecture, Directory & Packaging Cleanup
+## Phase 5: Standard Library Architecture, Directory & Packaging Cleanup [COMPLETED]
+
+### Status: COMPLETED & MERGED TO MASTER
 
 ### Issue
 1. **Vague Directory Naming & Package Mismatch**:
@@ -191,7 +197,9 @@ Consequently:
 
 ---
 
-## Phase 6: Standard Library API Modernization & Algorithm Refactoring
+## Phase 6: Standard Library API Modernization & Algorithm Refactoring [COMPLETED]
+
+### Status: COMPLETED & MERGED TO MASTER
 
 ### Issue
 1. **Hardcoded Non-Generic `Objects.slx`**:
