@@ -758,6 +758,71 @@ public class Phase5TestRunner {
         }
 
         Console.println("=== PHASE 5 TESTS OK ===");
+        Phase6TestRunner.run();
+    }
+}
+
+// ============================================================================
+// Phase 6: Standard Library API Modernization & Algorithm Refactoring Integration Test
+// ============================================================================
+
+import solix.core.*;
+import solix.collections.*;
+
+public class Phase6TestRunner {
+    public static void run() {
+        // 1. Generic Objects test
+        String s = new String("ObjectsTest");
+        if (Objects.non_null<String>(s) && !Objects.is_null<String>(s)) {
+            Console.println("Objects generic null checks OK!");
+        } else {
+            Console.println("Objects generic null checks FAILED!");
+        }
+
+        if (Objects.equals(42, 42) && Objects.hash_code(42) == 42) {
+            Console.println("Objects primitive equals & hash OK!");
+        } else {
+            Console.println("Objects primitive equals & hash FAILED!");
+        }
+
+        // 2. Modernized Arrays test
+        int32[] arr = new int32[3];
+        arr[0] = 1; arr[1] = 2; arr[2] = 3;
+        Arrays.swap<int32>(arr, 0, 2);
+        if (arr[0] == 3 && arr[2] == 1) {
+            Console.println("Arrays generic swap OK!");
+        } else {
+            Console.println("Arrays generic swap FAILED!");
+        }
+
+        Arrays.reverse<int32>(arr);
+        if (arr[0] == 1 && arr[2] == 3) {
+            Console.println("Arrays generic reverse OK!");
+        } else {
+            Console.println("Arrays generic reverse FAILED!");
+        }
+
+        // 3. Bucketed HashMap test
+        HashMap<int32, int32> map = new HashMap<int32, int32>();
+        map.put(10, 100);
+        map.put(20, 200);
+        if (map.size() == 2 && map.get(20) == 200) {
+            Console.println("Bucketed HashMap basic ops OK!");
+        } else {
+            Console.println("Bucketed HashMap basic ops FAILED!");
+        }
+
+        // 4. Bucketed HashSet test
+        HashSet<int32> set = new HashSet<int32>();
+        set.add(5);
+        set.add(10);
+        if (set.size() == 2 && set.contains(10)) {
+            Console.println("Bucketed HashSet basic ops OK!");
+        } else {
+            Console.println("Bucketed HashSet basic ops FAILED!");
+        }
+
+        Console.println("=== PHASE 6 TESTS OK ===");
     }
 }
 
