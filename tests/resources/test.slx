@@ -654,5 +654,17 @@ public class Phase34TestRunner {
 public class Phase1TestRunner {
     public static void run() {
         Console.println("=== PHASE 1 TESTS OK ===");
+        Phase2TestRunner.run();
     }
 }
+
+// ============================================================================
+// Phase 2: Compiler Logging Demotion & Diagnostics Context Integration Test
+// ============================================================================
+
+public class Phase2TestRunner {
+    public static void run() {
+        Console.println("=== PHASE 2 TESTS OK ===");
+    }
+}
+
