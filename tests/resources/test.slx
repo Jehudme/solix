@@ -724,6 +724,40 @@ public class Phase4TestRunner {
         }
 
         Console.println("=== PHASE 4 TESTS OK ===");
+        Phase5TestRunner.run();
+    }
+}
+
+// ============================================================================
+// Phase 5: Standard Library Architecture, Directory & Packaging Integration Test
+// ============================================================================
+
+alias StdCoreString = solix.core.String;
+alias StdCoreException = solix.core.Exception;
+
+public class Phase5TestRunner {
+    public static void run() {
+        StdCoreString str = new StdCoreString("Solix Core Architecture");
+        if (str.size() == 23) {
+            Console.println("solix.core.String instance OK!");
+        } else {
+            Console.println("solix.core.String instance FAILED!");
+        }
+
+        bool caught = false;
+        try {
+            throw new StdCoreException("Testing core exception");
+        } catch (StdCoreException e) {
+            caught = true;
+        }
+
+        if (caught) {
+            Console.println("solix.core.Exception handling OK!");
+        } else {
+            Console.println("solix.core.Exception handling FAILED!");
+        }
+
+        Console.println("=== PHASE 5 TESTS OK ===");
     }
 }
 
