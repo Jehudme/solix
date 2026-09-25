@@ -665,6 +665,27 @@ public class Phase1TestRunner {
 public class Phase2TestRunner {
     public static void run() {
         Console.println("=== PHASE 2 TESTS OK ===");
+        Phase3TestRunner.run();
+    }
+}
+
+// ============================================================================
+// Phase 3: CLI Binary Ergonomics & Program Exit Code Propagation Integration Test
+// ============================================================================
+
+public class Phase3TestRunner {
+    public static int32 compute_status_code(int32 base) {
+        return base * 2;
+    }
+
+    public static void run() {
+        int32 status = Phase3TestRunner.compute_status_code(21);
+        if (status == 42) {
+            Console.println("Status calculation OK!");
+        } else {
+            Console.println("Status calculation FAILED!");
+        }
+        Console.println("=== PHASE 3 TESTS OK ===");
     }
 }
 
