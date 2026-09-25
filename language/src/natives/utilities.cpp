@@ -153,6 +153,18 @@ void register_utilities_natives(std::unordered_map<std::string, NativeFunction> 
         auto nanoseconds_count = std::chrono::duration_cast<std::chrono::nanoseconds>(current_high_res_duration).count();
         return static_cast<uint64_t>(nanoseconds_count);
       };
+
+  // Also register solix.core.NativeUtilities.* variants
+  std::vector<std::pair<std::string, NativeFunction>> core_entries;
+  for (const auto &[name, func] : native_registry) {
+    if (name.rfind("solix.NativeUtilities.", 0) == 0) {
+      std::string core_name = "solix.core.NativeUtilities." + name.substr(std::string("solix.NativeUtilities.").length());
+      core_entries.emplace_back(core_name, func);
+    }
+  }
+  for (auto &pair : core_entries) {
+    native_registry[pair.first] = pair.second;
+  }
 }
 
 } // namespace solix

@@ -2,7 +2,7 @@
 // Solix Standard Library - String Class Implementation
 // Package: solix
 // ============================================================================
-package solix;
+package solix.core;
 
 public class String {
     private char[] character_buffer;

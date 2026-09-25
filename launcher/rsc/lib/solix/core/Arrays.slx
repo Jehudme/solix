@@ -2,7 +2,7 @@
 // Solix Standard Library - Arrays Utility Class
 // Package: solix
 // ============================================================================
-package solix;
+package solix.core;
 
 public class Arrays {
     // ------------------------------------------------------------------------

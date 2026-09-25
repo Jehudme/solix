@@ -640,6 +640,20 @@ void register_console_natives(std::unordered_map<std::string, NativeFunction> &n
     }
     return static_cast<uint64_t>(array_address);
   };
+
+  // Also register solix.core.String variants for console print methods
+  std::vector<std::pair<std::string, NativeFunction>> core_entries;
+  for (const auto &[name, func] : native_registry) {
+    if (name.find("(solix.String)") != std::string::npos) {
+      std::string core_name = name;
+      size_t pos = core_name.find("(solix.String)");
+      core_name.replace(pos, 14, "(solix.core.String)");
+      core_entries.emplace_back(core_name, func);
+    }
+  }
+  for (auto &pair : core_entries) {
+    native_registry[pair.first] = pair.second;
+  }
 }
 
 } // namespace solix

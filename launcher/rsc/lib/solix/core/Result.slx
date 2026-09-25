@@ -2,7 +2,7 @@
 // Solix Standard Library - Result Class Implementation
 // Package: solix
 // ============================================================================
-package solix;
+package solix.core;
 
 public class Result<TValue, TError> {
     private TValue success_value;

@@ -1,0 +1,32 @@
+// ============================================================================
+// Solix Standard Library - Root Package Exports
+// Exposes solix.core types in root package solix for backward compatibility
+// ============================================================================
+package solix;
+
+alias String = solix.core.String;
+alias StringBuilder = solix.core.StringBuilder;
+alias Objects = solix.core.Objects;
+alias Arrays = solix.core.Arrays;
+alias Optional = solix.core.Optional;
+alias Result = solix.core.Result;
+alias NativeUtilities = solix.core.NativeUtilities;
+
+// Core Exceptions
+alias Exception = solix.core.Exception;
+alias RuntimeException = solix.core.RuntimeException;
+alias NullPointerException = solix.core.NullPointerException;
+alias IndexOutOfBoundsException = solix.core.IndexOutOfBoundsException;
+alias InvalidArgumentException = solix.core.InvalidArgumentException;
+alias IllegalStateException = solix.core.IllegalStateException;
+alias NoSuchElementException = solix.core.NoSuchElementException;
+alias EmptyCollectionException = solix.core.EmptyCollectionException;
+alias KeyNotFoundException = solix.core.KeyNotFoundException;
+alias DuplicateKeyException = solix.core.DuplicateKeyException;
+alias UnsupportedOperationException = solix.core.UnsupportedOperationException;
+alias ArithmeticException = solix.core.ArithmeticException;
+alias DivideByZeroException = solix.core.DivideByZeroException;
+alias OverflowException = solix.core.OverflowException;
+alias UnderflowException = solix.core.UnderflowException;
+alias FormatException = solix.core.FormatException;
+alias IOException = solix.core.IOException;

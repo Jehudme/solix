@@ -2,7 +2,7 @@
 // Solix Standard Library - Optional Class Implementation
 // Package: solix
 // ============================================================================
-package solix;
+package solix.core;
 
 public class Optional<T> {
     private T stored_value;

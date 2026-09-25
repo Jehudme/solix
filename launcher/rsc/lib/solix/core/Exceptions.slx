@@ -2,7 +2,7 @@
 // Solix Standard Library - Comprehensive Exception Hierarchy
 // Package: solix
 // ============================================================================
-package solix;
+package solix.core;
 
 alias Console = solix.systems.Console;
 

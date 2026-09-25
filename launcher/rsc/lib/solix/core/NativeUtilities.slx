@@ -2,7 +2,7 @@
 // Solix Standard Library - Native Utilities Interface
 // Package: solix
 // ============================================================================
-package solix;
+package solix.core;
 
 public class NativeUtilities {
     // ------------------------------------------------------------------------
