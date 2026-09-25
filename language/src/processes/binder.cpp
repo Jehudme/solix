@@ -499,29 +499,51 @@ void Binder::bind_types_and_memory() {
     }
   }
 
+  auto unwrap_alias = [&](Node *n) -> Node * {
+    while (n && n->node_type == NodeType::ALIAS_STMT) {
+      auto *alias_stmt = static_cast<AliasStatement *>(n);
+      if (alias_stmt->resolved_declaration) {
+        n = alias_stmt->resolved_declaration;
+      } else {
+        n = global_scope.resolve(alias_stmt->target_type.name);
+      }
+    }
+    return n;
+  };
+
   auto resolve_base_class = [&](ClassDeclaration *cls) -> Node * {
     if (cls->base_class_name.empty()) return nullptr;
-    Node *node = global_scope.resolve(cls->base_class_name);
-    if (node) return node;
+    Node *node = unwrap_alias(global_scope.resolve(cls->base_class_name));
+    if (node && node->node_type == NodeType::CLASS_DECL) {
+      cls->base_class_name = static_cast<ClassDeclaration *>(node)->mangled_name;
+      return node;
+    }
     std::string simple_name = cls->base_class_name;
     size_t last_dot = simple_name.rfind('.');
     if (last_dot != std::string::npos) {
       simple_name = simple_name.substr(last_dot + 1);
     }
-    node = global_scope.resolve(simple_name);
-    if (node) {
-      cls->base_class_name = simple_name;
+    node = unwrap_alias(global_scope.resolve(simple_name));
+    if (node && node->node_type == NodeType::CLASS_DECL) {
+      cls->base_class_name = static_cast<ClassDeclaration *>(node)->mangled_name;
+      return node;
+    }
+    std::string core_name = "solix.core." + simple_name;
+    node = unwrap_alias(global_scope.resolve(core_name));
+    if (node && node->node_type == NodeType::CLASS_DECL) {
+      cls->base_class_name = static_cast<ClassDeclaration *>(node)->mangled_name;
       return node;
     }
     std::string solix_name = "solix." + simple_name;
-    node = global_scope.resolve(solix_name);
-    if (node) {
-      cls->base_class_name = solix_name;
+    node = unwrap_alias(global_scope.resolve(solix_name));
+    if (node && node->node_type == NodeType::CLASS_DECL) {
+      cls->base_class_name = static_cast<ClassDeclaration *>(node)->mangled_name;
       return node;
     }
     for (const auto &[sym_name, sym_node] : global_scope.symbols) {
-      if (sym_node->node_type == NodeType::CLASS_DECL) {
-        auto *candidate = static_cast<ClassDeclaration *>(sym_node);
+      Node *unwrapped = unwrap_alias(sym_node);
+      if (unwrapped && unwrapped->node_type == NodeType::CLASS_DECL) {
+        auto *candidate = static_cast<ClassDeclaration *>(unwrapped);
         if (candidate->class_name == simple_name) {
           cls->base_class_name = candidate->mangled_name;
           return candidate;
@@ -561,7 +583,7 @@ void Binder::bind_types_and_memory() {
         log_trace("Calculating vtable for class '{}'", cls->mangled_name);
         std::vector<MethodDeclaration *> vtable;
         if (!cls->base_class_name.empty()) {
-          Node *base_node = global_scope.resolve(cls->base_class_name);
+          Node *base_node = unwrap_alias(global_scope.resolve(cls->base_class_name));
           if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
             auto *base_cls = static_cast<ClassDeclaration *>(base_node);
             calculate_vtable(base_cls);
