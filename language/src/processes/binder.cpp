@@ -481,17 +481,7 @@ Node *Binder::resolve_symbol(const std::string &name, Node *error_node,
   if (decl)
     return decl;
 
-  // 5. Cross-package search in known_packages
-  for (const auto &pkg : known_packages) {
-    std::string p = (pkg.empty() || pkg.back() == '.') ? pkg : pkg + '.';
-    if (p == node_pkg)
-      continue;
-    Node *candidate = global_scope.resolve(p + name);
-    if (candidate)
-      return candidate;
-  }
-
-  // 6. Sub-namespace suffix matching across all registered symbols (Class, Enum, Alias)
+  // 5. Sub-namespace suffix matching across all registered symbols (Class, Enum, Alias)
   std::vector<std::pair<std::string, Node *>> matches;
   std::string suffix = "." + name;
   for (const auto &[sym_name, sym_node] : global_scope.symbols) {
@@ -523,6 +513,39 @@ Node *Binder::resolve_symbol(const std::string &name, Node *error_node,
         return m.second;
       }
     }
+  }
+
+  // Unify candidates that resolve to the same underlying declaration (e.g. class vs re-export alias)
+  auto unwrap = [&](Node *sym) -> Node * {
+    while (sym && sym->node_type == NodeType::ALIAS_STMT) {
+      auto *al = static_cast<AliasStatement *>(sym);
+      if (al->resolved_declaration) {
+        sym = al->resolved_declaration;
+      } else {
+        sym = global_scope.resolve(al->target_type.name);
+      }
+    }
+    return sym;
+  };
+
+  std::vector<Node *> unique_decls;
+  for (const auto &m : matches) {
+    Node *underlying = unwrap(m.second);
+    if (!underlying) underlying = m.second;
+    bool found = false;
+    for (Node *u : unique_decls) {
+      if (u == underlying) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      unique_decls.push_back(underlying);
+    }
+  }
+
+  if (unique_decls.size() == 1) {
+    return unique_decls[0];
   }
 
   // Ambiguity detected across multiple packages
@@ -566,17 +589,7 @@ std::string Binder::resolve_template_name(const std::string &template_name,
     return node_pkg + template_name;
   }
 
-  // 4. Cross-package search in known_packages
-  for (const auto &pkg : known_packages) {
-    std::string p = (pkg.empty() || pkg.back() == '.') ? pkg : pkg + '.';
-    if (p == node_pkg)
-      continue;
-    if (template_registry.count(p + template_name)) {
-      return p + template_name;
-    }
-  }
-
-  // 5. Sub-namespace suffix matching across template_registry
+  // 4. Sub-namespace suffix matching across template_registry
   std::vector<std::string> matches;
   std::string suffix = "." + template_name;
   for (const auto &[key, node] : template_registry) {
@@ -753,8 +766,15 @@ void Binder::bind_types_and_memory() {
   for (const auto &[name, node] : global_scope.symbols) {
     if (node->node_type == NodeType::ALIAS_STMT) {
       auto *alias = static_cast<AliasStatement *>(node);
-      alias->target_type = resolve_type(alias->target_type, alias);
-      alias->resolved_declaration = resolve_symbol(alias->target_type.name, alias, false);
+      Node *target = resolve_symbol(alias->target_type.name, alias, false);
+      if (target) {
+        alias->resolved_declaration = target;
+      } else {
+        std::string tmpl = resolve_template_name(alias->target_type.name, alias);
+        if (!tmpl.empty() && template_registry.count(tmpl)) {
+          alias->resolved_declaration = template_registry[tmpl];
+        }
+      }
     }
   }
 
@@ -1542,7 +1562,7 @@ void Binder::visit(MemberAccessExpression &n) {
         }
       }
       if (!is_local_var) {
-        Node *target = resolve_symbol(sym_path, &n, false);
+        Node *target = resolve_symbol(sym_path, &n, true);
         while (target && target->node_type == NodeType::ALIAS_STMT) {
           auto *al = static_cast<AliasStatement *>(target);
           target = al->resolved_declaration ? al->resolved_declaration : resolve_symbol(al->target_type.name, al, false);
@@ -1671,7 +1691,7 @@ void Binder::visit(MethodCallExpression &n) {
           }
         }
         if (!is_local_var) {
-          Node *target = resolve_symbol(sym_path, &n, false);
+          Node *target = resolve_symbol(sym_path, &n, true);
           while (target && target->node_type == NodeType::ALIAS_STMT) {
             auto *al = static_cast<AliasStatement *>(target);
             target = al->resolved_declaration ? al->resolved_declaration : resolve_symbol(al->target_type.name, al, false);
