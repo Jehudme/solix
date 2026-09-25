@@ -1,289 +1,207 @@
-# ReturnStatement (`NodeType::RETURN_STMT`)
+# §21 ReturnStatement
 
-## 1. Description, Purpose & Architectural Implementation
+## 1. Overview & Scope
 
-### Conceptual Overview
-The `ReturnStatement` terminates execution of the current subroutine (method, function, or constructor), transfers control back to the caller's activation frame, and optionally yields a computed return value.
+A `ReturnStatement` terminates execution of the current subroutine (method, function, constructor, or lambda), unwinds all active lexical scopes within the activation frame, decrements the subroutine's parameters and receiver object (`this`), and transfers control back to the caller frame with an optional return value.
 
-In Solix's memory-safe architecture, returning from a function is a complex, coordinated operation. It cannot simply pop the call stack pointer. Doing so would leave every active local reference variable, function parameter, and the instance's `this` pointer dangling or permanently leaked. Instead, the Solix compiler orchestrates a systematic lexical scope traversal that decrements all active reference variables across all enclosing blocks, decrements reference parameters and the receiver object, and preserves the return value on the operand stack before emitting the VM `RETURN` opcode.
+In Solix's Automatic Reference Counting (ARC) architecture, returning from a subroutine is a coordinated, non-local transfer of control. Rather than simply resetting the stack pointer, the compiler orchestrates a systematic lexical scope traversal that decrements all active reference variables in reverse declaration order across all enclosing blocks, cleans up the function activation frame, and preserves the return value on the operand stack before emitting the VM `RETURN` opcode.
 
----
-
-### Key Conceptual Roles
-
-#### 1. Function Execution Termination & Caller Transfer
-The primary role of the `ReturnStatement` is to exit the current subroutine. Any statements located after a return statement within the same sequential execution block are unreachable dead code.
-
-#### 2. Return Value Propagation & Type Compatibility
-When a function is declared with a non-void return type, the return statement must supply an expression whose evaluated type is assignable to that declared return type:
-- If the method return type is `void`, a bare `return;` is required (or returning void). Returning a value from a void method produces a compile-time diagnostic.
-- If the method return type is non-void, returning without a value produces a compile-time diagnostic (`"Must return a value from non-void method"`).
-- Type compatibility verifies inheritance upcasting, interface conformance, and numeric conversions (`is_assignable`).
-
-#### 3. Comprehensive Lexical Scope Unwinding & ARC Teardown
-A return statement may be located deep within nested loops, conditional branches, or anonymous blocks.
-- Solix guarantees that returning early from an inner block does not leak resources allocated in outer blocks of that function.
-- During compilation, the assembler traces the AST parent hierarchy from the `ReturnStatement` up to the root `MethodDeclaration` or `ConstructorDeclaration`.
-- For every intermediate `BlockStatement` encountered, the compiler emits inline `DEC_REF` instructions for all active reference variables in that block in reverse declaration order.
-
-#### 4. Parameter & Receiver (`this`) Lifecycle Teardown
-Once all intermediate block-scoped locals have been decremented, the function's own activation frame inputs must be cleaned up:
-- If the method is an instance method (non-static member of a class), slot 0 contains the implicit `this` reference. The compiler emits `GET_LOCAL 0` + `DEC_REF`.
-- For every formal parameter that is a reference type (e.g. classes, arrays, strings), the compiler emits `GET_LOCAL <param_index>` + `DEC_REF`.
+### Syntactic Placement
+A `ReturnStatement` is legally permitted only inside subroutine bodies (methods, functions, constructors). It is **strictly prohibited** at global package scope and within class or interface member declaration blocks outside of methods.
 
 ---
 
-### How ReturnStatement Was Implemented in Solix
+## 2. Syntax & Production Rules
 
-#### 1. Abstract Syntax Tree Representation (`statements.hpp`)
-```cpp
-struct ReturnStatement : public Node {
-    std::unique_ptr<Node> value;
-
-    ReturnStatement(const Token& t, std::unique_ptr<Node> val = nullptr)
-        : Node(NodeType::RETURN_STMT, t), value(std::move(val)) {
-        if (value) value->parent = this;
-    }
-};
-```
-
-#### 2. Semantic Analysis & Validation (`binder.cpp`)
-During semantic analysis (`BinderPass::BIND_EXECUTION`):
-```cpp
-void Binder::visit(ReturnStatement &n) {
-  if (current_pass == BinderPass::BIND_EXECUTION) {
-    if (n.value) {
-      TypeInfo return_type = evaluate_expression(n.value.get());
-      if (current_method &&
-          !is_assignable(current_method->return_type, return_type)) {
-        record_error(&n, "Return type mismatch: expected '" +
-                             current_method->return_type.name + "', got '" +
-                             return_type.name + "'");
-      }
-    } else if (current_method && current_method->return_type.name != "void") {
-      record_error(&n, "Must return a value from non-void method");
-    }
-  }
-}
-```
-
-#### 3. Bytecode Emission & Lexical Unwinding (`assembler.cpp`)
-The assembler implements early return scope unwinding by walking the AST hierarchy:
-```cpp
-void Assembler::visit(ReturnStatement &node) {
-  // 1. Evaluate and push the return value (if non-void)
-  if (node.value) {
-    compile_expression(node.value.get());
-  }
-
-  // 2. Unwind all enclosing BlockStatements up to the function root
-  Node *current = node.parent;
-  Node *func_node = nullptr;
-  while (current) {
-    if (current->node_type == NodeType::BLOCK) {
-      emit_cleanup_for_node(current);
-    } else if (current->node_type == NodeType::METHOD_DECL ||
-               current->node_type == NodeType::CONSTRUCTOR_DECL) {
-      func_node = current;
-      break;
-    }
-    current = current->parent;
-  }
-
-  // 3. Clean up the function parameters and 'this' pointer
-  if (func_node) {
-    emit_cleanup_for_function(func_node);
-  }
-
-  // 4. Emit the VM RETURN opcode
-  emit_byte(static_cast<uint8_t>(OpCode::RETURN));
-}
-```
-
-#### 4. Function Frame Cleanup Details (`emit_cleanup_for_function`)
-```cpp
-void Assembler::emit_cleanup_for_function(Node *func_node) {
-  if (!func_node) return;
-  if (func_node->node_type == NodeType::METHOD_DECL) {
-    auto *m = static_cast<MethodDeclaration *>(func_node);
-    bool is_instance_method = !m->is_static && m->parent != nullptr &&
-                              m->parent->node_type == NodeType::CLASS_DECL;
-    if (is_instance_method) {
-      emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
-      emit_int32(0);
-      emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
-    }
-    for (const auto &param : m->parameters) {
-      if (param && param->is_reference_type) {
-        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
-        emit_int32(param->memory_index);
-        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
-      }
-    }
-  }
-}
-```
-
----
-
-## 2. Syntax & Grammar
-
-### Syntax Forms
-A return statement may either return a value or exit a void function:
-
+### Production Rules
 ```solix
-// 1. Returning a value from non-void function
-return <expression>;
-
-// 2. Returning from void function
-return;
+ReturnStatement   ::= 'return' Expression? ';'
 ```
 
-### Contextual Examples
+### Canonical Code Patterns
 ```solix
-int32 compute_sum(int32 a, int32 b) {
-    return a + b;
-}
-
-void process_data(bool should_abort) {
-    if (should_abort) {
-        return; // Early exit from void function
-    }
-    perform_heavy_task();
-}
-```
-
----
-
-## 3. Underlying Systems & VM Mechanics
-
-### Return Execution Flow
-```text
-[ Evaluate Return Expression ] ──► Pushes Return Value onto Stack (Top of Stack)
-              │
-              ▼
-[ AST Parent Traversal ]       ──► For each enclosing BlockStatement:
-                                   Emits GET_LOCAL + DEC_REF for all reference locals
-              │
-              ▼
-[ Function Cleanup ]           ──► Emits GET_LOCAL 0 + DEC_REF (this pointer)
-                                   Emits GET_LOCAL <slot> + DEC_REF for reference params
-              │
-              ▼
-[ OpCode::RETURN ]             ──► Pops activation frame from call stack
-                                   Restores caller's instruction pointer (ip)
-                                   Caller reads return value from stack top
-```
-
----
-
-## 4. Positive Test Scenarios (Valid Variations)
-
-### Scenario 4.1: Returning Primitive Values
-Returning integer, floating-point, or boolean scalar values from functions.
-```solix
-int32 get_magic_number() {
+// 1. Returning a value from non-void method
+int32 get_count() {
     return 42;
 }
 
-bool is_positive(int32 x) {
-    if (x > 0) {
-        return true;
+// 2. Early return from void method
+void process_item(bool is_valid) {
+    if (!is_valid) {
+        return; // Early exit
     }
-    return false;
+    execute_work();
+}
+
+// 3. Returning heap-allocated reference object
+String format_name(String first, String last) {
+    String full = first + " " + last;
+    return full; // Transferred to caller
 }
 ```
-*Verification*: Returned values match expected scalars. Stack frame pops cleanly.
 
-### Scenario 4.2: Returning Reference Objects
-Returning a newly created heap instance or existing reference variable.
+---
+
+## 3. Scope & Declaration Space (Static Semantics)
+
+### 3.1 Return Expression Scope & Reachability
+- The optional operand expression following `return` is evaluated within the immediate lexical scope of the return statement.
+- **Unreachable Code Invariant**: A `ReturnStatement` completes abruptly and unconditionally. Any statement placed immediately following a `ReturnStatement` within the same sequential statement block is statically unreachable and triggers a dead-code warning or error.
+
+### 3.2 Return Type Conformance
+- If a method declares a non-void return type `T`, every return statement inside that method must provide an expression whose evaluated type is assignable to `T` (`is_assignable`).
+- If a method declares a `void` return type, returning an expression is prohibited.
+- In constructors, `return;` is permitted for early exit, but returning an expression is strictly prohibited.
+
+---
+
+## 4. Operational Semantics (Dynamic Execution)
+
+### 4.1 Normal Completion
+- A `ReturnStatement` **never completes normally**. Its evaluation always results in an abrupt completion.
+
+### 4.2 Abrupt Completion
+Execution of a `ReturnStatement` proceeds through the following operational steps:
+1. **Return Value Evaluation**:
+   - If an expression is present, it is evaluated to completion, leaving the resulting value on top of the VM operand stack.
+2. **Lexical Scope Unwinding**:
+   - The compiler traverses the AST parent chain from the `ReturnStatement` up to the containing `MethodDeclaration` or `ConstructorDeclaration`.
+   - For every `BlockStatement` encountered along this path, the compiler emits inline `DEC_REF` cleanups for all local reference variables declared in that block in **reverse declaration order**.
+3. **Function-Level Frame Cleanup**:
+   - Once all intermediate blocks are unwound, `emit_cleanup_for_function` executes:
+     - If the method is an instance method, slot 0 (the implicit `this` pointer) is decremented via `GET_LOCAL 0` + `OpCode::DEC_REF`.
+     - For every formal parameter where `is_reference_type == true`, its slot is decremented via `GET_LOCAL <param_slot>` + `OpCode::DEC_REF`.
+4. **Activation Record Teardown**:
+   - The VM executes `OpCode::RETURN`.
+   - The current activation frame is popped from the call stack.
+   - The caller's instruction pointer `ip` is restored.
+   - The caller reads the return value (if non-void) from the top of the operand stack.
+
+### 4.3 Exception Unwinding & Trampolines
+- If the evaluation of the return value expression throws an exception (e.g. `return risky_call();`), the return statement is aborted before frame cleanup begins.
+- Control transfers immediately to the exception unwinding trampoline of the enclosing block.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+### 5.1 Return Value Preservation Invariant
+- When returning an object reference from a subroutine, the return value resides on the operand stack.
+- Crucially, the returned object's reference count is maintained such that the destruction of intermediate local variables and parameters does not deallocate the returned instance before the caller receives it.
+
+### 5.2 Receiver (`this`) and Parameter Cleanup Flow
+```text
+[ Evaluate Return Expression ] ──► Pushes Return Value to Stack Top
+              │
+              ▼
+[ AST Parent Traversal ]       ──► For each intermediate BlockStatement:
+                                   Emits GET_LOCAL + DEC_REF in reverse order
+              │
+              ▼
+[ Function Frame Cleanup ]     ──► Emits GET_LOCAL 0 + DEC_REF (this pointer)
+                                   Emits GET_LOCAL <slot> + DEC_REF for ref params
+              │
+              ▼
+[ OpCode::RETURN ]             ──► Pops activation frame from call stack
+                                   Caller consumes return value from stack top
+```
+
+---
+
+## 6. Compile-Time Constraints & Diagnostic Errors
+
+### Rule 6.1: Missing Value in Non-Void Method
+Returning without a value from a method declared with a non-void return type is illegal.
 ```solix
-String create_greeting(String name) {
-    String greeting = new String("Hello, ");
-    return greeting; // Returning reference
+int32 compute() {
+    return; // Error: must return a value
 }
 ```
-*Verification*: Returned `String` retains an active reference count of 1. Temporary parameters are decremented without destroying the return value.
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Must return a value from non-void method
+```
 
-### Scenario 4.3: Early Return from Deeply Nested Blocks
-Returning from inside multiple nested loops and blocks without leaking any intermediate local objects.
+### Rule 6.2: Type Incompatible Return Value
+Returning an expression whose type is not assignable to the method's declared return type.
 ```solix
-int32 search_matrix(int32[][] matrix, int32 target) {
-    for (int32 r = 0; r < 10; r++) {
-        String row_info = new String("Scanning row");
-        for (int32 c = 0; c < 10; c++) {
-            String cell_info = new String("Scanning cell");
-            if (matrix[r][c] == target) {
-                return target; // Must decrement cell_info and row_info!
+int32 get_age() {
+    return "twenty"; // Error: String cannot be converted to int32
+}
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Return type mismatch: expected 'int32', got 'String'
+```
+
+### Rule 6.3: Returning Value from Void Method
+Attempting to return an expression from a method with return type `void`.
+```solix
+void log_event() {
+    return 100; // Error: cannot return value from void method
+}
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Return type mismatch: expected 'void', got 'int32'
+```
+
+### Rule 6.4: Return at Global Package Scope
+Using a `return` statement outside of any function or method body is prohibited.
+```solix
+package my_app;
+
+int32 x = 10;
+return; // Error: return at global scope
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Return statement not allowed outside of function or method body
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+### Fault 7.1: Operand Stack Underflow on Return
+If internal VM bytecode corruption causes `OpCode::RETURN` to execute when a non-void return value was expected but the stack is empty, the VM raises an unrecoverable stack underflow panic.
+*Runtime Fault*:
+```text
+[FATAL VM PANIC] StackUnderflowException: Attempted to pop return value from empty operand stack
+```
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Early Return from Nested Matrix Loops
+```solix
+// Conformance Test: Early return must unwind all intermediate blocks
+int32 search_matrix(int32[][] grid, int32 target) {
+    for (int32 r = 0; r < 5; r++) {
+        String row_tag = new String("row_active");
+        for (int32 c = 0; c < 5; c++) {
+            String cell_tag = new String("cell_active");
+            if (grid[r][c] == target) {
+                return grid[r][c]; // Must decrement cell_tag and row_tag!
             }
         }
     }
     return -1;
 }
 ```
-*Verification*: Heap verification confirms `cell_info` and `row_info` are decremented and reclaimed when the early return triggers.
+*Verification Invariant*: Calling `search_matrix` when target matches immediately unwinds and decrements both `cell_tag` and `row_tag`. Zero heap memory is leaked.
 
-### Scenario 4.4: Early Return from Void Function
-Exiting early from a void function without returning a value.
+### Example 8.2: Returning Reference Without Premature Deallocation
 ```solix
-void validate_and_run(bool is_ready) {
-    if (!is_ready) {
-        return; // Valid early return
-    }
-    Console.println("Running task");
+String build_message() {
+    String msg = new String("Success");
+    return msg; // Retains ref_count == 1 in caller frame
+}
+
+void verify_receiver() {
+    String received = build_message();
+    Console.println(received); // Prints: "Success"
 }
 ```
-*Verification*: Function exits immediately when `is_ready` is false; `"Running task"` is not printed.
-
----
-
-## 5. Negative Test Scenarios (Invalid Variations)
-
-### Scenario 5.1: Missing Return Value in Non-Void Method
-Attempting to use a bare `return;` inside a method with a non-void return type.
-```solix
-int32 calculate() {
-    return; // Error: must return a value
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Must return a value from non-void method
-```
-
-### Scenario 5.2: Incompatible Return Value Type
-Returning an expression whose type is not assignable to the declared return type.
-```solix
-int32 get_number() {
-    return "forty-two"; // Error: String cannot be converted to int32
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Return type mismatch: expected 'int32', got 'String'
-```
-
-### Scenario 5.3: Returning Value from Void Method
-Attempting to return an expression from a method declared with return type `void`.
-```solix
-void log_status() {
-    return 100; // Error: cannot return value from void method
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Return type mismatch: expected 'void', got 'int32'
-```
-
-### Scenario 5.4: Return Statement at Global File Scope
-Using a `return` statement outside of any function, method, or constructor body.
-```solix
-package test;
-
-int32 x = 10;
-return; // Error: return outside of function body
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Return statement not allowed outside of function or method body
-```
+*Verification Invariant*: `received` retains a valid heap reference. The object is not destroyed during the return sequence.

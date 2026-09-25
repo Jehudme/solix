@@ -1,358 +1,336 @@
-# BlockStatement (`NodeType::BLOCK`)
+# §11 BlockStatement
 
-## 1. Description, Purpose & Architectural Implementation
+## 1. Overview & Scope
 
-### Conceptual Overview
-The `BlockStatement` is the primary structural and scoping container in the Solix programming language. Syntactically delimited by a pair of matching curly braces (`{ ... }`), it encapsulates an ordered sequence of zero or more statements into a single executable unit.
+A `BlockStatement` is a fundamental structural construct in Solix that encapsulates an ordered sequence of zero or more statements within a pair of enclosing curly braces (`{ ... }`). It establishes an isolated lexical declaration space, defines the deterministic extent of local variable lifetimes under the Automatic Reference Counting (ARC) memory model, and serves as an unwinding trampoline unit during exceptional control-flow transfers.
 
-In Solix, a block statement is not a passive syntactic group. It is an active runtime and compile-time lifecycle boundary. It governs the declaration, accessibility, and destruction of variables, controls memory reclamation under Automatic Reference Counting (ARC), and serves as the essential landing anchor during structured exception unwinding.
+### Syntactic Placement
+A `BlockStatement` is legally permitted in the following contexts:
+1. **Method & Constructor Bodies**: As the top-level execution container of a subroutine (`BlockKind::FUNCTION_BODY`).
+2. **Control-Flow Branch Bodies**: As the executable body of `if`, `else`, `while`, `do-while`, `for`, and `switch` statements.
+3. **Protected & Recovery Bodies**: As the protected body of a `try` construct (`BlockKind::TRY_BODY`), a `catch` handler, or a `finally` block.
+4. **Standalone Lexical Blocks**: As an anonymous nested block situated arbitrarily within any executable statement sequence.
 
----
-
-### Key Conceptual Roles
-
-#### 1. Lexical Scope Isolation
-Every block statement defines a distinct lexical environment in Solix. Identifiers declared within a block are strictly confined to that block and any child blocks nested beneath it. When execution exits the block, its variables cease to exist in the compiler's symbol table. This isolation enforces the principle of least privilege in variable visibility, preventing accidental state contamination, reducing coupling, and making programs easier to reason about.
-
-#### 2. Variable Shadowing & Scope Masking
-Solix allows an inner block to declare a variable with the exact same identifier as a variable declared in an enclosing outer block. When this occurs:
-- The inner variable **masks** (shadows) the outer variable for the entire lifetime of the inner block.
-- Any lookup of the identifier within the inner block resolves exclusively to the inner variable's type and memory slot.
-- Once the inner block terminates, the mask is removed, and subsequent lookups transparently resolve back to the outer variable.
-- Shadowing is strictly prohibited within the *same* immediate block scope (which triggers a duplicate declaration error), but permitted across nested scope boundaries.
-
-#### 3. Deterministic ARC Resource Reclamation
-Solix employs Automatic Reference Counting (ARC) rather than a non-deterministic tracing garbage collector. Under ARC, heap-allocated objects (such as class instances, strings, and arrays) have an internal reference counter that tracks active references.
-- When an object reference is stored in a local variable inside a block, its reference count is incremented (`INC_REF`).
-- The block statement serves as the strict deterministic lifetime boundary for these local variables.
-- Upon natural exit of the block, Solix automatically decrements the reference counts (`DEC_REF`) of all reference-typed local variables declared within that block.
-- If a reference count reaches zero, the object is immediately deallocated from heap memory via `RELEASE`.
-- Decrements are emitted in strict **reverse declaration order** (LIFO: Last-In, First-Out), ensuring that dependent resources allocated later in the block are torn down before the prerequisites allocated earlier.
-
-#### 4. Structured Exception Unwinding & Trampoline Anchoring
-When a runtime exception is thrown (via `throw` or a runtime panic), normal sequential execution is interrupted. The call stack must unwind until a matching `try-catch` handler is encountered.
-- Without proper cleanup during unwinding, any local reference variables held in active blocks between the throw site and the catch handler would be leaked permanently.
-- Solix solves this by treating every `BlockStatement` as an unwinding trampoline. Every block generates an isolated **Exception Cleanup Segment** in its compiled bytecode.
-- When an exception occurs within a block, execution jumps directly to that block's cleanup segment, decrements all local reference variables in that block, and then transfers control to the next outer cleanup segment or enclosing catch handler.
+A `BlockStatement` is **strictly prohibited** at the translation-unit (package) level and directly within class or interface declaration bodies outside of member routines.
 
 ---
 
-### How BlockStatement Was Implemented in Solix
+## 2. Syntax & Production Rules
 
-The implementation of `BlockStatement` spans the entire Solix compiler and runtime pipeline:
-
-#### 1. Abstract Syntax Tree Representation (`statements.hpp`)
-In the AST, a block is represented by the `BlockStatement` struct, inheriting from `Node`:
-```cpp
-enum class BlockKind {
-    NORMAL,         // A standard lexical block or nested block
-    FUNCTION_BODY,  // The root body block of a method or constructor
-    TRY_BODY        // The body block directly enclosed by a try statement
-};
-
-struct BlockStatement : public Node {
-    BlockKind block_kind = BlockKind::NORMAL;
-    BlockStatement(const Token& t) : Node(NodeType::BLOCK, t) {}
-};
-```
-The `block_kind` property is critical: it informs the code generator what kind of jump instruction must be emitted at the tail of the block's exception cleanup segment.
-
-#### 2. Semantic Analysis & Symbol Binding (`binder.cpp`)
-During semantic analysis (`BinderPass::BIND_EXECUTION`):
-- The binder calls `push_scope()`, pushing a fresh `SymbolTable` onto the compiler's lexical scope stack.
-- The binder iterates through the block's `children` statements. When child `VariableDeclaration` nodes are encountered, their types are resolved, and each is assigned a contiguous `memory_index` slot corresponding to a local variable register in the VM activation frame.
-- When all child nodes have been visited, the binder calls `pop_scope()`, popping the `SymbolTable` and restoring the parent lexical environment.
-
-#### 3. Bytecode Generation & Cleanup Patching (`assembler.cpp`)
-The code generator (`Assembler::visit(BlockStatement &node)`) implements a sophisticated dual-path layout using forward jump patching:
-1. **Push Exception Patch Table**: The compiler pushes a new patch list onto `exception_cleanup_patches`.
-2. **Compile Children**: All child statements in the block are compiled sequentially.
-3. **Emit Normal Execution Cleanup**: The compiler calls `emit_cleanup_for_node(&node)`, which iterates through the block's children in **reverse order** (`rbegin()` to `rend()`). For every `VariableDeclaration` where `is_reference_type == true`, it emits:
-   ```bytecode
-   GET_LOCAL <memory_index>
-   DEC_REF
-   ```
-4. **Emit Jump Over Cleanup**: Normal execution must not fall into the exception handler. The compiler emits an unconditional `JUMP` with a 4-byte placeholder target offset (`skip_cleanup_idx`).
-5. **Compile Exception Cleanup Segment**:
-   - The current bytecode offset is recorded as `cleanup_ip`.
-   - All inner exceptions that occurred within this block (recorded in `exception_cleanup_patches.back()`) have their jump offsets patched to point directly to `cleanup_ip`.
-   - The compiler pops the patch list from `exception_cleanup_patches`.
-   - It re-emits the exact reverse-order cleanup (`emit_cleanup_for_node(&node)`) to decrement local references during unwinding.
-6. **Next Hop Dispatch**:
-   - If `block_kind == BlockKind::FUNCTION_BODY`: Emits `OpCode::JMP_TO_OUTER_CLEANUP`.
-   - If `block_kind == BlockKind::TRY_BODY`: Pushes a jump patch to the outer block's list so `TryStatement` can route the unwound exception to matching catch clauses.
-   - If `block_kind == BlockKind::NORMAL`: Emits an unconditional `JUMP` to the outer block's exception cleanup segment.
-7. **Patch Normal Skip Jump**: Finally, the placeholder at `skip_cleanup_idx` is patched to point to the instruction immediately following the exception cleanup segment.
-
----
-
-## 2. Syntax & Grammar
-
-### Syntax Forms
-A block statement begins with an opening curly brace `{`, contains zero or more executable statements, and concludes with a matching closing curly brace `}`:
-
+### Production Rules
 ```solix
-// Empty Block
-{
-}
-
-// Block with Variable Declarations and Statements
-{
-    <Statement_1>;
-    <Statement_2>;
-    ...
-    <Statement_N>;
-}
+BlockStatement       ::= '{' StatementSequence? '}'
+StatementSequence    ::= Statement+
+Statement            ::= VariableDeclaration
+                       | ExpressionStatement
+                       | IfStatement
+                       | WhileStatement
+                       | DoWhileStatement
+                       | ForStatement
+                       | SwitchStatement
+                       | BreakStatement
+                       | ContinueStatement
+                       | ReturnStatement
+                       | ThrowStatement
+                       | TryStatement
+                       | BlockStatement
 ```
 
-### Contextual Usage in Solix
-Block statements appear in multiple distinct structural contexts:
-1. **Standalone / Local Blocks**: Placed arbitrarily inside functions to limit the scope and lifetime of temporary variables.
-2. **Function / Method Bodies**: Forms the root execution container of functions, methods, and constructors (`BlockKind::FUNCTION_BODY`).
-3. **Control Flow Bodies**: Forms the execution branches of `if`, `else`, `while`, `do-while`, `for`, and `switch` statements.
-4. **Exception Handling Bodies**: Forms the protected `try` block (`BlockKind::TRY_BODY`), `catch` handlers, and `finally` blocks.
-
+### Canonical Code Patterns
 ```solix
-void example_contexts() {
-    // 1. Standalone local block
+// 1. Anonymous Standalone Block
+{
+    int32 temp = 100;
+    Console.println(temp);
+}
+
+// 2. Control-Flow Bound Block
+if (status == 1) {
+    String message = new String("Active");
+    send(message);
+}
+
+// 3. Nested Hierarchical Blocks with Lexical Shadowing
+int32 value = 1;
+{
+    int32 value = 2; // Shadows outer 'value'
     {
-        int32 temp = 42;
-        Console.println(temp);
-    } // temp is destroyed here
-
-    // 2. Control-flow attached blocks
-    if (true) {
-        String msg = new String("Hello");
-        Console.println(msg);
-    } // msg is decremented and released here
+        int32 inner = value * 10;
+        Console.println(inner); // Prints 20
+    }
+    Console.println(value); // Prints 2
 }
+Console.println(value); // Prints 1
 ```
 
 ---
 
-## 3. Underlying Systems & VM Mechanics
+## 3. Scope & Declaration Space (Static Semantics)
 
-### Dual-Path Bytecode Layout
-The following diagram illustrates the binary structure generated by the Solix compiler for every `BlockStatement`:
+### 3.1 Visibility Rules
+- **Enclosure Boundary**: Every `BlockStatement` introduces a distinct child `SymbolTable` scope. Any identifier introduced via a `VariableDeclaration` within the block is visible only from the point of its declaration downward until the closing brace `}`.
+- **Downward Visibility**: Child blocks nested within the block inherit access to all identifiers declared in the parent block.
+- **Upward Non-Visibility**: Once execution or compilation exits the block, all identifiers declared within that block become completely unreachable. Any reference to such an identifier from an outer scope results in a compile-time diagnostic.
+
+### 3.2 Shadowing Rules
+- An identifier declared within an inner block masks (shadows) any identifier with an identical name declared in an enclosing outer block or outer function scope.
+- Lookups for the shadowed identifier within the inner block resolve exclusively to the inner declaration's type, memory slot, and qualifiers.
+- Upon termination of the inner block, the masking effect immediately dissolves, restoring visibility to the outer declaration.
+- **Duplicate Declaration Invariant**: Shadowing is permitted only across distinct, nested scope boundaries. Declaring two identifiers with the same name within the *same immediate* block scope is illegal.
+
+### 3.3 Lifetime (Static Extent)
+- The static extent of a local variable spans from its initialization point to the terminating brace `}` of its enclosing block.
+- Local variables are allocated zero-indexed register slots (`memory_index`) within the function's activation frame. Register indices are monotonic and persistent for the duration of the frame, but the *accessibility and ARC ownership* of those slots are bounded strictly by the block's lexical lifetime.
+
+---
+
+## 4. Operational Semantics (Dynamic Execution)
+
+### 4.1 Normal Completion
+Execution of a `BlockStatement` proceeds through the following formal operational steps:
+1. **Scope Entry**: The VM retains the current activation frame base pointer. No stack adjustment is required for entry.
+2. **Sequential Statement Execution**: The statements within `StatementSequence` are executed in strict sequential order from first to last ($S_1, S_2, \dots, S_n$).
+3. **Sub-statement Evaluation**: Each statement $S_i$ is executed to completion. If statement $S_i$ completes normally, control proceeds to $S_{i+1}$.
+4. **Normal Scope Teardown**: Upon normal completion of the final statement $S_n$ (or immediately if the block is empty), the VM initiates deterministic scope cleanup:
+   - The compiler emits cleanup opcodes traversing all child declarations of the block in **reverse declaration order** ($D_m, D_{m-1}, \dots, D_1$).
+   - For every declaration where `is_reference_type == true`:
+     ```bytecode
+     OpCode::GET_LOCAL <memory_index>
+     OpCode::DEC_REF
+     ```
+5. **Completion Transition**: Control transfers unconditionally past the block's exception cleanup segment to the subsequent instruction in the program.
+
+### 4.2 Abrupt Completion
+A `BlockStatement` completes abruptly if the evaluation of any contained statement completes abruptly.
+- **Abrupt Completion via `return`**:
+  1. The return value expression (if present) is evaluated and pushed to the operand stack.
+  2. The AST parent hierarchy is traversed from the return node up to the containing function root.
+  3. Reverse-order `DEC_REF` cleanup is emitted for every intermediate block crossed.
+  4. Function-level cleanup decrements receiver `this` and reference arguments.
+  5. The VM executes `OpCode::RETURN`, restoring caller state with the return value at the stack top.
+- **Abrupt Completion via `break`**:
+  1. The AST parent hierarchy is traversed up to the enclosing loop or `switch` construct.
+  2. Reverse-order `DEC_REF` cleanup is emitted for all intermediate blocks.
+  3. The VM executes an unconditional `OpCode::JUMP` to the construct's break exit target.
+- **Abrupt Completion via `continue`**:
+  1. The AST parent hierarchy is traversed up to the enclosing loop construct.
+  2. Reverse-order `DEC_REF` cleanup is emitted for all intermediate blocks.
+  3. The VM executes an unconditional `OpCode::JUMP` to the loop's continuation (step) target.
+
+### 4.3 Exception Unwinding & Trampolines
+When an exception is thrown abruptly (via `throw` or runtime fault):
+1. **Throw Interception**: The throwing instruction jumps directly to the current block's **Exception Cleanup Segment** (`cleanup_ip`).
+2. **Local Frame Cleanup**: The cleanup segment executes reverse-order `DEC_REF` deallocations for all reference variables declared in the block, reclaiming memory allocated prior to the fault.
+3. **Next-Hop Dispatch**:
+   - If `block_kind == BlockKind::TRY_BODY`: Control jumps directly into the enclosing `TryStatement`'s catch matching table.
+   - If `block_kind == BlockKind::NORMAL`: Control jumps to the enclosing parent block's exception cleanup segment.
+   - If `block_kind == BlockKind::FUNCTION_BODY`: The segment emits `OpCode::JMP_TO_OUTER_CLEANUP`, unwinding the current activation record and propagating the exception to the caller frame.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+### 5.1 ARC Ownership & Reference Counter Invariants
+- **Invariant 1 (Positive Ownership)**: Any heap object reference stored in a local variable slot must have a `ref_count >= 1`.
+- **Invariant 2 (Strict LIFO Teardown)**: In a block declaring reference variables $V_1, V_2, \dots, V_k$, their reference counts must be decremented in reverse order ($V_k$ first, $V_1$ last). This ensures that if $V_k$ holds an internal reference to $V_1$, $V_k$ is released before its prerequisite $V_1$.
+- **Invariant 3 (Deallocation on Zero)**: When `DEC_REF` transitions an object's `ref_count` to 0, the runtime immediately invokes the object's destructor and frees the heap allocation via `RELEASE`.
+
+### 5.2 Bytecode Lowering & Trampoline Architecture
+The compiler generates a dual-path binary layout for every `BlockStatement`:
 
 ```text
-+-------------------------------------------------------------------+
-|               NORMAL EXECUTION PATH (Fall-through)                |
-+-------------------------------------------------------------------+
-| 1. Child Statement Bytecode (Expressions, Assignments, etc.)      |
-+-------------------------------------------------------------------+
-| 2. Normal Scope Cleanup (emit_cleanup_for_node):                  |
-|    For each local reference in reverse order:                     |
-|        OpCode::GET_LOCAL <slot_index>                             |
-|        OpCode::DEC_REF                                            |
-+-------------------------------------------------------------------+
-| 3. OpCode::JUMP <skip_ip>                                         |
-|    (Bypasses the exception cleanup segment below)                 |
-+===================================================================+
-|             EXCEPTION UNWINDING SEGMENT (cleanup_ip)              |
-+===================================================================+
-| 4. Exception Target Landing:                                      |
-|    - All inner throws/panics in this block jump directly here.    |
-|    - Unwinding ARC Cleanup (emit_cleanup_for_node):               |
-|        OpCode::GET_LOCAL <slot_index>                             |
-|        OpCode::DEC_REF                                            |
-+-------------------------------------------------------------------+
-| 5. Next Hop Unwinding Dispatch:                                   |
-|    - If FUNCTION_BODY: OpCode::JMP_TO_OUTER_CLEANUP               |
-|    - If TRY_BODY:      OpCode::JUMP -> Catch Clause Dispatch Table |
-|    - If NORMAL:        OpCode::JUMP -> Enclosing Block cleanup_ip |
-+===================================================================+
-| 6. Continuation Target (<skip_ip>)                                |
-|    Normal execution resumes here after bypassing the cleanup.     |
-+-------------------------------------------------------------------+
++-----------------------------------------------------------------------+
+|                       NORMAL EXECUTION PATH                           |
++-----------------------------------------------------------------------+
+| [Child Statement Bytecode Sequence]                                   |
++-----------------------------------------------------------------------+
+| [Normal Scope Cleanup]                                                |
+| For each reference local in reverse declaration order:                |
+|     OpCode::GET_LOCAL <memory_index>                                  |
+|     OpCode::DEC_REF                                                   |
++-----------------------------------------------------------------------+
+| OpCode::JUMP <skip_cleanup_ip>                                        |
++=======================================================================+
+|                 EXCEPTION CLEANUP SEGMENT (cleanup_ip)                |
++=======================================================================+
+| [Target of all inner exception throw jumps]                           |
+| For each reference local in reverse declaration order:                |
+|     OpCode::GET_LOCAL <memory_index>                                  |
+|     OpCode::DEC_REF                                                   |
++-----------------------------------------------------------------------+
+| Next-Hop Dispatch:                                                    |
+|   - If FUNCTION_BODY: OpCode::JMP_TO_OUTER_CLEANUP                    |
+|   - If TRY_BODY:      OpCode::JUMP -> Catch Matching Table            |
+|   - If NORMAL:        OpCode::JUMP -> Parent Block cleanup_ip         |
++=======================================================================+
+| [Continuation Point (<skip_cleanup_ip>)]                              |
+| Normal sequential execution resumes here.                             |
++-----------------------------------------------------------------------+
 ```
-
-### Early Jump Handling (`return`, `break`, `continue`)
-When a statement within a block transfers control out of the block non-sequentially, normal fall-through is bypassed. The compiler handles this during AST traversal:
-- **`return` Statements**: When `Assembler::visit(ReturnStatement &node)` executes, it walks up the AST parent chain from the return node to the enclosing function declaration. For every `BlockStatement` encountered, it immediately emits `emit_cleanup_for_node(current)`. Then it emits `emit_cleanup_for_function(func_node)` to decrement the `this` pointer (for instance methods) and all reference parameters, before finally emitting `OpCode::RETURN`.
-- **`break` Statements**: When `Assembler::visit(BreakStatement &node)` executes, it walks up the AST parent chain until finding the target loop or `switch` statement. For every intermediate `BlockStatement` crossed, it emits `emit_cleanup_for_node(current)`. It then emits `OpCode::JUMP` to the loop's break patch address.
-- **`continue` Statements**: Similarly walks up to the target loop, emits `emit_cleanup_for_node(current)` for all intermediate blocks, and emits `OpCode::JUMP` to the loop's continuation address.
 
 ---
 
-## 4. Positive Test Scenarios (Valid Variations)
+## 6. Compile-Time Constraints & Diagnostic Errors
 
-### Scenario 4.1: Empty and Nested Empty Blocks
-An empty block contains zero statements and must compile cleanly with no stack delta and zero opcode side effects.
+### Rule 6.1: Prohibition of Out-of-Scope Variable Access
+An identifier declared within a block cannot be accessed outside the lexical boundary of that block.
 ```solix
-void test_empty_blocks() {
-    {}
+void test_out_of_scope() {
     {
-        {}
-        {
-            {}
-        }
+        int32 scoped_val = 42;
+    }
+    int32 leak = scoped_val;
+}
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Undefined identifier: scoped_val
+```
+
+### Rule 6.2: Prohibition of Duplicate Identifiers in Immediate Scope
+Declaring two variables with identical identifiers in the same immediate block is illegal.
+```solix
+void test_duplicate() {
+    {
+        int32 count = 1;
+        float64 count = 2.0;
     }
 }
 ```
-*Verification*: Compiles without warnings or errors. VM execution produces no stack growth or leaks.
-
-### Scenario 4.2: Lexical Variable Shadowing
-An inner block shadows an outer variable of the same name with a different type and value.
-```solix
-int32 value = 10;
-{
-    String value = new String("inner_shadow");
-    Console.println(value); // Must resolve to String
-}
-Console.println(value); // Must resolve to int32 (10)
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Variable 'count' is already defined in the current scope
 ```
-*Verification*: Output must be `"inner_shadow"` followed by `10`. Memory inspection confirms `String` was deallocated at the closing brace of the inner block.
 
-### Scenario 4.3: Strict LIFO Destruction of Multiple Reference Objects
-Multiple reference-counted objects allocated in a single block must be cleaned up in exact reverse order of declaration upon exit.
+### Rule 6.3: Unterminated Block Boundary
+Failing to supply a terminating closing brace `}` before reaching EOF or an outer construct boundary triggers a parser syntax error.
+```solix
+void test_unclosed() {
+    {
+        int32 x = 10;
+// Missing '}'
+```
+*Diagnostic Message*:
+```text
+[ERROR] parser.cpp: Syntax error: expected '}' before end of file
+```
+
+### Rule 6.4: Extraneous Closing Brace
+Encountering an unmatched closing brace `}` outside any active block terminates compilation immediately.
+```solix
+void test_stray() {
+    {
+        int32 x = 10;
+    }
+    }
+}
+```
+*Diagnostic Message*:
+```text
+[ERROR] parser.cpp: Syntax error: unexpected token '}'
+```
+
+---
+
+## 7. Runtime Fault Conditions
+
+### Fault 7.1: Deep Recursion Stack Frame Exhaustion
+Creating deeply nested block activations via recursion that exceed the VM's configured activation frame depth limits triggers an unrecoverable stack overflow.
+```solix
+void infinite_block_recursion() {
+    {
+        infinite_block_recursion();
+    }
+}
+```
+*Runtime Fault*:
+```text
+[FATAL VM PANIC] StackOverflowException: Call stack depth exceeded limit (1024 frames)
+```
+
+### Fault 7.2: Uncaught Exception Propagation Past Root Block
+When an exception unwinds through the root `FUNCTION_BODY` block of `main` without encountering an enclosing `try-catch`, the VM terminates the process.
+```solix
+void main() {
+    {
+        throw new std.Exception("Fatal unhandled error");
+    }
+}
+```
+*Runtime Fault*:
+```text
+[FATAL VM PANIC] Unhandled Exception: 'Fatal unhandled error'
+    at main() in test.slx:line 3
+Process terminated with exit code 1
+```
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Lexical Shadowing with Differing Types
+```solix
+// Conformance Test: Scope masking must isolate variable types and slots
+int32 target = 10;
+{
+    String target = new String("shadow_str");
+    Console.println(target); // Must output: "shadow_str"
+}
+Console.println(target);     // Must output: 10
+```
+*Verification Invariant*: Two distinct frame indices are allocated. The `String` object is deallocated upon exiting the inner block; `target` remains 10.
+
+### Example 8.2: Guaranteed LIFO Destruction Under Normal Execution
 ```solix
 class Tracker {
     int32 id;
     Tracker(int32 id) { this.id = id; }
 }
 
-void test_lifo_order() {
+void verify_lifo() {
     {
-        Tracker t1 = new Tracker(1);
-        Tracker t2 = new Tracker(2);
-        Tracker t3 = new Tracker(3);
+        Tracker first = new Tracker(1);
+        Tracker second = new Tracker(2);
+        Tracker third = new Tracker(3);
     }
-    // Expected bytecode order: DEC_REF t3, DEC_REF t2, DEC_REF t1
+    // Execution must decrement: third, then second, then first.
 }
 ```
-*Verification*: Bytecode inspection confirms `t3` (slot 2) is decremented first, then `t2` (slot 1), then `t1` (slot 0).
+*Verification Invariant*: Bytecode disassembly confirms `DEC_REF` sequence matches exact reverse order: `third` -> `second` -> `first`.
 
-### Scenario 4.4: Early Return from Nested Blocks
-A return statement nested deep inside several block scopes must correctly decrement all active reference variables across all intermediate blocks.
+### Example 8.3: Non-Local Early Return Across Nested Lexical Blocks
 ```solix
-int32 compute_nested(bool early_exit) {
-    String outer = new String("outer");
+int32 verify_early_return(bool condition) {
+    String res1 = new String("res1");
     {
-        String middle = new String("middle");
+        String res2 = new String("res2");
         {
-            String inner = new String("inner");
-            if (early_exit) {
-                return 42; // Must emit DEC_REF for inner, middle, and outer
+            String res3 = new String("res3");
+            if (condition) {
+                return 42; // Must emit cleanups for res3, res2, and res1 before RETURN
             }
         }
     }
     return 0;
 }
 ```
-*Verification*: Calling `compute_nested(true)` decrements all three strings before returning. Zero heap objects remain allocated.
+*Verification Invariant*: Both `verify_early_return(true)` and `verify_early_return(false)` result in 0 net heap allocations remaining.
 
-### Scenario 4.5: Loop Break Traversal Across Multiple Blocks
-A `break` statement escaping from a block nested inside a loop must clean up all block-scoped objects without corrupting the loop exit.
+### Example 8.4: Exception Unwinding Through Multiple Enclosed Blocks
 ```solix
-void test_break_cleanup() {
-    while (true) {
-        String loop_scoped = new String("loop");
-        {
-            String block_scoped = new String("block");
-            break; // Must clean up 'block_scoped' and 'loop_scoped'
-        }
-    }
-}
-```
-*Verification*: VM heap object count drops back to zero immediately upon loop termination.
-
-### Scenario 4.6: Exception Unwinding Through Multiple Lexical Blocks
-An exception thrown inside an inner block unwinds through multiple enclosing block cleanup segments until caught by a `try-catch`.
-```solix
-void test_unwinding_cleanup() {
+void verify_unwinding_integrity() {
     try {
-        String s1 = new String("s1");
+        String outer = new String("outer");
         {
-            String s2 = new String("s2");
+            String middle = new String("middle");
             {
-                String s3 = new String("s3");
+                String inner = new String("inner");
                 throw new std.Exception("abort");
             }
         }
     } catch (std.Exception e) {
-        // At this point, s3, s2, and s1 must all have been decremented
+        // inner, middle, and outer must be reclaimed before entering catch body
     }
 }
 ```
-*Verification*: Both `s3`, `s2`, and `s1` have their reference counts decremented to 0 by the unwinding trampolines before the catch block executes.
-
----
-
-## 5. Negative Test Scenarios (Invalid Variations)
-
-### Scenario 5.1: Referencing Out-of-Scope Variable Outside Block
-Variables declared inside a block cannot be accessed once that block has closed.
-```solix
-void test_scope_leakage() {
-    {
-        int32 block_var = 123;
-    }
-    int32 leak = block_var; // Illegal: block_var does not exist here
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Undefined identifier: block_var
-```
-
-### Scenario 5.2: Missing Closing Brace (Unterminated Block)
-Failing to close a block before reaching the end of a file or enclosing construct must trigger a parser error.
-```solix
-void test_unterminated_block() {
-    int32 x = 10;
-    {
-        int32 y = 20;
-    // Missing '}'
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] parser.cpp: Syntax error: expected '}' before end of file
-```
-
-### Scenario 5.3: Unexpected Extra Closing Brace
-An extra closing brace without a matching opening brace must immediately halt parsing.
-```solix
-void test_stray_brace() {
-    {
-        int32 x = 10;
-    }
-    } // Stray extra closing brace
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] parser.cpp: Syntax error: unexpected token '}'
-```
-
-### Scenario 5.4: Duplicate Variable Declaration Within Same Immediate Block
-While shadowing across parent-child blocks is valid, declaring two variables with identical names in the exact same block scope is illegal.
-```solix
-void test_duplicate_declaration() {
-    {
-        int32 item = 1;
-        float64 item = 2.0; // Illegal: duplicate in same scope
-    }
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] binder.cpp: Variable 'item' is already defined in the current scope
-```
-
-### Scenario 5.5: Control Flow Jump into Uninitialized Block
-Attempting to jump into the middle of a block from outside is grammatically and semantically impossible in Solix.
-```solix
-void test_illegal_jump() {
-    goto inner_label; // Solix has no goto, labels are prohibited outside switch/loops
-    {
-        inner_label:
-        int32 x = 10;
-    }
-}
-```
-*Expected Compiler Diagnostic*:
-```text
-[ERROR] parser.cpp: Syntax error: unexpected token 'goto'
-```
+*Verification Invariant*: Heap object allocation counter confirms `inner`, `middle`, and `outer` are all reclaimed by unwinding trampolines prior to entering the catch block.

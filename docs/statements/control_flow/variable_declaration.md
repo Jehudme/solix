@@ -1,294 +1,260 @@
-# VariableDeclarationStatement (`NodeType::VAR_DECL`)
+# §12 VariableDeclarationStatement
 
-## 1. Description, Purpose & Architectural Implementation
+## 1. Overview & Scope
 
-### Conceptual Overview
-The `VariableDeclarationStatement` introduces one or more named variables into the active lexical scope, permanently associating each identifier with a concrete static type, a memory storage location, and an optional initial value.
+A `VariableDeclarationStatement` introduces one or more named identifiers into the active lexical declaration space, binding each identifier to a static type, a memory slot within the execution frame, and an optional initializing expression.
 
-In Solix's statically typed architecture, a variable declaration is not merely a label on a memory address. It establishes the foundational contract between the type checker, the Automatic Reference Counting (ARC) memory engine, and the runtime virtual machine. It specifies whether the variable contains an immediate scalar value (such as an integer or floating-point number) or an owning pointer to a heap-allocated reference object (such as a class instance, string, or array).
+In Solix's strongly typed, Automatic Reference Counting (ARC) architecture, a variable declaration is not a passive symbol table entry. It defines the formal contract governing storage representation (scalar immediate vs. heap reference pointer), memory lifecycle (participating in ARC or stack-allocated scalar storage), and type compatibility across all subsequent reads and mutations.
 
----
-
-### Key Conceptual Roles
-
-#### 1. Static Type Binding & Contract Enforcement
-Solix enforces strict compile-time type safety. Every declared variable is bound to a `TypeInfo` structure that defines its base type, package qualification, generic type arguments, and array dimensions (`array_depth`).
-- When a variable is initialized, the binder strictly verifies that the evaluated type of the initializer expression is assignable to the declared type (`is_assignable`).
-- No implicit unsafe conversions occur. Attempting to assign incompatible types halts compilation with an explicit type mismatch diagnostic.
-
-#### 2. Storage Allocation & Activation Frame Slotting
-Local variables in Solix do not live in arbitrary memory locations. They occupy fixed, zero-indexed register slots within the current function's activation frame:
-- The compiler assigns each local variable a unique `memory_index` in monotonically increasing order (`local_variable_index++`).
-- This index maps directly to the VM's operand and local storage vectors, allowing high-performance indexed reads (`GET_LOCAL <index>`) and writes (`SET_LOCAL <index>`).
-- Global variables, by contrast, are allocated slots in the global static segment and accessed via `GET_GLOBAL` and `SET_GLOBAL`.
-
-#### 3. ARC Ownership Tracking (Reference vs. Primitive Distinction)
-A central responsibility of the variable declaration system is distinguishing between value types and reference types:
-- **Value Types**: Primitive scalar types (`int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`, `float32`, `float64`, `bool`, `char`) with zero array depth (`array_depth == 0`). These types hold their payload directly in the local stack slot and require no reference counting.
-- **Reference Types**: Class instances, interfaces, strings, and **all arrays** (including arrays of primitives, such as `int32[]`).
-- For reference types, the variable declaration marks `is_reference_type = true`. When initialized, an `OpCode::INC_REF` instruction is emitted to claim ownership of the object. When the enclosing block terminates, the variable's reference is decremented (`DEC_REF`), ensuring prompt, leak-free destruction.
-
-#### 4. Lexical Registration & Collision Prevention
-When a variable is declared, it is registered in the immediate `SymbolTable` scope:
-- If an identifier with the identical name already exists in the *current immediate* scope, the compiler reports a duplicate declaration error.
-- If the identifier exists in an *outer parent* scope, declaration succeeds, creating a valid lexical shadow that persists until the enclosing block terminates.
+### Syntactic Placement
+A `VariableDeclarationStatement` is legally permitted in the following scopes:
+1. **Local Block Scope**: Inside any `BlockStatement` within methods, functions, constructors, or control-flow blocks.
+2. **Loop Initialization Clauses**: Inside the initialization clause of a `for` loop statement.
+3. **Global Translation-Unit Scope**: At the package root level, defining global state (compiled to static data segment slots).
+4. **Class & Interface Bodies**: As member fields (governed by `FieldDeclaration`).
 
 ---
 
-### How VariableDeclaration Was Implemented in Solix
+## 2. Syntax & Production Rules
 
-#### 1. Abstract Syntax Tree Representation (`statements.hpp`)
-In the Solix AST, variable declarations are represented by `VariableDeclaration`:
-```cpp
-struct VariableDeclaration : public Node {
-    TypeInfo type_info;
-    std::string var_name;
-    std::unique_ptr<Node> initializer;
-    int32_t memory_index = -1;
-    bool is_reference_type = false;
-    bool is_const = false;
-
-    VariableDeclaration(const Token& t, TypeInfo type, const std::string& name,
-                        std::unique_ptr<Node> init = nullptr)
-        : Node(NodeType::VAR_DECL, t), type_info(std::move(type)),
-          var_name(name), initializer(std::move(init)) {
-        if (initializer) initializer->parent = this;
-    }
-};
-```
-
-#### 2. Semantic Analysis & Type Resolution (`binder.cpp`)
-During semantic analysis (`BinderPass::BIND_EXECUTION`):
-1. **Type Resolution**: The binder resolves the declared type using `resolve_type(n.type_info, &n)`, transforming relative type names into fully qualified symbol references (e.g. `String` -> `std.string.String`).
-2. **Reference Type Classification**:
-   ```cpp
-   Node *type_decl = global_scope.resolve(n.type_info.name);
-   n.is_reference_type = !(type_decl && type_decl->is_primitive && n.type_info.array_depth == 0);
-   ```
-   Notice that an array of primitives (`int32[]`) has `array_depth == 1`, so `is_reference_type` evaluates to `true`.
-3. **Initializer Verification**:
-   If an initializer expression exists:
-   - `evaluate_expression(n.initializer.get())` derives the initializer's concrete `TypeInfo`.
-   - `is_assignable(n.type_info, initializer_type)` checks compatibility, supporting class inheritance upcasting, interface conformance, and numeric widening.
-   - If incompatible, an error is recorded: `"Type mismatch in variable declaration: expected 'X', got 'Y'"`.
-4. **Frame Allocation & Registration**:
-   - Assigns `n.memory_index = local_variable_index++`.
-   - Registers the variable in the active scope via `declare_local(n.var_name, &n)`.
-
-#### 3. Bytecode Emission (`assembler.cpp`)
-When the assembler visits a `VariableDeclaration`:
-```cpp
-void Assembler::visit(VariableDeclaration &node) {
-    if (node.initializer) {
-        compile_expression(node.initializer.get());
-        if (node.is_reference_type) {
-            emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
-        }
-        emit_byte(static_cast<uint8_t>(OpCode::SET_LOCAL));
-        emit_int32(node.memory_index);
-    }
-}
-```
-If the variable is uninitialized, no bytecode is emitted at declaration time. The slot in the VM's activation frame defaults to zero (or null for reference types).
-
----
-
-## 2. Syntax & Grammar
-
-### Syntax Forms
-Solix supports both initialized and uninitialized variable declarations across primitive, reference, and array types:
-
+### Production Rules
 ```solix
-// 1. Primitive Scalar Declarations
-int32 counter = 0;
-float64 ratio; // Uninitialized, defaults to 0.0
-bool isActive = true;
-char symbol = 'A';
+VariableDeclaration   ::= TypeSpecifier Identifier ('=' Expression)? ';'
+TypeSpecifier         ::= PrimitiveType | QualifiedType | ArrayType | GenericType
+PrimitiveType         ::= 'int8' | 'int16' | 'int32' | 'int64'
+                        | 'uint8' | 'uint16' | 'uint32' | 'uint64'
+                        | 'float32' | 'float64' | 'bool' | 'char'
+QualifiedType         ::= (Identifier '.')* Identifier
+ArrayType             ::= TypeSpecifier '[' ']'
+GenericType           ::= QualifiedType '<' TypeSpecifier (',' TypeSpecifier)* '>'
+```
 
-// 2. Reference Type Declarations
-String message = new String("Solix");
+### Canonical Code Patterns
+```solix
+// 1. Primitive Scalar Declarations (Value Types)
+int32 counter = 0;
+float64 factor = 1.5;
+bool is_valid = true;
+char delimiter = ';';
+int32 uninit_value; // Uninitialized, defaults to 0
+
+// 2. Reference Type Declarations (ARC Owning Pointers)
+String name = new String("Solix");
 MyClass instance = new MyClass();
 MyInterface handler = new ConcreteHandler(); // Polymorphic interface binding
 
-// 3. Array Declarations
+// 3. Array Declarations (Reference Types)
 int32[] numbers = new int32[10];
-String[] names = ["Alice", "Bob", "Charlie"];
+String[] tokens = ["alpha", "beta", "gamma"];
 float64[][] matrix = new float64[4][4];
 
 // 4. Parameterized Generic Declarations
-List<int32> list = new List<int32>();
-Map<String, User> userCache = new Map<String, User>();
+List<String> items = new List<String>();
+Map<String, int32> lookup = new Map<String, int32>();
 ```
 
 ---
 
-## 3. Underlying Systems & VM Mechanics
+## 3. Scope & Declaration Space (Static Semantics)
 
-### Memory Layout & Activation Frame Slotting
-When a function is called, the VM allocates an activation frame containing a fixed vector of registers sized according to `local_variable_index`:
+### 3.1 Visibility Rules
+- **Lexical Downward Reach**: A variable becomes visible immediately *after* its initializing expression is evaluated, extending downward throughout the remaining statement sequence of its enclosing block.
+- **Self-Reference Prohibition**: An identifier cannot be referenced within its own initializing expression (e.g. `int32 x = x + 1;` is ill-formed).
+- **Scope Boundary Confinement**: When the enclosing block terminates, the variable's identifier is removed from the active `SymbolTable`. Any subsequent access from outer or sibling scopes results in an unresolved symbol error.
 
-```text
-Function Frame Layout:
-+------------+-------------------------------------------+
-| Slot Index | Variable Name & Type                      |
-+------------+-------------------------------------------+
-| 0          | this (Implicit pointer for instance methods)|
-| 1          | param1 (First function parameter)         |
-| 2          | param2 (Second function parameter)        |
-| 3          | local_var1 (First local: int32 counter)   |
-| 4          | local_var2 (Second local: String text)    |
-| ...        | ...                                       |
-+------------+-------------------------------------------+
+### 3.2 Shadowing Rules
+- A local variable declared in an inner block may share the identifier of a variable declared in an outer enclosing block.
+- The inner declaration shadows the outer declaration: all subsequent reads and writes within the inner block bind to the inner variable's frame register.
+- **Duplicate Declaration Rejection**: Declaring two variables with identical identifiers in the same immediate declaration space is rejected by the compiler.
+
+### 3.3 Lifetime (Static Extent)
+- Each local variable declaration receives a monotonically increasing frame index (`memory_index = local_variable_index++`).
+- Value types occupy 8-byte slots in the activation frame holding raw numeric or boolean bits.
+- Reference types occupy 8-byte slots in the activation frame holding heap object pointers.
+- The static extent terminates at the closing brace of the declaring block, at which point reference types undergo ARC destruction.
+
+---
+
+## 4. Operational Semantics (Dynamic Execution)
+
+### 4.1 Normal Completion
+Execution of a `VariableDeclarationStatement` proceeds through the following operational steps:
+1. **Uninitialized Declarations**:
+   - If no initializer expression is present, the VM assigns the default zero-bit pattern to the variable's frame register:
+     - Integral and floating-point types initialize to `0` or `0.0`.
+     - Boolean types initialize to `false` (`0`).
+     - Reference types initialize to `null` (`0x0`).
+   - Normal completion occurs immediately; no bytecode opcodes are emitted.
+2. **Initialized Declarations**:
+   - The initializer expression is evaluated to completion, leaving the resulting value on top of the operand stack.
+   - **ARC Ownership Claim**: If `is_reference_type == true`:
+     - The VM executes `OpCode::INC_REF`, incrementing the heap object's internal reference counter.
+   - **Frame Storage**:
+     - The VM executes `OpCode::SET_LOCAL <memory_index>`, popping the stack top and storing the value into the assigned frame register.
+   - Execution proceeds to the subsequent statement.
+
+### 4.2 Abrupt Completion
+A `VariableDeclarationStatement` completes abruptly if the evaluation of its initializer expression completes abruptly:
+- If the initializer expression throws an exception (e.g. `int32 x = compute_risk();` where `compute_risk()` throws), the assignment does not occur.
+- The frame register for this variable remains uninitialized or retains null.
+- Control transfers immediately to the exception unwinding trampoline of the enclosing block.
+
+### 4.3 Exception Unwinding & Trampolines
+- When an exception unwinds through a block containing an initialized reference variable, that variable is included in the block's **Exception Cleanup Segment**.
+- Unwinding executes `OpCode::GET_LOCAL <memory_index>` followed by `OpCode::DEC_REF`, guaranteeing that partially executed blocks do not leak newly allocated variables.
+
+---
+
+## 5. Memory Model & ARC Invariants
+
+### 5.1 Value Types vs. Reference Types Invariant
+In Solix, the boundary between value types and reference types is strictly formalized:
+```cpp
+Node *type_decl = global_scope.resolve(n.type_info.name);
+n.is_reference_type = !(type_decl && type_decl->is_primitive && n.type_info.array_depth == 0);
 ```
+- **Scalar Primitives**: `array_depth == 0` and `is_primitive == true`. Stored inline in stack frames. Incur 0 ARC overhead.
+- **Arrays of Primitives**: (e.g. `int32[]`). Even though elements are primitives, the array buffer itself is a heap-allocated reference object (`array_depth > 0`). Hence, `is_reference_type == true`, and it is tracked via ARC.
+- **Class & Interface Instances**: Always heap-allocated reference types. `is_reference_type == true`.
 
-### ARC Interaction During Lifecycle
+### 5.2 ARC Reference Counter Lifecycle
 ```text
 Declaration with Initializer:
-  1. Evaluate Initializer Expression -> Pushes Object Ref to Stack
-  2. OpCode::INC_REF                 -> Increments Object ref_count (e.g. 1 -> 2)
-  3. OpCode::SET_LOCAL <slot>        -> Pops Object Ref from Stack into Frame Register
+  1. Evaluate Initializer Expression ──► Pushes Object Pointer to Stack
+  2. OpCode::INC_REF                 ──► Object ref_count increments (1 -> 2)
+  3. OpCode::SET_LOCAL <slot>        ──► Frame Register stores Object Pointer
 
-Enclosing Block Exit:
-  1. OpCode::GET_LOCAL <slot>        -> Pushes Object Ref to Stack
-  2. OpCode::DEC_REF                 -> Decrements Object ref_count (e.g. 2 -> 1 or 1 -> 0)
-  3. If ref_count == 0               -> VM executes object destructor & frees heap buffer
+Block Termination (Normal or Unwinding):
+  1. OpCode::GET_LOCAL <slot>        ──► Pushes Object Pointer to Stack
+  2. OpCode::DEC_REF                 ──► Object ref_count decrements (2 -> 1 or 1 -> 0)
+  3. If ref_count == 0               ──► Runtime frees memory buffer via RELEASE
 ```
 
 ---
 
-## 4. Positive Test Scenarios (Valid Variations)
+## 6. Compile-Time Constraints & Diagnostic Errors
 
-### Scenario 4.1: Uninitialized Primitive and Reference Variables
-Variables declared without an explicit initializer must default to zero or null and compile cleanly.
+### Rule 6.1: Type Compatibility Violation
+An initializer expression must be assignable to the declared variable type (`is_assignable`).
 ```solix
-void test_uninitialized() {
-    int32 uninit_int;
-    String uninit_str;
-    // Both variables allocate valid frame slots
+void test_type_error() {
+    int32 count = "twenty"; // Incompatible types
 }
 ```
-*Verification*: Compiles with zero errors. Stack frame reserves 2 local slots.
-
-### Scenario 4.2: Upcasting to Superclass Reference
-Declaring a variable of a base class type and initializing it with a derived class instance.
-```solix
-class Animal {}
-class Dog extends Animal {}
-
-void test_upcast() {
-    Animal pet = new Dog(); // Valid polymorphic assignment
-}
-```
-*Verification*: `is_assignable` returns `true`. Code emits `INC_REF` and stores in `pet` slot.
-
-### Scenario 4.3: Interface Binding
-Declaring a variable of an interface type and initializing it with an implementing class instance.
-```solix
-interface Printable {
-    void print();
-}
-class Document implements Printable {
-    void print() { Console.println("Document"); }
-}
-
-void test_interface_binding() {
-    Printable p = new Document();
-    p.print();
-}
-```
-*Verification*: Compiles successfully. Method invocation dispatches dynamically through interface VTable.
-
-### Scenario 4.4: Array of Primitives as Reference Type
-Declaring an array of primitive integers and verifying that it is correctly classified as a reference type for ARC.
-```solix
-void test_primitive_array() {
-    {
-        int32[] buffer = new int32[1024];
-        buffer[0] = 42;
-    }
-    // 'buffer' must be cleaned up via DEC_REF upon exiting the block
-}
-```
-*Verification*: Bytecode disassembly confirms `INC_REF` is emitted upon initialization and `DEC_REF` is emitted upon block termination.
-
-### Scenario 4.5: Variable Shadowing Across Nested Scopes
-Declaring an inner variable that shadows an outer variable with an entirely different type.
-```solix
-void test_shadowing() {
-    int32 val = 100;
-    {
-        String val = new String("shadow");
-        Console.println(val); // Resolves to String
-    }
-    Console.println(val); // Resolves to int32 (100)
-}
-```
-*Verification*: Outputs `"shadow"` followed by `100`. Both variables occupy separate frame indices.
-
----
-
-## 5. Negative Test Scenarios (Invalid Variations)
-
-### Scenario 5.1: Incompatible Type Assignment
-Attempting to initialize a variable with an expression of an incompatible type.
-```solix
-void test_type_mismatch() {
-    int32 count = "one hundred"; // Error: String cannot be assigned to int32
-}
-```
-*Expected Compiler Diagnostic*:
+*Diagnostic Message*:
 ```text
 [ERROR] binder.cpp: Type mismatch in variable declaration: expected 'int32', got 'String'
 ```
 
-### Scenario 5.2: Duplicate Variable Declaration in Same Scope
-Declaring two variables with the exact same identifier in the same immediate block.
+### Rule 6.2: Duplicate Variable Identifier
+Declaring a variable with an identifier already declared in the same immediate block scope is illegal.
 ```solix
-void test_duplicate_var() {
-    int32 score = 10;
-    int32 score = 20; // Error: duplicate
+void test_duplicate() {
+    int32 score = 100;
+    int32 score = 200; // Duplicate declaration
 }
 ```
-*Expected Compiler Diagnostic*:
+*Diagnostic Message*:
 ```text
 [ERROR] binder.cpp: Variable 'score' is already defined in the current scope
 ```
 
-### Scenario 5.3: Unknown / Unresolved Type Identifier
-Declaring a variable with a type name that does not exist in any imported package or local scope.
+### Rule 6.3: Unresolved Type Identifier
+Declaring a variable using a type name that cannot be resolved in any imported package or symbol table is rejected.
 ```solix
-void test_unknown_type() {
-    NonExistentType obj = null;
+void test_unknown() {
+    NonExistentClass item = null;
 }
 ```
-*Expected Compiler Diagnostic*:
+*Diagnostic Message*:
 ```text
-[ERROR] binder.cpp: Unknown type 'NonExistentType'
+[ERROR] binder.cpp: Unknown type 'NonExistentClass'
 ```
 
-### Scenario 5.4: Assigning Superclass Instance to Subclass Variable (Invalid Downcast)
-Attempting to assign a base class instance to a derived class variable without an explicit cast.
+### Rule 6.4: Illegal Void Variable
+Variables cannot be declared with type `void`.
+```solix
+void test_void() {
+    void placeholder;
+}
+```
+*Diagnostic Message*:
+```text
+[ERROR] binder.cpp: Variable cannot be of type 'void'
+```
+
+### Rule 6.5: Implicit Invalid Downcasting
+Assigning a superclass reference to a subclass variable without an explicit cast is prohibited.
 ```solix
 class Base {}
 class Derived extends Base {}
 
-void test_invalid_implicit_downcast() {
-    Derived d = new Base(); // Error: Base is not assignable to Derived
+void test_downcast() {
+    Base b = new Base();
+    Derived d = b; // Prohibited: requires explicit cast
 }
 ```
-*Expected Compiler Diagnostic*:
+*Diagnostic Message*:
 ```text
 [ERROR] binder.cpp: Type mismatch in variable declaration: expected 'Derived', got 'Base'
 ```
 
-### Scenario 5.5: Void Variable Declaration
-Attempting to declare a variable of type `void`.
+---
+
+## 7. Runtime Fault Conditions
+
+### Fault 7.1: Heap Out-of-Memory During Object Instantiation
+If the heap memory allocator fails to allocate memory for the object in the initializer expression, the VM raises an `OutOfMemoryException`.
 ```solix
-void test_void_variable() {
-    void unusable;
+void test_oom() {
+    int32[] huge = new int32[2147483647];
 }
 ```
-*Expected Compiler Diagnostic*:
+*Runtime Fault*:
 ```text
-[ERROR] binder.cpp: Variable cannot be of type 'void'
+[FATAL VM PANIC] OutOfMemoryException: Failed to allocate 8589934588 bytes on heap
 ```
+
+---
+
+## 8. Conformance & Verification Examples
+
+### Example 8.1: Primitive Array Classification as ARC Reference
+```solix
+// Conformance Test: Primitive arrays must participate in ARC deallocation
+void verify_primitive_array_arc() {
+    {
+        int32[] data = new int32[64];
+        data[0] = 42;
+    }
+    // Block exit must emit DEC_REF for data
+}
+```
+*Verification Invariant*: Disassembly verifies that `INC_REF` is emitted when storing into `data`, and `DEC_REF` is emitted when exiting the block.
+
+### Example 8.2: Polymorphic Interface Variable Assignment
+```solix
+interface Reader {
+    int32 read_byte();
+}
+class FileReader implements Reader {
+    int32 read_byte() { return 1; }
+}
+
+void verify_interface_assignment() {
+    Reader r = new FileReader(); // Valid interface binding
+    int32 val = r.read_byte();
+}
+```
+*Verification Invariant*: Static analysis succeeds; dynamic dispatch invokes `FileReader.read_byte` via interface VTable slot.
+
+### Example 8.3: Lexical Masking Across Nested Scopes
+```solix
+int32 outer = 50;
+{
+    String outer = new String("masked");
+    Console.println(outer); // Prints: "masked"
+}
+Console.println(outer);     // Prints: 50
+```
+*Verification Invariant*: Outer scalar `outer` retains value `50`. Inner `String` is deallocated at inner block closing brace.
