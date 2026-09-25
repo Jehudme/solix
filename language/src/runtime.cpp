@@ -929,6 +929,9 @@ op_CALL:
 
     uint32_t current_sp_idx = static_cast<uint32_t>(sp - stack);
     uint32_t new_frame_pointer = current_sp_idx - arg_count;
+    if (call_depth == 1) {
+      entry_method_called = true;
+    }
     if (call_depth >= 65536)
       throw std::runtime_error("Stack overflow: max call depth exceeded");
     call_stack[call_depth++] = Frame(program_counter, new_frame_pointer);
@@ -1097,12 +1100,17 @@ op_RETURN:
       program_counter = frame.return_ip;
     } else {
       SYNC_SP();
+      exit_code = static_cast<int32_t>(ret_val);
       return;
     }
     DISPATCH();
   }
 op_HALT:
   SYNC_SP();
+  if (entry_method_called && sp > stack) {
+    exit_code = static_cast<int32_t>(POP());
+    SYNC_SP();
+  }
   return;
 op_THROW_ABSTRACT:
   throw std::runtime_error("Called abstract method");
@@ -1202,8 +1210,9 @@ op_CLEAR_EXCEPTION:
 #undef DISPATCH
 }
 
-void run(RuntimeOptions &options) {
+int32_t run(RuntimeOptions &options) {
   RuntimeContext vm(options);
   vm.execute();
+  return vm.exit_code;
 }
 } // namespace solix

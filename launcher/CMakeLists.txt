@@ -6,20 +6,37 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(CLI11)
 
-add_executable(solix_launcher
+add_executable(solix
     src/main.cpp
     src/commands/compile.cpp
     src/commands/execute.cpp
     src/commands/install.cpp
 )
 
-target_link_libraries(solix_launcher PRIVATE solix_language CLI11::CLI11)
+target_link_libraries(solix PRIVATE solix_language CLI11::CLI11)
 
 add_custom_target(copy_stdlib ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/rsc/lib
-        $<TARGET_FILE_DIR:solix_launcher>/lib
+        $<TARGET_FILE_DIR:solix>/lib
     COMMENT "Copying Solix library folder to launcher binary directory"
 )
 
-add_dependencies(solix_launcher copy_stdlib)
+add_dependencies(solix copy_stdlib)
+
+# Provide backward-compatible binary link/alias for solix_launcher
+if(WIN32)
+    add_custom_target(solix_launcher ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:solix>
+            $<TARGET_FILE_DIR:solix>/solix_launcher.exe
+        DEPENDS solix
+    )
+else()
+    add_custom_target(solix_launcher ALL
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+            $<TARGET_FILE_NAME:solix>
+            $<TARGET_FILE_DIR:solix>/solix_launcher
+        DEPENDS solix
+    )
+endif()

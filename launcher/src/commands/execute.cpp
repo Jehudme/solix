@@ -51,7 +51,8 @@ void setup_execute_command(CLI::App &app) {
     }
 
     try {
-      run(*opts);
+      int32_t exit_code = run(*opts);
+      std::exit(exit_code);
     } catch (const std::exception &e) {
       std::cerr << "Runtime error: " << e.what() << std::endl;
       exit(1);

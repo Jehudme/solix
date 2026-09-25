@@ -88,7 +88,7 @@ struct Memory {
   char read_char(Address address, uint32_t offset) const;
 };
 
-void run(RuntimeOptions &options);
+int32_t run(RuntimeOptions &options);
 
 const std::unordered_map<std::string, NativeFunction>& get_builtin_natives();
 
@@ -101,6 +101,8 @@ struct RuntimeContext {
 
   Bytecode bytecode;
   Address program_counter = 0;
+  int32_t exit_code = 0;
+  bool entry_method_called = false;
 
   std::array<Frame, 65536> call_stack;
   size_t call_depth = 0;
