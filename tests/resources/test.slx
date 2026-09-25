@@ -686,6 +686,44 @@ public class Phase3TestRunner {
             Console.println("Status calculation FAILED!");
         }
         Console.println("=== PHASE 3 TESTS OK ===");
+        Phase4TestRunner.run();
+    }
+}
+
+// ============================================================================
+// Phase 4: Lexer Scalar Character Literal & Type Discrimination Integration Test
+// ============================================================================
+
+public class Phase4TestRunner {
+    public static int32 identify_param(char c) {
+        return 1;
+    }
+
+    public static int32 identify_param(char[] str) {
+        return 2;
+    }
+
+    public static void run() {
+        char c1 = 'X';
+        char c2 = '\n';
+        char c3 = '\t';
+        char c4 = '\x42'; // 'B'
+
+        if (c1 == 'X' && c2 == 10 && c3 == 9 && c4 == 'B') {
+            Console.println("Scalar char literals and escape sequences OK!");
+        } else {
+            Console.println("Scalar char literals and escape sequences FAILED!");
+        }
+
+        int32 match_scalar = Phase4TestRunner.identify_param('Q');
+        int32 match_array = Phase4TestRunner.identify_param("Test");
+        if (match_scalar == 1 && match_array == 2) {
+            Console.println("Char scalar vs array method overload OK!");
+        } else {
+            Console.println("Char scalar vs array method overload FAILED!");
+        }
+
+        Console.println("=== PHASE 4 TESTS OK ===");
     }
 }
 
