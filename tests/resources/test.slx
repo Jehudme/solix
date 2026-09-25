@@ -823,6 +823,82 @@ public class Phase6TestRunner {
         }
 
         Console.println("=== PHASE 6 TESTS OK ===");
+        Phase7TestRunner.run();
     }
 }
+
+// ============================================================================
+// Phase 7: Full & Partial Symbol Path Resolution & Flexible Disambiguation
+// ============================================================================
+
+alias P7CoreStr = core.String;
+alias P7CoreObjs = core.Objects;
+
+public class Phase7Helper {
+    public static int32 get_value() {
+        return 42;
+    }
+}
+
+public class Phase7TestRunner {
+    public static void run() {
+        // 1. Full symbol path for types and static methods
+        solix.core.String s1 = new solix.core.String("FullSymbolPath");
+        bool b1 = solix.core.Objects.is_null(s1);
+        if (s1.size() == 14 && !b1) {
+            Console.println("Full symbol path OK!");
+        } else {
+            Console.println("Full symbol path FAILED!");
+        }
+
+        // 2. Partial symbol path (sub-namespace suffix)
+        core.String s2 = new core.String("PartialSymbolPath");
+        bool b2 = core.Objects.is_null(s2);
+        if (s2.size() == 17 && !b2) {
+            Console.println("Partial symbol path OK!");
+        } else {
+            Console.println("Partial symbol path FAILED!");
+        }
+
+        // 3. C++ scope resolution operator ::
+        solix::core::String s3 = new solix::core::String("ScopeResolution");
+        bool b3 = core::Objects::is_null(s3);
+        if (s3.size() == 15 && !b3) {
+            Console.println("Scope resolution operator :: OK!");
+        } else {
+            Console.println("Scope resolution operator :: FAILED!");
+        }
+
+        // 4. Alias with partial path
+        P7CoreStr s4 = new P7CoreStr("AliasPartialPath");
+        bool b4 = P7CoreObjs.is_null(s4);
+        if (s4.size() == 16 && !b4) {
+            Console.println("Alias with partial path OK!");
+        } else {
+            Console.println("Alias with partial path FAILED!");
+        }
+
+        // 5. Cross-package full/partial qualification on local package types
+        int32 v1 = com.solix.advanced.test.Phase7Helper.get_value();
+        int32 v2 = test.Phase7Helper.get_value();
+        int32 v3 = test::Phase7Helper::get_value();
+        if (v1 == 42 && v2 == 42 && v3 == 42) {
+            Console.println("Local package partial & full path OK!");
+        } else {
+            Console.println("Local package partial & full path FAILED!");
+        }
+
+        // 6. Generic collections with full and partial paths
+        solix.collections.Pair<int32, int32> p1 = new solix.collections.Pair<int32, int32>(10, 20);
+        collections.Pair<int32, int32> p2 = new collections.Pair<int32, int32>(30, 40);
+        if (p1.first == 10 && p1.second == 20 && p2.first == 30 && p2.second == 40) {
+            Console.println("Collections full & partial template paths OK!");
+        } else {
+            Console.println("Collections full & partial template paths FAILED!");
+        }
+
+        Console.println("=== PHASE 7 TESTS OK ===");
+    }
+}
+
 
