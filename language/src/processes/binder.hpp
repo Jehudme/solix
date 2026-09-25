@@ -143,6 +143,7 @@ public:
     TypeInfo evaluate_expression(Node* expr);
     
     void record_error(Node* node, const std::string& msg);
+    void record_warning(Node* node, const std::string& msg, const std::string& code = "W_WARN");
     
     void setup_builtins();
     bool check_access(Node* member_decl, Node* owner_class, Node* expr);

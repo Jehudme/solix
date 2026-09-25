@@ -10,8 +10,8 @@ namespace solix {
 Node *Binder::instantiate_template(const std::string &template_name,
                                    const std::vector<TypeInfo> &type_args,
                                    Node *error_node) {
-  log_info("Attempting to instantiate template '{}' with {} type arguments",
-           template_name, type_args.size());
+  log_debug("Attempting to instantiate template '{}' with {} type arguments",
+            template_name, type_args.size());
 
   if (!template_registry.count(template_name)) {
     log_error(
@@ -173,11 +173,11 @@ Node *Binder::instantiate_template(const std::string &template_name,
   }
   current_package = current_pkg_copy;
 
-  log_info("Successfully instantiated template: {}", mangled_name);
+  log_debug("Successfully instantiated template: {}", mangled_name);
   return global_scope.resolve(mangled_name);
 }
 
-// ─── Error Reporting ────────────────────────────────────────────────────────
+// ─── Error & Warning Reporting ───────────────────────────────────────────────
 
 void Binder::record_error(Node *node, const std::string &msg) {
   uint32_t line = node ? node->line : 0;
@@ -200,6 +200,31 @@ void Binder::record_error(Node *node, const std::string &msg) {
     }
   }
   context.diagnostic->record_report(report);
+}
+
+void Binder::record_warning(Node *node, const std::string &msg, const std::string &code) {
+  uint32_t line = node ? node->line : 0;
+  uint32_t col = node ? node->column : 0;
+  log_warn("[line {}, col {}] {}", line, col, msg);
+
+  Report report;
+  report.severity = ReportSeverity::WARNING;
+  report.code = code;
+  report.message = msg;
+  report.source_path = "";
+  report.line = line;
+  report.column = col;
+  if (node && node->source) {
+    if (std::holds_alternative<std::filesystem::path>(*node->source)) {
+      report.source_path =
+          std::get<std::filesystem::path>(*node->source).string();
+    } else {
+      report.source_path = std::get<std::string>(*node->source);
+    }
+  }
+  if (context.diagnostic) {
+    context.diagnostic->record_report(report);
+  }
 }
 
 // ─── Builtin Primitives Setup ────────────────────────────────────────────────
@@ -289,6 +314,10 @@ void Binder::declare_local(const std::string &name, Node *node) {
   if (current_scope->symbols.count(name)) {
     record_error(node,
                  "Variable '" + name + "' is already defined in this scope.");
+  } else if (current_scope->parent && current_scope->parent->resolve(name) != nullptr) {
+    if (name != "this" && node && node->node_type == NodeType::VAR_DECL) {
+      record_warning(node, "Variable '" + name + "' shadows a variable in an outer scope", "W_SHADOW");
+    }
   }
   current_scope->define(name, node);
 }
@@ -431,7 +460,7 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
 // ─── Pass 2: Type & Memory Binding ──────────────────────────────────────────
 
 void Binder::bind_types_and_memory() {
-  log_info("Starting Pass 2: Type and Memory Binding...");
+  log_debug("Starting Pass 2: Type and Memory Binding...");
   static_variable_index = 1;
 
   for (const auto &[name, node] : global_scope.symbols) {
@@ -679,11 +708,11 @@ void Binder::bind_types_and_memory() {
 // ─── Binder::execute ─────────────────────────────────────────────────────────
 
 void Binder::execute() {
-  log_info("Starting Semantic Analysis (Binding)...");
+  log_debug("Starting Semantic Analysis (Binding)...");
 
   setup_builtins();
 
-  log_info("Pass 1a: Registering package and top-level symbols...");
+  log_debug("Pass 1a: Registering package and top-level symbols...");
   for (const auto &[source, nodes] : context.nodes) {
     current_package = "";
     current_prefix = "";
@@ -700,7 +729,7 @@ void Binder::execute() {
     }
   }
 
-  log_info("Pass 1b: Registering class members and signatures...");
+  log_debug("Pass 1b: Registering class members and signatures...");
   for (const auto &[source, nodes] : context.nodes) {
     current_package = "";
     current_prefix = "";
@@ -723,7 +752,7 @@ void Binder::execute() {
   log_debug("Memory mapping complete. Total static variables: {}",
             static_variable_index);
 
-  log_info("Pass 3: Binding statement execution logic and bodies...");
+  log_debug("Pass 3: Binding statement execution logic and bodies...");
   for (const auto &[source, nodes] : context.nodes) {
     current_package = "";
     for (const auto &node : nodes) {
@@ -745,7 +774,7 @@ void Binder::execute() {
     throw BindError(all_errors);
   }
 
-  log_info("Semantic Analysis completed successfully.");
+  log_debug("Semantic Analysis completed successfully.");
 }
 
 // ─── Pass 3 Tree Traversal ───────────────────────────────────────────────────
@@ -2060,7 +2089,7 @@ void Binder::visit(PackageStatement &n) {
     known_packages.insert(current_package);
     n.mangled_name = n.package_name;
     global_scope.define(n.mangled_name, &n);
-    log_info("Configured active package: '{}'", n.package_name);
+    log_debug("Configured active package: '{}'", n.package_name);
   } else if (current_pass == BinderPass::REGISTER_MEMBERS) {
     current_package = n.package_name + ".";
     current_prefix = current_package;
@@ -2075,8 +2104,8 @@ void Binder::visit(AliasStatement &n) {
       std::string full_name = current_prefix + n.alias_name;
       n.package_context = current_prefix;
       template_registry[full_name] = &n;
-      log_info("Registered alias template blueprint: '{}' (params: {})",
-               full_name, n.template_parameters.size());
+      log_debug("Registered alias template blueprint: '{}' (params: {})",
+                full_name, n.template_parameters.size());
     }
     return;
   }
@@ -2119,8 +2148,8 @@ void Binder::visit(ClassDeclaration &n) {
       std::string full_name = current_prefix + n.class_name;
       n.package_context = current_prefix;
       template_registry[full_name] = &n;
-      log_info("Registered class template blueprint: '{}' (params: {})",
-               full_name, n.template_parameters.size());
+      log_debug("Registered class template blueprint: '{}' (params: {})",
+                full_name, n.template_parameters.size());
     }
     return;
   }
@@ -2211,8 +2240,8 @@ void Binder::visit(MethodDeclaration &n) {
       std::string full_name = current_prefix + n.method_name;
       n.package_context = current_package;
       template_registry[full_name] = &n;
-      log_info("Registered method template blueprint: '{}' (params: {})",
-               full_name, n.template_parameters.size());
+      log_debug("Registered method template blueprint: '{}' (params: {})",
+                full_name, n.template_parameters.size());
     }
     return;
   }

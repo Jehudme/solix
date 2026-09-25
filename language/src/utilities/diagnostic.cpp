@@ -7,7 +7,7 @@
 
 namespace solix {
 
-Diagnostic::Diagnostic(CompilationContext &context) {
+Diagnostic::Diagnostic(CompilationContext &context) : context(context) {
   const auto &options = context.options;
   std::vector<spdlog::sink_ptr> sinks;
 
@@ -126,12 +126,49 @@ void Diagnostic::record_report(const Report &report) {
   reports.push_back(report);
 }
 
+void Diagnostic::record_warning(const std::string &message, const std::string &source_path, int line, int column, const std::string &code) {
+  Report report;
+  report.severity = ReportSeverity::WARNING;
+  report.code = code;
+  report.message = message;
+  report.source_path = source_path;
+  report.line = line;
+  report.column = column;
+  reports.push_back(report);
+}
+
 bool Diagnostic::has_errors() const {
   for (const auto &r : reports) {
     if (r.severity == ReportSeverity::ERROR)
       return true;
   }
   return false;
+}
+
+bool Diagnostic::has_warnings() const {
+  for (const auto &r : reports) {
+    if (r.severity == ReportSeverity::WARNING)
+      return true;
+  }
+  return false;
+}
+
+size_t Diagnostic::error_count() const {
+  size_t count = 0;
+  for (const auto &r : reports) {
+    if (r.severity == ReportSeverity::ERROR)
+      count++;
+  }
+  return count;
+}
+
+size_t Diagnostic::warning_count() const {
+  size_t count = 0;
+  for (const auto &r : reports) {
+    if (r.severity == ReportSeverity::WARNING)
+      count++;
+  }
+  return count;
 }
 
 const std::vector<Report> &Diagnostic::get_reports() const { return reports; }
@@ -157,10 +194,47 @@ void Diagnostic::print_reports(bool disable_color) const {
       color = CYAN;
     }
 
-    std::cout << BOLD << r.source_path << ":" << r.line << ":" << r.column
+    std::cout << BOLD << (r.source_path.empty() ? "<unknown>" : r.source_path)
+              << ":" << r.line << ":" << r.column
               << ": " << color << severity_str << RESET << BOLD << ": "
               << (r.code.empty() ? "" : "[" + r.code + "] ") << r.message
               << RESET << "\n";
+
+    // Attempt to extract source snippet and print caret
+    if (!r.source_path.empty() && r.line > 0) {
+      std::string source_content;
+      for (const auto &[src, opt_content] : context.options.sources) {
+        std::string sname;
+        if (std::holds_alternative<std::filesystem::path>(src)) {
+          sname = std::get<std::filesystem::path>(src).string();
+        } else {
+          sname = std::get<std::string>(src);
+        }
+        if (sname == r.source_path && opt_content.has_value()) {
+          source_content = opt_content.value();
+          break;
+        }
+      }
+
+      if (!source_content.empty()) {
+        std::istringstream stream(source_content);
+        std::string line_text;
+        int current_line = 1;
+        while (std::getline(stream, line_text)) {
+          if (current_line == r.line) {
+            std::cout << "    " << line_text << "\n";
+            std::cout << "    ";
+            int col = r.column > 0 ? r.column - 1 : 0;
+            for (int i = 0; i < col && i < static_cast<int>(line_text.size()); ++i) {
+              std::cout << (line_text[i] == '\t' ? '\t' : ' ');
+            }
+            std::cout << color << "^" << RESET << "\n";
+            break;
+          }
+          current_line++;
+        }
+      }
+    }
   }
 }
 } // namespace solix

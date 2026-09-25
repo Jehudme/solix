@@ -879,7 +879,7 @@ std::unique_ptr<Node> ParserState::parse_package_statement() {
   }
   consume(TokenType::PUNCTUATION_SEMICOLON,
           "Expected ';' after package declaration");
-  log_info("Declared package: {}", name_str);
+  log_debug("Declared package: {}", name_str);
   return std::make_unique<PackageStatement>(pkg, name_str);
 }
 
@@ -915,7 +915,7 @@ std::unique_ptr<Node> ParserState::parse_enum_declaration(TokenType modifier) {
   Token enum_tok = previous();
   Token name = consume(TokenType::IDENTIFIER, "Expected enum name");
   std::string e_name = std::get<std::string>(name.value);
-  log_info("Parsing enum '{}' at line {}", e_name, enum_tok.line);
+  log_trace("Parsing enum '{}' at line {}", e_name, enum_tok.line);
 
   auto decl = std::make_unique<EnumDeclaration>(enum_tok, e_name);
   decl->access_modifier = modifier;
@@ -937,7 +937,7 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
   Token class_tok = previous();
   Token name = consume(TokenType::IDENTIFIER, "Expected class name");
   std::string cls_name = std::get<std::string>(name.value);
-  log_info("Parsing class '{}' at line {}", cls_name, class_tok.line);
+  log_trace("Parsing class '{}' at line {}", cls_name, class_tok.line);
 
   auto decl = std::make_unique<ClassDeclaration>(class_tok, cls_name);
 
@@ -1239,7 +1239,7 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
 }
 
 void Parser::execute() {
-  log_info("Starting Syntax Analysis (Parsing)...");
+  log_debug("Starting Syntax Analysis (Parsing)...");
 
   for (const auto &[source, token_lists] : context.tokens) {
     if (token_lists.empty())
@@ -1258,7 +1258,7 @@ void Parser::execute() {
       source_name = std::get<std::string>(source);
     }
 
-    log_info("Parsing source file: {}", source_name);
+    log_debug("Parsing source file: {}", source_name);
 
     try {
       while (!state.is_at_end()) {
@@ -1290,11 +1290,11 @@ void Parser::execute() {
       }
     }
 
-    log_info("Completed parsing {}: generated {} top-level AST nodes",
-             source_name, context.nodes[source].size());
+    log_debug("Completed parsing {}: generated {} top-level AST nodes",
+              source_name, context.nodes[source].size());
   }
 
-  log_info("Syntax Analysis completed.");
+  log_debug("Syntax Analysis completed.");
 }
 
 

@@ -17,6 +17,13 @@ std::vector<uint8_t> run(CompilationOptions& options) {
     CompilationContext context(options);
     context.diagnostic = std::make_unique<Diagnostic>(context);
     
+    auto start_time = std::chrono::steady_clock::now();
+    size_t file_count = options.sources.size();
+    if (context.diagnostic->get_root_logger()) {
+        context.diagnostic->get_root_logger()->info("Compiling {} source file{}...",
+            file_count, file_count == 1 ? "" : "s");
+    }
+    
     Lexer lexer(context, "Lexer");
     lexer.execute();
     if (context.diagnostic->has_errors()) {
@@ -54,6 +61,12 @@ std::vector<uint8_t> run(CompilationOptions& options) {
         if (asm_file) {
             asm_file << context.assembly;
         }
+    }
+    
+    auto end_time = std::chrono::steady_clock::now();
+    auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    if (context.diagnostic->get_root_logger()) {
+        context.diagnostic->get_root_logger()->info("Compilation completed in {} ms.", elapsed_ms);
     }
     
     return std::move(context.bytecode);
