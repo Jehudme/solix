@@ -1,97 +1,54 @@
-# §8 ConstructorDeclaration
+# ConstructorDeclaration
 
-## 1. Overview & Scope
+## 1. Overview & Purpose
 
-A `ConstructorDeclaration` defines the initialization routine invoked immediately after an object instance is allocated in heap memory. Constructors share the exact name of their enclosing class, support parameter overloading, superclass constructor chaining, and member initializer lists (`: super(args), field(val)`).
+A `ConstructorDeclaration` initializes newly allocated class instances on the heap. Constructors share the exact name of their class and support member initializer lists (`: super(args), field(val)`).
 
-In Solix, constructors allocate local register slot 0 to the implicit `this` instance pointer. The constructor is responsible for initializing all fields before the newly allocated object reference is returned to the caller.
-
-### Syntactic Placement
-A `ConstructorDeclaration` is permitted only directly within class declaration bodies.
+Register slot 0 is assigned to `this`. If a class does not declare a constructor, the compiler automatically synthesizes a default parameterless constructor.
 
 ---
 
-## 2. Syntax & Production Rules
+## 2. Compilation & Runtime Mechanics (With Real Bytecode)
 
-### Production Rules
+### Bytecode Disassembly Example
 ```solix
-ConstructorDeclaration ::= Identifier '(' ParameterList? ')' MemberInitList? BlockStatement
-MemberInitList         ::= ':' MemberInitializer (',' MemberInitializer)*
-MemberInitializer      ::= Identifier '(' ArgumentList? ')'
-```
-
-### Canonical Code Patterns
-```solix
-class Point3D extends Point2D {
-    int32 z;
-
-    Point3D(int32 x, int32 y, int32 z) : super(x, y), z(z) {
-        Console.println("Point3D initialized");
-    }
-}
-```
-
----
-
-## 3. Scope & Declaration Space (Static Semantics)
-
-### 3.1 Initializer List Scope
-- The member initializer list evaluates expressions in the scope of constructor parameters.
-- `super(...)` must appear as the very first initializer if the class extends a base class.
-
----
-
-## 4. Operational Semantics (Dynamic Execution)
-
-### 4.1 Execution Sequence
-1. Heap memory is allocated (`OpCode::ALLOC <size>`).
-2. Object header is initialized (`ref_count = 1`, `vtable_id`).
-3. Instance pointer stored in slot 0 (`this`).
-4. Superclass constructor executes.
-5. Member initializers execute, populating field offsets.
-6. Constructor block statements execute.
-7. Instance reference returned to stack top.
-
----
-
-## 5. Memory Model & ARC Invariants
-
-### 5.1 Constructor Abort Deallocation
-If an exception is thrown inside a constructor body, the partially initialized instance in slot 0 is decremented and deallocated, ensuring no orphan heap memory is leaked.
-
----
-
-## 6. Compile-Time Constraints & Diagnostic Errors
-
-### Rule 6.1: Constructor Name Mismatch
-A constructor must share the exact name of the enclosing class.
-```solix
-class Item {
-    Widget() {} // Error: constructor name mismatch
-}
-```
-*Diagnostic Message*:
-```text
-[ERROR] binder.cpp: Constructor name 'Widget' does not match enclosing class 'Item'
-```
-
----
-
-## 7. Runtime Fault Conditions
-
-### Fault 7.1: Super Constructor Invocation Failure
-Runtime faults inside chained constructors unwind and abort object creation.
-
----
-
-## 8. Conformance & Verification Examples
-
-### Example 8.1: Member Initializer List Execution
-```solix
-class Vector {
+// Solix Code
+class Point {
     int32 x;
-    int32 y;
-    Vector(int32 x, int32 y) : x(x), y(y) {}
+    Point(int32 x) : x(x) {}
 }
 ```
-*Verification Invariant*: Field offsets for `x` and `y` are populated prior to entering the body.
+
+```bytecode
+// Compiled VM Bytecode (Point constructor)
+GET_LOCAL 1                 // Load parameter 'x'
+GET_LOCAL 0                 // Load 'this' (slot 0)
+SET_PROPERTY 0              // this.x = x
+RETURN                      // Constructor returns 'this'
+```
+
+---
+
+## 3. Valid Test Cases (Positive Scenarios)
+
+### Case 3.1: Chained Super Constructor
+```solix
+class Base { int32 id; Base(int32 id) { this.id = id; } }
+class Sub extends Base { Sub(int32 id) : super(id) {} }
+```
+*Expected Result*: Invokes `Base` constructor before running `Sub` constructor.
+
+---
+
+## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
+
+### Case 4.1: Constructor Name Mismatch
+```solix
+class Widget {
+    Gadget() {} // Error: name mismatch
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] binder.cpp: Constructor name 'Gadget' does not match enclosing class 'Widget'
+```

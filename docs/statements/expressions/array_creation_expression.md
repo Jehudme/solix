@@ -1,66 +1,46 @@
-# §31 ArrayCreationExpression
+# ArrayCreationExpression
 
-## 1. Overview & Scope
+## 1. Overview & Purpose
 
-An `ArrayCreationExpression` (`new ElementType[size]`) dynamically allocates a contiguous array buffer on the heap. Arrays are first-class reference types governed by ARC.
+An `ArrayCreationExpression` (`new Type[size]`) allocates a contiguous array buffer on the heap. Arrays are reference types governed by ARC.
 
 ---
 
-## 2. Syntax & Production Rules
+## 2. Compilation & Runtime Mechanics (With Real Bytecode)
 
-### Production Rules
+### Bytecode Disassembly Example
 ```solix
-ArrayCreationExpression ::= 'new' TypeSpecifier '[' Expression ']'
+// Solix Code
+int32[] arr = new int32[10];
+```
+
+```bytecode
+// Compiled VM Bytecode
+PUSH_CONST_I32 10
+ALLOC_STATIC 4              // Allocates array buffer (element size 4)
+SET_LOCAL 1                 // Stored into arr
 ```
 
 ---
 
-## 3. Scope & Declaration Space (Static Semantics)
+## 3. Valid Test Cases (Positive Scenarios)
 
-The size expression must evaluate to an integral type (`int32`, `int64`, etc.).
-
----
-
-## 4. Operational Semantics (Dynamic Execution)
-
-1. Evaluates size expression onto operand stack.
-2. Checks size >= 0.
-3. Allocates array header (element count, element size) and buffer.
-4. Clears memory to default zero/null values.
-5. Pushes array reference onto stack.
-
----
-
-## 5. Memory Model & ARC Invariants
-
-Array buffer is managed as an ARC reference object.
-
----
-
-## 6. Compile-Time Constraints & Diagnostic Errors
-
-### Rule 6.1: Non-Integral Size
+### Case 3.1: Zero-Initialized Array
 ```solix
-int32[] arr = new int32["ten"]; // Error
+int32[] data = new int32[5];
+int32 first = data[0]; // 0
 ```
-*Diagnostic Message*:
+*Expected Result*: `first` is 0.
+
+---
+
+## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
+
+### Case 4.1: Negative Size at Runtime (Runtime Fault)
+```solix
+int32[] bad = new int32[-1];
+```
+*Expected Runtime Exception*:
 ```text
-[ERROR] binder.cpp: Array size must be an integer, got 'String'
+[FATAL VM PANIC] NegativeArraySizeException: Attempted to create array with negative size -1
 ```
-
----
-
-## 7. Runtime Fault Conditions
-
-### Fault 7.1: Negative Array Size
-Raises `NegativeArraySizeException` if size < 0.
-
----
-
-## 8. Conformance & Verification Examples
-
-### Example 8.1: Array Buffer Allocation
-```solix
-int32[] numbers = new int32[100];
-```
-*Verification Invariant*: `numbers.length` equals 100; memory allocated and initialized to 0.

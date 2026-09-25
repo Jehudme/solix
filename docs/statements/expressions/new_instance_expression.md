@@ -1,66 +1,57 @@
-# §30 NewInstanceExpression
+# NewInstanceExpression
 
-## 1. Overview & Scope
+## 1. Overview & Purpose
 
-A `NewInstanceExpression` (`new ClassName(arguments)`) allocates a new instance of a class on the heap, initializes its internal ARC header and VTable metadata, and invokes the matching constructor.
+A `NewInstanceExpression` (`new ClassName(args)`) dynamically allocates memory on the heap, initializes the object header (`ref_count = 1`, `vtable_id`), and invokes the matching constructor.
 
 ---
 
-## 2. Syntax & Production Rules
+## 2. Compilation & Runtime Mechanics (With Real Bytecode)
 
-### Production Rules
+### Bytecode Disassembly Example
 ```solix
-NewInstanceExpression ::= 'new' QualifiedType '(' ArgumentList? ')'
+// Solix Code
+Widget w = new Widget(5);
+```
+
+```bytecode
+// Compiled VM Bytecode
+ALLOC_DYNAMIC 16            // Allocates memory on heap
+SET_VTABLE <Widget_vtable_id>
+PUSH_CONST_I32 5            // Argument
+CALL Widget.new(int32)      // Runs constructor
+SET_LOCAL 1                 // Stored into w
 ```
 
 ---
 
-## 3. Scope & Declaration Space (Static Semantics)
+## 3. Valid Test Cases (Positive Scenarios)
 
-The target class must be concrete (non-abstract). Constructor overload matching resolves arguments.
+### Case 3.1: Instantiation with Overloaded Constructor
+```solix
+class Item {
+    int32 val;
+    Item() { this.val = 0; }
+    Item(int32 v) { this.val = v; }
+}
 
----
-
-## 4. Operational Semantics (Dynamic Execution)
-
-1. Allocates heap buffer (`OpCode::ALLOC <size>`).
-2. Initializes object header (`ref_count = 1`, `vtable_id`).
-3. Invokes constructor with instance at slot 0 (`this`).
-4. Pushes newly created reference pointer onto stack top.
-
----
-
-## 5. Memory Model & ARC Invariants
-
-Newly created object begins with `ref_count = 1`.
+void test() {
+    Item i1 = new Item();
+    Item i2 = new Item(42);
+}
+```
+*Expected Result*: `i1.val` is 0; `i2.val` is 42.
 
 ---
 
-## 6. Compile-Time Constraints & Diagnostic Errors
+## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
 
-### Rule 6.1: Instantiating Abstract Class
+### Case 4.1: Instantiating Abstract Class
 ```solix
 abstract class Base {}
 Base b = new Base(); // Error
 ```
-*Diagnostic Message*:
+*Expected Compiler Diagnostic*:
 ```text
 [ERROR] binder.cpp: Cannot instantiate abstract class 'Base'
 ```
-
----
-
-## 7. Runtime Fault Conditions
-
-### Fault 7.1: Heap Memory Exhaustion
-Raises `OutOfMemoryException` if heap allocation fails.
-
----
-
-## 8. Conformance & Verification Examples
-
-### Example 8.1: Instantiation Lifecycle
-```solix
-Widget w = new Widget(100);
-```
-*Verification Invariant*: `w` reference count is 1. Destructor runs when `w` exits scope.

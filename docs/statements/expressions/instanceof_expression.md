@@ -1,65 +1,46 @@
-# §29 InstanceOfExpression
+# InstanceOfExpression
 
-## 1. Overview & Scope
+## 1. Overview & Purpose
 
-An `InstanceOfExpression` (`expr instanceof TargetType`) evaluates whether an object instance conforms at runtime to a specified class or interface type. It yields a boolean `true` if the object inherits from or implements the target type, and `false` otherwise (or if the evaluated reference is `null`).
+An `InstanceOfExpression` (`obj instanceof TargetType`) queries whether an instance inherits from or implements a type. Returns `true` on match, and `false` otherwise (or if `obj == null`).
 
 ---
 
-## 2. Syntax & Production Rules
+## 2. Compilation & Runtime Mechanics (With Real Bytecode)
 
-### Production Rules
+### Bytecode Disassembly Example
 ```solix
-InstanceOfExpression ::= Expression 'instanceof' QualifiedType
+// Solix Code
+bool is_dog = a instanceof Dog;
+```
+
+```bytecode
+// Compiled VM Bytecode
+GET_LOCAL 1
+INSTANCEOF <Dog_vtable_id>  // Pushes bool to stack
+SET_LOCAL 2
 ```
 
 ---
 
-## 3. Scope & Declaration Space (Static Semantics)
+## 3. Valid Test Cases (Positive Scenarios)
 
-The LHS must be a reference type; the RHS must be a declared class or interface.
-
----
-
-## 4. Operational Semantics (Dynamic Execution)
-
-1. Evaluates LHS expression onto operand stack.
-2. Emits `OpCode::INSTANCEOF <target_vtable_id>`.
-3. If reference is `null`, returns `false`.
-4. Otherwise, checks target type against instance VTable hierarchy table. Pushes `bool`.
+### Case 3.1: Safe Null Evaluation
+```solix
+Animal a = null;
+bool check = a instanceof Dog; // false, no panic!
+```
+*Expected Result*: `check` is `false`.
 
 ---
 
-## 5. Memory Model & ARC Invariants
+## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
 
-Pushes scalar `bool`. Incurs 0 ARC refcount changes.
-
----
-
-## 6. Compile-Time Constraints & Diagnostic Errors
-
-### Rule 6.1: InstanceOf with Primitive Type
+### Case 4.1: Primitive Target
 ```solix
 bool b = 10 instanceof int32; // Error
 ```
-*Diagnostic Message*:
+*Expected Compiler Diagnostic*:
 ```text
 [ERROR] binder.cpp: 'instanceof' cannot be applied to primitive types
 ```
-
----
-
-## 7. Runtime Fault Conditions
-
-None; null references safely evaluate to `false`.
-
----
-
-## 8. Conformance & Verification Examples
-
-### Example 8.1: Safe Hierarchy Query
-```solix
-Animal a = null;
-bool is_dog = a instanceof Dog; // Evaluates to false safely
-```
-*Verification Invariant*: `is_dog` is `false`.

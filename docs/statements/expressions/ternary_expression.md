@@ -1,78 +1,51 @@
-# §25 TernaryExpression
+# TernaryExpression
 
-## 1. Overview & Scope
+## 1. Overview & Purpose
 
-A `TernaryExpression` (`condition ? true_expr : false_expr`) is an inline conditional operator that yields one of two expressions based on the boolean outcome of a predicate condition. Evaluation is strictly lazy and short-circuiting: only the branch corresponding to the evaluated condition is executed.
-
-### Syntactic Placement
-Permitted anywhere an expression is syntactically valid.
+A `TernaryExpression` (`cond ? true_expr : false_expr`) is an inline conditional operator. It is strictly short-circuiting: only the branch matching the evaluated condition is executed.
 
 ---
 
-## 2. Syntax & Production Rules
+## 2. Compilation & Runtime Mechanics (With Real Bytecode)
 
-### Production Rules
+### Bytecode Disassembly Example
 ```solix
-TernaryExpression ::= Expression '?' Expression ':' Expression
+// Solix Code
+int32 val = flag ? 10 : 20;
 ```
 
-### Canonical Code Patterns
-```solix
-String status = is_connected ? "Online" : "Offline";
-int32 max_val = a > b ? a : b;
+```bytecode
+// Compiled VM Bytecode
+GET_LOCAL 1                 // Load flag
+JUMP_IF_FALSE <false_branch>
+PUSH_CONST_I32 10           // True branch
+JUMP <end>
+<false_branch>:
+PUSH_CONST_I32 20           // False branch
+<end>:
+SET_LOCAL 2                 // Stored into val
 ```
 
 ---
 
-## 3. Scope & Declaration Space (Static Semantics)
+## 3. Valid Test Cases (Positive Scenarios)
 
-### 3.1 Condition & Branch Type Unification
-- The condition expression must evaluate to primitive `bool`.
-- The true and false branches must unify to a common ancestor type (`is_assignable`).
-
----
-
-## 4. Operational Semantics (Dynamic Execution)
-
-### 4.1 Short-Circuit Execution
-1. Evaluates condition expression.
-2. Emits `OpCode::JUMP_IF_FALSE <false_branch_ip>`.
-3. If true, evaluates true expression, emits `OpCode::JUMP <end_ip>`.
-4. If false, evaluates false expression.
-5. The result of the executed branch remains on the operand stack.
-
----
-
-## 5. Memory Model & ARC Invariants
-
-### 5.1 Lazy Evaluation Invariant
-- The unselected branch is never evaluated. Any allocations or ARC increments in the unselected branch do not occur.
-
----
-
-## 6. Compile-Time Constraints & Diagnostic Errors
-
-### Rule 6.1: Non-Boolean Condition
+### Case 3.1: Safe Guard with Null Check
 ```solix
-int32 x = 5 ? 1 : 2; // Error: condition not bool
+String s = null;
+int32 len = (s != null) ? s.length() : 0; // Short-circuits; does not call s.length()!
 ```
-*Diagnostic Message*:
+*Expected Result*: `len` equals 0; no null pointer exception occurs.
+
+---
+
+## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
+
+### Case 4.1: Non-Boolean Condition
+```solix
+int32 res = 5 ? 1 : 2; // Error
+```
+*Expected Compiler Diagnostic*:
 ```text
 [ERROR] binder.cpp: Ternary condition must be of type 'bool', got 'int32'
 ```
-
----
-
-## 7. Runtime Fault Conditions
-
-Faults in the evaluated branch propagate normally; faults in the unselected branch are never triggered.
-
----
-
-## 8. Conformance & Verification Examples
-
-### Example 8.1: Short-Circuit Side-Effect Avoidance
-```solix
-String safe = (obj != null) ? obj.name : "default";
-```
-*Verification Invariant*: When `obj == null`, `obj.name` is never evaluated, preventing `NullReferenceException`.

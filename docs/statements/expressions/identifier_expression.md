@@ -1,72 +1,50 @@
-# §36 IdentifierNode
+# IdentifierNode
 
-## 1. Overview & Scope
+## 1. Overview & Purpose
 
-An `IdentifierNode` represents a symbolic name reference within source code, addressing a local variable, parameter, class field, global variable, function, or type name.
+An `IdentifierNode` represents a named reference to a local variable, function parameter, class field, global variable, or type.
 
 ---
 
-## 2. Syntax & Production Rules
+## 2. Compilation & Runtime Mechanics (With Real Bytecode)
 
-### Production Rules
+### Bytecode Disassembly Example
 ```solix
-Identifier ::= [a-zA-Z_][a-zA-Z0-9_]*
+// Solix Code
+int32 y = x;
+```
+
+```bytecode
+// Compiled VM Bytecode
+GET_LOCAL 1                 // Resolves 'x' to slot 1 and loads value
+SET_LOCAL 2                 // Stores into 'y'
 ```
 
 ---
 
-## 3. Scope & Declaration Space (Static Semantics)
+## 3. Valid Test Cases (Positive Scenarios)
 
-Resolved against the active lexical scope hierarchy:
-1. Local variables and parameters.
-2. Instance/static class fields.
-3. Global package variables.
-
----
-
-## 4. Operational Semantics (Dynamic Execution)
-
-- Local variable/parameter: Emits `OpCode::GET_LOCAL <memory_index>`.
-- Global variable: Emits `OpCode::GET_GLOBAL <global_index>`.
-- Instance field: Emits `OpCode::GET_PROPERTY <offset>`.
-
----
-
-## 5. Memory Model & ARC Invariants
-
-Pushes value or reference pointer to operand stack.
-
----
-
-## 6. Compile-Time Constraints & Diagnostic Errors
-
-### Rule 6.1: Undefined Identifier
+### Case 3.1: Local Resolution Precedence
 ```solix
-int32 x = undeclared_variable; // Error
-```
-*Diagnostic Message*:
-```text
-[ERROR] binder.cpp: Undefined identifier: undeclared_variable
-```
-
----
-
-## 7. Runtime Fault Conditions
-
-None under normal operation.
-
----
-
-## 8. Conformance & Verification Examples
-
-### Example 8.1: Local Scope Precedence Over Field
-```solix
-class Test {
-    int32 x = 10;
-    void run() {
-        int32 x = 20;
-        Console.println(x); // Resolves to local x (20)
-    }
+int32 val = 100;
+{
+    int32 val = 200;
+    Console.println(val); // Resolves to local slot (200)
 }
 ```
-*Verification Invariant*: Outputs 20; resolves to local slot.
+*Expected Result*: Prints 200.
+
+---
+
+## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
+
+### Case 4.1: Undefined Identifier
+```solix
+void test() {
+    int32 a = unknown_var;
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] binder.cpp: Undefined identifier: unknown_var
+```

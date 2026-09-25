@@ -1,76 +1,58 @@
-# §32 ArrayAccessExpression
+# ArrayAccessExpression
 
-## 1. Overview & Scope
+## 1. Overview & Purpose
 
-An `ArrayAccessExpression` (`array[index]`) accesses or modifies an element in a contiguous array. It functions as an rvalue (reading an element value) and as an lvalue (target of assignment).
-
-The VM performs mandatory runtime bounds checking against the array length, throwing `IndexOutOfBoundsException` on violation.
+An `ArrayAccessExpression` (`arr[index]`) accesses or modifies an element in an array. The VM enforces runtime bounds checking, raising `IndexOutOfBoundsException` on violation.
 
 ---
 
-## 2. Syntax & Production Rules
+## 2. Compilation & Runtime Mechanics (With Real Bytecode)
 
-### Production Rules
+### Bytecode Disassembly Example
 ```solix
-ArrayAccessExpression ::= Expression '[' Expression ']'
+// Solix Code
+int32 val = arr[2];
+arr[2] = 50;
+```
+
+```bytecode
+// Compiled VM Bytecode
+// Read
+GET_LOCAL 1                 // arr
+PUSH_CONST_I32 2            // index
+GET_ARRAY                   // Bounds checks & reads element
+SET_LOCAL 2                 // val
+
+// Write
+PUSH_CONST_I32 50           // value
+GET_LOCAL 1                 // arr
+PUSH_CONST_I32 2            // index
+SET_ARRAY                   // Bounds checks & writes element
 ```
 
 ---
 
-## 3. Scope & Declaration Space (Static Semantics)
+## 3. Valid Test Cases (Positive Scenarios)
 
-LHS must be an array type (`array_depth > 0`). Index must be integral.
-
----
-
-## 4. Operational Semantics (Dynamic Execution)
-
-1. Evaluates array reference. If `null`, raises `NullReferenceException`.
-2. Evaluates index. If `index < 0 || index >= length`, raises `IndexOutOfBoundsException`.
-3. Reads or writes target memory offset.
-
----
-
-## 5. Memory Model & ARC Invariants
-
-Reading reference element increments refcount if stored in local variable.
-
----
-
-## 6. Compile-Time Constraints & Diagnostic Errors
-
-### Rule 6.1: Subscript on Non-Array
+### Case 3.1: In-Bounds Read and Write
 ```solix
-int32 x = 10;
-x[0] = 5; // Error: x is not array
+int32[] buffer = new int32[3];
+buffer[0] = 100;
+buffer[1] = 200;
+int32 sum = buffer[0] + buffer[1]; // 300
 ```
-*Diagnostic Message*:
-```text
-[ERROR] binder.cpp: Array subscript cannot be applied to non-array type 'int32'
-```
+*Expected Result*: `sum` equals 300.
 
 ---
 
-## 7. Runtime Fault Conditions
+## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
 
-### Fault 7.1: Index Out of Bounds
-```solix
-int32[] arr = new int32[5];
-int32 bad = arr[10]; // Runtime fault
-```
-*Runtime Fault*:
-```text
-[FATAL VM PANIC] IndexOutOfBoundsException: Index 10 out of bounds for array length 5
-```
-
----
-
-## 8. Conformance & Verification Examples
-
-### Example 8.1: Array Mutation
+### Case 4.1: Index Out of Bounds (Runtime Fault)
 ```solix
 int32[] data = new int32[2];
-data[0] = 10;
-data[1] = 20;
+int32 fail = data[5]; // Out of bounds
 ```
-*Verification Invariant*: `data[0]` is 10 and `data[1]` is 20.
+*Expected Runtime Exception*:
+```text
+[FATAL VM PANIC] IndexOutOfBoundsException: Index 5 out of bounds for array length 2
+```

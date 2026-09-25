@@ -1,92 +1,82 @@
-# §7 FieldDeclaration
+# FieldDeclaration
 
-## 1. Overview & Scope
+## 1. Overview & Purpose
 
-A `FieldDeclaration` defines state storage either within a class instance (instance fields) or globally across a class/package (static fields). Fields support access modifiers (`public`, `private`, `protected`), type specifiers, and optional initializers.
+A `FieldDeclaration` defines state storage within a class instance (instance fields) or globally (static fields). Fields support access modifiers (`public`, `private`, `protected`) and the `weak` ownership modifier.
 
-Solix provides special support for the `weak` ownership modifier on reference fields. Marking a field as `weak` prevents Automatic Reference Counting (ARC) reference cycles (such as parent-child object graphs) from leaking memory.
-
-### Syntactic Placement
-A `FieldDeclaration` is permitted inside class bodies or at global package scope (for top-level global variables).
+The `weak` keyword is crucial in Solix: marking a reference field as `weak` stores the pointer without incrementing the target object's reference counter, breaking circular ownership graphs (e.g. parent-child relationships) and preventing permanent memory leaks.
 
 ---
 
-## 2. Syntax & Production Rules
+## 2. Compilation & Runtime Mechanics (With Real Bytecode)
 
-### Production Rules
+### Bytecode Disassembly Example
 ```solix
-FieldDeclaration ::= Modifier* 'weak'? TypeSpecifier Identifier ('=' Expression)? ';'
-Modifier         ::= 'public' | 'private' | 'protected' | 'static'
+// Solix Code
+class Node {
+    Node strong_child;
+    weak Node weak_parent;
+}
+node.strong_child = child;
+node.weak_parent = parent;
 ```
 
-### Canonical Code Patterns
+```bytecode
+// Compiled VM Bytecode
+// 1. Strong Field Write
+GET_LOCAL 2                 // child
+INC_REF                     // Increment ref_count
+GET_LOCAL 1                 // node
+SET_PROPERTY 0              // Stores strong pointer
+
+// 2. Weak Field Write
+GET_LOCAL 3                 // parent
+GET_LOCAL 1                 // node
+WEAK_SET_PROPERTY 8         // Stores weak pointer (NO INC_REF!)
+```
+
+---
+
+## 3. Valid Test Cases (Positive Scenarios)
+
+### Case 3.1: Cycle Breaking with Weak References
 ```solix
-class Node {
-    public int32 id;
-    public Node next;      // Strong reference (increments ref_count)
-    public weak Node prev; // Weak reference (breaks cyclic dependency!)
+class Parent { Child c; }
+class Child { weak Parent p; }
+
+void test() {
+    Parent p = new Parent();
+    Child c = new Child();
+    p.c = c;
+    c.p = p; // Weak back-pointer: cycle is broken!
 }
 ```
+*Expected Result*: Both objects are deallocated when `p` and `c` exit scope.
 
 ---
 
-## 3. Scope & Declaration Space (Static Semantics)
+## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
 
-### 3.1 Field Visibility & Access Control
-- Evaluated during Pass 1b (`REGISTER_MEMBERS`).
-- Member access checks enforce `private` and `protected` boundaries during semantic analysis.
-
----
-
-## 4. Operational Semantics (Dynamic Execution)
-
-### 4.1 Instance Field Offsets
-- Each instance field is assigned a memory byte offset within the class layout.
-- Access emits `GET_PROPERTY <offset>` or `SET_PROPERTY <offset>`.
-- For `weak` fields, writing emits `WEAK_SET_PROPERTY <offset>`, which records the pointer without incrementing the target object's `ref_count`.
-
----
-
-## 5. Memory Model & ARC Invariants
-
-### 5.1 Strong vs Weak Reference Fields
-- **Strong Reference Field**: Writing an object pointer increments `ref_count` via `INC_REF`; overwriting or destroying decrements old value via `DEC_REF`.
-- **Weak Reference Field**: Writing does not increment `ref_count`, preventing cyclic leaks.
-
----
-
-## 6. Compile-Time Constraints & Diagnostic Errors
-
-### Rule 6.1: Duplicate Field Identifier
+### Case 4.1: Duplicate Field Identifier
 ```solix
-class Test {
+class Item {
     int32 count;
     float64 count; // Error: duplicate
 }
 ```
-*Diagnostic Message*:
+*Expected Compiler Diagnostic*:
 ```text
-[ERROR] binder.cpp: Field 'count' is already declared in class 'Test'
+[ERROR] binder.cpp: Field 'count' is already declared in class 'Item'
 ```
 
----
-
-## 7. Runtime Fault Conditions
-
-### Fault 7.1: Field Access on Null Receiver
-Reading or writing a field on a null reference triggers an immediate `NullReferenceException`.
-
----
-
-## 8. Conformance & Verification Examples
-
-### Example 8.1: Cyclic Memory Reclamation with Weak Field
+### Case 4.2: Field Access on Null Reference (Runtime Fault)
 ```solix
-class Parent {
-    Child child;
-}
-class Child {
-    weak Parent parent; // Weak back-pointer
+void test() {
+    Item item = null;
+    item.count = 5; // Null dereference
 }
 ```
-*Verification Invariant*: When `Parent` reference count drops to 0, both `Parent` and `Child` are deallocated cleanly.
+*Expected Runtime Exception*:
+```text
+[FATAL VM PANIC] NullReferenceException: Attempted to write field on null object reference
+```

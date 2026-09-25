@@ -1,126 +1,70 @@
-# §16 DoWhileStatement
+# DoWhileStatement
 
-## 1. Overview & Scope
+## 1. Overview & Purpose
 
-A `DoWhileStatement` implements post-test iterative execution. Unlike the `WhileStatement`, the loop body of a `DoWhileStatement` is guaranteed to execute at least once before the termination condition is evaluated. At the conclusion of each iteration, the boolean predicate condition is checked; if `true`, control loops back to the beginning of the body; if `false`, the loop terminates.
+A `DoWhileStatement` implements post-test iteration. Unlike `while`, the body executes at least once before the condition is evaluated. If the condition evaluates to `true`, control loops back to the start of the body; if `false`, the loop terminates.
 
-In Solix, `DoWhileStatement` coordinates with loop label registers to correctly support `break` (jumping past the condition to the loop exit) and `continue` (jumping directly to the condition evaluation at the foot of the loop).
-
-### Syntactic Placement
-A `DoWhileStatement` is legally permitted within any subroutine body or lexical block.
+`break` jumps past the condition check to the loop exit, while `continue` jumps directly to the condition evaluation at the foot of the loop.
 
 ---
 
-## 2. Syntax & Production Rules
+## 2. Compilation & Runtime Mechanics (With Real Bytecode)
 
-### Production Rules
+### Bytecode Disassembly Example
 ```solix
-DoWhileStatement   ::= 'do' Statement 'while' '(' Expression ')' ';'
-```
-
-### Canonical Code Patterns
-```solix
-// 1. Guaranteed Single Execution
-int32 attempts = 0;
+// Solix Code
+int32 count = 0;
 do {
-    attempts++;
-    try_connect();
-} while (attempts < 3 && !is_connected());
+    count++;
+} while (count < 3);
+```
 
-// 2. Interactive Input Loop
-int32 choice;
-do {
-    choice = read_user_choice();
-} while (choice != 0);
+```bytecode
+// Compiled VM Bytecode
+PUSH_CONST_I32 0
+SET_LOCAL 1                 // count = 0
+
+// --- Loop Start (<loop_head_ip>) ---
+GET_LOCAL 1
+INC_I64
+SET_LOCAL 1                 // count++
+
+// --- Condition Evaluation (<condition_ip>) ---
+GET_LOCAL 1
+PUSH_CONST_I32 3
+LESS_I64                    // count < 3
+JUMP_IF_TRUE <loop_head_ip> // Loop back if true
+
+// --- Loop Exit ---
 ```
 
 ---
 
-## 3. Scope & Declaration Space (Static Semantics)
+## 3. Valid Test Cases (Positive Scenarios)
 
-### 3.1 Condition Scope & Boolean Invariant
-- The condition expression is evaluated after each execution of the loop body.
-- **Strict Boolean Invariant**: The condition expression must evaluate to primitive `bool`.
-- Note: Variables declared inside the loop body block are *not* in scope within the `while(...)` condition expression at the foot of the loop.
-
----
-
-## 4. Operational Semantics (Dynamic Execution)
-
-### 4.1 Normal Completion
-1. **Body Execution (`loop_start_ip`)**: Statements within the loop body are executed sequentially.
-2. **Condition Target (`condition_ip`)**:
-   - The condition expression is evaluated, pushing a `bool` onto the operand stack.
-3. **Reiteration Check**:
-   - The VM executes `OpCode::JUMP_IF_TRUE <loop_start_ip>`.
-   - If `true`, the VM loops back to step 1.
-   - If `false`, execution falls through to `<loop_exit_ip>`.
-4. Normal sequential execution resumes after the `DoWhileStatement`.
-
-### 4.2 Abrupt Completion
-A `DoWhileStatement` completes abruptly if:
-- A `break` statement executes within the body (transfers to `<loop_exit_ip>`).
-- A `return` or `throw` statement executes within the body.
-
-### 4.3 Continue Execution Flow
-When `continue` executes within the body:
-- All active reference variables in intermediate blocks are decremented via `DEC_REF`.
-- The VM executes an unconditional jump directly to `<condition_ip>` to evaluate the condition.
-
----
-
-## 5. Memory Model & ARC Invariants
-
-### 5.1 Per-Iteration ARC Reclamation
-- Variables declared inside the body block are decremented at the end of each iteration before the condition check executes.
-
-### 5.2 Compiler Lowering Structure (`assembler.cpp`)
-```text
-<loop_start_ip>:
-  [ Execute Loop Body Statements ]
-<condition_ip>: (Target of 'continue' statements)
-  [ Evaluate Condition Expression ] ──► Pushes bool to Stack Top
-  OpCode::JUMP_IF_TRUE <loop_start_ip>
-<loop_exit_ip>: (Target of 'break' statements)
-```
-
----
-
-## 6. Compile-Time Constraints & Diagnostic Errors
-
-### Rule 6.1: Body-Declared Variable Inaccessibility in Condition
-Variables declared inside the `do` block cannot be accessed within the `while` condition.
+### Case 3.1: Guaranteed Initial Pass with False Condition
 ```solix
-void test_scope_leak() {
+int32 ran = 0;
+do {
+    ran++;
+} while (false);
+```
+*Expected Result*: `ran` equals 1; body ran exactly once.
+
+---
+
+## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
+
+### Case 4.1: Accessing Body Variable in Condition
+Variables declared inside the `do` block are not in scope in the condition.
+```solix
+void test() {
     do {
-        int32 local_state = read();
-    } while (local_state != 0); // Error: local_state not visible here
+        int32 inner = 10;
+    } while (inner > 0); // Error: inner undefined
 }
 ```
-*Diagnostic Message*:
+*Expected Compiler Diagnostic*:
 ```text
-[ERROR] binder.cpp: Undefined identifier: local_state
+[ERROR] binder.cpp: Undefined identifier: inner
 ```
-
----
-
-## 7. Runtime Fault Conditions
-
-### Fault 7.1: Condition Evaluation Panic
-Evaluating a condition that triggers a runtime fault raises an exception and unwinds the loop.
-
----
-
-## 8. Conformance & Verification Examples
-
-### Example 8.1: Guaranteed Single Execution with False Condition
-```solix
-void verify_single_execution() {
-    int32 count = 0;
-    do {
-        count++;
-    } while (false);
-    // count must equal 1
-}
-```
-*Verification Invariant*: `count` equals 1. Body executed exactly once despite condition evaluating to false.

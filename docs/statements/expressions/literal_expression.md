@@ -1,77 +1,58 @@
-# §37 LiteralNode
+# LiteralNode
 
-## 1. Overview & Scope
+## 1. Overview & Purpose
 
-A `LiteralNode` represents a constant scalar or string value embedded directly in program source text. Solix supports integer, floating-point, boolean, character, string, and `null` literals.
+A `LiteralNode` represents a constant scalar or string literal embedded directly in source code (`42`, `3.14`, `'c'`, `"string"`, `true`, `false`, `null`).
 
 ---
 
-## 2. Syntax & Production Rules
+## 2. Compilation & Runtime Mechanics (With Real Bytecode)
 
-### Production Rules
+### Bytecode Disassembly Example
 ```solix
-Literal ::= IntegerLiteral
-          | FloatLiteral
-          | BooleanLiteral
-          | CharacterLiteral
-          | StringLiteral
-          | 'null'
+// Solix Code
+int32 i = 42;
+float64 f = 3.14;
+bool b = true;
+String s = "text";
+Object o = null;
+```
+
+```bytecode
+// Compiled VM Bytecode
+PUSH_CONST_I32 42
+SET_LOCAL 1
+PUSH_CONST_F64 3.14
+SET_LOCAL 2
+PUSH_TRUE
+SET_LOCAL 3
+PUSH_CONST_STRING 0         // Static string pool index
+SET_LOCAL 4
+PUSH_NULL
+SET_LOCAL 5
 ```
 
 ---
 
-## 3. Scope & Declaration Space (Static Semantics)
+## 3. Valid Test Cases (Positive Scenarios)
 
-Literals carry intrinsic types:
-- `10`: `int32`
-- `10L`: `int64`
-- `3.14`: `float64`
-- `true`, `false`: `bool`
-- `'a'`: `char`
-- `"text"`: `String`
-- `null`: `null` (assignable to any reference type)
-
----
-
-## 4. Operational Semantics (Dynamic Execution)
-
-Emits immediate push instructions: `PUSH_INT`, `PUSH_FLOAT`, `PUSH_STRING`, `PUSH_NULL`.
-
----
-
-## 5. Memory Model & ARC Invariants
-
-- String literals are pooled in the static string pool.
-- `null` is represented by pointer `0x0`.
-
----
-
-## 6. Compile-Time Constraints & Diagnostic Errors
-
-### Rule 6.1: Numeric Overflow in Literal
+### Case 3.1: All Literal Types
 ```solix
-int32 x = 99999999999999999999; // Overflow
+int64 big = 10000000000L;
+char letter = 'Z';
+String empty = "";
 ```
-*Diagnostic Message*:
+*Expected Result*: All primitives compile and load accurately.
+
+---
+
+## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
+
+### Case 4.1: Integer Literal Overflow
+```solix
+int32 x = 99999999999999999999;
+```
+*Expected Compiler Diagnostic*:
 ```text
 [ERROR] lexer.cpp: Integer literal out of range for type 'int32'
 ```
-
----
-
-## 7. Runtime Fault Conditions
-
-None.
-
----
-
-## 8. Conformance & Verification Examples
-
-### Example 8.1: Null Reference Assignment
-```solix
-String s = null;
-if (s == null) {
-    Console.println("is null");
-}
-```
-*Verification Invariant*: `s == null` evaluates to `true`.

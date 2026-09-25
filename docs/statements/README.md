@@ -1,81 +1,58 @@
-# Solix Language Specification: Statements & Constructs
+# Solix Statement & Construct Reference & Test Specification
 
-This directory contains the definitive, formal language specification for all 37 statement and expression constructs in Solix, structured in accordance with the industry-standard specification model (modeled after the Java Language Specification, ECMA-334 C# Specification, and The Rust Reference).
+This directory contains the practical, code-first language reference and test specification for all 37 statements and expressions in Solix.
 
----
-
-## Specification Standard Structure
-Every construct in this directory is authored with rigorous adherence to the following 8 sections:
-
-1. **§1. Overview & Scope**: Architectural definition, conceptual role, and legal syntactic placement.
-2. **§2. Syntax & Production Rules**: Formal grammar production rules and canonical code patterns.
-3. **§3. Scope & Declaration Space (Static Semantics)**: Identifier visibility, downward reach, upward boundary confinement, masking/shadowing, and static extent.
-4. **§4. Operational Semantics (Dynamic Execution)**:
-   - **4.1 Normal Completion**: Step-by-step numbered execution sequence ($1, 2, 3 \dots$).
-   - **4.2 Abrupt Completion**: Non-local control transfers (`return`, `break`, `continue`, `throw`).
-   - **4.3 Exception Unwinding & Trampolines**: Dynamic exception propagation and trampoline routing.
-5. **§5. Memory Model & ARC Invariants**: Reference counting semantics (`INC_REF`, `DEC_REF`, `RELEASE`), strict LIFO deallocation order, stack/register layout, and bytecode lowering.
-6. **§6. Compile-Time Constraints & Diagnostic Errors**: Formal rules that render code ill-formed, complete with code examples and exact compiler diagnostic strings.
-7. **§7. Runtime Fault Conditions**: Dynamic runtime traps, panics, and VM exceptions.
-8. **§8. Conformance & Verification Examples**: Concrete test listings with verifiable invariant guarantees.
+Each specification document provides:
+1. **Overview & Purpose**: Direct, plain-English explanation of what the construct does, why it exists, and its core rules.
+2. **Compilation & Runtime Mechanics (With Real Bytecode)**: How the Solix compiler lowers the code, showing side-by-side Solix source code and compiled VM bytecode, along with stack and ARC refcount operations.
+3. **Valid Test Cases (Positive Scenarios)**: A code-first catalog of all valid variations (simple, nested, and edge cases) that must compile and run cleanly.
+4. **Invalid Test Cases & Expected Errors (Negative Scenarios)**: All ways the construct can fail, split into Parser syntax errors, Binder semantic errors, and VM runtime panics, complete with exact error text.
 
 ---
 
-## Table of Specifications
+## Directory Index
 
-### Part I: Compilation Unit & Module Statements (`modules/`)
+### Part I: Compilation Unit & Modules (`modules/`)
+- [`package_statement.md`](modules/package_statement.md) — Namespace boundaries & compilation unit isolation
+- [`import_statement.md`](modules/import_statement.md) — Selective & wildcard symbol imports
+- [`alias_statement.md`](modules/alias_statement.md) — Type synonyms & generic alias substitutions
 
-| § | Construct | AST NodeType | Specification Document |
-|---|---|---|---|
-| §1 | `PackageStatement` | `NodeType::PACKAGE_STMT` | [package_statement.md](modules/package_statement.md) |
-| §2 | `ImportStatement` | `NodeType::IMPORT_STMT` | [import_statement.md](modules/import_statement.md) |
-| §3 | `AliasStatement` | `NodeType::ALIAS_STMT` | [alias_statement.md](modules/alias_statement.md) |
+### Part II: Declarations (`declarations/`)
+- [`class_declaration.md`](declarations/class_declaration.md) — Reference types, single inheritance, and VTables
+- [`interface_declaration.md`](declarations/interface_declaration.md) — Abstract contracts & multiple interface conformance
+- [`enum_declaration.md`](declarations/enum_declaration.md) — Strongly typed discrete enumerations
+- [`field_declaration.md`](declarations/field_declaration.md) — Static, instance, and `weak` cycle-breaking fields
+- [`constructor_declaration.md`](declarations/constructor_declaration.md) — Initializer lists, `super()` chaining, and heap allocation
+- [`method_declaration.md`](declarations/method_declaration.md) — Static, virtual, and abstract member functions
+- [`operator_declaration.md`](declarations/operator_declaration.md) — Operator overloading for `+`, `-`, `*`, `/`, `=`
 
-### Part II: Type & Structural Declarations (`declarations/`)
-
-| § | Construct | AST NodeType | Specification Document |
-|---|---|---|---|
-| §4 | `ClassDeclaration` | `NodeType::CLASS_DECL` | [class_declaration.md](declarations/class_declaration.md) |
-| §5 | `InterfaceDeclaration` | `NodeType::INTERFACE` | [interface_declaration.md](declarations/interface_declaration.md) |
-| §6 | `EnumDeclaration` | `NodeType::ENUM_DECL` | [enum_declaration.md](declarations/enum_declaration.md) |
-| §7 | `FieldDeclaration` | `NodeType::FIELD_DECL` | [field_declaration.md](declarations/field_declaration.md) |
-| §8 | `ConstructorDeclaration` | `NodeType::CONSTRUCTOR_DECL` | [constructor_declaration.md](declarations/constructor_declaration.md) |
-| §9 | `MethodDeclaration` | `NodeType::METHOD_DECL` | [method_declaration.md](declarations/method_declaration.md) |
-| §10 | `OperatorDeclaration` | `NodeType::OPERATOR` | [operator_declaration.md](declarations/operator_declaration.md) |
-
-### Part III: Local Scope & Execution Statements (`control_flow/`)
-
-| § | Construct | AST NodeType | Specification Document |
-|---|---|---|---|
-| §11 | `BlockStatement` | `NodeType::BLOCK` | [block_statement.md](control_flow/block_statement.md) |
-| §12 | `VariableDeclarationStatement` | `NodeType::VAR_DECL` | [variable_declaration.md](control_flow/variable_declaration.md) |
-| §13 | `ExpressionStatement` | `NodeType::EXPR_STMT` | [expression_statement.md](control_flow/expression_statement.md) |
-| §14 | `IfStatement` | `NodeType::IF_STMT` | [if_statement.md](control_flow/if_statement.md) |
-| §15 | `WhileStatement` | `NodeType::WHILE_STMT` | [while_statement.md](control_flow/while_statement.md) |
-| §16 | `DoWhileStatement` | `NodeType::DO_WHILE_STMT` | [do_while_statement.md](control_flow/do_while_statement.md) |
-| §17 | `ForStatement` | `NodeType::FOR_STMT` | [for_statement.md](control_flow/for_statement.md) |
-| §18 | `SwitchStatement` | `NodeType::SWITCH_STMT` | [switch_statement.md](control_flow/switch_statement.md) |
-| §19 | `BreakStatement` | `NodeType::BREAK_STMT` | [break_statement.md](control_flow/break_statement.md) |
-| §20 | `ContinueStatement` | `NodeType::CONTINUE_STMT` | [continue_statement.md](control_flow/continue_statement.md) |
-| §21 | `ReturnStatement` | `NodeType::RETURN_STMT` | [return_statement.md](control_flow/return_statement.md) |
-| §22 | `ThrowStatement` | `NodeType::THROW_STMT` | [throw_statement.md](control_flow/throw_statement.md) |
-| §23 | `TryCatchFinallyStatement` | `NodeType::TRY_STMT`, `CATCH_CLAUSE` | [try_catch_finally_statement.md](control_flow/try_catch_finally_statement.md) |
+### Part III: Control Flow & Execution Statements (`control_flow/`)
+- [`block_statement.md`](control_flow/block_statement.md) — Lexical scope boundaries & ARC scope-exit cleanup
+- [`variable_declaration.md`](control_flow/variable_declaration.md) — Frame slotting, primitives vs. reference types
+- [`expression_statement.md`](control_flow/expression_statement.md) — Side-effect evaluation & temporary reference `DEC_REF` / `POP`
+- [`if_statement.md`](control_flow/if_statement.md) — Boolean predicate branching & short-circuit jumps
+- [`while_statement.md`](control_flow/while_statement.md) — Pre-test loop iteration & loop context labels
+- [`do_while_statement.md`](control_flow/do_while_statement.md) — Post-test single-pass guarantee
+- [`for_statement.md`](control_flow/for_statement.md) — Induction variable scoping, step expressions, and iteration
+- [`switch_statement.md`](control_flow/switch_statement.md) — Multi-way jump tables, case matching, and fall-through
+- [`break_statement.md`](control_flow/break_statement.md) — Non-local escape & intermediate block ARC unwinding
+- [`continue_statement.md`](control_flow/continue_statement.md) — Iteration advancement & intermediate block cleanup
+- [`return_statement.md`](control_flow/return_statement.md) — Frame termination, return values, receiver/parameter cleanup
+- [`throw_statement.md`](control_flow/throw_statement.md) — `std.Exception` hierarchy enforcement & cleanup trampolining
+- [`try_catch_finally_statement.md`](control_flow/try_catch_finally_statement.md) — Exception matching tables, parameter binding, `finally` guarantees
 
 ### Part IV: Expressions & Operators (`expressions/`)
-
-| § | Construct | AST NodeType | Specification Document |
-|---|---|---|---|
-| §24 | `AssignmentExpression` | `NodeType::ASSIGNMENT_EXPR` | [assignment_expression.md](expressions/assignment_expression.md) |
-| §25 | `TernaryExpression` | `NodeType::TERNARY_EXPR` | [ternary_expression.md](expressions/ternary_expression.md) |
-| §26 | `BinaryExpression` | `NodeType::BINARY_EXPR` | [binary_expression.md](expressions/binary_expression.md) |
-| §27 | `UnaryExpression` | `NodeType::UNARY_EXPR` | [unary_expression.md](expressions/unary_expression.md) |
-| §28 | `CastExpression` | `NodeType::CAST_EXPR` | [cast_expression.md](expressions/cast_expression.md) |
-| §29 | `InstanceOfExpression` | `NodeType::INSTANCEOF_EXPR` | [instanceof_expression.md](expressions/instanceof_expression.md) |
-| §30 | `NewInstanceExpression` | `NodeType::NEW_INSTANCE` | [new_instance_expression.md](expressions/new_instance_expression.md) |
-| §31 | `ArrayCreationExpression` | `NodeType::ARRAY_CREATION` | [array_creation_expression.md](expressions/array_creation_expression.md) |
-| §32 | `ArrayAccessExpression` | `NodeType::ARRAY_ACCESS` | [array_access_expression.md](expressions/array_access_expression.md) |
-| §33 | `ArrayLiteralExpression` | `NodeType::ARRAY_LITERAL` | [array_literal_expression.md](expressions/array_literal_expression.md) |
-| §34 | `MemberAccessExpression` | `NodeType::MEMBER_ACCESS` | [member_access_expression.md](expressions/member_access_expression.md) |
-| §35 | `MethodCallExpression` | `NodeType::METHOD_CALL` | [method_call_expression.md](expressions/method_call_expression.md) |
-| §36 | `IdentifierNode` | `NodeType::IDENTIFIER` | [identifier_expression.md](expressions/identifier_expression.md) |
-| §37 | `LiteralNode` | `NodeType::LITERAL` | [literal_expression.md](expressions/literal_expression.md) |
+- [`assignment_expression.md`](expressions/assignment_expression.md) — Lvalue mutations & ARC ownership transfers
+- [`ternary_expression.md`](expressions/ternary_expression.md) — Inline lazy conditional expressions
+- [`binary_expression.md`](expressions/binary_expression.md) — Arithmetic, relational, logical, and bitwise evaluation
+- [`unary_expression.md`](expressions/unary_expression.md) — Prefix and postfix scalar operations
+- [`cast_expression.md`](expressions/cast_expression.md) — Conversions and dynamic `CAST_CHECK`
+- [`instanceof_expression.md`](expressions/instanceof_expression.md) — VTable runtime hierarchy querying
+- [`new_instance_expression.md`](expressions/new_instance_expression.md) — Heap allocation and constructor dispatch
+- [`array_creation_expression.md`](expressions/array_creation_expression.md) — Contiguous array buffer allocation
+- [`array_access_expression.md`](expressions/array_access_expression.md) — Subscript indexing & runtime bounds checks
+- [`array_literal_expression.md`](expressions/array_literal_expression.md) — Inline array literals (`[...]` and `{...}`)
+- [`member_access_expression.md`](expressions/member_access_expression.md) — Property resolution & null checking
+- [`method_call_expression.md`](expressions/method_call_expression.md) — Static & dynamic virtual VTable invocations
+- [`identifier_expression.md`](expressions/identifier_expression.md) — Scope resolution (stack slot, property, global)
+- [`literal_expression.md`](expressions/literal_expression.md) — Primitive immediates, strings, chars, and null

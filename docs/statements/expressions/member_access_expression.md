@@ -1,66 +1,51 @@
-# §34 MemberAccessExpression
+# MemberAccessExpression
 
-## 1. Overview & Scope
+## 1. Overview & Purpose
 
-A `MemberAccessExpression` (`receiver.member`) accesses a field, nested member, or enum value on an object instance or type namespace. For instance fields, the compiler resolves the byte offset within the instance memory layout.
+A `MemberAccessExpression` (`receiver.member`) accesses fields or nested properties. Instance field offsets are resolved statically at compile time.
 
 ---
 
-## 2. Syntax & Production Rules
+## 2. Compilation & Runtime Mechanics (With Real Bytecode)
 
-### Production Rules
+### Bytecode Disassembly Example
 ```solix
-MemberAccessExpression ::= Expression '.' Identifier
+// Solix Code
+int32 age = user.age;
+```
+
+```bytecode
+// Compiled VM Bytecode
+GET_LOCAL 1                 // user
+GET_PROPERTY 0              // Reads field at offset 0
+SET_LOCAL 2                 // age
 ```
 
 ---
 
-## 3. Scope & Declaration Space (Static Semantics)
+## 3. Valid Test Cases (Positive Scenarios)
 
-Resolves member against receiver type's symbol table, verifying access modifiers (`public`, `private`, `protected`).
-
----
-
-## 4. Operational Semantics (Dynamic Execution)
-
-1. Evaluates receiver expression.
-2. Checks for `null` receiver.
-3. Emits `OpCode::GET_PROPERTY <offset>` or `OpCode::SET_PROPERTY <offset>`.
-
----
-
-## 5. Memory Model & ARC Invariants
-
-Reading a reference field onto the stack does not increment refcount until stored in an owning lvalue.
-
----
-
-## 6. Compile-Time Constraints & Diagnostic Errors
-
-### Rule 6.1: Inaccessible Private Field
+### Case 3.1: Chained Member Access
 ```solix
-class A { private int32 x; }
-void test() { A a = new A(); a.x = 5; } // Error: private
+class Address { String city; }
+class Person { Address addr; }
+
+void test(Person p) {
+    String city = p.addr.city;
+}
 ```
-*Diagnostic Message*:
+*Expected Result*: Resolves offsets sequentially; compiles cleanly.
+
+---
+
+## 4. Invalid Test Cases & Expected Errors (Negative Scenarios)
+
+### Case 4.1: Member Access on Null Reference (Runtime Fault)
+```solix
+Person p = null;
+String c = p.addr; // Throws NullReferenceException
+```
+*Expected Runtime Exception*:
 ```text
-[ERROR] binder.cpp: Cannot access private field 'x' of class 'A'
+[FATAL VM PANIC] NullReferenceException: Attempted to read property from null object reference
 ```
-
----
-
-## 7. Runtime Fault Conditions
-
-### Fault 7.1: Null Receiver Dereference
-Accessing a member on `null` triggers `NullReferenceException`.
-
----
-
-## 8. Conformance & Verification Examples
-
-### Example 8.1: Instance Field Access
-```solix
-Point p = new Point(10, 20);
-int32 x_coord = p.x;
-```
-*Verification Invariant*: `x_coord` equals 10.
