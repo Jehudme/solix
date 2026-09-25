@@ -23,7 +23,7 @@ enum class NodeType {
     VAR_DECL, EXPR_STMT, RETURN_STMT, BREAK_STMT, CONTINUE_STMT,
 
     // Top Level
-    PACKAGE_STMT, ALIAS_STMT, ENUM_DECL, CLASS_DECL, FIELD_DECL, CONSTRUCTOR_DECL, METHOD_DECL
+    PACKAGE_STMT, ALIAS_STMT, IMPORT_STMT, ENUM_DECL, CLASS_DECL, FIELD_DECL, CONSTRUCTOR_DECL, METHOD_DECL
 };
 
 struct TypeInfo {
@@ -484,6 +484,17 @@ struct AliasStatement : public Node {
     TypeInfo target_type;
     AliasStatement(const Token& t, std::string alias, TypeInfo tgt)
         : Node(NodeType::ALIAS_STMT, t), alias_name(std::move(alias)), target_type(std::move(tgt)) {}
+};
+
+struct ImportStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
+    std::string package_name;
+    std::string symbol_name; // "*" for wildcard, or specific symbol
+    ImportStatement(const Token& t, std::string pkg, std::string sym)
+        : Node(NodeType::IMPORT_STMT, t), package_name(std::move(pkg)), symbol_name(std::move(sym)) {}
 };
 
 struct EnumDeclaration : public Node {

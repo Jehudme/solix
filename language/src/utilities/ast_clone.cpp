@@ -298,6 +298,12 @@ std::unique_ptr<Node> AliasStatement::clone() const {
     return cloned;
 }
 
+std::unique_ptr<Node> ImportStatement::clone() const {
+    auto cloned = std::make_unique<ImportStatement>(make_dummy_token(this), package_name, symbol_name);
+    copy_children(this, cloned.get());
+    return cloned;
+}
+
 std::unique_ptr<Node> EnumDeclaration::clone() const {
     auto cloned = std::make_unique<EnumDeclaration>(make_dummy_token(this), enum_name);
     cloned->access_modifier = access_modifier;

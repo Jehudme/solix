@@ -84,6 +84,7 @@ private:
     void visit(ContinueStatement& node) override;
     void visit(PackageStatement& node) override;
     void visit(AliasStatement& node) override;
+    void visit(ImportStatement& node) override;
 
     void visit(EnumDeclaration& node) override;
     void visit(ClassDeclaration& node) override;

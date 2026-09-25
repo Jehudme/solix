@@ -1,0 +1,300 @@
+// ============================================================================
+// Solix Standard Library - Generic Bucketed Hash Map (HashMap<K, V>)
+// Package: solix.collections
+// ============================================================================
+package solix.collections;
+
+import solix.core.*;
+
+public class HashNode<K, V> {
+    public K key;
+    public V value;
+    public HashNode<K, V> next_node = null;
+
+    public HashNode(K k, V v, HashNode<K, V> n) {
+        this.key = k;
+        this.value = v;
+        this.next_node = n;
+    }
+}
+
+public class HashMap<K, V> {
+    private HashNode<K, V>[] buckets;
+    private int32 entry_count = 0;
+    private int32 bucket_capacity = 16;
+
+    // ------------------------------------------------------------------------
+    // Constructors
+    // ------------------------------------------------------------------------
+
+    public HashMap() {
+        this.bucket_capacity = 16;
+        this.entry_count = 0;
+        this.buckets = new HashNode<K, V>[this.bucket_capacity];
+    }
+
+    public HashMap(int32 initial_capacity) {
+        if (initial_capacity < 4) {
+            initial_capacity = 4;
+        }
+        this.bucket_capacity = initial_capacity;
+        this.entry_count = 0;
+        this.buckets = new HashNode<K, V>[this.bucket_capacity];
+    }
+
+    private int32 get_bucket_index(K key) {
+        if (key == null) {
+            return 0;
+        }
+        int32 hash = Objects.hash_code<K>(key);
+        int32 index = hash % this.bucket_capacity;
+        if (index < 0) {
+            index = -index;
+        }
+        return index;
+    }
+
+    // ------------------------------------------------------------------------
+    // Capacity and Sizing
+    // ------------------------------------------------------------------------
+
+    public int32 size() {
+        return this.entry_count;
+    }
+
+    public int32 capacity() {
+        return this.bucket_capacity;
+    }
+
+    public bool is_empty() {
+        return this.entry_count == 0;
+    }
+
+    public void clear() {
+        this.bucket_capacity = 16;
+        this.entry_count = 0;
+        this.buckets = new HashNode<K, V>[this.bucket_capacity];
+    }
+
+    private void resize() {
+        int32 new_capacity = this.bucket_capacity * 2;
+        HashNode<K, V>[] old_buckets = this.buckets;
+        int32 old_capacity = this.bucket_capacity;
+
+        this.buckets = new HashNode<K, V>[new_capacity];
+        this.bucket_capacity = new_capacity;
+        this.entry_count = 0;
+
+        for (int32 i = 0; i < old_capacity; i++) {
+            HashNode<K, V> current_node = old_buckets[i];
+            while (current_node != null) {
+                this.put(current_node.key, current_node.value);
+                current_node = current_node.next_node;
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Entry Manipulation
+    // ------------------------------------------------------------------------
+
+    public void put(K key, V value) {
+        if (this.entry_count >= this.bucket_capacity) {
+            this.resize();
+        }
+
+        int32 index = this.get_bucket_index(key);
+        HashNode<K, V> current_node = this.buckets[index];
+
+        while (current_node != null) {
+            if (Objects.equals<K>(current_node.key, key)) {
+                current_node.value = value;
+                return;
+            }
+            current_node = current_node.next_node;
+        }
+
+        HashNode<K, V> new_node = new HashNode<K, V>(key, value, this.buckets[index]);
+        this.buckets[index] = new_node;
+        this.entry_count++;
+    }
+
+    public void put_if_absent(K key, V value) {
+        if (this.contains_key(key)) {
+            throw new DuplicateKeyException("Key already exists in HashMap.");
+        }
+        this.put(key, value);
+    }
+
+    public bool contains_key(K search_key) {
+        int32 index = this.get_bucket_index(search_key);
+        HashNode<K, V> current_node = this.buckets[index];
+        while (current_node != null) {
+            if (Objects.equals<K>(current_node.key, search_key)) {
+                return true;
+            }
+            current_node = current_node.next_node;
+        }
+        return false;
+    }
+
+    public bool contains_value(V search_value) {
+        for (int32 i = 0; i < this.bucket_capacity; i++) {
+            HashNode<K, V> current_node = this.buckets[i];
+            while (current_node != null) {
+                if (Objects.equals<V>(current_node.value, search_value)) {
+                    return true;
+                }
+                current_node = current_node.next_node;
+            }
+        }
+        return false;
+    }
+
+    public V get(K search_key) {
+        int32 index = this.get_bucket_index(search_key);
+        HashNode<K, V> current_node = this.buckets[index];
+        while (current_node != null) {
+            if (Objects.equals<K>(current_node.key, search_key)) {
+                return current_node.value;
+            }
+            current_node = current_node.next_node;
+        }
+        throw new KeyNotFoundException("Specified key was not found in HashMap.");
+    }
+
+    public V get_or_default(K search_key, V default_value) {
+        int32 index = this.get_bucket_index(search_key);
+        HashNode<K, V> current_node = this.buckets[index];
+        while (current_node != null) {
+            if (Objects.equals<K>(current_node.key, search_key)) {
+                return current_node.value;
+            }
+            current_node = current_node.next_node;
+        }
+        return default_value;
+    }
+
+    public V remove(K search_key) {
+        int32 index = this.get_bucket_index(search_key);
+        HashNode<K, V> current_node = this.buckets[index];
+        HashNode<K, V> previous_node = null;
+
+        while (current_node != null) {
+            if (Objects.equals<K>(current_node.key, search_key)) {
+                if (previous_node == null) {
+                    this.buckets[index] = current_node.next_node;
+                } else {
+                    previous_node.next_node = current_node.next_node;
+                }
+                this.entry_count--;
+                return current_node.value;
+            }
+            previous_node = current_node;
+            current_node = current_node.next_node;
+        }
+        throw new KeyNotFoundException("Cannot remove key that does not exist in HashMap.");
+    }
+
+    public bool remove_key(K search_key) {
+        int32 index = this.get_bucket_index(search_key);
+        HashNode<K, V> current_node = this.buckets[index];
+        HashNode<K, V> previous_node = null;
+
+        while (current_node != null) {
+            if (Objects.equals<K>(current_node.key, search_key)) {
+                if (previous_node == null) {
+                    this.buckets[index] = current_node.next_node;
+                } else {
+                    previous_node.next_node = current_node.next_node;
+                }
+                this.entry_count--;
+                return true;
+            }
+            previous_node = current_node;
+            current_node = current_node.next_node;
+        }
+        return false;
+    }
+
+    // ------------------------------------------------------------------------
+    // Collections and Views
+    // ------------------------------------------------------------------------
+
+    public K[] keys() {
+        K[] export_keys = new K[this.entry_count];
+        int32 cursor = 0;
+        for (int32 i = 0; i < this.bucket_capacity; i++) {
+            HashNode<K, V> current_node = this.buckets[i];
+            while (current_node != null) {
+                export_keys[cursor] = current_node.key;
+                cursor++;
+                current_node = current_node.next_node;
+            }
+        }
+        return export_keys;
+    }
+
+    public V[] values() {
+        V[] export_values = new V[this.entry_count];
+        int32 cursor = 0;
+        for (int32 i = 0; i < this.bucket_capacity; i++) {
+            HashNode<K, V> current_node = this.buckets[i];
+            while (current_node != null) {
+                export_values[cursor] = current_node.value;
+                cursor++;
+                current_node = current_node.next_node;
+            }
+        }
+        return export_values;
+    }
+
+    public List<K> keys_list() {
+        List<K> export_list = new List<K>(this.entry_count);
+        for (int32 i = 0; i < this.bucket_capacity; i++) {
+            HashNode<K, V> current_node = this.buckets[i];
+            while (current_node != null) {
+                export_list.add(current_node.key);
+                current_node = current_node.next_node;
+            }
+        }
+        return export_list;
+    }
+
+    public List<V> values_list() {
+        List<V> export_list = new List<V>(this.entry_count);
+        for (int32 i = 0; i < this.bucket_capacity; i++) {
+            HashNode<K, V> current_node = this.buckets[i];
+            while (current_node != null) {
+                export_list.add(current_node.value);
+                current_node = current_node.next_node;
+            }
+        }
+        return export_list;
+    }
+
+    public List<Pair<K, V>> entries() {
+        List<Pair<K, V>> entry_list = new List<Pair<K, V>>(this.entry_count);
+        for (int32 i = 0; i < this.bucket_capacity; i++) {
+            HashNode<K, V> current_node = this.buckets[i];
+            while (current_node != null) {
+                Pair<K, V> pair_entry = new Pair<K, V>(current_node.key, current_node.value);
+                entry_list.add(pair_entry);
+                current_node = current_node.next_node;
+            }
+        }
+        return entry_list;
+    }
+
+    public HashMap<K, V> clone() {
+        HashMap<K, V> duplicated_map = new HashMap<K, V>(this.bucket_capacity);
+        for (int32 i = 0; i < this.bucket_capacity; i++) {
+            HashNode<K, V> current_node = this.buckets[i];
+            while (current_node != null) {
+                duplicated_map.put(current_node.key, current_node.value);
+                current_node = current_node.next_node;
+            }
+        }
+        return duplicated_map;
+    }
+}

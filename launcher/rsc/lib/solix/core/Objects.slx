@@ -1,12 +1,100 @@
 // ============================================================================
 // Solix Standard Library - Objects Utility Class
-// Package: solix
+// Package: solix.core
 // ============================================================================
 package solix.core;
 
 public class Objects {
     // ------------------------------------------------------------------------
-    // Null Checks & Validation
+    // Generic Null Checks & Validation
+    // ------------------------------------------------------------------------
+
+    public static bool is_null<T>(T item) {
+        return item == null;
+    }
+
+    public static bool non_null<T>(T item) {
+        return item != null;
+    }
+
+    public static T require_non_null<T>(T item) {
+        if (item == null) {
+            throw new NullPointerException("Required reference object cannot be null.");
+        }
+        return item;
+    }
+
+    public static T require_non_null_message<T>(T item, String message) {
+        if (item == null) {
+            throw new NullPointerException(message);
+        }
+        return item;
+    }
+
+    public static bool equals<T>(T first, T second) {
+        if (first == second) {
+            return true;
+        }
+        if (first == null || second == null) {
+            return false;
+        }
+        return first.equals(second);
+    }
+
+    public static int32 hash_code<T>(T item) {
+        if (item == null) {
+            return 0;
+        }
+        return item.hash_code();
+    }
+
+    // ------------------------------------------------------------------------
+    // Primitive Equality & Hashing Overloads
+    // ------------------------------------------------------------------------
+
+    public static int32 hash_code(int32 val) {
+        return val;
+    }
+
+    public static int32 hash_code(int64 val) {
+        return (int32)val;
+    }
+
+    public static int32 hash_code(char val) {
+        return (int32)val;
+    }
+
+    public static int32 hash_code(bool val) {
+        if (val) return 1;
+        return 0;
+    }
+
+    public static int32 hash_code(float64 val) {
+        return (int32)val;
+    }
+
+    public static bool equals(int32 a, int32 b) {
+        return a == b;
+    }
+
+    public static bool equals(int64 a, int64 b) {
+        return a == b;
+    }
+
+    public static bool equals(char a, char b) {
+        return a == b;
+    }
+
+    public static bool equals(bool a, bool b) {
+        return a == b;
+    }
+
+    public static bool equals(float64 a, float64 b) {
+        return a == b;
+    }
+
+    // ------------------------------------------------------------------------
+    // Specific Overloads for String & char[] (Backward Compatibility)
     // ------------------------------------------------------------------------
 
     public static bool is_null(String reference_object) {
@@ -52,10 +140,6 @@ public class Objects {
         }
         return reference_array;
     }
-
-    // ------------------------------------------------------------------------
-    // Equality & Hashing
-    // ------------------------------------------------------------------------
 
     public static bool equals(String first_string, String second_string) {
         if (first_string == second_string) {

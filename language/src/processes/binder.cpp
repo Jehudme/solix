@@ -38,6 +38,38 @@ Node *Binder::instantiate_template(const std::string &template_name,
     return global_scope.symbols[mangled_name];
   }
 
+  struct TemplateInstantiationGuard {
+    Binder *b;
+    ClassDeclaration *saved_class;
+    MethodDeclaration *saved_method;
+    SymbolTable *saved_scope;
+    uint32_t saved_local_var_idx;
+    std::string saved_pkg;
+    std::string saved_prefix;
+    BinderPass saved_pass;
+
+    TemplateInstantiationGuard(Binder *b)
+        : b(b), saved_class(b->current_class), saved_method(b->current_method),
+          saved_scope(b->current_scope), saved_local_var_idx(b->local_variable_index),
+          saved_pkg(b->current_package), saved_prefix(b->current_prefix),
+          saved_pass(b->current_pass) {
+      b->current_scope = &b->global_scope;
+      b->current_method = nullptr;
+      b->current_class = nullptr;
+      b->local_variable_index = 0;
+    }
+
+    ~TemplateInstantiationGuard() {
+      b->current_class = saved_class;
+      b->current_method = saved_method;
+      b->current_scope = saved_scope;
+      b->local_variable_index = saved_local_var_idx;
+      b->current_package = saved_pkg;
+      b->current_prefix = saved_prefix;
+      b->current_pass = saved_pass;
+    }
+  } guard(this);
+
   std::vector<std::string> tparams;
   if (blueprint->node_type == NodeType::CLASS_DECL)
     tparams = static_cast<ClassDeclaration *>(blueprint)->template_parameters;
@@ -386,6 +418,12 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
   if (!resolved && !node_pkg.empty()) {
     resolved = global_scope.resolve(node_pkg + raw_type.name);
   }
+  if (!resolved) {
+    auto it = imported_symbols.find(raw_type.name);
+    if (it != imported_symbols.end()) {
+      resolved = global_scope.resolve(it->second);
+    }
+  }
   if (!resolved && current_class) {
     resolved =
         global_scope.resolve(current_class->mangled_name + "." + raw_type.name);
@@ -407,7 +445,10 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
 
   if (!resolved && !result.type_args.empty()) {
     std::string template_name = result.name;
-    if (template_registry.count(template_name)) {
+    auto it = imported_symbols.find(template_name);
+    if (it != imported_symbols.end() && template_registry.count(it->second)) {
+      template_name = it->second;
+    } else if (template_registry.count(template_name)) {
     } else if (!node_pkg.empty() &&
                template_registry.count(node_pkg + template_name)) {
       template_name = node_pkg + template_name;
@@ -1099,6 +1140,12 @@ void Binder::visit(IdentifierNode &n) {
     if (!declaration) {
       declaration = global_scope.resolve(n.name);
     }
+    if (!declaration) {
+      auto it = imported_symbols.find(n.name);
+      if (it != imported_symbols.end()) {
+        declaration = global_scope.resolve(it->second);
+      }
+    }
     // Cross-package fallback: search all known packages (mirrors resolve_type)
     if (!declaration) {
       for (const auto &pkg : known_packages) {
@@ -1424,6 +1471,14 @@ void Binder::visit(MethodCallExpression &n) {
       } else {
         receiver_type = evaluate_expression(member_access->object.get());
         Node *type_decl = global_scope.resolve(receiver_type.name);
+        while (type_decl && type_decl->node_type == NodeType::ALIAS_STMT) {
+          auto *alias_stmt = static_cast<AliasStatement *>(type_decl);
+          if (alias_stmt->resolved_declaration) {
+            type_decl = alias_stmt->resolved_declaration;
+          } else {
+            type_decl = global_scope.resolve(alias_stmt->target_type.name);
+          }
+        }
         if (type_decl && type_decl->node_type == NodeType::CLASS_DECL) {
           current_resolve_class = static_cast<ClassDeclaration *>(type_decl);
         }
@@ -1436,7 +1491,7 @@ void Binder::visit(MethodCallExpression &n) {
       while (!method_decl && current_resolve_class) {
         base_name = current_resolve_class->mangled_name + "." +
                     member_access->member_name;
-        if (!n.type_args.empty()) {
+        if (!n.type_args.empty() && template_registry.count(base_name)) {
           std::vector<TypeInfo> resolved_targs;
           for (auto &t : n.type_args)
             resolved_targs.push_back(resolve_type(t, &n));
@@ -1602,7 +1657,7 @@ void Binder::visit(MethodCallExpression &n) {
         } else {
           while (!method_decl && current_resolve_class) {
             base_name = current_resolve_class->mangled_name + "." + id->name;
-            if (!n.type_args.empty()) {
+            if (!n.type_args.empty() && template_registry.count(base_name)) {
               std::vector<TypeInfo> resolved_targs;
               for (auto &t : n.type_args)
                 resolved_targs.push_back(resolve_type(t, &n));
@@ -1672,6 +1727,20 @@ void Binder::visit(MethodCallExpression &n) {
                    !current_package.empty() &&
                    global_scope.symbols.count(current_package + base_name)) {
           base_name = current_package + base_name;
+        } else if (imported_symbols.count(base_name)) {
+          base_name = imported_symbols[base_name];
+        } else {
+          for (const auto &pkg : known_packages) {
+            std::string p = (pkg.empty() || pkg.back() == '.') ? pkg : pkg + '.';
+            if (template_registry.count(p + base_name)) {
+              base_name = p + base_name;
+              break;
+            }
+            if (global_scope.symbols.count(p + base_name)) {
+              base_name = p + base_name;
+              break;
+            }
+          }
         }
 
         if (!n.type_args.empty()) {
@@ -2149,6 +2218,28 @@ void Binder::visit(AliasStatement &n) {
     n.mangled_name = full_name;
     global_scope.define(full_name, &n);
     log_debug("Registered global alias: '{}'", full_name);
+  }
+}
+
+void Binder::visit(ImportStatement &n) {
+  if (current_pass == BinderPass::REGISTER_GLOBALS) {
+    if (n.symbol_name == "*") {
+      std::string pkg = n.package_name;
+      if (!pkg.empty() && pkg.back() != '.') {
+        pkg += ".";
+      }
+      known_packages.insert(pkg);
+      log_debug("Imported package wildcard: '{}'", pkg);
+    } else {
+      std::string full_name = n.package_name + "." + n.symbol_name;
+      imported_symbols[n.symbol_name] = full_name;
+      std::string pkg = n.package_name;
+      if (!pkg.empty() && pkg.back() != '.') {
+        pkg += ".";
+      }
+      known_packages.insert(pkg);
+      log_debug("Imported symbol: '{}' -> '{}'", n.symbol_name, full_name);
+    }
   }
 }
 

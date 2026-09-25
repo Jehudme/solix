@@ -34,6 +34,7 @@ struct BreakStatement;
 struct ContinueStatement;
 struct PackageStatement;
 struct AliasStatement;
+struct ImportStatement;
 
 struct EnumDeclaration;
 struct ClassDeclaration;
@@ -76,6 +77,7 @@ struct NodeVisitor {
     virtual void visit(ContinueStatement& node) = 0;
     virtual void visit(PackageStatement& node) = 0;
     virtual void visit(AliasStatement& node) = 0;
+    virtual void visit(ImportStatement& node) {}
 
     virtual void visit(EnumDeclaration& node) = 0;
     virtual void visit(ClassDeclaration& node) = 0;

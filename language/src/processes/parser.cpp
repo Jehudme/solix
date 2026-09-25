@@ -139,6 +139,7 @@ public:
   std::unique_ptr<Node> parse_enum_declaration(TokenType modifier);
   std::unique_ptr<Node> parse_package_statement();
   std::unique_ptr<Node> parse_alias_statement();
+  std::unique_ptr<Node> parse_import_statement();
   std::unique_ptr<Node> parse_field_or_method(TokenType modifier,
                                               bool is_static, bool is_inline,
                                               bool is_native, bool is_const,
@@ -834,6 +835,8 @@ std::unique_ptr<Node> ParserState::parse_variable_declaration(bool is_const,
 std::unique_ptr<Node> ParserState::parse_top_level_declaration() {
   if (match(TokenType::KEYWORD_PACKAGE))
     return parse_package_statement();
+  if (match(TokenType::KEYWORD_IMPORT))
+    return parse_import_statement();
   if (match(TokenType::KEYWORD_ALIAS))
     return parse_alias_statement();
 
@@ -909,6 +912,39 @@ std::unique_ptr<Node> ParserState::parse_alias_statement() {
   auto decl = std::make_unique<AliasStatement>(alias, a_name, std::move(type));
   decl->template_parameters = tparams;
   return decl;
+}
+
+std::unique_ptr<Node> ParserState::parse_import_statement() {
+  Token import_tok = previous();
+  std::string full_path = std::get<std::string>(
+      consume(TokenType::IDENTIFIER, "Expected package or type name after 'import'").value);
+  bool is_wildcard = false;
+  while (match(TokenType::PUNCTUATION_DOT)) {
+    if (match(TokenType::OPERATOR_MULTIPLY)) {
+      is_wildcard = true;
+      break;
+    }
+    full_path += ".";
+    full_path += std::get<std::string>(
+        consume(TokenType::IDENTIFIER, "Expected identifier or '*' after '.'").value);
+  }
+  consume(TokenType::PUNCTUATION_SEMICOLON, "Expected ';' after import statement");
+
+  if (is_wildcard) {
+    log_debug("Declared wildcard import: '{}.*'", full_path);
+    return std::make_unique<ImportStatement>(import_tok, full_path, "*");
+  }
+
+  size_t last_dot = full_path.rfind('.');
+  if (last_dot != std::string::npos) {
+    std::string pkg = full_path.substr(0, last_dot);
+    std::string sym = full_path.substr(last_dot + 1);
+    log_debug("Declared symbol import: '{}' from '{}'", sym, pkg);
+    return std::make_unique<ImportStatement>(import_tok, pkg, sym);
+  }
+
+  log_debug("Declared import: '{}'", full_path);
+  return std::make_unique<ImportStatement>(import_tok, full_path, "");
 }
 
 std::unique_ptr<Node> ParserState::parse_enum_declaration(TokenType modifier) {

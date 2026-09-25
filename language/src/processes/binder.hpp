@@ -69,6 +69,7 @@ public:
     void visit(ContinueStatement& node) override;
     void visit(PackageStatement& node) override;
     void visit(AliasStatement& node) override;
+    void visit(ImportStatement& node) override;
     void visit(EnumDeclaration& node) override;
     void visit(ClassDeclaration& node) override;
     void visit(FieldDeclaration& node) override;
@@ -106,6 +107,7 @@ public:
     MethodDeclaration* current_method = nullptr;
     std::string current_package;
     std::unordered_set<std::string> known_packages; // All registered package prefixes
+    std::unordered_map<std::string, std::string> imported_symbols; // Short symbol -> full qualified name
     
     BinderPass current_pass;
     std::string current_prefix;

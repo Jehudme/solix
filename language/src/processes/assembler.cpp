@@ -1021,6 +1021,7 @@ void Assembler::visit(SwitchStatement &node) {
 
 void Assembler::visit(PackageStatement &node) {}
 void Assembler::visit(AliasStatement &node) {}
+void Assembler::visit(ImportStatement &node) {}
 void Assembler::visit(EnumDeclaration &node) {}
 void Assembler::visit(CaseStatement &node) {}
 void Assembler::visit(FieldDeclaration &node) {}
