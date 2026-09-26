@@ -2361,7 +2361,7 @@ void Binder::visit(TernaryExpression &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
     TypeInfo condition_type = evaluate_expression(n.condition.get());
     if (condition_type.name != "bool")
-      record_error(&n, "Ternary condition must be bool");
+      record_error(&n, "Ternary condition must be of type 'bool', got '" + condition_type.to_string() + "'");
     TypeInfo true_type = evaluate_expression(n.true_branch.get());
     TypeInfo false_type = evaluate_expression(n.false_branch.get());
     if (true_type != false_type)

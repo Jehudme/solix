@@ -1538,7 +1538,7 @@ Base b = new Base(); // Error
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Safe Guard with Null Check [NOT IMPLEMENTED]
+### Case 3.1: Safe Guard with Null Check [IMPLEMENTED]
 ```solix
 String s = null;
 int32 len = (s != null) ? s.length() : 0; // Short-circuits; does not call s.length()!
@@ -1549,7 +1549,7 @@ int32 len = (s != null) ? s.length() : 0; // Short-circuits; does not call s.len
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Non-Boolean Condition [NOT IMPLEMENTED]
+### Case 4.1: Non-Boolean Condition [IMPLEMENTED]
 ```solix
 int32 res = 5 ? 1 : 2; // Error
 ```
