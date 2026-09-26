@@ -765,7 +765,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Standard For Loop with Continue [NOT IMPLEMENTED]
+### Case 3.1: Standard For Loop with Continue [IMPLEMENTED]
 ```solix
 int32 evens = 0;
 for (int32 i = 0; i < 10; i++) {
@@ -779,7 +779,7 @@ for (int32 i = 0; i < 10; i++) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Induction Variable Leakage [NOT IMPLEMENTED]
+### Case 4.1: Induction Variable Leakage [IMPLEMENTED]
 ```solix
 void test() {
     for (int32 i = 0; i < 5; i++) {}
