@@ -29,6 +29,17 @@ static int32 main() {
         CHECK(run_source(code) == 0);
     }
 
+    SECTION("Case 3.6: File-Scope Global Variable Declaration") {
+        std::string code = R"(
+int32 global_counter = 45;
+
+static int32 main() {
+    return global_counter == 45 ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
     SECTION("Case 4.1: Type Mismatch in Initializer") {
         std::string code = R"(
 void test() {

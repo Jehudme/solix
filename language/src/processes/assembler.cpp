@@ -355,6 +355,9 @@ void Assembler::compile_boot_sequence() {
         if (method->is_native) {
           native_methods.push_back(method);
         }
+      } else if (node->node_type == NodeType::FIELD_DECL) {
+        auto *field = static_cast<FieldDeclaration *>(node.get());
+        static_fields.push_back(field);
       }
     }
   }
@@ -395,19 +398,19 @@ void Assembler::compile_boot_sequence() {
   emit_int32(total_globals);
   emit_byte(static_cast<uint8_t>(OpCode::ALLOC_STATIC));
 
+  for (const auto &[str, idx] : context.string_pool) {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_STRING));
+    emit_string(str);
+    emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
+    emit_int32(idx);
+  }
+
   for (auto *field : static_fields) {
     if (field->initializer) {
       compile_expression(field->initializer.get());
       emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
       emit_int32(field->memory_index);
     }
-  }
-
-  for (const auto &[str, idx] : context.string_pool) {
-    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_STRING));
-    emit_string(str);
-    emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
-    emit_int32(idx);
   }
 
   std::string entry_point = context.options.entry_point;
@@ -1069,7 +1072,7 @@ void Assembler::visit(IdentifierNode &node) {
   }
   if (ident->resolved_declaration->node_type == NodeType::FIELD_DECL) {
     auto *field = static_cast<FieldDeclaration *>(ident->resolved_declaration);
-    if (field->is_static) {
+    if (field->is_static || !field->parent) {
       emit_byte(static_cast<uint8_t>(OpCode::GET_GLOBAL));
       emit_int32(field->memory_index);
     } else {
@@ -1157,7 +1160,7 @@ void Assembler::visit(AssignmentExpression &node) {
     if (ident->resolved_declaration->node_type == NodeType::FIELD_DECL) {
       auto *field =
           static_cast<FieldDeclaration *>(ident->resolved_declaration);
-      if (field->is_static) {
+      if (field->is_static || !field->parent) {
         emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
         emit_int32(field->memory_index);
       } else {
@@ -1201,7 +1204,7 @@ void Assembler::visit(AssignmentExpression &node) {
           "MEMBER_ACCESS resolved_declaration is null at line " +
           std::to_string(mem_acc->line));
     }
-    if (field->is_static) {
+    if (field->is_static || !field->parent) {
       if (field->is_reference_type) {
         emit_byte(static_cast<uint8_t>(OpCode::GET_GLOBAL));
         emit_int32(field->memory_index);
@@ -1389,7 +1392,7 @@ void Assembler::visit(UnaryExpression &node) {
                  NodeType::FIELD_DECL) {
         auto *field =
             static_cast<FieldDeclaration *>(ident->resolved_declaration);
-        if (field->is_static) {
+        if (field->is_static || !field->parent) {
           if (uny->is_prefix) {
             emit_byte(opc);
             emit_byte(static_cast<uint8_t>(OpCode::DUP));
@@ -1418,7 +1421,7 @@ void Assembler::visit(UnaryExpression &node) {
     } else if (uny->operand->node_type == NodeType::MEMBER_ACCESS) {
       auto *mem = static_cast<MemberAccessExpression *>(uny->operand.get());
       auto *field = static_cast<FieldDeclaration *>(mem->resolved_declaration);
-      if (field->is_static) {
+      if (field->is_static || !field->parent) {
         if (uny->is_prefix) {
           emit_byte(opc);
           emit_byte(static_cast<uint8_t>(OpCode::DUP));
@@ -1656,7 +1659,7 @@ void Assembler::visit(MemberAccessExpression &node) {
         std::to_string(mem_acc->line));
   }
 
-  if (field->is_static) {
+  if (field->is_static || !field->parent) {
     emit_byte(static_cast<uint8_t>(OpCode::GET_GLOBAL));
     emit_int32(field->memory_index);
   } else {

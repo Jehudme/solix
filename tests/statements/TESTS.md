@@ -826,7 +826,45 @@ static int32 main() {
 ```
 *Expected Result*: Const field inlines or preserves immutable compile-time value.
 
+### Case 3.5: In-Class Field Initialization with String Literal [NOT IMPLEMENTED]
+```solix
+alias String = solix.core.String;
+
+class Entity {
+    private String label = "DefaultLabel";
+
+    public String getLabel() {
+        return this.label;
+    }
+}
+
+static int32 main() {
+    Entity e = new Entity();
+    return e.getLabel().equals(new String("DefaultLabel")) ? 0 : 1;
+}
+```
+*Expected Result*: String literal `"DefaultLabel"` is implicitly converted or wrapped into a `solix.core.String` instance.
+
+### Case 3.6: Static Field Initialization with Object Instantiation [IMPLEMENTED]
+```solix
+alias String = solix.core.String;
+
+class Config {
+    public static String tag = new String("production");
+
+    public static String getTag() {
+        return tag;
+    }
+}
+
+static int32 main() {
+    return Config.getTag().equals(new String("production")) ? 0 : 1;
+}
+```
+*Expected Result*: Static field `tag` initialized with `new String("production")` evaluates cleanly during program initialization.
+
 ---
+
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
@@ -2380,6 +2418,18 @@ static int32 main() {
 }
 ```
 *Expected Result*: Marks local variable immutable in scope frame.
+
+### Case 3.6: File-Scope Global Variable Declaration [IMPLEMENTED]
+```solix
+int32 globalCounter = 45;
+
+public class Main {
+    public static int32 main() {
+        return globalCounter == 45 ? 0 : 1;
+    }
+}
+```
+*Expected Result*: Top-level file-scope variable `globalCounter` is allocated as a static global and accessible across functions and classes.
 
 ---
 

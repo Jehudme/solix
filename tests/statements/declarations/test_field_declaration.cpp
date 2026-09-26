@@ -23,6 +23,25 @@ static int32 main() {
         CHECK(run_source(code) == 0);
     }
 
+    SECTION("Case 3.6: Static Field Initialization with Object Instantiation") {
+        std::string code = R"(
+alias String = solix.core.String;
+
+class Config {
+    public static String tag = new String("production");
+
+    public static String getTag() {
+        return tag;
+    }
+}
+
+static int32 main() {
+    return Config.getTag().equals(new String("production")) ? 0 : 1;
+}
+)";
+        CHECK(run_source(code, true) == 0);
+    }
+
     SECTION("Case 4.1: Duplicate Field Identifier") {
         std::string code = R"(
 class Item {
