@@ -369,6 +369,13 @@ std::unique_ptr<Node> ParserState::parse_unary() {
     Token op = previous();
     log_trace("Parsing unary expression at line {}", op.line);
     std::unique_ptr<Node> right = parse_unary();
+    if (op.type == TokenType::OPERATOR_INCREMENT || op.type == TokenType::OPERATOR_DECREMENT) {
+      if (right && (right->node_type != NodeType::IDENTIFIER &&
+                    right->node_type != NodeType::MEMBER_ACCESS &&
+                    right->node_type != NodeType::ARRAY_ACCESS)) {
+        throw ParseError("Invalid operand for increment operator: expected lvalue", op.line, op.column);
+      }
+    }
     return std::make_unique<UnaryExpression>(op, op.type, std::move(right),
                                              true);
   }
@@ -464,6 +471,11 @@ std::unique_ptr<Node> ParserState::parse_call_or_access() {
   if (match({TokenType::OPERATOR_INCREMENT, TokenType::OPERATOR_DECREMENT})) {
     Token op = previous();
     log_trace("Parsing postfix operator at line {}", op.line);
+    if (expr && (expr->node_type != NodeType::IDENTIFIER &&
+                 expr->node_type != NodeType::MEMBER_ACCESS &&
+                 expr->node_type != NodeType::ARRAY_ACCESS)) {
+      throw ParseError("Invalid operand for increment operator: expected lvalue", op.line, op.column);
+    }
     expr =
         std::make_unique<UnaryExpression>(op, op.type, std::move(expr), false);
   }

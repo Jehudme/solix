@@ -1566,7 +1566,7 @@ int32 res = 5 ? 1 : 2; // Error
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Postfix vs Prefix [NOT IMPLEMENTED]
+### Case 3.1: Postfix vs Prefix [IMPLEMENTED]
 ```solix
 int32 x = 5;
 int32 post = x++; // post = 5, x = 6
@@ -1578,7 +1578,7 @@ int32 pre = ++x;  // pre = 7, x = 7
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Increment on Constant [NOT IMPLEMENTED]
+### Case 4.1: Increment on Constant [IMPLEMENTED]
 ```solix
 ++10; // Error
 ```
