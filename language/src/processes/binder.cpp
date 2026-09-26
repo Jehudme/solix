@@ -2487,14 +2487,14 @@ void Binder::visit(ReturnStatement &n) {
 void Binder::visit(BreakStatement &n) {
   if (current_pass == BinderPass::BIND_EXECUTION) {
     if (loop_depth == 0 && switch_depth == 0)
-      record_error(&n, "Break must be inside a loop or switch");
+      record_error(&n, "'break' statement not allowed outside of loop or switch");
   }
 }
 
 void Binder::visit(ContinueStatement &n) {
   if (current_pass == BinderPass::BIND_EXECUTION) {
     if (loop_depth == 0)
-      record_error(&n, "Continue must be inside a loop");
+      record_error(&n, "'continue' statement not allowed outside of loop");
   }
 }
 

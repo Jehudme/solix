@@ -607,7 +607,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Breaking Out of Deep Nested Blocks [NOT IMPLEMENTED]
+### Case 3.1: Breaking Out of Deep Nested Blocks [IMPLEMENTED]
 ```solix
 while (true) {
     String s1 = new String("s1");
@@ -623,7 +623,7 @@ while (true) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Break Outside Loop or Switch [NOT IMPLEMENTED]
+### Case 4.1: Break Outside Loop or Switch [IMPLEMENTED]
 ```solix
 void test() {
     int32 x = 10;
