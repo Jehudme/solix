@@ -537,6 +537,7 @@ op_DIV_I64:
   {
     int64_t b = static_cast<int64_t>(POP());
     int64_t a = static_cast<int64_t>(POP());
+    if (b == 0) throw std::runtime_error("ArithmeticException: Division by zero");
     PUSH(static_cast<uint64_t>(a / b));
     DISPATCH();
   }
@@ -551,6 +552,7 @@ op_MOD_I64:
   {
     int64_t b = static_cast<int64_t>(POP());
     int64_t a = static_cast<int64_t>(POP());
+    if (b == 0) throw std::runtime_error("ArithmeticException: Division by zero");
     PUSH(static_cast<uint64_t>(a % b));
     DISPATCH();
   }

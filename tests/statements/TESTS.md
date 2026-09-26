@@ -1282,7 +1282,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Short-Circuit Logical AND [NOT IMPLEMENTED]
+### Case 3.1: Short-Circuit Logical AND [IMPLEMENTED]
 ```solix
 bool result = false && (10 / 0 == 0); // Division by zero avoided
 ```
@@ -1292,7 +1292,7 @@ bool result = false && (10 / 0 == 0); // Division by zero avoided
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Division by Zero (Runtime Fault) [NOT IMPLEMENTED]
+### Case 4.1: Division by Zero (Runtime Fault) [IMPLEMENTED]
 ```solix
 void test() {
     int32 x = 10 / 0;
