@@ -1373,7 +1373,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Safe Null Evaluation [NOT IMPLEMENTED]
+### Case 3.1: Safe Null Evaluation [IMPLEMENTED]
 ```solix
 Animal a = null;
 bool check = a instanceof Dog; // false, no panic!
@@ -1384,7 +1384,7 @@ bool check = a instanceof Dog; // false, no panic!
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Primitive Target [NOT IMPLEMENTED]
+### Case 4.1: Primitive Target [IMPLEMENTED]
 ```solix
 bool b = 10 instanceof int32; // Error
 ```

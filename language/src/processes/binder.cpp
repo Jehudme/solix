@@ -2330,8 +2330,17 @@ void Binder::visit(CastExpression &n) {
 void Binder::visit(InstanceofExpression &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
     TypeInfo source_type = evaluate_expression(n.expression.get());
+    Node *src_decl = global_scope.resolve(source_type.name);
+    if (src_decl && src_decl->is_primitive && source_type.array_depth == 0) {
+      record_error(&n, "'instanceof' cannot be applied to primitive types");
+      return;
+    }
     n.target_type = resolve_type(n.target_type, &n);
     Node *target_class = global_scope.resolve(n.target_type.name);
+    if (target_class && target_class->is_primitive && n.target_type.array_depth == 0) {
+      record_error(&n, "'instanceof' cannot be applied to primitive types");
+      return;
+    }
     if (target_class && target_class->node_type == NodeType::CLASS_DECL) {
       n.target_vtable_id =
           static_cast<ClassDeclaration *>(target_class)->vtable_id;
