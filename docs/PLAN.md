@@ -1,10 +1,5 @@
 # Solix Master Development Plan & Architectural Roadmap
 
-> **Source**: Generated directly from `TODO.md`, synthesized and structured into a cohesive development plan.  
-> **Order of Execution**:  
-> 1. **Fixes & Stabilization** (Phases 1–8)  
-> 2. **Documentation & Knowledge Base** (Phases 9–12)  
->
 > **Engineering Workflow**: Refer to [WORKFLOW.md](WORKFLOW.md) for the development lifecycle, branching, and testing protocol.
 
 ---
