@@ -1501,7 +1501,7 @@ void test(Printer p) {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Instantiation with Overloaded Constructor [NOT IMPLEMENTED]
+### Case 3.1: Instantiation with Overloaded Constructor [IMPLEMENTED]
 ```solix
 class Item {
     int32 val;
@@ -1520,7 +1520,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Instantiating Abstract Class [NOT IMPLEMENTED]
+### Case 4.1: Instantiating Abstract Class [IMPLEMENTED]
 ```solix
 abstract class Base {}
 Base b = new Base(); // Error

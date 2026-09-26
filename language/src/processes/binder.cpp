@@ -2173,6 +2173,11 @@ void Binder::visit(NewInstanceExpression &n) {
     Node *resolved_cls = global_scope.resolve(n.type_info.name);
     if (resolved_cls && resolved_cls->node_type == NodeType::CLASS_DECL) {
       auto *cls = static_cast<ClassDeclaration *>(resolved_cls);
+      if (cls->is_abstract) {
+        record_error(&n, "Cannot instantiate abstract class '" + cls->class_name + "'");
+        evaluated_type = {"void", 0};
+        return;
+      }
       for (auto *m : cls->vtable) {
         if (m->is_abstract) {
           record_error(&n, "Cannot instantiate abstract class '" +
