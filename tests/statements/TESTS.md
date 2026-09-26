@@ -711,7 +711,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Method Calls and Assignments [NOT IMPLEMENTED]
+### Case 3.1: Method Calls and Assignments [IMPLEMENTED]
 ```solix
 int32 x = 0;
 x = 10;
@@ -720,7 +720,7 @@ Console.println(x);
 ```
 *Expected Result*: Evaluates side effects sequentially; stack depth remains 0 at every statement boundary.
 
-### Case 3.2: Immediate Temporary Reclamation [NOT IMPLEMENTED]
+### Case 3.2: Immediate Temporary Reclamation [IMPLEMENTED]
 ```solix
 String generate() { return new String("temporary"); }
 
@@ -734,7 +734,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Missing Semicolon [NOT IMPLEMENTED]
+### Case 4.1: Missing Semicolon [IMPLEMENTED]
 ```solix
 void test() {
     x = 10 // Missing ';'
@@ -745,7 +745,7 @@ void test() {
 [ERROR] parser.cpp: Syntax error: expected ';' after expression
 ```
 
-### Case 4.2: Method Call on Null Reference (Runtime Fault) [NOT IMPLEMENTED]
+### Case 4.2: Method Call on Null Reference (Runtime Fault) [IMPLEMENTED]
 ```solix
 void test() {
     String s = null;
