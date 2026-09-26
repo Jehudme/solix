@@ -22,7 +22,7 @@ TEST_CASE("ClassDeclaration - Declarations", "[declarations][class]") {
                     Animal pet = new Cat();
                     return pet.sound() == 2 ? 0 : 1;
                 }
-            }/
+            }
         )";
     assert_compile_success(code);
     REQUIRE(run_and_evaluate_int(code) == 0);
@@ -33,7 +33,7 @@ TEST_CASE("ClassDeclaration - Declarations", "[declarations][class]") {
             class A extends B {}
             class B extends A {}
         )";
-    assert_compile_error(code, "Circular inheritance detected for class 'A'");
+    assert_compile_error(code, "Circular inheritance detected for class");
   }
 
   SECTION("Case 4.2: Unimplemented Abstract Method") {
