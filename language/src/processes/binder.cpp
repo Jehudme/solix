@@ -2627,6 +2627,11 @@ void Binder::visit(ClassDeclaration &n) {
 void Binder::visit(FieldDeclaration &n) {
   if (current_pass == BinderPass::REGISTER_MEMBERS) {
     std::string full_name = current_prefix + n.field_name;
+    if (global_scope.resolve(full_name)) {
+      std::string class_name = current_class ? current_class->class_name : "";
+      record_error(&n, fmt::format("Field '{}' is already declared in class '{}'", n.field_name, class_name));
+      return;
+    }
     n.mangled_name = full_name;
     n.package_context = current_package;
     global_scope.define(full_name, &n);

@@ -328,7 +328,7 @@ enum State { READY, READY }
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Cycle Breaking with Weak References [NOT IMPLEMENTED]
+### Case 3.1: Cycle Breaking with Weak References [IMPLEMENTED]
 ```solix
 class Parent { Child c; }
 class Child { weak Parent p; }
@@ -346,7 +346,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Duplicate Field Identifier [NOT IMPLEMENTED]
+### Case 4.1: Duplicate Field Identifier [IMPLEMENTED]
 ```solix
 class Item {
     int32 count;
@@ -358,7 +358,7 @@ class Item {
 [ERROR] binder.cpp: Field 'count' is already declared in class 'Item'
 ```
 
-### Case 4.2: Field Access on Null Reference (Runtime Fault) [NOT IMPLEMENTED]
+### Case 4.2: Field Access on Null Reference (Runtime Fault) [IMPLEMENTED]
 ```solix
 void test() {
     Item item = null;
