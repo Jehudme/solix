@@ -14,6 +14,23 @@ public:
       : std::runtime_error(msg), line(line), column(column) {}
 };
 
+static std::string operator_token_to_string(TokenType type) {
+  switch (type) {
+    case TokenType::OPERATOR_PLUS: return "+";
+    case TokenType::OPERATOR_MINUS: return "-";
+    case TokenType::OPERATOR_MULTIPLY: return "*";
+    case TokenType::OPERATOR_DIVIDE: return "/";
+    case TokenType::OPERATOR_ASSIGN: return "=";
+    case TokenType::OPERATOR_LOGICAL_AND: return "&&";
+    case TokenType::OPERATOR_LOGICAL_OR: return "||";
+    case TokenType::OPERATOR_EQUAL: return "==";
+    case TokenType::OPERATOR_NOT_EQUAL: return "!=";
+    case TokenType::OPERATOR_LESS_THAN: return "<";
+    case TokenType::OPERATOR_GREATER_THAN: return ">";
+    default: return "?";
+  }
+}
+
 class ParserState {
   std::vector<const Token *> tokens;
   size_t current = 0;
@@ -1196,7 +1213,7 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
     else if (op_token.type == TokenType::OPERATOR_ASSIGN)
       name_str += "=";
     else
-      throw ParseError("Invalid operator for overloading");
+      throw ParseError(fmt::format("Operator '{}' cannot be overloaded", operator_token_to_string(op_token.type)));
   } else {
     name = consume(TokenType::IDENTIFIER, "Expected field or method name");
     name_str = std::get<std::string>(name.value);

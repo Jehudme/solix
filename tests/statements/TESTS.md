@@ -448,7 +448,7 @@ abstract class Base {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Vector Addition Overload [NOT IMPLEMENTED]
+### Case 3.1: Vector Addition Overload [IMPLEMENTED]
 ```solix
 class Vector {
     int32 x;
@@ -470,7 +470,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Unsupported Operator Overload [NOT IMPLEMENTED]
+### Case 4.1: Unsupported Operator Overload [IMPLEMENTED]
 ```solix
 class Test {
     bool operator&&(Test other) {} // Error: unsupported
