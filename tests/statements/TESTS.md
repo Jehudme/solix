@@ -676,7 +676,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Guaranteed Initial Pass with False Condition [NOT IMPLEMENTED]
+### Case 3.1: Guaranteed Initial Pass with False Condition [IMPLEMENTED]
 ```solix
 int32 ran = 0;
 do {
@@ -689,7 +689,7 @@ do {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Accessing Body Variable in Condition [NOT IMPLEMENTED]
+### Case 4.1: Accessing Body Variable in Condition [IMPLEMENTED]
 Variables declared inside the `do` block are not in scope in the condition.
 ```solix
 void test() {
