@@ -738,7 +738,11 @@ op_ALLOC_STATIC:
   }
 op_ALLOC_DYNAMIC:
   {
-    uint32_t size = static_cast<uint32_t>(POP());
+    int64_t raw_size = static_cast<int64_t>(POP());
+    if (raw_size < 0) {
+      throw std::runtime_error("NegativeArraySizeException: Attempted to create array with negative size " + std::to_string(raw_size));
+    }
+    uint32_t size = static_cast<uint32_t>(raw_size);
     PUSH(memory.dynamic_allocation(size));
     DISPATCH();
   }

@@ -1196,7 +1196,7 @@ int32 fail = data[5]; // Out of bounds
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Zero-Initialized Array [NOT IMPLEMENTED]
+### Case 3.1: Zero-Initialized Array [IMPLEMENTED]
 ```solix
 int32[] data = new int32[5];
 int32 first = data[0]; // 0
@@ -1207,7 +1207,7 @@ int32 first = data[0]; // 0
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Negative Size at Runtime (Runtime Fault) [NOT IMPLEMENTED]
+### Case 4.1: Negative Size at Runtime (Runtime Fault) [IMPLEMENTED]
 ```solix
 int32[] bad = new int32[-1];
 ```
