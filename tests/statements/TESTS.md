@@ -1311,7 +1311,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Valid Downcast [NOT IMPLEMENTED]
+### Case 3.1: Valid Downcast [IMPLEMENTED]
 ```solix
 Animal a = new Dog();
 Dog d = (Dog)a; // Succeeds
@@ -1322,7 +1322,7 @@ Dog d = (Dog)a; // Succeeds
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Bad Downcast (Runtime Fault) [NOT IMPLEMENTED]
+### Case 4.1: Bad Downcast (Runtime Fault) [IMPLEMENTED]
 ```solix
 Animal a = new Cat();
 Dog d = (Dog)a; // Fails!

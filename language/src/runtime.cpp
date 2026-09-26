@@ -1035,7 +1035,7 @@ op_CAST_CHECK:
                              : -1;
       }
       if (!is_instance) {
-        throw std::runtime_error("Invalid cast exception at runtime");
+        throw std::runtime_error("TypeCastException: Invalid cast exception at runtime");
       }
     }
     DISPATCH();
