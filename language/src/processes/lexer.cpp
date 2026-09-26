@@ -143,7 +143,11 @@ class LexerState {
             add_token(TokenType::NUMBER, std::stod(text));
         } else {
             std::string text = source_code.substr(start_pos, current_pos - start_pos);
-            add_token(TokenType::NUMBER, (int64_t)std::stoll(text));
+            try {
+                add_token(TokenType::NUMBER, (int64_t)std::stoll(text));
+            } catch (const std::out_of_range &) {
+                add_token(TokenType::UNKNOWN_TOKEN, "Integer literal out of range: " + text);
+            }
         }
     }
 

@@ -1401,7 +1401,7 @@ bool b = 10 instanceof int32; // Error
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: All Literal Types [NOT IMPLEMENTED]
+### Case 3.1: All Literal Types [IMPLEMENTED]
 ```solix
 int64 big = 10000000000L;
 char letter = 'Z';
@@ -1413,7 +1413,7 @@ String empty = "";
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Integer Literal Overflow [NOT IMPLEMENTED]
+### Case 4.1: Integer Literal Overflow [IMPLEMENTED]
 ```solix
 int32 x = 99999999999999999999;
 ```
