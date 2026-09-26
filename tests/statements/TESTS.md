@@ -1430,7 +1430,7 @@ int32 x = 99999999999999999999;
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Chained Member Access [NOT IMPLEMENTED]
+### Case 3.1: Chained Member Access [IMPLEMENTED]
 ```solix
 class Address { String city; }
 class Person { Address addr; }
@@ -1445,7 +1445,7 @@ void test(Person p) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Member Access on Null Reference (Runtime Fault) [NOT IMPLEMENTED]
+### Case 4.1: Member Access on Null Reference (Runtime Fault) [IMPLEMENTED]
 ```solix
 Person p = null;
 String c = p.addr; // Throws NullReferenceException
