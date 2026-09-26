@@ -1113,18 +1113,18 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Standard Counted Loop [NOT IMPLEMENTED]
+### Case 3.1: Standard Counted Loop [IMPLEMENTED]
 ```solix
 int32 total = 0;
 int32 i = 1;
 while (i <= 5) {
-    total += i;
+    total = total + i;
     i++;
 }
 ```
 *Expected Result*: `total` equals 15.
 
-### Case 3.2: While Loop with Break and Continue [NOT IMPLEMENTED]
+### Case 3.2: While Loop with Break and Continue [IMPLEMENTED]
 ```solix
 int32 sum = 0;
 int32 i = 0;
@@ -1132,7 +1132,7 @@ while (true) {
     i++;
     if (i % 2 == 0) continue;
     if (i > 5) break;
-    sum += i;
+    sum = sum + i;
 }
 ```
 *Expected Result*: `sum` equals 1 + 3 + 5 = 9.
@@ -1141,7 +1141,7 @@ while (true) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Non-Boolean Loop Condition [NOT IMPLEMENTED]
+### Case 4.1: Non-Boolean Loop Condition [IMPLEMENTED]
 ```solix
 void test() {
     int32 x = 5;

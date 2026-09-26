@@ -2404,7 +2404,7 @@ void Binder::visit(WhileStatement &n) {
   if (current_pass == BinderPass::BIND_EXECUTION) {
     TypeInfo condition_type = evaluate_expression(n.condition.get());
     if (condition_type.name != "bool")
-      record_error(&n, "Condition must be bool");
+      record_error(&n, fmt::format("While condition must be of type 'bool', got '{}'", condition_type.name));
     loop_depth++;
     bind_node(n.body.get());
     loop_depth--;
