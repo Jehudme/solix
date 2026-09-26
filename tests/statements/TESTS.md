@@ -56,7 +56,7 @@ This document is the definitive master test specification for the Solix language
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Primitive Synonym [NOT IMPLEMENTED]
+### Case 3.1: Primitive Synonym [IMPLEMENTED]
 ```solix
 alias Byte = uint8;
 
@@ -66,7 +66,7 @@ void test() {
 ```
 *Expected Result*: `Byte` compiles as a raw `uint8` with zero wrapper overhead.
 
-### Case 3.2: Parameterized Generic Alias [NOT IMPLEMENTED]
+### Case 3.2: Parameterized Generic Alias [IMPLEMENTED]
 ```solix
 alias StringMap<V> = Map<String, V>;
 
@@ -80,7 +80,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Circular Alias Definition [NOT IMPLEMENTED]
+### Case 4.1: Circular Alias Definition [IMPLEMENTED]
 ```solix
 alias A = B;
 alias B = A; // Error: circular alias
@@ -90,7 +90,7 @@ alias B = A; // Error: circular alias
 [ERROR] binder.cpp: Circular alias detected in 'A'
 ```
 
-### Case 4.2: Generic Parameter Arity Mismatch [NOT IMPLEMENTED]
+### Case 4.2: Generic Parameter Arity Mismatch [IMPLEMENTED]
 ```solix
 alias Pair<K, V> = Map<K, V>;
 

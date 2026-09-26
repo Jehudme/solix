@@ -779,6 +779,21 @@ void Binder::bind_types_and_memory() {
   }
 
   for (const auto &[name, node] : global_scope.symbols) {
+    if (node->node_type == NodeType::ALIAS_STMT) {
+      std::unordered_set<Node *> visited;
+      Node *curr = node;
+      while (curr && curr->node_type == NodeType::ALIAS_STMT) {
+        if (visited.count(curr)) {
+          record_error(node, "Circular alias detected in '" + static_cast<AliasStatement *>(node)->alias_name + "'");
+          break;
+        }
+        visited.insert(curr);
+        curr = static_cast<AliasStatement *>(curr)->resolved_declaration;
+      }
+    }
+  }
+
+  for (const auto &[name, node] : global_scope.symbols) {
     if (node->node_type == NodeType::FIELD_DECL) {
       auto *field = static_cast<FieldDeclaration *>(node);
       current_class =

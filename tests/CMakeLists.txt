@@ -6,7 +6,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
-file(GLOB_RECURSE TEST_SOURCES "src/*.cpp")
+file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 
 add_executable(solix_tests
     ${TEST_SOURCES}
@@ -17,28 +17,15 @@ target_link_libraries(solix_tests PRIVATE Catch2::Catch2WithMain solix_language
     $<IF:$<TARGET_EXISTS:fmt::fmt>,fmt::fmt,fmt>
 )
 
+target_include_directories(solix_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/language/include
+    ${CMAKE_SOURCE_DIR}/language/src
+)
+
+target_compile_definitions(solix_tests PRIVATE
+    SOLIX_PROJECT_ROOT="${CMAKE_SOURCE_DIR}"
+)
+
 include(Catch)
 catch_discover_tests(solix_tests)
-target_sources(solix_tests PRIVATE src/test_templates.cpp)
-target_sources(solix_tests PRIVATE src/test_phase20.cpp)
-target_sources(solix_tests PRIVATE src/test_phase21.cpp)
-target_sources(solix_tests PRIVATE src/test_phase22.cpp)
-target_sources(solix_tests PRIVATE src/test_phase23.cpp)
-target_sources(solix_tests PRIVATE src/test_phase24.cpp)
-target_sources(solix_tests PRIVATE src/test_phase25.cpp)
-target_sources(solix_tests PRIVATE src/test_phase26.cpp)
-target_sources(solix_tests PRIVATE src/test_phase27.cpp)
-target_sources(solix_tests PRIVATE src/test_phase28.cpp)
-target_sources(solix_tests PRIVATE src/test_phase29.cpp)
-target_sources(solix_tests PRIVATE src/test_phase30.cpp)
-target_sources(solix_tests PRIVATE src/test_phase31.cpp)
-target_sources(solix_tests PRIVATE src/test_phase32.cpp)
-target_sources(solix_tests PRIVATE src/test_phase33.cpp)
-target_sources(solix_tests PRIVATE src/test_phase34.cpp)
-target_sources(solix_tests PRIVATE src/test_pipeline_integrity.cpp)
-target_sources(solix_tests PRIVATE src/test_diagnostics_logging.cpp)
-target_sources(solix_tests PRIVATE src/test_exit_code_propagation.cpp)
-target_sources(solix_tests PRIVATE src/test_scalar_char_literal.cpp)
-target_sources(solix_tests PRIVATE src/test_stdlib_architecture.cpp)
-target_sources(solix_tests PRIVATE src/test_stdlib_modernization.cpp)
-target_sources(solix_tests PRIVATE src/test_symbol_resolution.cpp)
