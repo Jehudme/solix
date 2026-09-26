@@ -4,32 +4,10 @@
 > **Order of Execution**:  
 > 1. **Fixes & Stabilization** (Phases 1–8)  
 > 2. **Documentation & Knowledge Base** (Phases 9–12)  
-> 3. **New Features & System Expansion** (Phases 13–21)
+>
+> **Engineering Workflow**: Refer to [WORKFLOW.md](WORKFLOW.md) for the development lifecycle, branching, and testing protocol.
 
 ---
-
-## Engineering Workflow Rules
-
-Each phase must strictly adhere to the following development lifecycle:
-
-1. **Dedicated Branching**: Create a feature branch: `git checkout -b phase-N-descriptive-name`.
-2. **Implementation**: Implement code changes according to the detailed solution specification.
-3. **Commit Implementation**: `git commit -m "feat/fix: <description>"`.
-4. **Test Specification Analysis & Update**:
-   - Before implementing test code, analyze the codebase and recent changes to determine required test coverage.
-   - Update `tests/statements/TESTS.md` by adding or updating the test scenarios to be implemented.
-   - By default, all newly added test cases in `tests/statements/TESTS.md` must be tagged with `[NOT IMPLEMENTED]`.
-5. **Commit Test Specification**:
-   - `git commit -m "test(spec): update test specifications in TESTS.md"`.
-6. **Unit & Statement Test Implementation**:
-   - Implement or update Catch2 unit tests in `tests/src/` organized by construct.
-   - As test cases are implemented and verified, update their tags in `tests/statements/TESTS.md` from `[NOT IMPLEMENTED]` to `[IMPLEMENTED]`.
-7. **Commit Tests**:
-   - Commit tests incrementally between statements: `git commit -m "test: implement Catch2 test suite for <construct>"`.
-8. **Full Test Suite Run**:
-   - Run `ctest --test-dir build --output-on-failure`.
-9. **Merge**:
-   - Merge into `master` via `git checkout master && git merge --no-ff phase-N-descriptive-name`.
 
 # Part I: Fixes & Stabilization
 
