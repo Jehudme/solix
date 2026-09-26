@@ -1252,7 +1252,7 @@ var arr = [10, "text"]; // Incompatible types
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Chained Assignment [NOT IMPLEMENTED]
+### Case 3.1: Chained Assignment [IMPLEMENTED]
 ```solix
 int32 a; int32 b; int32 c;
 a = b = c = 10;
@@ -1263,7 +1263,7 @@ a = b = c = 10;
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Assigning to Literal / RValue [NOT IMPLEMENTED]
+### Case 4.1: Assigning to Literal / RValue [IMPLEMENTED]
 ```solix
 void test() {
     10 = x; // Error: invalid lvalue
