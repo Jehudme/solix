@@ -848,7 +848,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Early Return from Nested Scopes [NOT IMPLEMENTED]
+### Case 3.1: Early Return from Nested Scopes [IMPLEMENTED]
 ```solix
 int32 find(bool fast) {
     String a = new String("a");
@@ -865,7 +865,7 @@ int32 find(bool fast) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Missing Return Value in Non-Void Method [NOT IMPLEMENTED]
+### Case 4.1: Missing Return Value in Non-Void Method [IMPLEMENTED]
 ```solix
 int32 get_val() {
     return; // Error: must return a value
@@ -876,7 +876,7 @@ int32 get_val() {
 [ERROR] binder.cpp: Must return a value from non-void method
 ```
 
-### Case 4.2: Return Type Mismatch [NOT IMPLEMENTED]
+### Case 4.2: Return Type Mismatch [IMPLEMENTED]
 ```solix
 int32 get_num() {
     return "text"; // Error: String cannot convert to int32
