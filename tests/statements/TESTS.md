@@ -242,6 +242,28 @@ import solix.core.FakeSymbol;
 [ERROR] binder.cpp: Symbol 'FakeSymbol' not found in package 'solix.core'
 ```
 
+### Case 4.5: Import Statement Inside Class Body [NOT IMPLEMENTED]
+```solix
+class Foo {
+    import solix.core.String;
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Import statements must appear before class declarations
+```
+
+### Case 4.6: Import Statement Inside Function Body [NOT IMPLEMENTED]
+```solix
+void test() {
+    import solix.core.String;
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Import statements must appear before class declarations
+```
+
 ---
 
 ## PackageStatement
@@ -317,6 +339,28 @@ package 123.invalid; // Error: numeric start in package segment
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] parser.cpp: Expected identifier in package statement, got number
+```
+
+### Case 4.4: Package Statement Inside Class Body [NOT IMPLEMENTED]
+```solix
+class Foo {
+    package invalid.placement;
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: 'package' statement must be the first statement in the file
+```
+
+### Case 4.5: Package Statement Inside Function Body [NOT IMPLEMENTED]
+```solix
+void test() {
+    package invalid.placement;
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: 'package' statement must be the first statement in the file
 ```
 
 ---
@@ -396,6 +440,26 @@ internal class InternalHelper {
 
 ---
 
+### Case 3.6: Nested Class Declaration Inside Class [NOT IMPLEMENTED]
+```solix
+class Outer {
+    public int32 outer_val;
+
+    public class Inner {
+        public int32 inner_val;
+        public Inner(int32 v) { this.inner_val = v; }
+    }
+}
+
+static int32 main() {
+    Outer.Inner obj = new Outer.Inner(42);
+    return obj.inner_val == 42 ? 0 : 1;
+}
+```
+*Expected Result*: Nested class compiles and can be instantiated via qualified outer class name.
+
+---
+
 ### Negative Test Scenarios (Expected Errors & Faults)
 
 ### Case 4.1: Circular Class Inheritance [IMPLEMENTED]
@@ -449,6 +513,32 @@ void test() {
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] binder.cpp: Cannot instantiate abstract class 'AbstractBase'
+```
+
+### Case 4.6: Class Declared Inside Function Body [NOT IMPLEMENTED]
+```solix
+void test() {
+    class LocalClass {
+        int32 x;
+    }
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Classes cannot be declared inside a function or method body
+```
+
+### Case 4.7: Class Declared Inside Control Flow Block [NOT IMPLEMENTED]
+```solix
+void test(bool cond) {
+    if (cond) {
+        class BlockClass {}
+    }
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Classes cannot be declared inside a block or control flow statement
 ```
 
 ---
@@ -538,6 +628,28 @@ class Sub extends Base {
 [ERROR] binder.cpp: Call to 'super()' must be the first statement in constructor
 ```
 
+### Case 4.4: Constructor Declared Outside Any Class at Top Level [NOT IMPLEMENTED]
+```solix
+StandaloneConstructor() {
+    // Error: constructor outside class
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Constructors can only be declared inside a class body
+```
+
+### Case 4.5: Constructor Declared Inside Method Body [NOT IMPLEMENTED]
+```solix
+void test() {
+    MyClass() {} // Error: constructor inside method
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Constructors can only be declared inside a class body
+```
+
 ---
 
 ## EnumDeclaration
@@ -580,6 +692,23 @@ static int32 main() {
 
 ---
 
+### Case 3.4: Nested Enum Declaration Inside Class [NOT IMPLEMENTED]
+```solix
+class Window {
+    public enum State { MINIMIZED, MAXIMIZED, NORMAL }
+    public State state;
+}
+
+static int32 main() {
+    Window w = new Window();
+    w.state = Window.State.MAXIMIZED;
+    return w.state == Window.State.MAXIMIZED ? 0 : 1;
+}
+```
+*Expected Result*: Nested enum inside class compiles cleanly and qualifies with enclosing class.
+
+---
+
 ### Negative Test Scenarios (Expected Errors & Faults)
 
 ### Case 4.1: Duplicate Enum Member [IMPLEMENTED]
@@ -616,6 +745,17 @@ void test() {
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] binder.cpp: Operator '==' cannot be applied to incompatible enums 'Fruit' and 'Animal'
+```
+
+### Case 4.4: Enum Declared Inside Function Body [NOT IMPLEMENTED]
+```solix
+void test() {
+    enum LocalState { ON, OFF } // Error
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Enums cannot be declared inside a function or method body
 ```
 
 ---
@@ -756,6 +896,26 @@ class Model {
 [ERROR] binder.cpp: Incompatible initializer for field 'count': expected 'int32', got 'String'
 ```
 
+### Case 4.7: Field Access Modifier Applied to Local Variable [NOT IMPLEMENTED]
+```solix
+void test() {
+    public int32 x = 10; // Error: access modifiers cannot be applied to local variables
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Access modifiers ('public', 'private', 'protected') are not allowed on local variables
+```
+
+### Case 4.8: Standalone Field Declared at File Top Level [NOT IMPLEMENTED]
+```solix
+public int32 globalField = 42; // Error: Solix requires fields to be in a class
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Variable declarations with access modifiers must be inside a class body
+```
+
 ---
 
 ## InterfaceDeclaration
@@ -807,6 +967,18 @@ static int32 main() {
 
 ---
 
+### Case 3.4: Nested Interface Declaration Inside Class [NOT IMPLEMENTED]
+```solix
+class Button {
+    public interface OnClickListener {
+        void onClick();
+    }
+}
+```
+*Expected Result*: Interface declared as a static member of a class compiles cleanly.
+
+---
+
 ### Negative Test Scenarios (Expected Errors & Faults)
 
 ### Case 4.1: Interface Method with Body [NOT IMPLEMENTED]
@@ -844,6 +1016,17 @@ interface BadInterface {
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] parser.cpp: Interfaces must not declare instance fields
+```
+
+### Case 4.5: Interface Declared Inside Function Body [NOT IMPLEMENTED]
+```solix
+void test() {
+    interface LocalInterface {} // Error
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Interfaces cannot be declared inside a function or method body
 ```
 
 ---
@@ -966,6 +1149,17 @@ class SubClass extends SuperClass {
 [ERROR] binder.cpp: Overriding method 'getValue' has incompatible return type 'String' (expected 'int32')
 ```
 
+### Case 4.7: Nested Method Declaration Inside Another Method [NOT IMPLEMENTED]
+```solix
+void outer() {
+    void inner() {} // Error: nested functions are not supported
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Methods cannot be declared inside another method
+```
+
 ---
 
 ## OperatorDeclaration
@@ -1046,6 +1240,28 @@ class Vector {
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] binder.cpp: Member binary operator '+' must take exactly 1 argument
+```
+
+### Case 4.4: Operator Overload Declared at Top Level [NOT IMPLEMENTED]
+```solix
+public int32 operator+(int32 a, int32 b) {
+    return a + b;
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Operator overloads can only be declared inside a class body
+```
+
+### Case 4.5: Operator Overload Declared Inside Method Body [NOT IMPLEMENTED]
+```solix
+void test() {
+    operator+(int32 a) {}
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Operator overloads can only be declared inside a class body
 ```
 
 ---
@@ -1164,6 +1380,19 @@ void test() {
 [ERROR] parser.cpp: Syntax error: unexpected token '}'
 ```
 
+### Case 4.6: Bare Execution Block Directly in Class Body [NOT IMPLEMENTED]
+```solix
+class BadClass {
+    {
+        int32 x = 5; // Error: executable block outside method
+    }
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Executable blocks are not allowed directly in class body
+```
+
 ---
 
 ## BreakStatement
@@ -1243,6 +1472,30 @@ void test() {
 [ERROR] binder.cpp: 'break' statement outside of loop or switch
 ```
 
+### Case 4.3: Break Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+```solix
+class BadClass {
+    break; // Error
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Statements are not allowed directly in class body
+```
+
+### Case 4.4: Break Inside If Not Enclosed in Loop or Switch [NOT IMPLEMENTED]
+```solix
+void test(bool flag) {
+    if (flag) {
+        break; // Error: no enclosing loop
+    }
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] binder.cpp: 'break' statement outside of loop or switch
+```
+
 ---
 
 ## ContinueStatement
@@ -1301,6 +1554,30 @@ void test(int32 x) {
     switch (x) {
         case 1:
             continue; // Error: continue cannot target switch
+    }
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] binder.cpp: 'continue' statement outside of loop
+```
+
+### Case 4.3: Continue Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+```solix
+class BadClass {
+    continue; // Error
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Statements are not allowed directly in class body
+```
+
+### Case 4.4: Continue Inside If Not Enclosed in Loop [NOT IMPLEMENTED]
+```solix
+void test(bool flag) {
+    if (flag) {
+        continue; // Error: no enclosing loop
     }
 }
 ```
@@ -1369,6 +1646,17 @@ void test() {
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] binder.cpp: Do-while loop condition must be of type 'bool', got 'int32'
+```
+
+### Case 4.3: Do-While Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+```solix
+class BadClass {
+    do {} while (true); // Error
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Statements are not allowed directly in class body
 ```
 
 ---
@@ -1453,6 +1741,17 @@ void test() {
 [ERROR] parser.cpp: Expected expression, got ';'
 ```
 
+### Case 4.4: Expression Statement Directly in Class Body [NOT IMPLEMENTED]
+```solix
+class BadClass {
+    10 + 20; // Error
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Statements are not allowed directly in class body
+```
+
 ---
 
 ## ForStatement
@@ -1527,6 +1826,17 @@ void test() {
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] binder.cpp: Loop condition must be of type 'bool', got 'int32'
+```
+
+### Case 4.3: For Loop Placed Directly in Class Body [NOT IMPLEMENTED]
+```solix
+class BadClass {
+    for (int32 i = 0; i < 10; i++) {} // Error
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Statements are not allowed directly in class body
 ```
 
 ---
@@ -1604,6 +1914,17 @@ void test() {
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] binder.cpp: If condition must be of type 'bool', got 'int32'
+```
+
+### Case 4.3: If Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+```solix
+class BadClass {
+    if (true) {} // Error
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Statements are not allowed directly in class body
 ```
 
 ---
@@ -1685,6 +2006,26 @@ void test() {
 [ERROR] binder.cpp: Cannot return a value from a void method
 ```
 
+### Case 4.5: Return Statement Placed at File Top Level [NOT IMPLEMENTED]
+```solix
+return 0; // Error: return at top level outside any function
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: 'return' statement outside of function or method body
+```
+
+### Case 4.6: Return Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+```solix
+class BadClass {
+    return 0; // Error
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Statements are not allowed directly in class body
+```
+
 ---
 
 ## SwitchStatement
@@ -1755,6 +2096,17 @@ void test(int32 x, int32 dynamicVal) {
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] parser.cpp: Case label must be a constant literal
+```
+
+### Case 4.4: Switch Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+```solix
+class BadClass {
+    switch (1) { case 1: break; } // Error
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Statements are not allowed directly in class body
 ```
 
 ---
@@ -1832,6 +2184,17 @@ void test() {
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] binder.cpp: Cannot throw non-instantiated type 'Exception'
+```
+
+### Case 4.5: Throw Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+```solix
+class BadClass {
+    throw new Exception("bad"); // Error
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Statements are not allowed directly in class body
 ```
 
 ---
@@ -1944,6 +2307,17 @@ void test() {
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] binder.cpp: Duplicate catch clause for type 'Exception'
+```
+
+### Case 4.5: Try-Catch Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+```solix
+class BadClass {
+    try {} catch (Exception e) {} // Error
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Statements are not allowed directly in class body
 ```
 
 ---
@@ -2079,6 +2453,30 @@ void test() {
 [ERROR] binder.cpp: Cannot assign 'null' to primitive type 'int32'
 ```
 
+### Case 4.7: Solitary Variable Declaration in If Without Braces [NOT IMPLEMENTED]
+```solix
+void test() {
+    if (true)
+        int32 x = 5; // Error: variable declaration cannot be solitary statement of branch
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Variable declarations are not allowed as immediate solitary branch statements without a block
+```
+
+### Case 4.8: Solitary Variable Declaration in While Without Braces [NOT IMPLEMENTED]
+```solix
+void test() {
+    while (true)
+        int32 x = 5; // Error
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Variable declarations are not allowed as immediate solitary loop statements without a block
+```
+
 ---
 
 ## WhileStatement
@@ -2159,6 +2557,17 @@ void test() {
 [ERROR] parser.cpp: Expected '(' after 'while'
 ```
 
+### Case 4.3: While Loop Placed Directly in Class Body [NOT IMPLEMENTED]
+```solix
+class BadClass {
+    while (true) {} // Error
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Statements are not allowed directly in class body
+```
+
 ---
 
 ## ArrayAccessExpression
@@ -2213,6 +2622,16 @@ void test(int32[] arr) {
 ```text
 [ERROR] binder.cpp: Array index must be int32, got 'String'
 ```
+
+### Case 4.4: Subscript Access on Null Reference at Runtime [NOT IMPLEMENTED]
+```solix
+static int32 main() {
+    int32[] arr = null;
+    int32 v = arr[0]; // Runtime Fault
+    return 0;
+}
+```
+*Expected Result*: Throws `NullPointerException`.
 
 ---
 
@@ -2487,6 +2906,19 @@ static int32 main() {
 
 ---
 
+### Case 3.4: Casting Null Literal to Reference Type [NOT IMPLEMENTED]
+```solix
+class Person {}
+
+static int32 main() {
+    Person p = (Person)null;
+    return p == null ? 0 : 1;
+}
+```
+*Expected Result*: Casting `null` to a class reference type succeeds cleanly and preserves null.
+
+---
+
 ### Negative Test Scenarios (Expected Errors & Faults)
 
 ### Case 4.1: Bad Downcast (Runtime Fault) [IMPLEMENTED]
@@ -2512,6 +2944,17 @@ void test() {
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] binder.cpp: Cannot cast between unrelated types 'Cat' and 'Dog'
+```
+
+### Case 4.4: Cast Expression with Non-Type Identifier [NOT IMPLEMENTED]
+```solix
+void test(int32 x) {
+    int32 y = (123)x; // Error: 123 is not a type
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Expected type name in cast expression
 ```
 
 ---
@@ -2570,6 +3013,30 @@ void test() {
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] binder.cpp: Undeclared identifier 'x'
+```
+
+### Case 4.3: Using This Keyword Outside Any Class [NOT IMPLEMENTED]
+```solix
+void test() {
+    int32 x = this.val; // Error: 'this' outside class
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] binder.cpp: Keyword 'this' is only valid within non-static class member methods
+```
+
+### Case 4.4: Using This Keyword Inside Static Method [NOT IMPLEMENTED]
+```solix
+class Example {
+    public static void staticMethod() {
+        int32 x = this.val; // Error: 'this' in static context
+    }
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] binder.cpp: Keyword 'this' cannot be used in a static method
 ```
 
 ---
@@ -2751,6 +3218,19 @@ void test() {
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] binder.cpp: Class 'Empty' has no member named 'unknownField'
+```
+
+### Case 4.4: Using Super Keyword in Non-Derived Class [NOT IMPLEMENTED]
+```solix
+class BaseOnly {
+    public void test() {
+        super.doSomething(); // Error: class does not extend another class
+    }
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] binder.cpp: Keyword 'super' cannot be used in a class with no superclass
 ```
 
 ---
