@@ -643,7 +643,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Continue Advances Loop Variable [NOT IMPLEMENTED]
+### Case 3.1: Continue Advances Loop Variable [IMPLEMENTED]
 ```solix
 int32 hits = 0;
 for (int32 i = 0; i < 6; i++) {
@@ -657,7 +657,7 @@ for (int32 i = 0; i < 6; i++) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Continue Outside Loop [NOT IMPLEMENTED]
+### Case 4.1: Continue Outside Loop [IMPLEMENTED]
 ```solix
 void test() {
     continue; // Error: not in loop
