@@ -265,7 +265,7 @@ class Circle extends Shape {} // Error: missing area()
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Chained Super Constructor [NOT IMPLEMENTED]
+### Case 3.1: Chained Super Constructor [IMPLEMENTED]
 ```solix
 class Base { int32 id; Base(int32 id) { this.id = id; } }
 class Sub extends Base { Sub(int32 id) : super(id) {} }
@@ -276,7 +276,7 @@ class Sub extends Base { Sub(int32 id) : super(id) {} }
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Constructor Name Mismatch [NOT IMPLEMENTED]
+### Case 4.1: Constructor Name Mismatch [IMPLEMENTED]
 ```solix
 class Widget {
     Gadget() {} // Error: name mismatch

@@ -1066,8 +1066,10 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
 
     // Constructor check
     if (check(TokenType::IDENTIFIER) &&
-        std::get<std::string>(peek().value) == decl->class_name &&
         tokens[current + 1]->type == TokenType::PUNCTUATION_OPEN_PAREN) {
+      if (std::get<std::string>(peek().value) != decl->class_name) {
+        throw ParseError("Constructor name '" + std::get<std::string>(peek().value) + "' does not match enclosing class '" + decl->class_name + "'", peek().line, peek().column);
+      }
       Token ctor_name = advance();
       log_debug("Parsing constructor for '{}' at line {}", decl->class_name,
                 ctor_name.line);
