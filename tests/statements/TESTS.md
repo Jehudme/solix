@@ -413,7 +413,7 @@ interface Reader {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Virtual Method Overriding [NOT IMPLEMENTED]
+### Case 3.1: Virtual Method Overriding [IMPLEMENTED]
 ```solix
 class Parent { String name() { return "parent"; } }
 class Child extends Parent { String name() { return "child"; } }
@@ -429,7 +429,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Abstract Method with Body [NOT IMPLEMENTED]
+### Case 4.1: Abstract Method with Body [IMPLEMENTED]
 ```solix
 abstract class Base {
     abstract void run() {} // Error: cannot have body

@@ -1265,6 +1265,13 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
             "Expected ')' after method parameters");
 
     if (is_native || is_abstract) {
+      if (check(TokenType::PUNCTUATION_OPEN_BRACE)) {
+        if (is_abstract) {
+          throw ParseError(fmt::format("Abstract method '{}' cannot have a body", name_str));
+        } else {
+          throw ParseError(fmt::format("Native method '{}' cannot have a body", name_str));
+        }
+      }
       consume(TokenType::PUNCTUATION_SEMICOLON,
               "Expected ';' after native or abstract method declaration");
       log_trace("Finished native/abstract method header for '{}'", name_str);
