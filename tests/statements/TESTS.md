@@ -1340,7 +1340,7 @@ Dog d = (Dog)a; // Fails!
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Local Resolution Precedence [NOT IMPLEMENTED]
+### Case 3.1: Local Resolution Precedence [IMPLEMENTED]
 ```solix
 int32 val = 100;
 {
@@ -1354,7 +1354,7 @@ int32 val = 100;
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Undefined Identifier [NOT IMPLEMENTED]
+### Case 4.1: Undefined Identifier [IMPLEMENTED]
 ```solix
 void test() {
     int32 a = unknown_var;
