@@ -15,19 +15,21 @@ Each phase must strictly adhere to the following development lifecycle:
 1. **Dedicated Branching**: Create a feature branch: `git checkout -b phase-N-descriptive-name`.
 2. **Implementation**: Implement code changes according to the detailed solution specification.
 3. **Commit Implementation**: `git commit -m "feat/fix: <description>"`.
-4. **Unit Tests**: Implement or update Catch2 unit tests in `tests/`.
-5. **Commit Tests**: `git commit -m "test: <description>"`.
-6. **Integration Verification (`test.slx`)**:
-   - For language/compiler changes, append integration test coverage to `tests/resources/test.slx`.
-   - **Never delete, truncate, or simplify existing code in `test.slx`**.
-7. **Commit Integration Tests**: `git commit -m "test(integration): append phase N coverage"`.
-8. **End-to-End Build & Run**: Compile and execute `test.slx` to guarantee zero regressions:
-   ```bash
-   ./build/launcher/solix_launcher compile tests/resources/test.slx -o compiled.slxb && \
-   ./build/launcher/solix_launcher run compiled.slxb HELLO_SOLIX ARG2
-   ```
-9. **Full Test Suite Run**: Run `ctest --test-dir build --output-on-failure`.
-10. **Merge**: Merge into `master` via `git checkout master && git merge --no-ff phase-N-descriptive-name`.
+4. **Test Specification Analysis & Update**:
+   - Before implementing test code, analyze the codebase and recent changes to determine required test coverage.
+   - Update `tests/statements/TESTS.md` by adding or updating the test scenarios to be implemented.
+   - By default, all newly added test cases in `tests/statements/TESTS.md` must be tagged with `[NOT IMPLEMENTED]`.
+5. **Commit Test Specification**:
+   - `git commit -m "test(spec): update test specifications in TESTS.md"`.
+6. **Unit & Statement Test Implementation**:
+   - Implement or update Catch2 unit tests in `tests/src/` organized by construct.
+   - As test cases are implemented and verified, update their tags in `tests/statements/TESTS.md` from `[NOT IMPLEMENTED]` to `[IMPLEMENTED]`.
+7. **Commit Tests**:
+   - Commit tests incrementally between statements: `git commit -m "test: implement Catch2 test suite for <construct>"`.
+8. **Full Test Suite Run**:
+   - Run `ctest --test-dir build --output-on-failure`.
+9. **Merge**:
+   - Merge into `master` via `git checkout master && git merge --no-ff phase-N-descriptive-name`.
 
 # Part I: Fixes & Stabilization
 
@@ -276,6 +278,29 @@ Consequently:
    - Defer base class resolution to `resolve_base_class` in Pass 2 using `resolve_symbol`, resolving `Exception`, `core.Exception`, and `solix.core.Exception` to canonical mangled names.
 6. **Parser Support for Scope Resolution Operator `::`**:
    - Allow `::` in `parse_type_info()` and `parse_import_statement()` to seamlessly interoperate with C++ style namespaces (`solix::core::String`, `core::Objects::is_null`).
+
+---
+
+## Phase 8: Modernized Statement & Construct Test Suite Architecture [IN PROGRESS]
+
+### Status: IN PROGRESS
+
+### Issue
+The initial testing suite relied on legacy monolithic test files (`test_phase*.cpp`) and an ad-hoc integration file (`test.slx`), which lacked systematic, construct-by-construct coverage, granular diagnostic assertions, and isolated negative verification. A robust compiler requires a fine-grained, professional test framework where each language statement, declaration, module directive, and expression is tested for both positive execution guarantees and negative compile-time/runtime diagnostics.
+
+### Solution
+1. **Modernized Test Architecture**:
+   - Reconfigure `tests/CMakeLists.txt` using recursive source discovery (`file(GLOB_RECURSE)`) and Catch2 test discovery.
+   - Build a shared test harness in `tests/src/test_helper.hpp` providing in-memory compilation (`compile_source`), diagnostic inspection (`assert_compile_error`), and runtime value evaluation (`run_and_evaluate_int`, `run_and_evaluate_string`).
+2. **Granular Categorization**:
+   - Organize test files matching construct specifications:
+     - `tests/src/modules/` (Alias, Import, Package)
+     - `tests/src/declarations/` (Class, Constructor, Enum, Field, Interface, Method, Operator)
+     - `tests/src/control_flow/` (Block, Break, Continue, DoWhile, ExpressionStatement, For, If, Return, Switch, Throw, TryCatch, VariableDeclaration, While)
+     - `tests/src/expressions/` (ArrayAccess, ArrayCreation, ArrayLiteral, Assignment, Binary, Cast, Identifier, InstanceOf, Literal, MemberAccess, MethodCall, NewInstance, Ternary, Unary)
+3. **Spec-Driven Traceability**:
+   - Maintain `tests/statements/TESTS.md` with explicit status tags (`[NOT IMPLEMENTED]` vs `[IMPLEMENTED]`) mapped to each test case.
+   - Implement tests construct by construct, updating tags and committing incrementally.
 
 ---
 

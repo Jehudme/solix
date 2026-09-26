@@ -56,7 +56,7 @@ This document is the definitive master test specification for the Solix language
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Primitive Synonym
+### Case 3.1: Primitive Synonym [NOT IMPLEMENTED]
 ```solix
 alias Byte = uint8;
 
@@ -66,7 +66,7 @@ void test() {
 ```
 *Expected Result*: `Byte` compiles as a raw `uint8` with zero wrapper overhead.
 
-### Case 3.2: Parameterized Generic Alias
+### Case 3.2: Parameterized Generic Alias [NOT IMPLEMENTED]
 ```solix
 alias StringMap<V> = Map<String, V>;
 
@@ -80,7 +80,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Circular Alias Definition
+### Case 4.1: Circular Alias Definition [NOT IMPLEMENTED]
 ```solix
 alias A = B;
 alias B = A; // Error: circular alias
@@ -90,7 +90,7 @@ alias B = A; // Error: circular alias
 [ERROR] binder.cpp: Circular alias detected in 'A'
 ```
 
-### Case 4.2: Generic Parameter Arity Mismatch
+### Case 4.2: Generic Parameter Arity Mismatch [NOT IMPLEMENTED]
 ```solix
 alias Pair<K, V> = Map<K, V>;
 
@@ -111,7 +111,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Selective Import
+### Case 3.1: Selective Import [NOT IMPLEMENTED]
 ```solix
 import std.collections.List;
 
@@ -121,7 +121,7 @@ void test() {
 ```
 *Expected Result*: Compiles cleanly; `List` resolves to `std.collections.List`.
 
-### Case 3.2: Wildcard Import
+### Case 3.2: Wildcard Import [NOT IMPLEMENTED]
 ```solix
 import std.io.*;
 
@@ -135,7 +135,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Importing Non-Existent Package
+### Case 4.1: Importing Non-Existent Package [NOT IMPLEMENTED]
 ```solix
 import invalid.pkg.Foo;
 ```
@@ -144,7 +144,7 @@ import invalid.pkg.Foo;
 [ERROR] binder.cpp: Cannot resolve import 'invalid.pkg.Foo': package or symbol not found
 ```
 
-### Case 4.2: Ambiguous Symbol Collision
+### Case 4.2: Ambiguous Symbol Collision [NOT IMPLEMENTED]
 ```solix
 import pkg_a.*; // defines Token
 import pkg_b.*; // also defines Token
@@ -166,7 +166,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Hierarchical Multi-Level Package
+### Case 3.1: Hierarchical Multi-Level Package [NOT IMPLEMENTED]
 ```solix
 package std.collections.generic;
 
@@ -174,7 +174,7 @@ class CustomList {}
 ```
 *Expected Result*: Registered as `std.collections.generic.CustomList`; compiles cleanly.
 
-### Case 3.2: Intra-Package Unqualified Access
+### Case 3.2: Intra-Package Unqualified Access [NOT IMPLEMENTED]
 Two files sharing the same package can reference each other without imports.
 ```solix
 // File 1
@@ -191,7 +191,7 @@ class Account { User owner; }
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Package Statement Not First
+### Case 4.1: Package Statement Not First [NOT IMPLEMENTED]
 ```solix
 import std.io;
 package app; // Error: package must appear before imports
@@ -201,7 +201,7 @@ package app; // Error: package must appear before imports
 [ERROR] parser.cpp: 'package' statement must be the first statement in the file
 ```
 
-### Case 4.2: Duplicate Package Statement
+### Case 4.2: Duplicate Package Statement [NOT IMPLEMENTED]
 ```solix
 package alpha;
 package beta; // Error: duplicate
@@ -221,7 +221,7 @@ package beta; // Error: duplicate
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Single Inheritance and Dynamic Dispatch
+### Case 3.1: Single Inheritance and Dynamic Dispatch [NOT IMPLEMENTED]
 ```solix
 class Animal { String sound() { return "generic"; } }
 class Cat extends Animal { String sound() { return "meow"; } }
@@ -237,7 +237,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Circular Class Inheritance
+### Case 4.1: Circular Class Inheritance [NOT IMPLEMENTED]
 ```solix
 class A extends B {}
 class B extends A {}
@@ -247,7 +247,7 @@ class B extends A {}
 [ERROR] binder.cpp: Circular inheritance detected for class 'A'
 ```
 
-### Case 4.2: Unimplemented Abstract Method
+### Case 4.2: Unimplemented Abstract Method [NOT IMPLEMENTED]
 ```solix
 abstract class Shape { abstract float64 area(); }
 class Circle extends Shape {} // Error: missing area()
@@ -265,7 +265,7 @@ class Circle extends Shape {} // Error: missing area()
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Chained Super Constructor
+### Case 3.1: Chained Super Constructor [NOT IMPLEMENTED]
 ```solix
 class Base { int32 id; Base(int32 id) { this.id = id; } }
 class Sub extends Base { Sub(int32 id) : super(id) {} }
@@ -276,7 +276,7 @@ class Sub extends Base { Sub(int32 id) : super(id) {} }
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Constructor Name Mismatch
+### Case 4.1: Constructor Name Mismatch [NOT IMPLEMENTED]
 ```solix
 class Widget {
     Gadget() {} // Error: name mismatch
@@ -295,7 +295,7 @@ class Widget {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Enum Equality and Switch
+### Case 3.1: Enum Equality and Switch [NOT IMPLEMENTED]
 ```solix
 enum Color { RED, GREEN, BLUE }
 
@@ -311,7 +311,7 @@ void test(Color c) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Duplicate Enum Member
+### Case 4.1: Duplicate Enum Member [NOT IMPLEMENTED]
 ```solix
 enum State { READY, READY }
 ```
@@ -328,7 +328,7 @@ enum State { READY, READY }
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Cycle Breaking with Weak References
+### Case 3.1: Cycle Breaking with Weak References [NOT IMPLEMENTED]
 ```solix
 class Parent { Child c; }
 class Child { weak Parent p; }
@@ -346,7 +346,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Duplicate Field Identifier
+### Case 4.1: Duplicate Field Identifier [NOT IMPLEMENTED]
 ```solix
 class Item {
     int32 count;
@@ -358,7 +358,7 @@ class Item {
 [ERROR] binder.cpp: Field 'count' is already declared in class 'Item'
 ```
 
-### Case 4.2: Field Access on Null Reference (Runtime Fault)
+### Case 4.2: Field Access on Null Reference (Runtime Fault) [NOT IMPLEMENTED]
 ```solix
 void test() {
     Item item = null;
@@ -378,7 +378,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Multiple Interface Conformance
+### Case 3.1: Multiple Interface Conformance [NOT IMPLEMENTED]
 ```solix
 interface Printable { void print(); }
 interface Serializable { void save(); }
@@ -394,7 +394,7 @@ class Doc implements Printable, Serializable {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Interface Method with Body
+### Case 4.1: Interface Method with Body [NOT IMPLEMENTED]
 ```solix
 interface Reader {
     int32 read() { return 0; } // Error: method cannot have body
@@ -413,7 +413,7 @@ interface Reader {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Virtual Method Overriding
+### Case 3.1: Virtual Method Overriding [NOT IMPLEMENTED]
 ```solix
 class Parent { String name() { return "parent"; } }
 class Child extends Parent { String name() { return "child"; } }
@@ -429,7 +429,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Abstract Method with Body
+### Case 4.1: Abstract Method with Body [NOT IMPLEMENTED]
 ```solix
 abstract class Base {
     abstract void run() {} // Error: cannot have body
@@ -448,7 +448,7 @@ abstract class Base {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Vector Addition Overload
+### Case 3.1: Vector Addition Overload [NOT IMPLEMENTED]
 ```solix
 class Vector {
     int32 x;
@@ -470,7 +470,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Unsupported Operator Overload
+### Case 4.1: Unsupported Operator Overload [NOT IMPLEMENTED]
 ```solix
 class Test {
     bool operator&&(Test other) {} // Error: unsupported
@@ -491,7 +491,7 @@ class Test {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Empty and Nested Empty Blocks
+### Case 3.1: Empty and Nested Empty Blocks [NOT IMPLEMENTED]
 Empty blocks compile to zero runtime instructions and produce zero stack delta.
 ```solix
 void test() {
@@ -504,7 +504,7 @@ void test() {
 ```
 *Expected Result*: Compiles and runs cleanly; stack remains balanced.
 
-### Case 3.2: Lexical Variable Shadowing
+### Case 3.2: Lexical Variable Shadowing [NOT IMPLEMENTED]
 An inner block can shadow an outer variable with a different type.
 ```solix
 int32 value = 10;
@@ -516,7 +516,7 @@ Console.println(value);     // Prints: 10
 ```
 *Expected Result*: Outputs `"shadow"` then `10`. The inner `String` is freed at the inner closing brace; outer `int32` is unaffected.
 
-### Case 3.3: Strict LIFO Destruction of Multiple Reference Objects
+### Case 3.3: Strict LIFO Destruction of Multiple Reference Objects [NOT IMPLEMENTED]
 Multiple objects in a block are decremented in reverse declaration order.
 ```solix
 {
@@ -527,7 +527,7 @@ Multiple objects in a block are decremented in reverse declaration order.
 ```
 *Expected Result*: Bytecode executes `DEC_REF third`, then `DEC_REF second`, then `DEC_REF first`.
 
-### Case 3.4: Early Return from Nested Blocks
+### Case 3.4: Early Return from Nested Blocks [NOT IMPLEMENTED]
 Returning from inside deep blocks unwinds all intermediate scopes.
 ```solix
 int32 compute(bool early) {
@@ -547,7 +547,7 @@ int32 compute(bool early) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Accessing Block-Scoped Variable Outside Its Block
+### Case 4.1: Accessing Block-Scoped Variable Outside Its Block [NOT IMPLEMENTED]
 ```solix
 void test() {
     {
@@ -561,7 +561,7 @@ void test() {
 [ERROR] binder.cpp: Undefined identifier: temp
 ```
 
-### Case 4.2: Duplicate Variable in Same Immediate Scope
+### Case 4.2: Duplicate Variable in Same Immediate Scope [NOT IMPLEMENTED]
 ```solix
 void test() {
     {
@@ -575,7 +575,7 @@ void test() {
 [ERROR] binder.cpp: Variable 'score' is already defined in the current scope
 ```
 
-### Case 4.3: Unclosed Block (Missing Brace)
+### Case 4.3: Unclosed Block (Missing Brace) [NOT IMPLEMENTED]
 ```solix
 void test() {
     {
@@ -587,7 +587,7 @@ void test() {
 [ERROR] parser.cpp: Syntax error: expected '}' before end of file
 ```
 
-### Case 4.4: Stray Extra Closing Brace
+### Case 4.4: Stray Extra Closing Brace [NOT IMPLEMENTED]
 ```solix
 void test() {
     { int32 x = 1; }
@@ -607,7 +607,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Breaking Out of Deep Nested Blocks
+### Case 3.1: Breaking Out of Deep Nested Blocks [NOT IMPLEMENTED]
 ```solix
 while (true) {
     String s1 = new String("s1");
@@ -623,7 +623,7 @@ while (true) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Break Outside Loop or Switch
+### Case 4.1: Break Outside Loop or Switch [NOT IMPLEMENTED]
 ```solix
 void test() {
     int32 x = 10;
@@ -643,7 +643,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Continue Advances Loop Variable
+### Case 3.1: Continue Advances Loop Variable [NOT IMPLEMENTED]
 ```solix
 int32 hits = 0;
 for (int32 i = 0; i < 6; i++) {
@@ -657,7 +657,7 @@ for (int32 i = 0; i < 6; i++) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Continue Outside Loop
+### Case 4.1: Continue Outside Loop [NOT IMPLEMENTED]
 ```solix
 void test() {
     continue; // Error: not in loop
@@ -676,7 +676,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Guaranteed Initial Pass with False Condition
+### Case 3.1: Guaranteed Initial Pass with False Condition [NOT IMPLEMENTED]
 ```solix
 int32 ran = 0;
 do {
@@ -689,7 +689,7 @@ do {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Accessing Body Variable in Condition
+### Case 4.1: Accessing Body Variable in Condition [NOT IMPLEMENTED]
 Variables declared inside the `do` block are not in scope in the condition.
 ```solix
 void test() {
@@ -711,7 +711,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Method Calls and Assignments
+### Case 3.1: Method Calls and Assignments [NOT IMPLEMENTED]
 ```solix
 int32 x = 0;
 x = 10;
@@ -720,7 +720,7 @@ Console.println(x);
 ```
 *Expected Result*: Evaluates side effects sequentially; stack depth remains 0 at every statement boundary.
 
-### Case 3.2: Immediate Temporary Reclamation
+### Case 3.2: Immediate Temporary Reclamation [NOT IMPLEMENTED]
 ```solix
 String generate() { return new String("temporary"); }
 
@@ -734,7 +734,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Missing Semicolon
+### Case 4.1: Missing Semicolon [NOT IMPLEMENTED]
 ```solix
 void test() {
     x = 10 // Missing ';'
@@ -745,7 +745,7 @@ void test() {
 [ERROR] parser.cpp: Syntax error: expected ';' after expression
 ```
 
-### Case 4.2: Method Call on Null Reference (Runtime Fault)
+### Case 4.2: Method Call on Null Reference (Runtime Fault) [NOT IMPLEMENTED]
 ```solix
 void test() {
     String s = null;
@@ -765,7 +765,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Standard For Loop with Continue
+### Case 3.1: Standard For Loop with Continue [NOT IMPLEMENTED]
 ```solix
 int32 evens = 0;
 for (int32 i = 0; i < 10; i++) {
@@ -779,7 +779,7 @@ for (int32 i = 0; i < 10; i++) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Induction Variable Leakage
+### Case 4.1: Induction Variable Leakage [NOT IMPLEMENTED]
 ```solix
 void test() {
     for (int32 i = 0; i < 5; i++) {}
@@ -799,7 +799,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Single Branch If
+### Case 3.1: Single Branch If [NOT IMPLEMENTED]
 ```solix
 int32 x = 10;
 if (x > 5) {
@@ -808,7 +808,7 @@ if (x > 5) {
 ```
 *Expected Result*: `x` becomes 20.
 
-### Case 3.2: If-Else Chain
+### Case 3.2: If-Else Chain [NOT IMPLEMENTED]
 ```solix
 int32 score = 85;
 char grade = 'F';
@@ -826,7 +826,7 @@ if (score >= 90) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Non-Boolean Condition Type
+### Case 4.1: Non-Boolean Condition Type [NOT IMPLEMENTED]
 ```solix
 void test() {
     int32 count = 1;
@@ -848,7 +848,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Early Return from Nested Scopes
+### Case 3.1: Early Return from Nested Scopes [NOT IMPLEMENTED]
 ```solix
 int32 find(bool fast) {
     String a = new String("a");
@@ -865,7 +865,7 @@ int32 find(bool fast) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Missing Return Value in Non-Void Method
+### Case 4.1: Missing Return Value in Non-Void Method [NOT IMPLEMENTED]
 ```solix
 int32 get_val() {
     return; // Error: must return a value
@@ -876,7 +876,7 @@ int32 get_val() {
 [ERROR] binder.cpp: Must return a value from non-void method
 ```
 
-### Case 4.2: Return Type Mismatch
+### Case 4.2: Return Type Mismatch [NOT IMPLEMENTED]
 ```solix
 int32 get_num() {
     return "text"; // Error: String cannot convert to int32
@@ -895,7 +895,7 @@ int32 get_num() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Switch with Explicit Break
+### Case 3.1: Switch with Explicit Break [NOT IMPLEMENTED]
 ```solix
 int32 value = 2;
 String name = "";
@@ -911,7 +911,7 @@ switch (value) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Duplicate Case Constant
+### Case 4.1: Duplicate Case Constant [NOT IMPLEMENTED]
 ```solix
 void test(int32 x) {
     switch (x) {
@@ -933,7 +933,7 @@ void test(int32 x) {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Throw Handled by Catch
+### Case 3.1: Throw Handled by Catch [NOT IMPLEMENTED]
 ```solix
 bool caught = false;
 try {
@@ -948,7 +948,7 @@ try {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Throwing Primitive Value
+### Case 4.1: Throwing Primitive Value [NOT IMPLEMENTED]
 ```solix
 void test() {
     throw 404; // Error: cannot throw primitive
@@ -959,7 +959,7 @@ void test() {
 [ERROR] binder.cpp: Cannot throw type 'int32': must inherit from 'std.Exception'
 ```
 
-### Case 4.2: Throwing Null Reference at Runtime
+### Case 4.2: Throwing Null Reference at Runtime [NOT IMPLEMENTED]
 ```solix
 void test() {
     std.Exception e = null;
@@ -979,7 +979,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Specific Catch Hierarchy
+### Case 3.1: Specific Catch Hierarchy [NOT IMPLEMENTED]
 ```solix
 class CustomError extends std.Exception { CustomError() : super("Custom") {} }
 
@@ -998,7 +998,7 @@ try {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Unreachable Catch Clause
+### Case 4.1: Unreachable Catch Clause [NOT IMPLEMENTED]
 ```solix
 class SubErr extends std.Exception {}
 
@@ -1023,7 +1023,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Primitive and Reference Declarations
+### Case 3.1: Primitive and Reference Declarations [NOT IMPLEMENTED]
 ```solix
 int32 a = 1;
 float64 b = 2.5;
@@ -1033,7 +1033,7 @@ int32[] nums = new int32[5];
 ```
 *Expected Result*: Compiles cleanly; each variable is assigned a contiguous slot in the activation frame.
 
-### Case 3.2: Polymorphic Upcasting
+### Case 3.2: Polymorphic Upcasting [NOT IMPLEMENTED]
 Assigning a derived class instance to a base class variable.
 ```solix
 class Animal {}
@@ -1045,7 +1045,7 @@ void test() {
 ```
 *Expected Result*: Passes type checking; `Cat` instance stored in `Animal` slot.
 
-### Case 3.3: Interface Binding
+### Case 3.3: Interface Binding [NOT IMPLEMENTED]
 ```solix
 interface Printable { void print(); }
 class Doc implements Printable { void print() {} }
@@ -1060,7 +1060,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Type Mismatch in Initializer
+### Case 4.1: Type Mismatch in Initializer [NOT IMPLEMENTED]
 ```solix
 void test() {
     int32 x = "hello"; // Incompatible types
@@ -1071,7 +1071,7 @@ void test() {
 [ERROR] binder.cpp: Type mismatch in variable declaration: expected 'int32', got 'String'
 ```
 
-### Case 4.2: Duplicate Declaration in Same Scope
+### Case 4.2: Duplicate Declaration in Same Scope [NOT IMPLEMENTED]
 ```solix
 void test() {
     int32 score = 10;
@@ -1083,7 +1083,7 @@ void test() {
 [ERROR] binder.cpp: Variable 'score' is already defined in the current scope
 ```
 
-### Case 4.3: Unknown Type Name
+### Case 4.3: Unknown Type Name [NOT IMPLEMENTED]
 ```solix
 void test() {
     NonExistentType obj = null;
@@ -1094,7 +1094,7 @@ void test() {
 [ERROR] binder.cpp: Unknown type 'NonExistentType'
 ```
 
-### Case 4.4: Declaring Variable as Void
+### Case 4.4: Declaring Variable as Void [NOT IMPLEMENTED]
 ```solix
 void test() {
     void placeholder;
@@ -1113,7 +1113,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Standard Counted Loop
+### Case 3.1: Standard Counted Loop [NOT IMPLEMENTED]
 ```solix
 int32 total = 0;
 int32 i = 1;
@@ -1124,7 +1124,7 @@ while (i <= 5) {
 ```
 *Expected Result*: `total` equals 15.
 
-### Case 3.2: While Loop with Break and Continue
+### Case 3.2: While Loop with Break and Continue [NOT IMPLEMENTED]
 ```solix
 int32 sum = 0;
 int32 i = 0;
@@ -1141,7 +1141,7 @@ while (true) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Non-Boolean Loop Condition
+### Case 4.1: Non-Boolean Loop Condition [NOT IMPLEMENTED]
 ```solix
 void test() {
     int32 x = 5;
@@ -1165,7 +1165,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: In-Bounds Read and Write
+### Case 3.1: In-Bounds Read and Write [NOT IMPLEMENTED]
 ```solix
 int32[] buffer = new int32[3];
 buffer[0] = 100;
@@ -1178,7 +1178,7 @@ int32 sum = buffer[0] + buffer[1]; // 300
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Index Out of Bounds (Runtime Fault)
+### Case 4.1: Index Out of Bounds (Runtime Fault) [NOT IMPLEMENTED]
 ```solix
 int32[] data = new int32[2];
 int32 fail = data[5]; // Out of bounds
@@ -1196,7 +1196,7 @@ int32 fail = data[5]; // Out of bounds
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Zero-Initialized Array
+### Case 3.1: Zero-Initialized Array [NOT IMPLEMENTED]
 ```solix
 int32[] data = new int32[5];
 int32 first = data[0]; // 0
@@ -1207,7 +1207,7 @@ int32 first = data[0]; // 0
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Negative Size at Runtime (Runtime Fault)
+### Case 4.1: Negative Size at Runtime (Runtime Fault) [NOT IMPLEMENTED]
 ```solix
 int32[] bad = new int32[-1];
 ```
@@ -1224,7 +1224,7 @@ int32[] bad = new int32[-1];
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Dual Literal Syntax
+### Case 3.1: Dual Literal Syntax [NOT IMPLEMENTED]
 ```solix
 int32[] a = [10, 20];
 int32[] b = {10, 20}; // Both bracket and brace syntax supported
@@ -1235,7 +1235,7 @@ int32[] b = {10, 20}; // Both bracket and brace syntax supported
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Incompatible Literal Elements
+### Case 4.1: Incompatible Literal Elements [NOT IMPLEMENTED]
 ```solix
 var arr = [10, "text"]; // Incompatible types
 ```
@@ -1252,7 +1252,7 @@ var arr = [10, "text"]; // Incompatible types
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Chained Assignment
+### Case 3.1: Chained Assignment [NOT IMPLEMENTED]
 ```solix
 int32 a; int32 b; int32 c;
 a = b = c = 10;
@@ -1263,7 +1263,7 @@ a = b = c = 10;
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Assigning to Literal / RValue
+### Case 4.1: Assigning to Literal / RValue [NOT IMPLEMENTED]
 ```solix
 void test() {
     10 = x; // Error: invalid lvalue
@@ -1282,7 +1282,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Short-Circuit Logical AND
+### Case 3.1: Short-Circuit Logical AND [NOT IMPLEMENTED]
 ```solix
 bool result = false && (10 / 0 == 0); // Division by zero avoided
 ```
@@ -1292,7 +1292,7 @@ bool result = false && (10 / 0 == 0); // Division by zero avoided
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Division by Zero (Runtime Fault)
+### Case 4.1: Division by Zero (Runtime Fault) [NOT IMPLEMENTED]
 ```solix
 void test() {
     int32 x = 10 / 0;
@@ -1311,7 +1311,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Valid Downcast
+### Case 3.1: Valid Downcast [NOT IMPLEMENTED]
 ```solix
 Animal a = new Dog();
 Dog d = (Dog)a; // Succeeds
@@ -1322,7 +1322,7 @@ Dog d = (Dog)a; // Succeeds
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Bad Downcast (Runtime Fault)
+### Case 4.1: Bad Downcast (Runtime Fault) [NOT IMPLEMENTED]
 ```solix
 Animal a = new Cat();
 Dog d = (Dog)a; // Fails!
@@ -1340,7 +1340,7 @@ Dog d = (Dog)a; // Fails!
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Local Resolution Precedence
+### Case 3.1: Local Resolution Precedence [NOT IMPLEMENTED]
 ```solix
 int32 val = 100;
 {
@@ -1354,7 +1354,7 @@ int32 val = 100;
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Undefined Identifier
+### Case 4.1: Undefined Identifier [NOT IMPLEMENTED]
 ```solix
 void test() {
     int32 a = unknown_var;
@@ -1373,7 +1373,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Safe Null Evaluation
+### Case 3.1: Safe Null Evaluation [NOT IMPLEMENTED]
 ```solix
 Animal a = null;
 bool check = a instanceof Dog; // false, no panic!
@@ -1384,7 +1384,7 @@ bool check = a instanceof Dog; // false, no panic!
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Primitive Target
+### Case 4.1: Primitive Target [NOT IMPLEMENTED]
 ```solix
 bool b = 10 instanceof int32; // Error
 ```
@@ -1401,7 +1401,7 @@ bool b = 10 instanceof int32; // Error
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: All Literal Types
+### Case 3.1: All Literal Types [NOT IMPLEMENTED]
 ```solix
 int64 big = 10000000000L;
 char letter = 'Z';
@@ -1413,7 +1413,7 @@ String empty = "";
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Integer Literal Overflow
+### Case 4.1: Integer Literal Overflow [NOT IMPLEMENTED]
 ```solix
 int32 x = 99999999999999999999;
 ```
@@ -1430,7 +1430,7 @@ int32 x = 99999999999999999999;
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Chained Member Access
+### Case 3.1: Chained Member Access [NOT IMPLEMENTED]
 ```solix
 class Address { String city; }
 class Person { Address addr; }
@@ -1445,7 +1445,7 @@ void test(Person p) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Member Access on Null Reference (Runtime Fault)
+### Case 4.1: Member Access on Null Reference (Runtime Fault) [NOT IMPLEMENTED]
 ```solix
 Person p = null;
 String c = p.addr; // Throws NullReferenceException
@@ -1463,7 +1463,7 @@ String c = p.addr; // Throws NullReferenceException
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Overloaded Method Selection
+### Case 3.1: Overloaded Method Selection [NOT IMPLEMENTED]
 ```solix
 class Printer {
     void print(int32 x) { Console.println("int"); }
@@ -1482,7 +1482,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: No Matching Overload
+### Case 4.1: No Matching Overload [NOT IMPLEMENTED]
 ```solix
 void test(Printer p) {
     p.print(true); // Error: no boolean overload
@@ -1501,7 +1501,7 @@ void test(Printer p) {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Instantiation with Overloaded Constructor
+### Case 3.1: Instantiation with Overloaded Constructor [NOT IMPLEMENTED]
 ```solix
 class Item {
     int32 val;
@@ -1520,7 +1520,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Instantiating Abstract Class
+### Case 4.1: Instantiating Abstract Class [NOT IMPLEMENTED]
 ```solix
 abstract class Base {}
 Base b = new Base(); // Error
@@ -1538,7 +1538,7 @@ Base b = new Base(); // Error
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Safe Guard with Null Check
+### Case 3.1: Safe Guard with Null Check [NOT IMPLEMENTED]
 ```solix
 String s = null;
 int32 len = (s != null) ? s.length() : 0; // Short-circuits; does not call s.length()!
@@ -1549,7 +1549,7 @@ int32 len = (s != null) ? s.length() : 0; // Short-circuits; does not call s.len
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Non-Boolean Condition
+### Case 4.1: Non-Boolean Condition [NOT IMPLEMENTED]
 ```solix
 int32 res = 5 ? 1 : 2; // Error
 ```
@@ -1566,7 +1566,7 @@ int32 res = 5 ? 1 : 2; // Error
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Postfix vs Prefix
+### Case 3.1: Postfix vs Prefix [NOT IMPLEMENTED]
 ```solix
 int32 x = 5;
 int32 post = x++; // post = 5, x = 6
@@ -1578,7 +1578,7 @@ int32 pre = ++x;  // pre = 7, x = 7
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Increment on Constant
+### Case 4.1: Increment on Constant [NOT IMPLEMENTED]
 ```solix
 ++10; // Error
 ```
