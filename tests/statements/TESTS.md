@@ -895,7 +895,7 @@ int32 get_num() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Switch with Explicit Break [NOT IMPLEMENTED]
+### Case 3.1: Switch with Explicit Break [IMPLEMENTED]
 ```solix
 int32 value = 2;
 String name = "";
@@ -911,7 +911,7 @@ switch (value) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Duplicate Case Constant [NOT IMPLEMENTED]
+### Case 4.1: Duplicate Case Constant [IMPLEMENTED]
 ```solix
 void test(int32 x) {
     switch (x) {

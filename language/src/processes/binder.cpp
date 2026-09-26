@@ -2426,8 +2426,30 @@ void Binder::visit(SwitchStatement &n) {
   if (current_pass == BinderPass::BIND_EXECUTION) {
     evaluate_expression(n.condition.get());
     switch_depth++;
-    for (const auto &case_node : n.children)
+    std::unordered_set<std::string> seen_cases;
+    for (const auto &case_node : n.children) {
+      if (auto *c = dynamic_cast<CaseStatement *>(case_node.get())) {
+        if (c->case_value) {
+          std::string val_str = "";
+          if (auto *lit = dynamic_cast<LiteralNode *>(c->case_value.get())) {
+            if (std::holds_alternative<int64_t>(lit->value))
+              val_str = std::to_string(std::get<int64_t>(lit->value));
+            else if (std::holds_alternative<double>(lit->value))
+              val_str = std::to_string(std::get<double>(lit->value));
+            else if (std::holds_alternative<std::string>(lit->value))
+              val_str = std::get<std::string>(lit->value);
+          }
+          if (!val_str.empty()) {
+            if (seen_cases.count(val_str)) {
+              record_error(c, fmt::format("Duplicate case value '{}' in switch statement", val_str));
+            } else {
+              seen_cases.insert(val_str);
+            }
+          }
+        }
+      }
       bind_node(case_node.get());
+    }
     switch_depth--;
   }
 }
