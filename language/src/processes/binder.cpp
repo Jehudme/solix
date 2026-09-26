@@ -2774,7 +2774,31 @@ void Binder::visit(ThrowStatement& n) {
         if (n.exception_expression) register_members(n.exception_expression.get(), current_prefix);
     } else if (current_pass == BinderPass::BIND_EXECUTION) {
         if (n.exception_expression) {
-            evaluate_expression(n.exception_expression.get());
+            TypeInfo ex_type = evaluate_expression(n.exception_expression.get());
+            Node *target = global_scope.resolve(ex_type.name);
+            bool is_exc = false;
+            if (target && target->node_type == NodeType::CLASS_DECL) {
+                std::unordered_set<std::string> visited;
+                std::string current_name = target->mangled_name;
+                while (!current_name.empty()) {
+                    if (visited.count(current_name)) break;
+                    visited.insert(current_name);
+                    if (current_name == "Exception" || current_name == "Throwable" ||
+                        current_name.ends_with(".Exception") || current_name.ends_with(".Throwable")) {
+                        is_exc = true;
+                        break;
+                    }
+                    Node *node = global_scope.resolve(current_name);
+                    if (node && node->node_type == NodeType::CLASS_DECL) {
+                        current_name = static_cast<ClassDeclaration *>(node)->base_class_name;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            if (!is_exc) {
+                record_error(&n, fmt::format("Cannot throw type '{}': must inherit from 'std.Exception'", ex_type.name));
+            }
         }
     }
 }

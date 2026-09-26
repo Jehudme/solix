@@ -933,7 +933,7 @@ void test(int32 x) {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Throw Handled by Catch [NOT IMPLEMENTED]
+### Case 3.1: Throw Handled by Catch [IMPLEMENTED]
 ```solix
 bool caught = false;
 try {
@@ -948,7 +948,7 @@ try {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Throwing Primitive Value [NOT IMPLEMENTED]
+### Case 4.1: Throwing Primitive Value [IMPLEMENTED]
 ```solix
 void test() {
     throw 404; // Error: cannot throw primitive
@@ -959,7 +959,7 @@ void test() {
 [ERROR] binder.cpp: Cannot throw type 'int32': must inherit from 'std.Exception'
 ```
 
-### Case 4.2: Throwing Null Reference at Runtime [NOT IMPLEMENTED]
+### Case 4.2: Throwing Null Reference at Runtime [IMPLEMENTED]
 ```solix
 void test() {
     std.Exception e = null;

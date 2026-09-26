@@ -1175,10 +1175,9 @@ op_JMP_TO_OUTER_CLEANUP:
 op_THROW_EXCEPTION:
   {
       uint64_t exc = POP();
-      if (exc != 0) {
-          memory.increase_reference(exc); // Prevent it from being garbage collected during unwinding
-          active_exception = exc;
-      }
+      if (exc == 0) throw std::runtime_error("NullPointer");
+      memory.increase_reference(exc); // Prevent it from being garbage collected during unwinding
+      active_exception = exc;
       Address innermost_cleanup_ip = read_u32(bytecode, program_counter);
       
       if (innermost_cleanup_ip != 0xFFFFFFFF) {
