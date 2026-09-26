@@ -2465,6 +2465,10 @@ void Binder::visit(CaseStatement &n) {
 
 void Binder::visit(VariableDeclaration &n) {
   if (current_pass == BinderPass::BIND_EXECUTION) {
+    if (n.type_info.name == "void" && n.type_info.array_depth == 0) {
+      record_error(&n, "Variable cannot be of type 'void'");
+      return;
+    }
     n.type_info = resolve_type(n.type_info, &n);
     Node *type_decl = global_scope.resolve(n.type_info.name);
     n.is_reference_type =

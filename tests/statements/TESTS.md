@@ -1023,7 +1023,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Primitive and Reference Declarations [NOT IMPLEMENTED]
+### Case 3.1: Primitive and Reference Declarations [IMPLEMENTED]
 ```solix
 int32 a = 1;
 float64 b = 2.5;
@@ -1033,7 +1033,7 @@ int32[] nums = new int32[5];
 ```
 *Expected Result*: Compiles cleanly; each variable is assigned a contiguous slot in the activation frame.
 
-### Case 3.2: Polymorphic Upcasting [NOT IMPLEMENTED]
+### Case 3.2: Polymorphic Upcasting [IMPLEMENTED]
 Assigning a derived class instance to a base class variable.
 ```solix
 class Animal {}
@@ -1060,7 +1060,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Type Mismatch in Initializer [NOT IMPLEMENTED]
+### Case 4.1: Type Mismatch in Initializer [IMPLEMENTED]
 ```solix
 void test() {
     int32 x = "hello"; // Incompatible types
@@ -1071,7 +1071,7 @@ void test() {
 [ERROR] binder.cpp: Type mismatch in variable declaration: expected 'int32', got 'String'
 ```
 
-### Case 4.2: Duplicate Declaration in Same Scope [NOT IMPLEMENTED]
+### Case 4.2: Duplicate Declaration in Same Scope [IMPLEMENTED]
 ```solix
 void test() {
     int32 score = 10;
@@ -1083,7 +1083,7 @@ void test() {
 [ERROR] binder.cpp: Variable 'score' is already defined in the current scope
 ```
 
-### Case 4.3: Unknown Type Name [NOT IMPLEMENTED]
+### Case 4.3: Unknown Type Name [IMPLEMENTED]
 ```solix
 void test() {
     NonExistentType obj = null;
@@ -1094,7 +1094,7 @@ void test() {
 [ERROR] binder.cpp: Unknown type 'NonExistentType'
 ```
 
-### Case 4.4: Declaring Variable as Void [NOT IMPLEMENTED]
+### Case 4.4: Declaring Variable as Void [IMPLEMENTED]
 ```solix
 void test() {
     void placeholder;
