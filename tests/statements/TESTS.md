@@ -295,7 +295,7 @@ class Widget {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Enum Equality and Switch [NOT IMPLEMENTED]
+### Case 3.1: Enum Equality and Switch [IMPLEMENTED]
 ```solix
 enum Color { RED, GREEN, BLUE }
 
@@ -311,7 +311,7 @@ void test(Color c) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Duplicate Enum Member [NOT IMPLEMENTED]
+### Case 4.1: Duplicate Enum Member [IMPLEMENTED]
 ```solix
 enum State { READY, READY }
 ```

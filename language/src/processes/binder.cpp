@@ -2544,6 +2544,14 @@ void Binder::visit(ImportStatement &n) {
 
 void Binder::visit(EnumDeclaration &n) {
   if (current_pass == BinderPass::REGISTER_GLOBALS) {
+    std::unordered_set<std::string> seen_members;
+    for (const auto &mem : n.members) {
+      if (seen_members.count(mem)) {
+        record_error(&n, "Duplicate enum member '" + mem + "' in enum '" + n.enum_name + "'");
+      }
+      seen_members.insert(mem);
+    }
+
     std::string full_name = current_prefix + n.enum_name;
     n.package_context = current_prefix;
     if (global_scope.symbols.count(full_name))
