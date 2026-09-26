@@ -1,7 +1,0 @@
-public class Main {
-  public static void main() {
-    String message = new String("hello world!");
-    Console.input();
-    Console.println(message);
-  }
-}
