@@ -799,7 +799,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Single Branch If [NOT IMPLEMENTED]
+### Case 3.1: Single Branch If [IMPLEMENTED]
 ```solix
 int32 x = 10;
 if (x > 5) {
@@ -808,7 +808,7 @@ if (x > 5) {
 ```
 *Expected Result*: `x` becomes 20.
 
-### Case 3.2: If-Else Chain [NOT IMPLEMENTED]
+### Case 3.2: If-Else Chain [IMPLEMENTED]
 ```solix
 int32 score = 85;
 char grade = 'F';
@@ -826,7 +826,7 @@ if (score >= 90) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Non-Boolean Condition Type [NOT IMPLEMENTED]
+### Case 4.1: Non-Boolean Condition Type [IMPLEMENTED]
 ```solix
 void test() {
     int32 count = 1;
