@@ -19,6 +19,8 @@ class ParserState {
   size_t current = 0;
   Parser *process;
   const Source *current_source;
+  bool has_parsed_declaration = false;
+  bool has_package_statement = false;
 
 public:
   ParserState(const TokenList &tkns, Parser *proc, const Source *src)
@@ -834,8 +836,17 @@ std::unique_ptr<Node> ParserState::parse_variable_declaration(bool is_const,
 }
 
 std::unique_ptr<Node> ParserState::parse_top_level_declaration() {
-  if (match(TokenType::KEYWORD_PACKAGE))
+  if (match(TokenType::KEYWORD_PACKAGE)) {
+    if (has_package_statement) {
+      throw ParseError("Only one 'package' statement is allowed per file", previous().line, previous().column);
+    }
+    if (has_parsed_declaration) {
+      throw ParseError("'package' statement must be the first statement in the file", previous().line, previous().column);
+    }
+    has_package_statement = true;
     return parse_package_statement();
+  }
+  has_parsed_declaration = true;
   if (match(TokenType::KEYWORD_IMPORT))
     return parse_import_statement();
   if (match(TokenType::KEYWORD_ALIAS))

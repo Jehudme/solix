@@ -166,7 +166,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Hierarchical Multi-Level Package [NOT IMPLEMENTED]
+### Case 3.1: Hierarchical Multi-Level Package [IMPLEMENTED]
 ```solix
 package std.collections.generic;
 
@@ -174,7 +174,7 @@ class CustomList {}
 ```
 *Expected Result*: Registered as `std.collections.generic.CustomList`; compiles cleanly.
 
-### Case 3.2: Intra-Package Unqualified Access [NOT IMPLEMENTED]
+### Case 3.2: Intra-Package Unqualified Access [IMPLEMENTED]
 Two files sharing the same package can reference each other without imports.
 ```solix
 // File 1
@@ -191,7 +191,7 @@ class Account { User owner; }
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Package Statement Not First [NOT IMPLEMENTED]
+### Case 4.1: Package Statement Not First [IMPLEMENTED]
 ```solix
 import std.io;
 package app; // Error: package must appear before imports
@@ -201,7 +201,7 @@ package app; // Error: package must appear before imports
 [ERROR] parser.cpp: 'package' statement must be the first statement in the file
 ```
 
-### Case 4.2: Duplicate Package Statement [NOT IMPLEMENTED]
+### Case 4.2: Duplicate Package Statement [IMPLEMENTED]
 ```solix
 package alpha;
 package beta; // Error: duplicate
