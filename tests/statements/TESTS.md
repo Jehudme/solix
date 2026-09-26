@@ -979,7 +979,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Specific Catch Hierarchy [NOT IMPLEMENTED]
+### Case 3.1: Specific Catch Hierarchy [IMPLEMENTED]
 ```solix
 class CustomError extends std.Exception { CustomError() : super("Custom") {} }
 
@@ -998,7 +998,7 @@ try {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Unreachable Catch Clause [NOT IMPLEMENTED]
+### Case 4.1: Unreachable Catch Clause [IMPLEMENTED]
 ```solix
 class SubErr extends std.Exception {}
 

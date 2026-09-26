@@ -2727,7 +2727,21 @@ void Binder::visit(TryStatement& n) {
         if (n.finally_block) register_members(n.finally_block.get(), current_prefix);
     } else if (current_pass == BinderPass::BIND_EXECUTION) {
         if (n.try_block) bind_node(n.try_block.get());
-        for (auto& c : n.catch_clauses) if (c) bind_node(c.get());
+        std::vector<TypeInfo> handled_types;
+        for (auto& c : n.catch_clauses) {
+            if (c) {
+                auto *catch_clause = static_cast<CatchClause *>(c.get());
+                TypeInfo resolved_exc = resolve_type(catch_clause->exception_type, catch_clause);
+                for (const auto& prev : handled_types) {
+                    if (is_assignable(prev, resolved_exc)) {
+                        record_error(catch_clause, fmt::format("Unreachable catch clause: '{}' is already handled by preceding catch for '{}'", catch_clause->exception_type.name, prev.name));
+                        break;
+                    }
+                }
+                handled_types.push_back(resolved_exc);
+                bind_node(c.get());
+            }
+        }
         if (n.finally_block) bind_node(n.finally_block.get());
     }
 }
