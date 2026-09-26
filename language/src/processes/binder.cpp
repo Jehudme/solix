@@ -602,7 +602,7 @@ std::string Binder::resolve_template_name(const std::string &template_name,
   }
 
   if (matches.empty()) {
-    return template_name;
+    return "";
   }
 
   if (matches.size() == 1) {

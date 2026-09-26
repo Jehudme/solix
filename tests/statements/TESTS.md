@@ -111,7 +111,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Selective Import [NOT IMPLEMENTED]
+### Case 3.1: Selective Import [IMPLEMENTED]
 ```solix
 import std.collections.List;
 
@@ -121,7 +121,7 @@ void test() {
 ```
 *Expected Result*: Compiles cleanly; `List` resolves to `std.collections.List`.
 
-### Case 3.2: Wildcard Import [NOT IMPLEMENTED]
+### Case 3.2: Wildcard Import [IMPLEMENTED]
 ```solix
 import std.io.*;
 
@@ -135,7 +135,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Importing Non-Existent Package [NOT IMPLEMENTED]
+### Case 4.1: Importing Non-Existent Package [IMPLEMENTED]
 ```solix
 import invalid.pkg.Foo;
 ```
@@ -144,7 +144,7 @@ import invalid.pkg.Foo;
 [ERROR] binder.cpp: Cannot resolve import 'invalid.pkg.Foo': package or symbol not found
 ```
 
-### Case 4.2: Ambiguous Symbol Collision [NOT IMPLEMENTED]
+### Case 4.2: Ambiguous Symbol Collision [IMPLEMENTED]
 ```solix
 import pkg_a.*; // defines Token
 import pkg_b.*; // also defines Token
