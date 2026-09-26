@@ -1463,7 +1463,7 @@ String c = p.addr; // Throws NullReferenceException
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Overloaded Method Selection [NOT IMPLEMENTED]
+### Case 3.1: Overloaded Method Selection [IMPLEMENTED]
 ```solix
 class Printer {
     void print(int32 x) { Console.println("int"); }
@@ -1482,7 +1482,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: No Matching Overload [NOT IMPLEMENTED]
+### Case 4.1: No Matching Overload [IMPLEMENTED]
 ```solix
 void test(Printer p) {
     p.print(true); // Error: no boolean overload
