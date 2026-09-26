@@ -2275,7 +2275,7 @@ void Binder::visit(ArrayLiteralExpression &n) {
             }
           }
           if (!found_common) {
-            record_error(&n, "Mixed types in array literal");
+            record_error(&n, "Incompatible types in array literal");
           }
         }
       }

@@ -511,17 +511,22 @@ std::unique_ptr<Node> ParserState::parse_primary() {
     }
   }
 
-  if (match(TokenType::PUNCTUATION_OPEN_BRACE)) {
-    Token brace = previous();
-    log_trace("Parsing array literal at line {}", brace.line);
-    auto arr_lit = std::make_unique<ArrayLiteralExpression>(brace);
-    if (!check(TokenType::PUNCTUATION_CLOSE_BRACE)) {
+  if (match({TokenType::PUNCTUATION_OPEN_BRACE, TokenType::PUNCTUATION_OPEN_BRACKET})) {
+    Token open_tok = previous();
+    TokenType closing_tok = (open_tok.type == TokenType::PUNCTUATION_OPEN_BRACE)
+                                ? TokenType::PUNCTUATION_CLOSE_BRACE
+                                : TokenType::PUNCTUATION_CLOSE_BRACKET;
+    log_trace("Parsing array literal at line {}", open_tok.line);
+    auto arr_lit = std::make_unique<ArrayLiteralExpression>(open_tok);
+    if (!check(closing_tok)) {
       do {
         arr_lit->elements.push_back(parse_expression());
       } while (match(TokenType::PUNCTUATION_COMMA));
     }
-    consume(TokenType::PUNCTUATION_CLOSE_BRACE,
-            "Expected '}' at end of array literal");
+    consume(closing_tok,
+            open_tok.type == TokenType::PUNCTUATION_OPEN_BRACE
+                ? "Expected '}' at end of array literal"
+                : "Expected ']' at end of array literal");
     return arr_lit;
   }
 

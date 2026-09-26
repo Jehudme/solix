@@ -1224,7 +1224,7 @@ int32[] bad = new int32[-1];
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Dual Literal Syntax [NOT IMPLEMENTED]
+### Case 3.1: Dual Literal Syntax [IMPLEMENTED]
 ```solix
 int32[] a = [10, 20];
 int32[] b = {10, 20}; // Both bracket and brace syntax supported
@@ -1235,7 +1235,7 @@ int32[] b = {10, 20}; // Both bracket and brace syntax supported
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Incompatible Literal Elements [NOT IMPLEMENTED]
+### Case 4.1: Incompatible Literal Elements [IMPLEMENTED]
 ```solix
 var arr = [10, "text"]; // Incompatible types
 ```
