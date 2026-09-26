@@ -1165,7 +1165,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: In-Bounds Read and Write [NOT IMPLEMENTED]
+### Case 3.1: In-Bounds Read and Write [IMPLEMENTED]
 ```solix
 int32[] buffer = new int32[3];
 buffer[0] = 100;
@@ -1178,7 +1178,7 @@ int32 sum = buffer[0] + buffer[1]; // 300
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Index Out of Bounds (Runtime Fault) [NOT IMPLEMENTED]
+### Case 4.1: Index Out of Bounds (Runtime Fault) [IMPLEMENTED]
 ```solix
 int32[] data = new int32[2];
 int32 fail = data[5]; // Out of bounds
