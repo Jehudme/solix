@@ -862,6 +862,7 @@ void Binder::bind_types_and_memory() {
 
   std::unordered_map<std::string, std::vector<MethodDeclaration *>> vtables;
   std::unordered_set<std::string> vtable_calculated;
+  std::unordered_set<std::string> vtable_in_progress;
 
   auto get_method_sig = [](const std::string &mangled) -> std::string {
     size_t paren = mangled.find('(');
@@ -880,6 +881,12 @@ void Binder::bind_types_and_memory() {
       [&](ClassDeclaration *cls) {
         if (vtable_calculated.count(cls->mangled_name))
           return;
+
+        if (vtable_in_progress.count(cls->mangled_name)) {
+          record_error(cls, "Circular inheritance detected for class '" + cls->class_name + "'");
+          return;
+        }
+        vtable_in_progress.insert(cls->mangled_name);
 
         log_trace("Calculating vtable for class '{}'", cls->mangled_name);
         std::vector<MethodDeclaration *> vtable;
@@ -923,9 +930,21 @@ void Binder::bind_types_and_memory() {
             }
           }
         }
+        vtable_in_progress.erase(cls->mangled_name);
         vtables[cls->mangled_name] = vtable;
         cls->vtable = vtable;
         vtable_calculated.insert(cls->mangled_name);
+
+        if (!cls->is_abstract) {
+          for (MethodDeclaration *m : cls->vtable) {
+            if (m->is_abstract) {
+              std::string parent_name = (m->parent && m->parent->node_type == NodeType::CLASS_DECL)
+                                            ? static_cast<ClassDeclaration *>(m->parent)->class_name
+                                            : "";
+              record_error(cls, "Class '" + cls->class_name + "' must implement abstract method '" + m->method_name + "()' from '" + parent_name + "'");
+            }
+          }
+        }
       };
 
   for (const auto &[name, node] : global_scope.symbols) {
@@ -948,8 +967,11 @@ void Binder::bind_types_and_memory() {
   }
 
   auto is_exception_class = [&](ClassDeclaration *cls) -> bool {
+    std::unordered_set<std::string> visited;
     std::string current_name = cls->mangled_name;
     while (!current_name.empty()) {
+      if (visited.count(current_name)) break;
+      visited.insert(current_name);
       if (current_name == "Exception" || current_name == "Throwable" ||
           current_name.ends_with(".Exception") || current_name.ends_with(".Throwable")) return true;
       Node *node = global_scope.resolve(current_name);
@@ -990,10 +1012,15 @@ void Binder::bind_types_and_memory() {
   }
 
   std::unordered_set<std::string> layout_calculated;
+  std::unordered_set<std::string> layout_in_progress;
   std::function<int(ClassDeclaration *)> calculate_layout =
       [&](ClassDeclaration *cls) -> int {
     if (layout_calculated.count(cls->mangled_name))
       return cls->instance_size;
+    if (layout_in_progress.count(cls->mangled_name))
+      return 1;
+    layout_in_progress.insert(cls->mangled_name);
+
     int offset = (!cls->base_class_name.empty() ? 0 : 1);
     if (!cls->base_class_name.empty()) {
       Node *base_node = global_scope.resolve(cls->base_class_name);
@@ -1014,11 +1041,12 @@ void Binder::bind_types_and_memory() {
         }
       }
     }
+    layout_in_progress.erase(cls->mangled_name);
     cls->instance_size = offset;
     layout_calculated.insert(cls->mangled_name);
     log_debug("Class '{}' instance layout computed: size = {} words",
               cls->mangled_name, cls->instance_size);
-    return offset;
+    return cls->instance_size;
   };
 
   for (const auto &[name, node] : global_scope.symbols) {

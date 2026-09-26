@@ -317,6 +317,7 @@ std::unique_ptr<Node> ClassDeclaration::clone() const {
     cloned->template_parameters = template_parameters;
     cloned->base_class_name = base_class_name;
     cloned->access_modifier = access_modifier;
+    cloned->is_abstract = is_abstract;
     copy_children(this, cloned.get());
     return cloned;
 }

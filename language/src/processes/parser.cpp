@@ -137,7 +137,7 @@ public:
 
   // Top Level parsing
   std::unique_ptr<Node> parse_top_level_declaration();
-  std::unique_ptr<Node> parse_class_declaration(TokenType modifier);
+  std::unique_ptr<Node> parse_class_declaration(TokenType modifier, bool is_abstract = false);
   std::unique_ptr<Node> parse_enum_declaration(TokenType modifier);
   std::unique_ptr<Node> parse_package_statement();
   std::unique_ptr<Node> parse_alias_statement();
@@ -868,13 +868,19 @@ std::unique_ptr<Node> ParserState::parse_top_level_declaration() {
       is_native = true;
     } else if (match(TokenType::KEYWORD_CONST)) {
       is_const = true;
+    } else if (match(TokenType::KEYWORD_ABSTRACT)) {
+      is_abstract = true;
+    } else if (match(TokenType::KEYWORD_VIRTUAL)) {
+      is_virtual = true;
+    } else if (match(TokenType::KEYWORD_OVERRIDE)) {
+      is_override = true;
     } else {
       break;
     }
   }
 
   if (match(TokenType::KEYWORD_CLASS))
-    return parse_class_declaration(modifier);
+    return parse_class_declaration(modifier, is_abstract);
   if (match(TokenType::KEYWORD_ENUM))
     return parse_enum_declaration(modifier);
 
@@ -981,13 +987,15 @@ std::unique_ptr<Node> ParserState::parse_enum_declaration(TokenType modifier) {
   return decl;
 }
 
-std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
+std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, bool is_abstract) {
   Token class_tok = previous();
   Token name = consume(TokenType::IDENTIFIER, "Expected class name");
   std::string cls_name = std::get<std::string>(name.value);
   log_trace("Parsing class '{}' at line {}", cls_name, class_tok.line);
 
   auto decl = std::make_unique<ClassDeclaration>(class_tok, cls_name);
+  decl->is_abstract = is_abstract;
+  decl->access_modifier = modifier;
 
   if (match(TokenType::OPERATOR_LESS_THAN)) {
     do {
@@ -1048,7 +1056,7 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier) {
     }
 
     if (match(TokenType::KEYWORD_CLASS)) {
-      decl->children.push_back(parse_class_declaration(field_mod));
+      decl->children.push_back(parse_class_declaration(field_mod, is_abstract));
       continue;
     }
     if (match(TokenType::KEYWORD_ENUM)) {

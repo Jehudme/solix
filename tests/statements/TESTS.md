@@ -221,7 +221,7 @@ package beta; // Error: duplicate
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Single Inheritance and Dynamic Dispatch [NOT IMPLEMENTED]
+### Case 3.1: Single Inheritance and Dynamic Dispatch [IMPLEMENTED]
 ```solix
 class Animal { String sound() { return "generic"; } }
 class Cat extends Animal { String sound() { return "meow"; } }
@@ -237,7 +237,7 @@ void test() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Circular Class Inheritance [NOT IMPLEMENTED]
+### Case 4.1: Circular Class Inheritance [IMPLEMENTED]
 ```solix
 class A extends B {}
 class B extends A {}
@@ -247,7 +247,7 @@ class B extends A {}
 [ERROR] binder.cpp: Circular inheritance detected for class 'A'
 ```
 
-### Case 4.2: Unimplemented Abstract Method [NOT IMPLEMENTED]
+### Case 4.2: Unimplemented Abstract Method [IMPLEMENTED]
 ```solix
 abstract class Shape { abstract float64 area(); }
 class Circle extends Shape {} // Error: missing area()
