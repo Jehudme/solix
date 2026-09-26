@@ -491,7 +491,7 @@ class Test {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Empty and Nested Empty Blocks [NOT IMPLEMENTED]
+### Case 3.1: Empty and Nested Empty Blocks [IMPLEMENTED]
 Empty blocks compile to zero runtime instructions and produce zero stack delta.
 ```solix
 void test() {
@@ -504,7 +504,7 @@ void test() {
 ```
 *Expected Result*: Compiles and runs cleanly; stack remains balanced.
 
-### Case 3.2: Lexical Variable Shadowing [NOT IMPLEMENTED]
+### Case 3.2: Lexical Variable Shadowing [IMPLEMENTED]
 An inner block can shadow an outer variable with a different type.
 ```solix
 int32 value = 10;
@@ -516,7 +516,7 @@ Console.println(value);     // Prints: 10
 ```
 *Expected Result*: Outputs `"shadow"` then `10`. The inner `String` is freed at the inner closing brace; outer `int32` is unaffected.
 
-### Case 3.3: Strict LIFO Destruction of Multiple Reference Objects [NOT IMPLEMENTED]
+### Case 3.3: Strict LIFO Destruction of Multiple Reference Objects [IMPLEMENTED]
 Multiple objects in a block are decremented in reverse declaration order.
 ```solix
 {
@@ -527,7 +527,7 @@ Multiple objects in a block are decremented in reverse declaration order.
 ```
 *Expected Result*: Bytecode executes `DEC_REF third`, then `DEC_REF second`, then `DEC_REF first`.
 
-### Case 3.4: Early Return from Nested Blocks [NOT IMPLEMENTED]
+### Case 3.4: Early Return from Nested Blocks [IMPLEMENTED]
 Returning from inside deep blocks unwinds all intermediate scopes.
 ```solix
 int32 compute(bool early) {
@@ -547,7 +547,7 @@ int32 compute(bool early) {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Accessing Block-Scoped Variable Outside Its Block [NOT IMPLEMENTED]
+### Case 4.1: Accessing Block-Scoped Variable Outside Its Block [IMPLEMENTED]
 ```solix
 void test() {
     {
@@ -561,7 +561,7 @@ void test() {
 [ERROR] binder.cpp: Undefined identifier: temp
 ```
 
-### Case 4.2: Duplicate Variable in Same Immediate Scope [NOT IMPLEMENTED]
+### Case 4.2: Duplicate Variable in Same Immediate Scope [IMPLEMENTED]
 ```solix
 void test() {
     {
@@ -575,7 +575,7 @@ void test() {
 [ERROR] binder.cpp: Variable 'score' is already defined in the current scope
 ```
 
-### Case 4.3: Unclosed Block (Missing Brace) [NOT IMPLEMENTED]
+### Case 4.3: Unclosed Block (Missing Brace) [IMPLEMENTED]
 ```solix
 void test() {
     {
@@ -587,7 +587,7 @@ void test() {
 [ERROR] parser.cpp: Syntax error: expected '}' before end of file
 ```
 
-### Case 4.4: Stray Extra Closing Brace [NOT IMPLEMENTED]
+### Case 4.4: Stray Extra Closing Brace [IMPLEMENTED]
 ```solix
 void test() {
     { int32 x = 1; }

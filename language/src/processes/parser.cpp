@@ -901,6 +901,10 @@ std::unique_ptr<Node> ParserState::parse_top_level_declaration() {
   if (match(TokenType::KEYWORD_ENUM))
     return parse_enum_declaration(modifier);
 
+  if (check(TokenType::PUNCTUATION_CLOSE_BRACE)) {
+    throw ParseError(fmt::format("Syntax error: unexpected token '}}' at line {}", peek().line));
+  }
+
   return parse_field_or_method(modifier, is_static, is_inline, is_native,
                                is_const, false, false, false, false);
 }
