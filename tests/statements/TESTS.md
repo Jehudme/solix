@@ -2754,7 +2754,7 @@ int32[] b = {10, 20}; // Both bracket and brace syntax supported
 
 ---
 
-### Case 3.2: Nested 2D Array Literal [NOT IMPLEMENTED]
+### Case 3.2: Nested 2D Array Literal [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32[][] matrix = {{1, 2}, {3, 4}};
@@ -2776,7 +2776,7 @@ var arr = [10, "text"]; // Incompatible types
 [ERROR] binder.cpp: Incompatible types in array literal
 ```
 
-### Case 4.2: Array Literal with Mixed Incompatible Types [NOT IMPLEMENTED]
+### Case 4.2: Array Literal with Mixed Incompatible Types [IMPLEMENTED]
 ```solix
 void test() {
     var arr = {1, "two", true}; // Error

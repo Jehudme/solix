@@ -15,10 +15,29 @@ static int32 main() {
         CHECK(run_source(code) == 0);
     }
 
+    SECTION("Case 3.2: Nested 2D Array Literal") {
+        std::string code = R"(
+static int32 main() {
+    int32[][] matrix = {{1, 2}, {3, 4}};
+    return (matrix[0][0] + matrix[1][1]) == 5 ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
     SECTION("Case 4.1: Incompatible Literal Elements") {
         std::string code = R"(
 void test() {
     int32[] arr = [10, "text"];
+}
+)";
+        assert_compile_error(code, "Incompatible types in array literal");
+    }
+
+    SECTION("Case 4.2: Array Literal with Mixed Incompatible Types") {
+        std::string code = R"(
+void test() {
+    int32[] arr = {1, "two", true};
 }
 )";
         assert_compile_error(code, "Incompatible types in array literal");
