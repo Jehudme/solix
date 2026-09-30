@@ -3305,7 +3305,7 @@ void test() {
 
 ---
 
-### Case 3.2: Calling Inherited Superclass Method [NOT IMPLEMENTED]
+### Case 3.2: Calling Inherited Superclass Method [IMPLEMENTED]
 ```solix
 class BaseCalc {
     public int32 add(int32 a, int32 b) { return a + b; }
@@ -3338,7 +3338,7 @@ void test(Printer p) {
 [ERROR] binder.cpp: No matching overload for method 'print' with arguments (bool)
 ```
 
-### Case 4.2: Method Call with Incorrect Argument Count [NOT IMPLEMENTED]
+### Case 4.2: Method Call with Incorrect Argument Count [IMPLEMENTED]
 ```solix
 class Calculator {
     public int32 compute(int32 a, int32 b) { return a + b; }

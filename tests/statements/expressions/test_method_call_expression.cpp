@@ -21,6 +21,25 @@ static int32 main() {
         CHECK(run_source(code) == 0);
     }
 
+    SECTION("Case 3.2: Calling Inherited Superclass Method") {
+        std::string code = R"(
+class BaseCalc {
+    public int32 add(int32 a, int32 b) { return a + b; }
+}
+class AdvancedCalc extends BaseCalc {
+    public int32 doubleAdd(int32 a, int32 b) {
+        return this.add(a, b) * 2;
+    }
+}
+
+static int32 main() {
+    AdvancedCalc calc = new AdvancedCalc();
+    return calc.doubleAdd(3, 4) == 14 ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
     SECTION("Case 4.1: No Matching Overload") {
         std::string code = R"(
 class Printer {
@@ -33,4 +52,19 @@ void test(Printer p) {
 )";
         assert_compile_error(code, "No matching method");
     }
+
+    SECTION("Case 4.2: Method Call with Incorrect Argument Count") {
+        std::string code = R"(
+class Calculator {
+    public int32 compute(int32 a, int32 b) { return a + b; }
 }
+
+void test() {
+    Calculator c = new Calculator();
+    c.compute(10);
+}
+)";
+        assert_compile_error(code, "No matching method");
+    }
+}
+
