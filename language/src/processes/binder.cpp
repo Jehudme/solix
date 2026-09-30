@@ -1074,7 +1074,7 @@ void Binder::bind_types_and_memory() {
   for (const auto &[name, node] : global_scope.symbols) {
     if (node->node_type == NodeType::CLASS_DECL) {
       auto *cls = static_cast<ClassDeclaration *>(node);
-      if (!vtables[cls->mangled_name].empty() || is_exception_class(cls)) {
+      if (!cls->is_primitive && !cls->is_interface) {
         cls->vtable_id = next_vtable_id++;
         log_debug("Assigned vtable_id {} to class '{}'", cls->vtable_id,
                   cls->mangled_name);
@@ -2649,6 +2649,21 @@ void Binder::visit(InstanceofExpression &n) {
       record_error(&n, "'instanceof' cannot be applied to primitive types");
       return;
     }
+
+    Node *target_node = resolve_symbol(n.target_type.name, &n, false);
+    if (!target_node && n.target_type.name != "void" &&
+        n.target_type.name != "bool" && n.target_type.name != "char" &&
+        n.target_type.name != "int8" && n.target_type.name != "uint8" &&
+        n.target_type.name != "int16" && n.target_type.name != "uint16" &&
+        n.target_type.name != "int32" && n.target_type.name != "uint32" &&
+        n.target_type.name != "int64" && n.target_type.name != "uint64" &&
+        n.target_type.name != "float32" && n.target_type.name != "float64") {
+      record_error(&n, fmt::format("Cannot resolve type '{}' in instanceof expression", n.target_type.name));
+      n.expression_type = {"bool", 0};
+      evaluated_type = n.expression_type;
+      return;
+    }
+
     n.target_type = resolve_type(n.target_type, &n);
     Node *target_class = global_scope.resolve(n.target_type.name);
     if (target_class && target_class->is_primitive && n.target_type.array_depth == 0) {

@@ -3104,7 +3104,7 @@ bool check = a instanceof Dog; // false, no panic!
 
 ---
 
-### Case 3.2: InstanceOf Subclass Evaluates True for Superclass [NOT IMPLEMENTED]
+### Case 3.2: InstanceOf Subclass Evaluates True for Superclass [IMPLEMENTED]
 ```solix
 class Base {}
 class Sub extends Base {}
@@ -3132,7 +3132,7 @@ bool b = 10 instanceof int32; // Error
 [ERROR] binder.cpp: 'instanceof' cannot be applied to primitive types
 ```
 
-### Case 4.2: InstanceOf with Undeclared Type Name [NOT IMPLEMENTED]
+### Case 4.2: InstanceOf with Undeclared Type Name [IMPLEMENTED]
 ```solix
 void test(Object o) {
     bool b = o instanceof NonExistentClass; // Error
