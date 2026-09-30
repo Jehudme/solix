@@ -1402,11 +1402,22 @@ bool Binder::check_access(Node *member_decl, Node *owner_class_node,
     return true;
   }
 
+  std::string member_name;
+  if (member_decl->node_type == NodeType::FIELD_DECL)
+    member_name = static_cast<FieldDeclaration *>(member_decl)->field_name;
+  else if (member_decl->node_type == NodeType::METHOD_DECL)
+    member_name = static_cast<MethodDeclaration *>(member_decl)->method_name;
+
   if (access == TokenType::KEYWORD_PRIVATE) {
     if (current_class == owner_class)
       return true;
-    record_error(expr, "Cannot access private member of class '" +
-                           owner_class->class_name + "'");
+    if (!member_name.empty()) {
+      record_error(expr, fmt::format("Cannot access private member '{}' of class '{}'",
+                                     member_name, owner_class->class_name));
+    } else {
+      record_error(expr, "Cannot access private member of class '" +
+                             owner_class->class_name + "'");
+    }
     return false;
   }
 
@@ -1426,8 +1437,13 @@ bool Binder::check_access(Node *member_decl, Node *owner_class_node,
         break;
       iter = static_cast<ClassDeclaration *>(base_node);
     }
-    record_error(expr, "Cannot access protected member of class '" +
-                           owner_class->class_name + "'");
+    if (!member_name.empty()) {
+      record_error(expr, fmt::format("Cannot access protected member '{}' of class '{}'",
+                                     member_name, owner_class->class_name));
+    } else {
+      record_error(expr, "Cannot access protected member of class '" +
+                             owner_class->class_name + "'");
+    }
     return false;
   }
 
@@ -1619,6 +1635,19 @@ void Binder::visit(AssignmentExpression &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
     TypeInfo target_type = evaluate_expression(n.target.get());
     TypeInfo value_type = evaluate_expression(n.value.get());
+
+    Node *assigned_decl = nullptr;
+    if (n.target->node_type == NodeType::MEMBER_ACCESS) {
+      assigned_decl = static_cast<MemberAccessExpression *>(n.target.get())->resolved_declaration;
+    } else if (n.target->node_type == NodeType::IDENTIFIER) {
+      assigned_decl = static_cast<IdentifierNode *>(n.target.get())->resolved_declaration;
+    }
+    if (assigned_decl && assigned_decl->node_type == NodeType::FIELD_DECL) {
+      auto *f = static_cast<FieldDeclaration *>(assigned_decl);
+      if (f->is_const) {
+        record_error(&n, fmt::format("Cannot assign to read-only constant field '{}'", f->field_name));
+      }
+    }
 
     Node *left_decl = global_scope.resolve(target_type.name);
     if (left_decl && left_decl->node_type == NodeType::CLASS_DECL &&
@@ -2780,10 +2809,20 @@ void Binder::visit(FieldDeclaration &n) {
   } else if (current_pass == BinderPass::BIND_EXECUTION) {
     if (n.initializer) {
       TypeInfo init_type = evaluate_expression(n.initializer.get());
+      if ((n.type_info.name == "String" || n.type_info.name.ends_with(".String")) &&
+          n.type_info.array_depth == 0 && init_type.name == "char" && init_type.array_depth == 1) {
+        Token tok{TokenType::KEYWORD_NEW, n.initializer->line, n.initializer->column, n.initializer->source, "new"};
+        auto new_inst = std::make_unique<NewInstanceExpression>(tok, n.type_info);
+        new_inst->arguments.push_back(std::move(n.initializer));
+        new_inst->parent = &n;
+        n.initializer = std::move(new_inst);
+        init_type = evaluate_expression(n.initializer.get());
+      }
       if (!is_assignable(n.type_info, init_type)) {
-        record_error(&n, "Type mismatch in field initialization: expected '" +
-                              n.type_info.name + "', got '" +
-                              init_type.name + "'");
+        std::string got_name = init_type.name;
+        if (init_type.array_depth == 1 && init_type.name == "char") got_name = "String";
+        record_error(&n, fmt::format("Incompatible initializer for field '{}': expected '{}', got '{}'",
+                                     n.field_name, n.type_info.name, got_name));
       }
     }
   }

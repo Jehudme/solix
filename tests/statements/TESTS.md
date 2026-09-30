@@ -782,7 +782,7 @@ void test() {
 
 ---
 
-### Case 3.2: Field Access Modifiers (Public, Private, Protected) [NOT IMPLEMENTED]
+### Case 3.2: Field Access Modifiers (Public, Private, Protected) [IMPLEMENTED]
 ```solix
 class Account {
     public int32 id;
@@ -799,7 +799,7 @@ class Account {
 ```
 *Expected Result*: Enforces lexical visibility while permitting authorized access within class scope.
 
-### Case 3.3: Static Class Fields Shared Across Instances [NOT IMPLEMENTED]
+### Case 3.3: Static Class Fields Shared Across Instances [IMPLEMENTED]
 ```solix
 class Counter {
     public static int32 count;
@@ -814,7 +814,7 @@ static int32 main() {
 ```
 *Expected Result*: Static field retains singular memory index shared globally.
 
-### Case 3.4: Constant Field Declaration [NOT IMPLEMENTED]
+### Case 3.4: Constant Field Declaration [IMPLEMENTED]
 ```solix
 class Config {
     public const int32 MAX_USERS = 500;
@@ -826,7 +826,7 @@ static int32 main() {
 ```
 *Expected Result*: Const field inlines or preserves immutable compile-time value.
 
-### Case 3.5: In-Class Field Initialization with String Literal [NOT IMPLEMENTED]
+### Case 3.5: In-Class Field Initialization with String Literal [IMPLEMENTED]
 ```solix
 alias String = solix.core.String;
 
@@ -892,7 +892,7 @@ void test() {
 [FATAL VM PANIC] NullReferenceException: Attempted to write field on null object reference
 ```
 
-### Case 4.3: Accessing Private Field Outside Class [NOT IMPLEMENTED]
+### Case 4.3: Accessing Private Field Outside Class [IMPLEMENTED]
 ```solix
 class Vault {
     private int32 passcode;
@@ -908,7 +908,7 @@ void test() {
 [ERROR] binder.cpp: Cannot access private member 'passcode' of class 'Vault'
 ```
 
-### Case 4.4: Modifying Const Field [NOT IMPLEMENTED]
+### Case 4.4: Modifying Const Field [IMPLEMENTED]
 ```solix
 class Constants {
     public const int32 RATE = 5;
@@ -923,7 +923,7 @@ void test() {
 [ERROR] binder.cpp: Cannot assign to read-only constant field 'RATE'
 ```
 
-### Case 4.5: Incompatible Field Initializer Type [NOT IMPLEMENTED]
+### Case 4.5: Incompatible Field Initializer Type [IMPLEMENTED]
 ```solix
 class Model {
     public int32 count = "invalid"; // Error
@@ -934,7 +934,7 @@ class Model {
 [ERROR] binder.cpp: Incompatible initializer for field 'count': expected 'int32', got 'String'
 ```
 
-### Case 4.7: Field Access Modifier Applied to Local Variable [NOT IMPLEMENTED]
+### Case 4.7: Field Access Modifier Applied to Local Variable [IMPLEMENTED]
 ```solix
 void test() {
     public int32 x = 10; // Error: access modifiers cannot be applied to local variables
@@ -945,7 +945,7 @@ void test() {
 [ERROR] parser.cpp: Access modifiers ('public', 'private', 'protected') are not allowed on local variables
 ```
 
-### Case 4.8: Standalone Field Declared at File Top Level [NOT IMPLEMENTED]
+### Case 4.8: Standalone Field Declared at File Top Level [IMPLEMENTED]
 ```solix
 public int32 globalField = 42; // Error: Solix requires fields to be in a class
 ```

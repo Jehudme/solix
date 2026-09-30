@@ -164,7 +164,8 @@ public:
                                               bool is_static, bool is_inline,
                                               bool is_native, bool is_const,
                                               bool is_virtual, bool is_override,
-                                              bool is_weak, bool is_abstract);
+                                              bool is_weak, bool is_abstract,
+                                              bool is_inside_class = false);
 
   TypeInfo parse_type_info();
 };
@@ -608,6 +609,10 @@ std::unique_ptr<Node> ParserState::parse_statement() {
   }
   if (match(TokenType::KEYWORD_ENUM)) {
     throw ParseError("Enums cannot be declared inside a function or method body", previous().line, previous().column);
+  }
+  if (match({TokenType::KEYWORD_PUBLIC, TokenType::KEYWORD_PRIVATE,
+             TokenType::KEYWORD_PROTECTED, TokenType::KEYWORD_INTERNAL})) {
+    throw ParseError("Access modifiers ('public', 'private', 'protected') are not allowed on local variables", previous().line, previous().column);
   }
 
   if (check(TokenType::IDENTIFIER) && current + 1 < tokens.size() &&
@@ -1232,7 +1237,7 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
     } else {
       auto member = parse_field_or_method(
           field_mod, is_static, is_inline, is_native, is_const, is_virtual,
-          is_override, is_weak, is_abstract);
+          is_override, is_weak, is_abstract, true);
       if (member && member->node_type == NodeType::METHOD_DECL) {
         auto *m = static_cast<MethodDeclaration *>(member.get());
         if (m->method_name == decl->class_name) {
@@ -1256,7 +1261,7 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
 std::unique_ptr<Node> ParserState::parse_field_or_method(
     TokenType modifier, bool is_static, bool is_inline, bool is_native,
     bool is_const, bool is_virtual, bool is_override, bool is_weak,
-    bool is_abstract) {
+    bool is_abstract, bool is_inside_class) {
   TypeInfo type = parse_type_info();
   bool is_ref = match(TokenType::PUNCTUATION_AMPERSAND);
 
@@ -1370,12 +1375,15 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
     }
     return method;
   } else {
+    if (!is_inside_class && modifier != TokenType::KEYWORD_INTERNAL) {
+      throw ParseError("Variable declarations with access modifiers must be inside a class body", name.line, name.column);
+    }
     log_debug("Parsing field declaration '{}' of type '{}' at line {}",
               name_str, type.to_string(), name.line);
     auto field =
         std::make_unique<FieldDeclaration>(name, name_str, std::move(type));
     field->access_modifier = modifier;
-    field->is_static = is_static;
+    field->is_static = is_static || is_const;
     field->is_const = is_const;
     field->is_reference_type = is_ref;
     field->is_weak = is_weak;
