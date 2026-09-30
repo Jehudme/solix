@@ -558,7 +558,7 @@ class Sub extends Base { Sub(int32 id) : super(id) {} }
 
 ---
 
-### Case 3.2: Overloaded Constructors with Varying Arity [NOT IMPLEMENTED]
+### Case 3.2: Overloaded Constructors with Varying Arity [IMPLEMENTED]
 ```solix
 class Point {
     public int32 x;
@@ -575,7 +575,7 @@ static int32 main() {
 ```
 *Expected Result*: Overloaded constructors resolve correctly by argument count and types.
 
-### Case 3.3: Protected Constructor for Subclass Construction [NOT IMPLEMENTED]
+### Case 3.3: Protected Constructor for Subclass Construction [IMPLEMENTED]
 ```solix
 class BaseAuth {
     protected BaseAuth() {}
@@ -601,7 +601,7 @@ class Widget {
 [ERROR] binder.cpp: Constructor name 'Gadget' does not match enclosing class 'Widget'
 ```
 
-### Case 4.2: Constructor with Explicit Return Type [NOT IMPLEMENTED]
+### Case 4.2: Constructor with Explicit Return Type [IMPLEMENTED]
 ```solix
 class Widget {
     void Widget() {} // Error: constructors cannot declare return type
@@ -612,7 +612,7 @@ class Widget {
 [ERROR] parser.cpp: Constructors must not specify a return type
 ```
 
-### Case 4.3: Invoking Super Constructor Out of Order [NOT IMPLEMENTED]
+### Case 4.3: Invoking Super Constructor Out of Order [IMPLEMENTED]
 ```solix
 class Base {}
 class Sub extends Base {
@@ -628,7 +628,7 @@ class Sub extends Base {
 [ERROR] binder.cpp: Call to 'super()' must be the first statement in constructor
 ```
 
-### Case 4.4: Constructor Declared Outside Any Class at Top Level [NOT IMPLEMENTED]
+### Case 4.4: Constructor Declared Outside Any Class at Top Level [IMPLEMENTED]
 ```solix
 StandaloneConstructor() {
     // Error: constructor outside class
@@ -639,7 +639,7 @@ StandaloneConstructor() {
 [ERROR] parser.cpp: Constructors can only be declared inside a class body
 ```
 
-### Case 4.5: Constructor Declared Inside Method Body [NOT IMPLEMENTED]
+### Case 4.5: Constructor Declared Inside Method Body [IMPLEMENTED]
 ```solix
 void test() {
     MyClass() {} // Error: constructor inside method

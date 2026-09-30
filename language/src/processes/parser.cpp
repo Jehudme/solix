@@ -494,6 +494,10 @@ std::unique_ptr<Node> ParserState::parse_primary() {
         previous(), std::get<std::string>(previous().value));
   }
 
+  if (match(TokenType::KEYWORD_SUPER)) {
+    return std::make_unique<IdentifierNode>(previous(), "super");
+  }
+
   if (match(TokenType::KEYWORD_NEW)) {
     Token new_tok = previous();
     TypeInfo type = parse_type_info();
@@ -604,6 +608,20 @@ std::unique_ptr<Node> ParserState::parse_statement() {
   }
   if (match(TokenType::KEYWORD_ENUM)) {
     throw ParseError("Enums cannot be declared inside a function or method body", previous().line, previous().column);
+  }
+
+  if (check(TokenType::IDENTIFIER) && current + 1 < tokens.size() &&
+      tokens[current + 1]->type == TokenType::PUNCTUATION_OPEN_PAREN) {
+    size_t scan = current + 2;
+    int depth = 1;
+    while (scan < tokens.size() && depth > 0) {
+      if (tokens[scan]->type == TokenType::PUNCTUATION_OPEN_PAREN) depth++;
+      else if (tokens[scan]->type == TokenType::PUNCTUATION_CLOSE_PAREN) depth--;
+      scan++;
+    }
+    if (depth == 0 && scan < tokens.size() && tokens[scan]->type == TokenType::PUNCTUATION_OPEN_BRACE) {
+      throw ParseError("Constructors can only be declared inside a class body", peek().line, peek().column);
+    }
   }
 
   if (check(TokenType::PUNCTUATION_OPEN_BRACE))
@@ -1212,9 +1230,16 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
       ctor->children.push_back(std::move(body));
       decl->children.push_back(std::move(ctor));
     } else {
-      decl->children.push_back(parse_field_or_method(
+      auto member = parse_field_or_method(
           field_mod, is_static, is_inline, is_native, is_const, is_virtual,
-          is_override, is_weak, is_abstract));
+          is_override, is_weak, is_abstract);
+      if (member && member->node_type == NodeType::METHOD_DECL) {
+        auto *m = static_cast<MethodDeclaration *>(member.get());
+        if (m->method_name == decl->class_name) {
+          throw ParseError("Constructors must not specify a return type", m->line, m->column);
+        }
+      }
+      decl->children.push_back(std::move(member));
     }
   }
   consume(TokenType::PUNCTUATION_CLOSE_BRACE, "Expected '}' after class body");
@@ -1234,6 +1259,10 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
     bool is_abstract) {
   TypeInfo type = parse_type_info();
   bool is_ref = match(TokenType::PUNCTUATION_AMPERSAND);
+
+  if (check(TokenType::PUNCTUATION_OPEN_PAREN)) {
+    throw ParseError("Constructors can only be declared inside a class body", peek().line, peek().column);
+  }
 
   Token name;
   std::string name_str;

@@ -1295,9 +1295,23 @@ void Binder::bind_tree(Node *root) {
                 param_var->var_name, param_var->memory_index);
     }
 
+    current_constructor = ctor;
     for (const auto &child : ctor->children) {
-      bind_node(child.get());
+      if (child && child->node_type == NodeType::BLOCK) {
+        SymbolTable block_scope;
+        enter_scope(&block_scope);
+        for (size_t i = 0; i < child->children.size(); ++i) {
+          super_allowed = (i == 0);
+          bind_node(child->children[i].get());
+          super_allowed = false;
+        }
+        exit_scope();
+      } else {
+        bind_node(child.get());
+      }
     }
+    current_constructor = nullptr;
+    super_allowed = false;
 
     ctor->frame_size = local_variable_index;
     log_debug("Constructor for '{}' frame size resolved to {} words",
@@ -1377,6 +1391,8 @@ bool Binder::check_access(Node *member_decl, Node *owner_class_node,
     access = static_cast<FieldDeclaration *>(member_decl)->access_modifier;
   else if (member_decl->node_type == NodeType::METHOD_DECL)
     access = static_cast<MethodDeclaration *>(member_decl)->access_modifier;
+  else if (member_decl->node_type == NodeType::CONSTRUCTOR_DECL)
+    access = static_cast<ConstructorDeclaration *>(member_decl)->access_modifier;
 
   if (access == TokenType::KEYWORD_PUBLIC)
     return true;
@@ -1974,15 +1990,23 @@ void Binder::visit(MethodCallExpression &n) {
       Node *method_decl = nullptr;
       ClassDeclaration *current_resolve_class = current_class;
 
+      if (id->name == "super") {
+        if (!current_class || !current_constructor || !super_allowed) {
+          record_error(&n, "Call to 'super()' must be the first statement in constructor");
+          evaluated_type = {"void", 0};
+          return;
+        }
+        if (current_class->base_class_name.empty()) {
+          record_error(&n,
+                       "Cannot call super() in a class without a base class");
+          evaluated_type = {"void", 0};
+          return;
+        }
+      }
+
       // 1. Try resolving against the class hierarchy first
       if (current_resolve_class) {
         if (id->name == "super") {
-          if (current_class->base_class_name.empty()) {
-            record_error(&n,
-                         "Cannot call super() in a class without a base class");
-            evaluated_type = {"void", 0};
-            return;
-          }
           Node *base_node =
               global_scope.resolve(current_class->base_class_name);
           if (!base_node) {

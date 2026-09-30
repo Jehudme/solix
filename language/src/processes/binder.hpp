@@ -104,7 +104,9 @@ public:
     int switch_depth = 0;
     
     ClassDeclaration* current_class = nullptr;
+    ConstructorDeclaration* current_constructor = nullptr;
     MethodDeclaration* current_method = nullptr;
+    bool super_allowed = false;
     std::string current_package;
     std::unordered_set<std::string> known_packages; // All registered package prefixes
     std::unordered_set<std::string> wildcard_imported_packages; // Packages imported via wildcard/symbol
