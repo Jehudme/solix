@@ -3030,7 +3030,37 @@ void Binder::visit(TryStatement& n) {
             if (c) {
                 auto *catch_clause = static_cast<CatchClause *>(c.get());
                 TypeInfo resolved_exc = resolve_type(catch_clause->exception_type, catch_clause);
+
+                Node *target = global_scope.resolve(resolved_exc.name);
+                bool is_exc = false;
+                if (target && target->node_type == NodeType::CLASS_DECL) {
+                    std::unordered_set<std::string> visited;
+                    std::string current_name = target->mangled_name;
+                    while (!current_name.empty()) {
+                        if (visited.count(current_name)) break;
+                        visited.insert(current_name);
+                        if (current_name == "Exception" || current_name == "Throwable" ||
+                            current_name.ends_with(".Exception") || current_name.ends_with(".Throwable")) {
+                            is_exc = true;
+                            break;
+                        }
+                        Node *node = global_scope.resolve(current_name);
+                        if (node && node->node_type == NodeType::CLASS_DECL) {
+                            current_name = static_cast<ClassDeclaration *>(node)->base_class_name;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                if (!is_exc) {
+                    record_error(catch_clause, fmt::format("Catch type must derive from 'Exception', got '{}'", resolved_exc.name));
+                }
+
                 for (const auto& prev : handled_types) {
+                    if (prev.name == resolved_exc.name) {
+                        record_error(catch_clause, fmt::format("Duplicate catch clause for type '{}'", catch_clause->exception_type.name));
+                        break;
+                    }
                     if (is_assignable(prev, resolved_exc)) {
                         record_error(catch_clause, fmt::format("Unreachable catch clause: '{}' is already handled by preceding catch for '{}'", catch_clause->exception_type.name, prev.name));
                         break;

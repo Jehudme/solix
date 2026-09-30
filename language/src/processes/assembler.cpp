@@ -1852,6 +1852,11 @@ void Assembler::visit(TryStatement& n) {
     
     std::vector<uint32_t> next_catch_patches;
     std::vector<uint32_t> end_try_patches;
+    std::vector<uint32_t> catch_exception_patches;
+
+    if (n.finally_block) {
+        exception_cleanup_patches.push_back({});
+    }
     
     for (auto& c : n.catch_clauses) {
         if (!c) continue;
@@ -1893,13 +1898,27 @@ void Assembler::visit(TryStatement& n) {
         emit_int32(0xFFFFFFFF);
     }
     
-    // If no catch matched, jump to next outer cleanup block
+    if (n.finally_block) {
+        catch_exception_patches = std::move(exception_cleanup_patches.back());
+        exception_cleanup_patches.pop_back();
+    }
+
+    // If no catch matched or catch threw, run finally and jump to next outer cleanup block
+    uint32_t unhandled_ip = bytecode().size();
     for (uint32_t patch : next_catch_patches) {
-        uint32_t current_ip = bytecode().size();
-        bytecode()[patch] = (current_ip >> 24) & 0xFF;
-        bytecode()[patch + 1] = (current_ip >> 16) & 0xFF;
-        bytecode()[patch + 2] = (current_ip >> 8) & 0xFF;
-        bytecode()[patch + 3] = current_ip & 0xFF;
+        bytecode()[patch] = (unhandled_ip >> 24) & 0xFF;
+        bytecode()[patch + 1] = (unhandled_ip >> 16) & 0xFF;
+        bytecode()[patch + 2] = (unhandled_ip >> 8) & 0xFF;
+        bytecode()[patch + 3] = unhandled_ip & 0xFF;
+    }
+    for (uint32_t patch : catch_exception_patches) {
+        bytecode()[patch] = (unhandled_ip >> 24) & 0xFF;
+        bytecode()[patch + 1] = (unhandled_ip >> 16) & 0xFF;
+        bytecode()[patch + 2] = (unhandled_ip >> 8) & 0xFF;
+        bytecode()[patch + 3] = unhandled_ip & 0xFF;
+    }
+    if (n.finally_block) {
+        compile_node(n.finally_block.get());
     }
     if (!exception_cleanup_patches.empty()) {
         emit_byte(static_cast<uint8_t>(OpCode::JUMP));
@@ -1924,9 +1943,6 @@ void Assembler::visit(TryStatement& n) {
     }
     
     if (n.finally_block) {
-        // Finally block runs during normal execution
-        // Note: For unwinding, we need the finally block to also run.
-        // But for this phase, let's keep it simple.
         compile_node(n.finally_block.get());
     }
 }

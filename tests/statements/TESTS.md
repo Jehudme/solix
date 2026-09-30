@@ -2260,7 +2260,7 @@ try {
 
 ---
 
-### Case 3.2: Try Block with Only Finally Clause [NOT IMPLEMENTED]
+### Case 3.2: Try Block with Only Finally Clause [IMPLEMENTED]
 ```solix
 static int32 cleanup_marker = 0;
 
@@ -2279,7 +2279,7 @@ static int32 main() {
 ```
 *Expected Result*: Executes try followed by finally block without catch clause.
 
-### Case 3.3: Exception in Catch with Guaranteed Finally Execution [NOT IMPLEMENTED]
+### Case 3.3: Exception in Catch with Guaranteed Finally Execution [IMPLEMENTED]
 ```solix
 static bool finally_ran = false;
 
@@ -2323,7 +2323,7 @@ void test() {
 [ERROR] binder.cpp: Unreachable catch clause: 'SubErr' is already handled by preceding catch for 'std.Exception'
 ```
 
-### Case 4.2: Catching Non-Exception Type [NOT IMPLEMENTED]
+### Case 4.2: Catching Non-Exception Type [IMPLEMENTED]
 ```solix
 void test() {
     try {} catch (int32 x) {} // Error
@@ -2334,7 +2334,7 @@ void test() {
 [ERROR] binder.cpp: Catch type must derive from 'Exception', got 'int32'
 ```
 
-### Case 4.3: Duplicate Catch Clause for Same Type [NOT IMPLEMENTED]
+### Case 4.3: Duplicate Catch Clause for Same Type [IMPLEMENTED]
 ```solix
 void test() {
     try {}
@@ -2347,7 +2347,7 @@ void test() {
 [ERROR] binder.cpp: Duplicate catch clause for type 'Exception'
 ```
 
-### Case 4.5: Try-Catch Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+### Case 4.5: Try-Catch Statement Placed Directly in Class Body [IMPLEMENTED]
 ```solix
 class BadClass {
     try {} catch (Exception e) {} // Error
