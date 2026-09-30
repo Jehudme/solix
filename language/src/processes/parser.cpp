@@ -1208,6 +1208,19 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
       throw ParseError("Executable blocks are not allowed directly in class body", peek().line, peek().column);
     }
 
+    if (peek().type == TokenType::KEYWORD_BREAK ||
+        peek().type == TokenType::KEYWORD_CONTINUE ||
+        peek().type == TokenType::KEYWORD_RETURN ||
+        peek().type == TokenType::KEYWORD_IF ||
+        peek().type == TokenType::KEYWORD_WHILE ||
+        peek().type == TokenType::KEYWORD_FOR ||
+        peek().type == TokenType::KEYWORD_DO ||
+        peek().type == TokenType::KEYWORD_SWITCH ||
+        peek().type == TokenType::KEYWORD_TRY ||
+        peek().type == TokenType::KEYWORD_THROW) {
+      throw ParseError("Statements are not allowed directly in class body", peek().line, peek().column);
+    }
+
     if (match(TokenType::KEYWORD_CLASS)) {
       decl->children.push_back(parse_class_declaration(field_mod, is_abstract));
       continue;

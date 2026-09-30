@@ -1453,7 +1453,7 @@ while (true) {
 
 ---
 
-### Case 3.2: Break in For Loop Preserves State [NOT IMPLEMENTED]
+### Case 3.2: Break in For Loop Preserves State [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 sum = 0;
@@ -1468,7 +1468,7 @@ static int32 main() {
 ```
 *Expected Result*: Loop terminates when `i == 5`, producing sum 0+1+2+3+4 = 10.
 
-### Case 3.3: Break Inside Switch Statement [NOT IMPLEMENTED]
+### Case 3.3: Break Inside Switch Statement [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 x = 2;
@@ -1499,7 +1499,7 @@ void test() {
 [ERROR] binder.cpp: 'break' statement not allowed outside of loop or switch
 ```
 
-### Case 4.2: Break at Function Top Level [NOT IMPLEMENTED]
+### Case 4.2: Break at Function Top Level [IMPLEMENTED]
 ```solix
 void test() {
     break; // Error: break not enclosed in loop or switch
@@ -1510,7 +1510,7 @@ void test() {
 [ERROR] binder.cpp: 'break' statement outside of loop or switch
 ```
 
-### Case 4.3: Break Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+### Case 4.3: Break Statement Placed Directly in Class Body [IMPLEMENTED]
 ```solix
 class BadClass {
     break; // Error
@@ -1521,7 +1521,7 @@ class BadClass {
 [ERROR] parser.cpp: Statements are not allowed directly in class body
 ```
 
-### Case 4.4: Break Inside If Not Enclosed in Loop or Switch [NOT IMPLEMENTED]
+### Case 4.4: Break Inside If Not Enclosed in Loop or Switch [IMPLEMENTED]
 ```solix
 void test(bool flag) {
     if (flag) {

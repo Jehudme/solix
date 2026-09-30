@@ -1127,7 +1127,35 @@ void Assembler::visit(AssignmentExpression &node) {
     return;
   }
 
-  compile_expression(assign->value.get());
+  if (assign->op == TokenType::OPERATOR_ASSIGN) {
+    compile_expression(assign->value.get());
+  } else {
+    compile_expression(assign->target.get());
+    compile_expression(assign->value.get());
+
+    bool is_float = (assign->target && (assign->target->expression_type.name == "float32" || assign->target->expression_type.name == "float64")) ||
+                    (assign->value && (assign->value->expression_type.name == "float32" || assign->value->expression_type.name == "float64"));
+
+    switch (assign->op) {
+    case TokenType::OPERATOR_PLUS_ASSIGN:
+      emit_byte(static_cast<uint8_t>(is_float ? OpCode::ADD_F64 : OpCode::ADD_I64));
+      break;
+    case TokenType::OPERATOR_MINUS_ASSIGN:
+      emit_byte(static_cast<uint8_t>(is_float ? OpCode::SUB_F64 : OpCode::SUB_I64));
+      break;
+    case TokenType::OPERATOR_MULTIPLY_ASSIGN:
+      emit_byte(static_cast<uint8_t>(is_float ? OpCode::MUL_F64 : OpCode::MUL_I64));
+      break;
+    case TokenType::OPERATOR_DIVIDE_ASSIGN:
+      emit_byte(static_cast<uint8_t>(is_float ? OpCode::DIV_F64 : OpCode::DIV_I64));
+      break;
+    case TokenType::OPERATOR_MODULO_ASSIGN:
+      emit_byte(static_cast<uint8_t>(OpCode::MOD_I64));
+      break;
+    default:
+      break;
+    }
+  }
 
   bool target_is_ref = false;
   if (assign->target->node_type == NodeType::IDENTIFIER) {
