@@ -385,7 +385,7 @@ void test() {
 
 ---
 
-### Case 3.2: Multi-Level Inheritance Chain [NOT IMPLEMENTED]
+### Case 3.2: Multi-Level Inheritance Chain [IMPLEMENTED]
 ```solix
 class GrandParent {
     public int32 a;
@@ -407,7 +407,7 @@ static int32 main() {
 ```
 *Expected Result*: Derived class inherits all ancestor fields across multi-tier hierarchy.
 
-### Case 3.3: Abstract Class Extension and Implementation [NOT IMPLEMENTED]
+### Case 3.3: Abstract Class Extension and Implementation [IMPLEMENTED]
 ```solix
 abstract class Shape {
     public abstract int32 getArea();
@@ -426,7 +426,7 @@ static int32 main() {
 ```
 *Expected Result*: Concrete class implements abstract methods and allows polymorphic dispatch.
 
-### Case 3.4: Class Access Modifiers (Public vs Internal) [NOT IMPLEMENTED]
+### Case 3.4: Class Access Modifiers (Public vs Internal) [IMPLEMENTED]
 ```solix
 public class ExportedService {
     public int32 serve() { return 100; }
@@ -440,7 +440,7 @@ internal class InternalHelper {
 
 ---
 
-### Case 3.6: Nested Class Declaration Inside Class [NOT IMPLEMENTED]
+### Case 3.6: Nested Class Declaration Inside Class [IMPLEMENTED]
 ```solix
 class Outer {
     public int32 outer_val;
@@ -482,7 +482,7 @@ class Circle extends Shape {} // Error: missing area()
 [ERROR] binder.cpp: Class 'Circle' must implement abstract method 'area()' from 'Shape'
 ```
 
-### Case 4.3: Multiple Class Inheritance Disallowed [NOT IMPLEMENTED]
+### Case 4.3: Multiple Class Inheritance Disallowed [IMPLEMENTED]
 ```solix
 class A {}
 class B {}
@@ -493,7 +493,7 @@ class C extends A, B {} // Error: Solix enforces single inheritance
 [ERROR] parser.cpp: Expected '{' after class inheritance clause
 ```
 
-### Case 4.4: Extending Non-Class or Primitive Type [NOT IMPLEMENTED]
+### Case 4.4: Extending Non-Class or Primitive Type [IMPLEMENTED]
 ```solix
 class Invalid extends int32 {} // Error: cannot extend primitive
 ```
@@ -502,7 +502,7 @@ class Invalid extends int32 {} // Error: cannot extend primitive
 [ERROR] binder.cpp: Cannot extend non-class type 'int32'
 ```
 
-### Case 4.5: Instantiating Abstract Class Directly [NOT IMPLEMENTED]
+### Case 4.5: Instantiating Abstract Class Directly [IMPLEMENTED]
 ```solix
 abstract class AbstractBase {}
 
@@ -515,7 +515,7 @@ void test() {
 [ERROR] binder.cpp: Cannot instantiate abstract class 'AbstractBase'
 ```
 
-### Case 4.6: Class Declared Inside Function Body [NOT IMPLEMENTED]
+### Case 4.6: Class Declared Inside Function Body [IMPLEMENTED]
 ```solix
 void test() {
     class LocalClass {
@@ -528,7 +528,7 @@ void test() {
 [ERROR] parser.cpp: Classes cannot be declared inside a function or method body
 ```
 
-### Case 4.7: Class Declared Inside Control Flow Block [NOT IMPLEMENTED]
+### Case 4.7: Class Declared Inside Control Flow Block [IMPLEMENTED]
 ```solix
 void test(bool cond) {
     if (cond) {

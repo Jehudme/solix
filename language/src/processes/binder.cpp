@@ -887,8 +887,16 @@ void Binder::bind_types_and_memory() {
     Node *node = resolve_symbol(cls->base_class_name, cls, true);
     node = unwrap_alias(node);
     if (node && node->node_type == NodeType::CLASS_DECL) {
+      if (static_cast<ClassDeclaration *>(node)->is_primitive) {
+        record_error(cls, "Cannot extend non-class type '" + cls->base_class_name + "'");
+        return nullptr;
+      }
       cls->base_class_name = static_cast<ClassDeclaration *>(node)->mangled_name;
       return node;
+    }
+    if (node) {
+      record_error(cls, "Cannot extend non-class type '" + cls->base_class_name + "'");
+      return nullptr;
     }
     record_error(cls, "Base class not found: " + cls->base_class_name);
     return nullptr;
