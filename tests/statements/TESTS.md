@@ -3601,7 +3601,7 @@ void test() {
 
 ### Positive Test Scenarios (Functional Execution & State)
 
-### Case 1.1: Polymorphic Virtual Dispatch with Variable Frame Sizes [NOT IMPLEMENTED]
+### Case 1.1: Polymorphic Virtual Dispatch with Variable Frame Sizes [IMPLEMENTED]
 ```solix
 class Base {
     public virtual int32 compute() {
@@ -3625,7 +3625,7 @@ static int32 main() {
 ```
 *Expected Result*: Returns 0 indicating derived method dynamically allocates 3 extra local variable slots via callee ALLOC_FRAME without stack corruption.
 
-### Case 1.2: Deep Call Stack & Recursion Integrity [NOT IMPLEMENTED]
+### Case 1.2: Deep Call Stack & Recursion Integrity [IMPLEMENTED]
 ```solix
 static int32 fib(int32 n) {
     if (n <= 1) return n;
@@ -3639,7 +3639,7 @@ static int32 main() {
 ```
 *Expected Result*: Returns 0 indicating deep recursive stack frame allocation and unwinding preserves operand stack balance across all frames.
 
-### Case 2.1: Method with Multiple Local Slots [NOT IMPLEMENTED]
+### Case 2.1: Method with Multiple Local Slots [IMPLEMENTED]
 ```solix
 static int32 sum_locals(int32 x) {
     int32 l1 = 1;
