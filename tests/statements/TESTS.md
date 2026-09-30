@@ -672,7 +672,7 @@ void test(Color c) {
 
 ---
 
-### Case 3.2: Enum as Method Parameter and Return Value [NOT IMPLEMENTED]
+### Case 3.2: Enum as Method Parameter and Return Value [IMPLEMENTED]
 ```solix
 enum State { PENDING, ACTIVE, CLOSED }
 
@@ -692,7 +692,7 @@ static int32 main() {
 
 ---
 
-### Case 3.4: Nested Enum Declaration Inside Class [NOT IMPLEMENTED]
+### Case 3.4: Nested Enum Declaration Inside Class [IMPLEMENTED]
 ```solix
 class Window {
     public enum State { MINIMIZED, MAXIMIZED, NORMAL }
@@ -720,7 +720,7 @@ enum State { READY, READY }
 [ERROR] binder.cpp: Duplicate enum member 'READY' in enum 'State'
 ```
 
-### Case 4.2: Implicit Integer Assignment to Enum [NOT IMPLEMENTED]
+### Case 4.2: Implicit Integer Assignment to Enum [IMPLEMENTED]
 ```solix
 enum Status { OK, FAIL }
 
@@ -733,7 +733,7 @@ void test() {
 [ERROR] binder.cpp: Cannot convert type 'int32' to enum 'Status'
 ```
 
-### Case 4.3: Comparing Incompatible Enum Types [NOT IMPLEMENTED]
+### Case 4.3: Comparing Incompatible Enum Types [IMPLEMENTED]
 ```solix
 enum Fruit { APPLE, ORANGE }
 enum Animal { CAT, DOG }
@@ -747,7 +747,7 @@ void test() {
 [ERROR] binder.cpp: Operator '==' cannot be applied to incompatible enums 'Fruit' and 'Animal'
 ```
 
-### Case 4.4: Enum Declared Inside Function Body [NOT IMPLEMENTED]
+### Case 4.4: Enum Declared Inside Function Body [IMPLEMENTED]
 ```solix
 void test() {
     enum LocalState { ON, OFF } // Error

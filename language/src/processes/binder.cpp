@@ -1573,8 +1573,27 @@ void Binder::visit(BinaryExpression &n) {
       bool is_integer_math = left_type.array_depth == 0 && right_type.array_depth == 0 &&
                              is_integer(left_type.name) && is_integer(right_type.name);
       if (left_type != right_type && !is_null_compare && !is_integer_math) {
-        record_error(&n, "Binary operands type mismatch: '" + left_type.name +
-                             "' vs '" + right_type.name + "'");
+        Node *left_enum = global_scope.resolve(left_type.name);
+        Node *right_enum = global_scope.resolve(right_type.name);
+        if (left_enum && left_enum->node_type == NodeType::ENUM_DECL &&
+            right_enum && right_enum->node_type == NodeType::ENUM_DECL) {
+          auto op_str = [](TokenType t) {
+            switch (t) {
+              case TokenType::OPERATOR_EQUAL: return "==";
+              case TokenType::OPERATOR_NOT_EQUAL: return "!=";
+              case TokenType::OPERATOR_LESS_THAN: return "<";
+              case TokenType::OPERATOR_GREATER_THAN: return ">";
+              case TokenType::OPERATOR_LESS_EQUAL: return "<=";
+              case TokenType::OPERATOR_GREATER_EQUAL: return ">=";
+              default: return "op";
+            }
+          };
+          record_error(&n, fmt::format("Operator '{}' cannot be applied to incompatible enums '{}' and '{}'",
+                                       op_str(n.op), left_type.name, right_type.name));
+        } else {
+          record_error(&n, "Binary operands type mismatch: '" + left_type.name +
+                               "' vs '" + right_type.name + "'");
+        }
       }
       if (n.op >= TokenType::OPERATOR_EQUAL &&
           n.op <= TokenType::OPERATOR_GREATER_EQUAL) {
@@ -1620,8 +1639,13 @@ void Binder::visit(AssignmentExpression &n) {
       }
     }
     if (!is_assignable(target_type, value_type)) {
-      record_error(&n, "Assignment type mismatch: '" + target_type.name +
-                           "' = '" + value_type.name + "'");
+      if (left_decl && left_decl->node_type == NodeType::ENUM_DECL) {
+        record_error(&n, "Cannot convert type '" + value_type.name +
+                             "' to enum '" + target_type.name + "'");
+      } else {
+        record_error(&n, "Assignment type mismatch: '" + target_type.name +
+                             "' = '" + value_type.name + "'");
+      }
     }
     n.expression_type = target_type;
     evaluated_type = n.expression_type;
@@ -2562,9 +2586,14 @@ void Binder::visit(VariableDeclaration &n) {
     if (n.initializer) {
       TypeInfo initializer_type = evaluate_expression(n.initializer.get());
       if (!is_assignable(n.type_info, initializer_type)) {
-        record_error(&n, "Type mismatch in variable declaration: expected '" +
-                             n.type_info.name + "', got '" +
-                             initializer_type.name + "'");
+        if (type_decl && type_decl->node_type == NodeType::ENUM_DECL) {
+          record_error(&n, "Cannot convert type '" + initializer_type.name +
+                               "' to enum '" + n.type_info.name + "'");
+        } else {
+          record_error(&n, "Type mismatch in variable declaration: expected '" +
+                               n.type_info.name + "', got '" +
+                               initializer_type.name + "'");
+        }
       }
     }
     n.memory_index = local_variable_index++;
