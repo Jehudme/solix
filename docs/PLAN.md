@@ -672,3 +672,723 @@ The repository lacks clean, runnable sample programs demonstrating language feat
      - `algorithms.slx`: Sorting algorithms (quicksort, merge sort) and binary search.
 2. **Automated Runner Script**:
    - Provide an executable runner script (`examples/run_all.sh`) or CMake target (`make run_examples`) that compiles and executes every example to guarantee ongoing compatibility.
+
+---
+
+## Phase 22: Type & Instance Sizing: `sizeof` Operator & Memory Introspection
+
+### Issue
+Solix lacks a `sizeof` operator or memory introspection mechanism. Developers writing low-level systems code, binary serialization libraries, network buffers, or performance-critical data structures have no way to determine the byte size occupied by primitive types or dynamically allocated class instances.
+
+### Technical Feasibility Analysis
+**Yes, implementing `sizeof` is completely possible and directly aligns with Solix's architecture:**
+1. **Compile-Time Primitive Sizing**: Primitive types in Solix have fixed bit-widths defined by the specification (`int8`/`uint8`/`bool`/`char` = 1 byte, `int16`/`uint16` = 2 bytes, `int32`/`uint32`/`float32` = 4 bytes, `int64`/`uint64`/`float64` = 8 bytes).
+2. **Compile-Time Class Instance Sizing**: The semantic binder (`binder.cpp`) already calculates each class's layout and stores it in `ClassDeclaration::instance_size`. In the Solix VM, each instance field and the vtable pointer occupies an 8-byte word. Thus, an instance's payload size is deterministically `instance_size * 8` bytes.
+3. **Runtime Dynamic Sizing**: Solix heap allocations (`memory.dynamic_allocation`) store an object header word immediately before the payload at `heap[address - 1]`. Bits 32..63 of this header store the allocated block capacity in 64-bit words (`blk_size`), allowing the runtime to inspect the allocated footprint of any live object reference or array at $O(1)$ cost.
+
+### Solution
+1. **Lexer & Parser**:
+   - Add `TokenType::KEYWORD_SIZEOF` (`"sizeof"`).
+   - In `parser.cpp`, parse `SizeOfExpression` accepting both type identifiers and expressions: `sizeof(int32)`, `sizeof(Point)`, or `sizeof(myInstance)`.
+2. **Binder & Semantic Analysis**:
+   - In `binder.cpp`, resolve target operand:
+     - **Type Argument (`sizeof(Type)`)**:
+       - Primitive types: Return constant byte size (1, 2, 4, 8).
+       - Class types: Resolve `ClassDeclaration`, compute `instance_size * 8` bytes (including vtable pointer and member fields).
+       - Fold into compile-time constant integer expression of type `int32`.
+     - **Expression Argument (`sizeof(expr)`)**:
+       - Type-check the operand expression. If primitive or statically resolved class, fold or mark for runtime opcode resolution.
+   - Return type is `int32`.
+3. **Assembler & Runtime VM**:
+   - **Compile-Time Folding**: Emit `PUSH_CONST_I32 <bytes>` directly for compile-time determinable types, avoiding runtime overhead.
+   - **Dynamic Evaluation**: For dynamic instance evaluation `sizeof(instance)`:
+     - Introduce `OpCode::SIZEOF`.
+     - In `runtime.cpp`, pop object reference address from stack. Check for null (throw `NullPointerException` or return `0`).
+     - Read word capacity from `heap[address - 1] >> 32` and multiply by 8 bytes to return the total allocated memory footprint.
+4. **Standard Library Integration**:
+   - In `solix.core.Objects`, provide helper method:
+     ```solix
+     public static int32 size_of<T>(T instance) {
+         return sizeof(instance);
+     }
+     ```
+5. **Verification**:
+   - Catch2 unit tests in `tests/statements/expressions/test_sizeof_expression.cpp`:
+     - Constant folding for all primitive types (`sizeof(int8) == 1`, `sizeof(int32) == 4`, `sizeof(float64) == 8`).
+     - Class instance byte size calculation with single and inherited fields (`sizeof(EmptyClass) == 8` for vtable word, classes with $N$ fields).
+     - Dynamic instance sizing on heap objects (`Point p = new Point(); sizeof(p)`).
+     - Spec documentation update in `docs/spec/` and `tests/statements/TESTS.md`.
+
+---
+
+## Phase 23: Function Call Architecture Modernization & Callee Frame Allocation (`ALLOC_FRAME`)
+
+### Status: PLANNED
+
+### Issue & Architectural Motivation
+1. **Inverted Caller/Callee Responsibility (Leaky Abstraction)**:
+   - In Solix's current VM instruction set, the **caller** is responsible for specifying the **callee's internal frame size**:
+     - Direct calls push: `PUSH target_ip`, `PUSH frame_size`, `PUSH arg_count`, followed by `CALL`.
+     - Virtual calls embed: `CALL_VIRTUAL vtable_slot, frame_size, arg_count`.
+   - A function's frame size (the number of local variable slots needed during execution) is an internal implementation detail of the callee. Exposing it to callers creates significant structural defects.
+2. **Hidden Stack Corruption Bug in Virtual Method Dispatch (`CALL_VIRTUAL`)**:
+   - In [`language/src/runtime.cpp`](language/src/runtime.cpp), `CALL_VIRTUAL` reads `frame_size` encoded at the callsite. The compiler calculates this `frame_size` from the *base class or interface declaration*.
+   - If a derived subclass overrides the method and requires more local variables than the base method, the caller allocates an insufficient frame. When the derived method writes to its local variables, it writes past the allocated frame, corrupting stack memory and adjacent call frames.
+3. **Callsite Bytecode Bloat**:
+   - Every single function call site redundantly emits `PUSH_CONST_I32 <frame_size>`. In real-world codebases with thousands of callsites, this substantially inflates bytecode binary size (`.slxb`).
+4. **Architectural Barrier to Function Pointers & Lambda Closures**:
+   - **Function Pointers**: For indirect calls (`fp()`), the caller cannot know which concrete function will be executed, making caller-specified frame sizing impossible without packing metadata or creating complex descriptor structures.
+   - **Lambda Captures**: When generating synthetic functions for lambdas that capture outer variables, the lambda function can simply declare a larger frame size in its prologue to allocate local slots for its captured variables, without any caller having to be aware of the capture footprint.
+
+---
+
+### Solution Architecture
+
+```
+Current Flow (Caller-Dictated Frame):
+  Caller: PUSH target_ip -> PUSH frame_size -> PUSH arg_count -> CALL
+  Callee: (starts immediately with function statements)
+
+Modernized Flow (Callee Prologue Frame):
+  Caller: PUSH target_ip -> PUSH arg_count -> CALL (or CALL target_ip, arg_count)
+  Callee: ALLOC_FRAME <frame_size> -> (function statements) -> RETURN
+```
+
+---
+
+### Implementation Blueprint
+
+#### 1. New Opcode & Instruction Set Updates
+* **`OpCode::ALLOC_FRAME`**:
+  * **Opcode Value**: Assign next available opcode in [`language/src/utilities/optcodes.hpp`](language/src/utilities/optcodes.hpp).
+  * **Format**: `ALLOC_FRAME <uint32_t frame_size>` (inline 4-byte immediate payload).
+  * **VM Execution Semantics** in [`language/src/runtime.cpp`](language/src/runtime.cpp):
+    ```cpp
+    op_ALLOC_FRAME:
+    {
+        uint32_t frame_size = read_u32(bytecode, program_counter);
+        uint32_t arg_count = call_stack[call_depth - 1].arg_count;
+        if (frame_size > arg_count) {
+            sp += (frame_size - arg_count); // Reserve stack slots for local variables
+        }
+        DISPATCH();
+    }
+    ```
+* **Refactor `OpCode::CALL`**:
+  * Remove `frame_size` from stack requirements.
+  * `CALL` now only consumes `target_ip` and `arg_count`:
+    ```cpp
+    op_CALL:
+    {
+        uint32_t arg_count = static_cast<uint32_t>(POP());
+        uint32_t target_ip = static_cast<uint32_t>(POP());
+        uint32_t current_sp_idx = static_cast<uint32_t>(sp - stack);
+        uint32_t new_frame_pointer = current_sp_idx - arg_count;
+
+        if (call_depth >= 65536)
+            throw std::runtime_error("Stack overflow: max call depth exceeded");
+
+        call_stack[call_depth++] = Frame(program_counter, new_frame_pointer, arg_count);
+        program_counter = target_ip;
+        DISPATCH();
+    }
+    ```
+* **Refactor `OpCode::CALL_VIRTUAL`**:
+  * Remove `frame_size` operand.
+  * Format becomes: `CALL_VIRTUAL <uint32_t slot> <uint32_t arg_count>`.
+  * The VM resolves `target_ip` from the object's vtable, creates the return `Frame`, and jumps directly to `target_ip`. The invoked target method executes its own `ALLOC_FRAME`, automatically sizing the stack according to the concrete subclass implementation.
+* **Native Function Calls (`OpCode::CALL_NATIVE`)**:
+  * Native C++ functions registered in `NativeRegistry` execute host code rather than bytecode; they do not require an `ALLOC_FRAME` instruction.
+  * Verify that native function calls continue to pop their arguments cleanly without interacting with bytecode activation frames.
+
+#### 2. Runtime Frame Structure & Return Semantics
+* In [`language/include/solix/runtime.hpp`](language/include/solix/runtime.hpp), update `struct Frame`:
+  ```cpp
+  struct Frame {
+      uint32_t return_address = 0;
+      uint32_t frame_pointer = 0;
+      uint32_t arg_count = 0;
+      Frame() = default;
+      Frame(uint32_t ret, uint32_t fp, uint32_t args)
+          : return_address(ret), frame_pointer(fp), arg_count(args) {}
+  };
+  ```
+* In `op_RETURN`:
+  * Ensure stack restoration (`sp = stack + frame.frame_pointer`) cleanly collapses all local slots allocated by `ALLOC_FRAME`.
+
+#### 3. Compiler Assembler Modernization ([`language/src/processes/assembler.cpp`](language/src/processes/assembler.cpp))
+* **Function Prologue Emission**:
+  * In `Assembler::visit(MethodDeclaration &)` and `Assembler::visit(ConstructorDeclaration &)`:
+    * Emit `OpCode::ALLOC_FRAME` as the very first instruction before any body statements or field initializers:
+      ```cpp
+      emit_byte(static_cast<uint8_t>(OpCode::ALLOC_FRAME));
+      emit_int32(function->frame_size);
+      ```
+* **Callsite Emission Cleanup**:
+  * In `compile_method_call()`, remove:
+    ```cpp
+    // REMOVE: emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    // REMOVE: emit_int32(frame_size);
+    ```
+  * In `CALL_VIRTUAL` emission, omit `frame_size` operand.
+  * In binary/assignment operator overloads (`operator+`, `operator=`), remove `PUSH_CONST_I32 frame_size`.
+  * In constructor invocation (`new MyClass()`), remove `PUSH_CONST_I32 ctor->frame_size`.
+  * In entry point invocation within `compile_boot_sequence()`, remove `PUSH_CONST_I32 entry_method->frame_size`.
+
+#### 4. Disassembler & Tooling Updates
+* In `Assembler::disassemble()` and debug loggers, format `ALLOC_FRAME`:
+  ```text
+  000420:  ALLOC_FRAME         size=4
+  ```
+* Remove `frame_size` from `CALL_VIRTUAL` disassembly formatting.
+
+#### 5. Verification & Test Plan
+* **Polymorphic Virtual Call Test**:
+  * Base class `Base { public virtual int32 compute() { return 1; } }` (0 extra locals).
+  * Derived class `Derived extends Base { public override int32 compute() { int32 a = 10, b = 20, c = 30; return a + b + c; } }` (3 extra locals).
+  * Invoke `Base b = new Derived(); b.compute();`. Verify clean execution without stack corruption.
+* **Recursion & Deep Call Stacks**:
+  * Verify Fibonacci and factorial recursive functions run correctly, proving `ALLOC_FRAME` and `RETURN` maintain perfect stack balance across thousands of frames.
+* **Catch2 Regression Suite**:
+  * Run all 38 existing test suites (`ctest`) to ensure 100% backward compatibility across expressions, control flow, declarations, and modules.
+
+---
+
+## Phase 24: Primitive Function Pointers: `<return_type>(*)(<arguments_types>)`
+
+### Status: PLANNED (Depends on Phase 23)
+
+### Architectural Overview
+Solix introduces primitive, zero-overhead **Function Pointers** using a modern adaptation of C-style function pointer syntax. 
+
+In traditional C/C++, function pointer syntax embeds the variable name in the middle (`int (*name)(int, int)`), which makes syntax parsing and readability notoriously difficult. In Solix, the type syntax is cleanly separated from the variable name:
+$$\text{Type: } \texttt{<return\_type>(*)(<arguments\_types>)} \quad\quad \text{Variable: } \texttt{<name>}$$
+
+Function pointer variables are treated as primitive values. At compile time, the compiler strictly enforces argument types, argument counts, and return types. At runtime, a function pointer is stored as a single 64-bit integer (`uint64_t`) where the lower 32 bits represent the bytecode instruction pointer (`target_ip`), and the upper 32 bits store the closure environment address (`0` for stateless functions, populated in Phase 25 for capturing closures).
+
+---
+
+### Language Syntax & Ergonomics
+
+#### 1. Declaration & Null Initialization
+```solix
+// Type: int32(*)(int32, int32)   Name: op
+int32(*)(int32, int32) op = null;
+
+// Parameterless with void return
+void(*)() onComplete = null;
+
+// Multi-argument with reference types
+bool(*)(solix.core.String, int32) validator = null;
+```
+
+#### 2. Taking the Address of a Function
+Assigning a function name (without parentheses) takes its address:
+```solix
+public class MathUtils {
+    public static int32 add(int32 a, int32 b) {
+        return a + b;
+    }
+}
+
+// Statically type-checked: arguments (int32, int32) and return int32 must match
+int32(*)(int32, int32) op = MathUtils.add;
+```
+
+#### 3. Calling Through a Function Pointer
+Invocation uses standard function call syntax:
+```solix
+int32 sum = op(10, 20); // Evaluates to 30
+```
+
+#### 4. Type Aliasing (`alias`)
+Function pointer types can be aliased to create reusable, clean type names:
+```solix
+alias BinaryOp = int32(*)(int32, int32);
+alias Callback = void(*)();
+alias Predicate = bool(*)(solix.core.String);
+
+BinaryOp op = MathUtils.add;
+int32 result = op(5, 7);
+```
+
+#### 5. Higher-Order Functions (Passing and Returning Function Pointers)
+```solix
+public static int32 compute(int32 x, int32 y, int32(*)(int32, int32) operation) {
+    return operation(x, y);
+}
+
+public static int32(*)(int32, int32) getOperation() {
+    return MathUtils.add;
+}
+```
+
+---
+
+### Implementation Blueprint
+
+#### 1. Type Representation ([`language/src/utilities/statements.hpp`](language/src/utilities/statements.hpp))
+Extend `TypeInfo` to represent function pointer signatures:
+```cpp
+struct TypeInfo {
+    std::string name;
+    int array_depth = 0;
+    std::vector<TypeInfo> type_args;
+
+    // Function Pointer Extension
+    bool is_function_pointer = false;
+    std::shared_ptr<TypeInfo> return_type = nullptr;
+    std::vector<TypeInfo> param_types;
+
+    std::string to_string() const {
+        if (is_function_pointer) {
+            std::string res = return_type ? return_type->to_string() : "void";
+            res += "(*)(";
+            for (size_t i = 0; i < param_types.size(); ++i) {
+                res += param_types[i].to_string();
+                if (i + 1 < param_types.size()) res += ", ";
+            }
+            res += ")";
+            return res;
+        }
+        // ... existing type formatting
+    }
+
+    bool operator==(const TypeInfo &other) const {
+        if (is_function_pointer != other.is_function_pointer) return false;
+        if (is_function_pointer) {
+            if (*return_type != *other.return_type) return false;
+            if (param_types.size() != other.param_types.size()) return false;
+            for (size_t i = 0; i < param_types.size(); ++i) {
+                if (param_types[i] != other.param_types[i]) return false;
+            }
+            return true;
+        }
+        // ... existing equality check
+    }
+};
+```
+
+#### 2. Parser Grammar ([`language/src/processes/parser.cpp`](language/src/processes/parser.cpp))
+* In `ParserState::parse_type_info()`:
+  * Parse base return type (e.g. `int32`, `void`, `String`).
+  * Check for function pointer indicator: `match(TokenType::PUNCTUATION_OPEN_PAREN)` followed by `match(TokenType::OPERATOR_MULTIPLY)` and `consume(TokenType::PUNCTUATION_CLOSE_PAREN)`.
+  * If detected:
+    * Set `type.is_function_pointer = true`.
+    * Move base type into `type.return_type = std::make_shared<TypeInfo>(base_type)`.
+    * Consume opening `(` for parameters.
+    * Parse comma-separated `parse_type_info()` parameters until closing `)`.
+* In `ParserState::parse_call_or_access()`:
+  * Expressions like `op(10, 20)` are parsed as a standard call expression where the callee is an expression (`IdentifierNode` or member access), not just a literal method name.
+
+#### 3. Binder & Semantic Analysis ([`language/src/processes/binder.cpp`](language/src/processes/binder.cpp))
+* **Function Address Binding (`IdentifierNode`)**:
+  * In `Binder::visit(IdentifierNode &)`:
+    * If identifier resolves to a `MethodDeclaration` without an immediate invocation parenthesis:
+      * Validate that the target method is `static`. (Taking the address of instance methods without a bound receiver is disallowed in primitive function pointers).
+      * Synthesize a function pointer `TypeInfo` from the method's return type and parameter types:
+        - `return_type = method->return_type`
+        - `param_types = method->parameters[i]->type_info`
+      * Tag the identifier expression with this function pointer type.
+* **Assignability Checking (`is_assignable`)**:
+  * In `Binder::is_assignable(target, source)`:
+    * If `target.is_function_pointer`:
+      * `source == null` (type `void`): return `true` (null function pointer assignment).
+      * If `source.is_function_pointer`:
+        * Return `true` if `is_assignable(*target.return_type, *source.return_type)` AND each parameter satisfies `is_assignable(source.param_types[i], target.param_types[i])` (contravariant parameters, covariant return type).
+* **Indirect Call Validation**:
+  * When analyzing a call expression where `callee` has `is_function_pointer == true`:
+    * Verify argument count matches `callee.type_info.param_types.size()`.
+    * Verify each argument expression is assignable to the corresponding parameter type.
+    * Set call expression type to `*callee.type_info.return_type`.
+
+#### 4. Assembler & Linker Patches ([`language/src/processes/assembler.cpp`](language/src/processes/assembler.cpp))
+* **Loading Function Address**:
+  * When compiling an `IdentifierNode` that resolved to a `MethodDeclaration`:
+    * Emit `PUSH_CONST_I32 0xFFFFFFFF`.
+    * Register a `linker_patch` entry `{bytecode().size() - 4, method}`.
+    * When `apply_linker_patches()` runs, `0xFFFFFFFF` is patched with `function_ips[method]` (stored in lower 32 bits of 64-bit slot; upper 32 bits remain 0).
+* **Loading `null`**:
+  * Emits `PUSH_CONST_I64 0`.
+* **Compiling Indirect Call (`op(a, b)`)**:
+  1. Compile and push arguments left-to-right.
+  2. Compile and push the function pointer expression (leaves 64-bit callable value on the stack).
+  3. Emit `PUSH_CONST_I32 <arg_count>`.
+  4. Emit `OpCode::CALL`.
+  *(Note: Relies on Phase 23 where `CALL` only pops `arg_count` and the 64-bit callable, and the callee executes its own `ALLOC_FRAME`).*
+
+#### 5. Runtime Execution & Null Safety ([`language/src/runtime.cpp`](language/src/runtime.cpp))
+* In `op_CALL`:
+  * Read 64-bit callable value:
+    * `uint32_t target_ip = (uint32_t)(callable & 0xFFFFFFFF);`
+    * `uint32_t env_address = (uint32_t)(callable >> 32);`
+  * If `target_ip == 0`:
+    * Throw `NullPointerException: Attempted to invoke null function pointer`.
+  * Set `context.active_closure_env = env_address`.
+  * Jump to `target_ip` as normal.
+
+#### 6. Verification & Test Plan
+* **Positive Scenarios (`tests/statements/expressions/test_function_pointer.cpp`)**:
+  1. Direct assignment and invocation: `int32(*)(int32, int32) add_ptr = Math.add; add_ptr(10, 20) == 30`.
+  2. Null initialization and reassignment: `op = null; op = Math.add;`.
+  3. Higher-order function passing: `apply(Math.add, 10, 20)`.
+  4. Aliased type definitions: `alias Op = int32(*)(int32, int32);`.
+  5. Returning function pointers: `get_math_func("add")(10, 20)`.
+* **Negative Scenarios (Compile-time & Runtime Diagnostics)**:
+  1. Parameter count mismatch: Assigning 2-param function to 1-param function pointer.
+  2. Return type mismatch: Assigning `void` function to `int32` function pointer.
+  3. Taking address of non-static instance method without an instance (`[ERROR] Cannot take address of non-static method`).
+  4. Invoking null function pointer throws runtime `NullPointerException`.
+
+---
+
+## Phase 25: First-Class Lambdas & Closures [PLANNED]
+
+### Status: PLANNED
+
+### Architectural Overview
+In Solix, lambdas and function pointers are unified under the same first-class primitive callable type:
+$$\texttt{<return\_type>(*)(<arguments\_types>)}$$
+
+Every callable slot in Solix is a 64-bit word (`uint64_t`) packing both an instruction pointer and an optional capture environment address:
+$$\texttt{callable\_val} = (\texttt{env\_address} \ll 32) \mid \texttt{target\_ip}$$
+
+* **Normal Function Pointer**: Uses only the lower 32 bits (`target_ip = func_ip`, `env_address = 0`). Upper 32 bits are zero.
+* **Capturing Lambda (Closure)**: Uses the full 64 bits:
+  * Lower 32 bits: `target_ip` points to the synthesized lambda bytecode.
+  * Upper 32 bits: `env_address` points to a heap-allocated array containing the captured variables ("backpack").
+* **Stateless Lambda (`[]`)**: If a lambda captures no variables, `env_address = 0`, requiring **zero heap allocation** and operating with the exact same performance and footprint as a standard function pointer.
+
+Because both fit into the same 64-bit value, any API accepting `<return_type>(*)(<args>)` can transparently receive a static function, a stateless lambda, or a capturing closure without wrapper objects or template bloat.
+
+---
+
+### Language Syntax & Ergonomics
+
+#### 1. Lambda Expression Syntax
+Lambdas use C++-inspired capture brackets followed by parameter declarations, an arrow `=>`, and a body:
+```solix
+// Basic capturing lambda
+int32 factor = 5;
+int32(*)(int32) multiplier = [factor](int32 x) => {
+    return x * factor;
+};
+
+// Stateless lambda (zero heap allocation)
+int32(*)(int32, int32) add = [](int32 a, int32 b) => {
+    return a + b;
+};
+
+// Single-expression body shorthand
+int32(*)(int32) double_val = [](int32 x) => x * 2;
+
+// Explicit return type specification (optional)
+int32(*)(int32) inc = [factor](int32 x): int32 => {
+    return x + factor;
+};
+```
+
+#### 2. Capture Semantics
+Variables in the capture list `[var1, var2, ...]` are captured by value from the surrounding lexical scope at the exact moment the lambda expression is evaluated:
+```solix
+public class CounterManager {
+    private int32 step = 10;
+
+    public void registerHandler() {
+        // Capturing 'this' allows access to instance fields inside the lambda:
+        void(*)() callback = [this]() => {
+            this.step += 1;
+        };
+        callback();
+    }
+}
+```
+
+#### 3. Distinct Backpack Instance per Evaluation
+Executing a lambda inside a loop or recursive call allocates a fresh, independent capture environment each time:
+```solix
+alias Supplier = int32(*)();
+Supplier[] suppliers = new Supplier[3];
+
+for (int32 i = 0; i < 3; i += 1) {
+    // Each iteration captures the current value of 'i' in its own separate heap backpack:
+    suppliers[i] = [i]() => i;
+}
+
+suppliers[0](); // returns 0
+suppliers[1](); // returns 1
+suppliers[2](); // returns 2
+```
+
+---
+
+### The Callable Address System & Scope Memory Lifecycle
+
+#### 1. The 64-Bit Packed Address Model
+In Solix, memory words on the stack and heap are 64 bits (`uint64_t`), while heap addresses and bytecode instruction pointers are 32 bits (`uint32_t`). A callable primitive `<return_type>(*)(<arguments_types>)` packs both into a single 64-bit value:
+$$\texttt{callable\_val} = (\texttt{static\_cast<uint64\_t>(env\_address)} \ll 32) \mid \texttt{static\_cast<uint64\_t>(target\_ip)}$$
+
+```
++------------------------------------+------------------------------------+
+|   Upper 32 Bits: env_address       |   Lower 32 Bits: target_ip         |
+|   (Heap backpack containing state) |   (Bytecode instruction pointer)   |
++------------------------------------+------------------------------------+
+```
+
+* **Stateless Function Pointer / Pure Lambda (`[]`)**: `env_address == 0`. Uses only the lower 32 bits; upper 32 bits are zero. Requires **zero heap allocation and zero deallocation**.
+* **Capturing Lambda (Closure)**: `env_address != 0`. `env_address` is a valid heap block address returned by `Memory::dynamic_allocation`.
+
+#### 2. The ARC Scope Cleanup Problem & Solution
+In Solix's ARC (Automatic Reference Counting) engine, standard heap objects (`Class`, `Array`, `String`) hold a 32-bit `Address` in the lower bits of the slot. When exiting a scope, `Assembler::emit_cleanup_for_node` emits `GET_LOCAL` followed by `DEC_REF`:
+```cpp
+// Existing OpCode::DEC_REF:
+Address addr = static_cast<Address>(POP()); // Truncates to lower 32 bits!
+memory.decrease_reference(addr);
+```
+
+> [!CAUTION]
+> If standard `DEC_REF` were executed on a 64-bit callable, casting to `Address` would extract `target_ip` (the bytecode address in the lower 32 bits) rather than `env_address`! Calling `decrease_reference(target_ip)` would corrupt unrelated heap headers. Conversely, doing nothing would leak the capture array ("backpack") on the heap forever.
+
+To solve this cleanly and efficiently, Solix introduces **callable-aware reference counting**:
+* **`OpCode::INC_REF_CALLABLE`**:
+  * Reads the 64-bit value: extracts `Address env = static_cast<Address>(val >> 32)`.
+  * If `env != 0`: calls `memory.increase_reference(env)`.
+  * If `env == 0`: instant no-op (zero overhead for stateless functions).
+* **`OpCode::DEC_REF_CALLABLE`**:
+  * Reads the 64-bit value: extracts `Address env = static_cast<Address>(val >> 32)`.
+  * If `env != 0`: decrements the backpack's reference count via `decrease_reference_callable(env)`.
+  * If `env == 0`: instant no-op.
+
+#### 3. Automatic Backpack Deallocation on Scope Exit
+When any variable of type `<return_type>(*)(<args>)` goes out of scope (at block termination, function return, or during exception unwinding), the compiler automatically emits cleanup bytecode:
+
+```solix
+{
+    int32 count = 10;
+    // Heap array ("backpack") allocated at env_address, ref_count = 1
+    int32(*)(int32) adder = [count](int32 x) => x + count;
+    adder(5);
+    // Scope exits here:
+    // Compiler automatically emits:
+    //   GET_LOCAL <adder_slot>
+    //   DEC_REF_CALLABLE
+    // ref_count drops to 0 -> backpack array is FREED immediately!
+}
+```
+
+When `decrease_reference_callable(env)` drops the backpack's reference count to 0:
+1. The memory block `[env - 1]` is immediately reclaimed via `Memory::deallocate(env)`.
+2. The block header is appended to `Memory::free_blocks`, and `currently_used_words` is decremented.
+3. Future allocations (such as subsequent loop iterations or new objects) instantly reuse this freed memory block without fragmentation or heap growth.
+
+#### 4. Deep Cleanup of Captured Reference Variables
+What if a lambda captures reference types (such as `String`, a class instance, or another nested lambda)?
+When the lambda is created, each captured reference type must have its reference count incremented so that the backpack safely retains it. When the lambda goes out of scope and the backpack is freed, those captured objects must not be leaked!
+
+To ensure 100% leak-free closures with zero runtime overhead for primitives:
+1. **Backpack Layout**:
+   * **Slot 0**: `uint64_t capture_ref_mask` (a 64-bit bitmask where bit $i = 1$ indicates that captured item $i$ is a standard reference type).
+   * **Slot 1**: `uint64_t capture_callable_mask` (a 64-bit bitmask where bit $i = 1$ indicates that captured item $i$ is a nested callable).
+   * **Slots $2 \dots C + 1$**: The captured values.
+2. **Deep Deallocation Sequence (`Memory::decrease_reference_callable(Address env)`)**:
+   When the backpack's ref count drops to 0:
+   * Read `ref_mask = heap[env]` and `callable_mask = heap[env + 1]`.
+   * For each bit $i$ set in `ref_mask`:
+     * `Address obj = static_cast<Address>(heap[env + 2 + i]);`
+     * `memory.decrease_reference(obj);`
+   * For each bit $i$ set in `callable_mask`:
+     * `uint64_t nested = heap[env + 2 + i];`
+     * `Address nested_env = static_cast<Address>(nested >> 32);`
+     * If `nested_env != 0`: `memory.decrease_reference(nested_env);`
+   * Finally, call `memory.deallocate(env)`.
+
+> [!TIP]
+> If all captured variables are primitives (`int32`, `float64`, etc.), `ref_mask == 0` and `callable_mask == 0`. The deep cleanup loop is bypassed completely, executing an instantaneous $O(1)$ deallocation into `free_blocks`.
+
+#### 5. Assignment, Reassignment, and Returning Callables
+* **Assignment (`callable_a = callable_b`)**:
+  * Retain new value: `INC_REF_CALLABLE` on `callable_b`.
+  * Release old value: `GET_LOCAL <callable_a>` followed by `DEC_REF_CALLABLE`.
+* **Returning from Functions**:
+  * In `compile_return_statement`: if returning a callable expression, emit `INC_REF_CALLABLE` on the returned value before `emit_cleanup_for_node` / `emit_cleanup_for_function` executes.
+  * When local variables leave scope and run `DEC_REF_CALLABLE`, the returned closure retains a net reference count of 1 and safely propagates to the caller.
+* **Exception Unwinding**:
+  * `BlockStatement` contains an exception cleanup segment patched to run during stack unwinding. `emit_cleanup_for_node` emits `DEC_REF_CALLABLE` for all in-scope callables, guaranteeing zero memory leaks even if an exception aborts the scope early.
+
+---
+
+### Implementation Blueprint
+
+#### 1. AST Node ([`language/src/utilities/statements.hpp`](language/src/utilities/statements.hpp))
+```cpp
+class LambdaExpression : public ExpressionNode {
+public:
+    std::vector<std::string> capture_names;
+    std::vector<std::unique_ptr<VariableDeclaration>> parameters;
+    std::shared_ptr<TypeInfo> explicit_return_type;
+    std::unique_ptr<Node> body; // BlockStatement or ExpressionNode
+
+    // Filled during Semantic Binding:
+    std::string synthesized_func_name;
+    std::shared_ptr<MethodDeclaration> synthesized_method;
+    std::vector<std::shared_ptr<VariableDeclaration>> resolved_captures;
+    uint64_t capture_ref_mask = 0;
+    uint64_t capture_callable_mask = 0;
+
+    void accept(ASTVisitor &visitor) override;
+};
+```
+
+#### 2. Parser Grammar ([`language/src/processes/parser.cpp`](language/src/processes/parser.cpp))
+In `ParserState::parse_primary()`:
+* Detect lambda initiation when encountering `[`:
+  * Parse comma-separated capture identifiers `[x, y, this]` until `]`.
+  * Consume `(` and parse comma-separated parameter declarations `(int32 a, String b)` until `)`.
+  * If next token is `:`, parse explicit return `parse_type_info()`.
+  * Consume `=>` (`TokenType::OPERATOR_FAT_ARROW` or `=` followed by `>`).
+  * If next token is `{`, parse `parse_block_statement()`; otherwise parse single `parse_expression()`.
+
+#### 3. Semantic Binder ([`language/src/processes/binder.cpp`](language/src/processes/binder.cpp))
+* **Capture Resolution & Mask Generation**:
+  * For each name in `capture_names`:
+    * Look up in the enclosing lexical scope (parameters, local variables, or `this`).
+    * Report compile error if identifier is not accessible.
+    * Record resolved variable declaration and its `TypeInfo`.
+    * If resolved variable is a reference type (`is_reference_type`), set bit $i$ in `capture_ref_mask`.
+    * If resolved variable is a callable (`type_info.is_function_pointer`), set bit $i$ in `capture_callable_mask`.
+* **Synthesized Method Creation**:
+  * Synthesize an anonymous static method `__lambda_<id>`:
+    * Parameters: all user-declared lambda parameters, followed by internal parameters representing the captures.
+    * Return type: inferred from `return` statements in the body (or matching `explicit_return_type`).
+  * Register `__lambda_<id>` into the current class or global package scope.
+  * Bind the lambda body inside the synthetic method's own scope. Any reference to a captured variable is bound directly to its corresponding capture slot.
+* **Expression Type Synthesis**:
+  * Assign `type_info` of `LambdaExpression` as `TypeInfo` with `is_function_pointer = true`, populated with the synthetic method's return type and parameter types.
+
+#### 4. VM Opcodes ([`language/src/utilities/optcodes.hpp`](language/src/utilities/optcodes.hpp))
+Add the following dedicated opcodes:
+* `OpCode::INC_REF_CALLABLE`:
+  * Pops 64-bit callable, increments reference count of upper 32-bit `env_address` if non-zero, pushes 64-bit callable back.
+* `OpCode::DEC_REF_CALLABLE`:
+  * Pops 64-bit callable, decrements reference count of upper 32-bit `env_address` if non-zero, freeing backpack if ref count reaches zero.
+* `OpCode::UNPACK_CAPTURES`:
+  * Operands: `<dest_slot: u8> <count: u8>`.
+  * Callee prologue instruction that reads `context.active_closure_env` and unpacks capture values (starting at offset 2 past the masks) directly into local frame slots.
+
+#### 5. Assembler & Bytecode Generation ([`language/src/processes/assembler.cpp`](language/src/processes/assembler.cpp))
+* **Scope Exit Generation (`emit_cleanup_for_node` & `emit_cleanup_for_function`)**:
+  ```cpp
+  if (var_decl->is_reference_type) {
+      emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+      emit_int32(var_decl->memory_index);
+      emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+  } else if (var_decl->type_info.is_function_pointer) {
+      emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+      emit_int32(var_decl->memory_index);
+      emit_byte(static_cast<uint8_t>(OpCode::DEC_REF_CALLABLE));
+  }
+  ```
+* **Synthesized Lambda Bytecode Generation**:
+  * Emit function label for `__lambda_<id>`.
+  * Emit `ALLOC_FRAME <param_count + capture_count + local_count>`.
+  * If `capture_count > 0`:
+    * Emit `UNPACK_CAPTURES <param_count> <capture_count>`.
+  * Emit lambda body bytecode. Access to captures is compiled as direct `GET_LOCAL` / `SET_LOCAL` to slots `[param_count ... param_count + capture_count - 1]`.
+  * Emit default `RETURN_VOID` / `RETURN_VAL`.
+* **Lambda Instantiation Site Generation**:
+  * If `capture_count == 0` (stateless lambda):
+    * Emit `PUSH_CONST_I32 0xFFFFFFFF` (linker patch for `__lambda_<id>` instruction pointer).
+    * (Leaves 64-bit integer on stack with `env = 0`).
+  * If `capture_count > 0` (capturing closure):
+    1. Emit `PUSH_CONST_I32 <capture_count + 2>`.
+    2. Emit `OpCode::ALLOC_DYNAMIC` (allocates array of $C + 2$ words on heap, leaves `env_address` on stack).
+    3. Emit `DUP` -> `PUSH_CONST_I32 0` -> `PUSH_CONST_I64 <capture_ref_mask>` -> `OpCode::SET_ARRAY`.
+    4. Emit `DUP` -> `PUSH_CONST_I32 1` -> `PUSH_CONST_I64 <capture_callable_mask>` -> `OpCode::SET_ARRAY`.
+    5. For each capture $i \in [0, C-1]$:
+       * Emit `DUP` (keeps `env_address` on stack).
+       * Emit `PUSH_CONST_I32 <i + 2>`.
+       * Emit expression loading captured variable value (`GET_LOCAL`, etc.).
+       * If captured variable is reference type: emit `OpCode::INC_REF` (or `INC_REF_CALLABLE` if callable).
+       * Emit `OpCode::SET_ARRAY` (stores captured value into `heap[env_address + 2 + i]`).
+    6. Emit `PUSH_CONST_I32 0xFFFFFFFF` (linker patch for `__lambda_<id>` instruction pointer).
+    7. Pack into single 64-bit word:
+       * Shift `env_address` left by 32 bits and bitwise OR with `lambda_ip`.
+       * Resulting 64-bit callable value `(env << 32) | ip` sits cleanly on top of the stack.
+
+#### 6. VM Runtime Execution ([`language/src/runtime.cpp`](language/src/runtime.cpp))
+* **In `decrease_reference_callable(Address env)`**:
+  ```cpp
+  void Memory::decrease_reference_callable(Address env) {
+      if (env == 0) return;
+      uint64_t &header = heap[env - 1];
+      uint32_t ref_count = static_cast<uint32_t>(header & 0xFFFFFFFF);
+      if (ref_count > 0) {
+          ref_count--;
+          header = (header & 0xFFFFFFFF00000000ULL) | ref_count;
+          if (ref_count == 0) {
+              // Deep cleanup: inspect masks
+              uint64_t ref_mask = heap[env];
+              uint64_t callable_mask = heap[env + 1];
+              uint32_t size = static_cast<uint32_t>(header >> 32);
+              uint32_t count = size >= 2 ? size - 2 : 0;
+              for (uint32_t i = 0; i < count; ++i) {
+                  if ((ref_mask >> i) & 1) {
+                      decrease_reference(static_cast<Address>(heap[env + 2 + i]));
+                  } else if ((callable_mask >> i) & 1) {
+                      uint64_t val = heap[env + 2 + i];
+                      Address nested_env = static_cast<Address>(val >> 32);
+                      decrease_reference_callable(nested_env);
+                  }
+              }
+              deallocate(env);
+          }
+      }
+  }
+  ```
+* **In `op_INC_REF_CALLABLE`**:
+  ```cpp
+  uint64_t val = POP();
+  Address env = static_cast<Address>(val >> 32);
+  if (env != 0) memory.increase_reference(env);
+  PUSH(val);
+  DISPATCH();
+  ```
+* **In `op_DEC_REF_CALLABLE`**:
+  ```cpp
+  uint64_t val = POP();
+  Address env = static_cast<Address>(val >> 32);
+  if (env != 0) memory.decrease_reference_callable(env);
+  DISPATCH();
+  ```
+* **In `op_CALL`**:
+  * Pop 64-bit callable value.
+  * Extract:
+    ```cpp
+    uint32_t target_ip = (uint32_t)(callable_val & 0xFFFFFFFF);
+    uint32_t env_address = (uint32_t)(callable_val >> 32);
+    ```
+  * Verify `target_ip != 0` (throw `NullPointerException` if null).
+  * Save caller's active closure env and set `context.active_closure_env = env_address`.
+* **In `op_UNPACK_CAPTURES <dest_slot> <count>`**:
+  * Fetch `Address env = context.active_closure_env;`.
+  * Loop $i$ from 0 to `count - 1`:
+    * `current_frame[dest_slot + i] = heap[env + 2 + i];`.
+* **In `op_RETURN`**:
+  * Restore previous frame's `active_closure_env`.
+
+---
+
+### Verification & Test Plan
+* **Positive Scenarios (`tests/statements/expressions/test_lambda.cpp`)**:
+  1. **Stateless Lambdas**: `[](int32 a, int32 b) => a + b` assigned to `int32(*)(int32, int32)` with zero heap allocations (`currently_used_words` remains unchanged).
+  2. **Single & Multi-Value Captures**: `[x, y](int32 z) => x + y + z` capturing local variables from enclosing function.
+  3. **Automatic Scope Deallocation**: Lambda created inside a block; verify `currently_used_words` returns to pre-block value after scope exit (backpack is freed into `free_blocks`).
+  4. **Deep Capture Cleanup**: Lambda capturing a `String` and a custom `Class` instance; verify that when the lambda goes out of scope, both the backpack and the captured objects are freed.
+  5. **Loop Independence & Recycling**: Creating lambdas in a loop capturing iteration counter `i`, ensuring each lambda retains its specific counter value and frees correctly.
+  6. **Capturing `this`**: Lambda inside a class method capturing `this` and mutating instance fields.
+  7. **Returning Closures**: Function returning `[x](int32 y) => x + y` survives caller's frame destruction and can be called repeatedly without premature deallocation.
+  8. **Higher-Order Integration**: Passing capturing lambdas to generic collection algorithms (e.g. `List.filter([limit](int32 item) => item > limit)`).
+* **Negative Scenarios**:
+  1. Attempting to capture non-existent identifiers (`[ERROR] Undefined capture variable: foo`).
+  2. Invoking null lambda pointer throws runtime `NullPointerException`.
+  3. Attempting to invoke a lambda after its backpack has been improperly managed.
