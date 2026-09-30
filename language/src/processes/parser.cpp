@@ -528,6 +528,9 @@ std::unique_ptr<Node> ParserState::parse_primary() {
       return std::make_unique<ArrayCreationExpression>(new_tok, std::move(type),
                                                        std::move(size));
     } else {
+      if (type.array_depth > 0) {
+        throw ParseError("Array allocation requires size expression", new_tok.line, new_tok.column);
+      }
       log_trace("Parsing new instance creation for {} at line {}",
                 type.to_string(), new_tok.line);
       auto inst =

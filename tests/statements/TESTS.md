@@ -2700,14 +2700,14 @@ int32 first = data[0]; // 0
 
 ---
 
-### Case 3.2: Reference Type Array Allocation [NOT IMPLEMENTED]
+### Case 3.2: Reference Type Array Allocation [IMPLEMENTED]
 ```solix
 class Item {
     public int32 id;
 }
 
 static int32 main() {
-    Item[] items = new Item[](3);
+    Item[] items = new Item[3];
     return items[0] == null ? 0 : 1;
 }
 ```
@@ -2726,7 +2726,7 @@ int32[] bad = new int32[-1];
 [FATAL VM PANIC] NegativeArraySizeException: Attempted to create array with negative size -1
 ```
 
-### Case 4.2: Array Creation with Missing Size [NOT IMPLEMENTED]
+### Case 4.2: Array Creation with Missing Size [IMPLEMENTED]
 ```solix
 void test() {
     int32[] arr = new int32[](); // Error
