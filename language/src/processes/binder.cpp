@@ -1723,28 +1723,35 @@ void Binder::visit(BinaryExpression &n) {
       bool is_integer_math = left_type.array_depth == 0 && right_type.array_depth == 0 &&
                              is_integer(left_type.name) && is_integer(right_type.name);
       if (left_type != right_type && !is_null_compare && !is_integer_math) {
-        Node *left_enum = global_scope.resolve(left_type.name);
-        Node *right_enum = global_scope.resolve(right_type.name);
-        if (left_enum && left_enum->node_type == NodeType::ENUM_DECL &&
-            right_enum && right_enum->node_type == NodeType::ENUM_DECL) {
-          auto op_str = [](TokenType t) {
+          auto op_str = [](TokenType t) -> std::string {
             switch (t) {
+              case TokenType::OPERATOR_PLUS: return "+";
+              case TokenType::OPERATOR_MINUS: return "-";
+              case TokenType::OPERATOR_MULTIPLY: return "*";
+              case TokenType::OPERATOR_DIVIDE: return "/";
+              case TokenType::OPERATOR_MODULO: return "%";
               case TokenType::OPERATOR_EQUAL: return "==";
               case TokenType::OPERATOR_NOT_EQUAL: return "!=";
               case TokenType::OPERATOR_LESS_THAN: return "<";
               case TokenType::OPERATOR_GREATER_THAN: return ">";
               case TokenType::OPERATOR_LESS_EQUAL: return "<=";
               case TokenType::OPERATOR_GREATER_EQUAL: return ">=";
+              case TokenType::OPERATOR_LOGICAL_AND: return "&&";
+              case TokenType::OPERATOR_LOGICAL_OR: return "||";
               default: return "op";
             }
           };
-          record_error(&n, fmt::format("Operator '{}' cannot be applied to incompatible enums '{}' and '{}'",
-                                       op_str(n.op), left_type.name, right_type.name));
-        } else {
-          record_error(&n, "Binary operands type mismatch: '" + left_type.name +
-                               "' vs '" + right_type.name + "'");
+          Node *left_enum = global_scope.resolve(left_type.name);
+          Node *right_enum = global_scope.resolve(right_type.name);
+          if (left_enum && left_enum->node_type == NodeType::ENUM_DECL &&
+              right_enum && right_enum->node_type == NodeType::ENUM_DECL) {
+            record_error(&n, fmt::format("Operator '{}' cannot be applied to incompatible enums '{}' and '{}'",
+                                         op_str(n.op), left_type.name, right_type.name));
+          } else {
+            record_error(&n, fmt::format("Cannot apply operator '{}' to types '{}' and '{}'",
+                                         op_str(n.op), left_type.name, right_type.name));
+          }
         }
-      }
       if (n.op >= TokenType::OPERATOR_EQUAL &&
           n.op <= TokenType::OPERATOR_GREATER_EQUAL) {
         n.expression_type = {"bool", 0};

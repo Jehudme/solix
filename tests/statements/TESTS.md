@@ -2874,7 +2874,7 @@ bool result = false && (10 / 0 == 0); // Division by zero avoided
 
 ---
 
-### Case 3.2: Short-Circuit Logical OR [NOT IMPLEMENTED]
+### Case 3.2: Short-Circuit Logical OR [IMPLEMENTED]
 ```solix
 static int32 side_effects = 0;
 static bool get_false() { side_effects++; return false; }
@@ -2887,7 +2887,7 @@ static int32 main() {
 ```
 *Expected Result*: Right-hand operand of `||` is never evaluated when left is true.
 
-### Case 3.3: Relational Comparisons (<, <=, >, >=) [NOT IMPLEMENTED]
+### Case 3.3: Relational Comparisons (<, <=, >, >=) [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 a = 10;
@@ -2906,16 +2906,14 @@ static int32 main() {
 
 ### Case 4.1: Division by Zero (Runtime Fault) [IMPLEMENTED]
 ```solix
-void test() {
-    int32 x = 10 / 0;
-}
+int32 x = 10 / 0;
 ```
 *Expected Runtime Exception*:
 ```text
 [FATAL VM PANIC] ArithmeticException: Division by zero
 ```
 
-### Case 4.2: Incompatible Arithmetic Types [NOT IMPLEMENTED]
+### Case 4.2: Incompatible Arithmetic Types [IMPLEMENTED]
 ```solix
 void test() {
     int32 x = 10 + true; // Error
