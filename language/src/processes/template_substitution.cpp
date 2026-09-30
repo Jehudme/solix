@@ -61,6 +61,13 @@ void TemplateSubstitutionVisitor::visit(SizeOfExpression& n) {
     if (n.target_type) substitute_type(*n.target_type);
     if (n.target_expr) n.target_expr->accept(*this);
 }
+void TemplateSubstitutionVisitor::visit(LambdaExpression& n) {
+    for (auto& p : n.parameters) {
+        if (p) p->accept(*this);
+    }
+    if (n.explicit_return_type) substitute_type(*n.explicit_return_type);
+    if (n.body) n.body->accept(*this);
+}
 void TemplateSubstitutionVisitor::visit(BlockStatement& n) {
     for (auto& child : n.children) {
         if (child) child->accept(*this);

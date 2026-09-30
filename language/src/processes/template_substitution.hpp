@@ -30,6 +30,7 @@ public:
     void visit(InstanceofExpression& n) override;
     void visit(TernaryExpression& n) override;
     void visit(SizeOfExpression& n) override;
+    void visit(LambdaExpression& n) override;
 
     void visit(BlockStatement& n) override;
     void visit(IfStatement& n) override;

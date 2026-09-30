@@ -184,6 +184,35 @@ std::unique_ptr<Node> SizeOfExpression::clone() const {
     return cloned;
 }
 
+std::unique_ptr<Node> LambdaExpression::clone() const {
+    auto cloned = std::make_unique<LambdaExpression>(make_dummy_token(this));
+    cloned->capture_names = capture_names;
+    for (const auto& p : parameters) {
+        if (p) {
+            auto cloned_p = std::unique_ptr<VariableDeclaration>(
+                static_cast<VariableDeclaration*>(p->clone().release())
+            );
+            cloned_p->parent = cloned.get();
+            cloned->parameters.push_back(std::move(cloned_p));
+        }
+    }
+    if (explicit_return_type) {
+        cloned->explicit_return_type = std::make_shared<TypeInfo>(*explicit_return_type);
+    }
+    if (body) {
+        cloned->body = body->clone();
+        cloned->body->parent = cloned.get();
+    }
+    cloned->synthesized_func_name = synthesized_func_name;
+    cloned->synthesized_method = synthesized_method;
+    cloned->resolved_captures = resolved_captures;
+    cloned->capture_ref_mask = capture_ref_mask;
+    cloned->capture_callable_mask = capture_callable_mask;
+    cloned->inferred_return_type = inferred_return_type;
+    copy_children(this, cloned.get());
+    return cloned;
+}
+
 // ==========================================
 // Statements
 // ==========================================

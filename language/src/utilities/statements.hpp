@@ -15,7 +15,7 @@ enum class NodeType {
     IDENTIFIER, LITERAL, BINARY_EXPR, UNARY_EXPR, ASSIGNMENT_EXPR,
     ARRAY_ACCESS, MEMBER_ACCESS, METHOD_CALL, NEW_INSTANCE, ARRAY_CREATION,
     ARRAY_LITERAL, CAST_EXPR,
-    INSTANCEOF_EXPR, TERNARY_EXPR, SIZEOF_EXPR,
+    INSTANCEOF_EXPR, TERNARY_EXPR, SIZEOF_EXPR, LAMBDA_EXPR,
 
     // Statements
     BLOCK, IF_STMT, FOR_STMT, WHILE_STMT, DO_WHILE_STMT, SWITCH_STMT, CASE_STMT,
@@ -315,6 +315,32 @@ struct SizeOfExpression : public Node {
         : Node(NodeType::SIZEOF_EXPR, t), target_type(std::move(type)), target_expr(std::move(expr)) {
             if (target_expr) target_expr->parent = this;
         }
+};
+
+struct VariableDeclaration;
+struct MethodDeclaration;
+
+struct LambdaExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
+    std::vector<std::string> capture_names;
+    std::vector<std::unique_ptr<VariableDeclaration>> parameters;
+    std::shared_ptr<TypeInfo> explicit_return_type;
+    std::unique_ptr<Node> body;
+
+    // Filled during Semantic Binding:
+    std::string synthesized_func_name;
+    std::shared_ptr<MethodDeclaration> synthesized_method;
+    std::vector<std::shared_ptr<VariableDeclaration>> resolved_captures;
+    uint64_t capture_ref_mask = 0;
+    uint64_t capture_callable_mask = 0;
+    TypeInfo inferred_return_type;
+
+    LambdaExpression(const Token& t)
+        : Node(NodeType::LAMBDA_EXPR, t) {}
+    ~LambdaExpression() override;
 };
 
 // ==========================================
@@ -627,5 +653,7 @@ struct MethodDeclaration : public Node {
     MethodDeclaration(const Token& t, std::string name, TypeInfo ret_type)
         : Node(NodeType::METHOD_DECL, t), method_name(std::move(name)), return_type(std::move(ret_type)) {}
 };
+
+inline LambdaExpression::~LambdaExpression() = default;
 
 } // namespace solix

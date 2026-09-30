@@ -58,6 +58,13 @@ void Assembler::execute() {
     }
   }
 
+  // Compile all synthesized lambda methods
+  size_t lambda_idx = 0;
+  while (lambda_idx < pending_lambdas.size()) {
+    auto *lambda = pending_lambdas[lambda_idx++];
+    compile_lambda_method(*lambda);
+  }
+
   uint32_t abstract_sentinel_ip = bytecode().size();
   emit_byte(static_cast<uint8_t>(OpCode::THROW_ABSTRACT));
 
@@ -233,6 +240,12 @@ std::string Assembler::disassemble() const {
     case OpCode::ALLOC_FRAME: {
       uint32_t frame_sz = read_u32_local(pc);
       ss << "size=" << frame_sz;
+      break;
+    }
+    case OpCode::UNPACK_CAPTURES: {
+      uint32_t dest = read_u32_local(pc);
+      uint32_t count = read_u32_local(pc);
+      ss << "dest=" << dest << ", count=" << count;
       break;
     }
     case OpCode::REGISTER_RETURN_CLEANUP: {
@@ -536,6 +549,10 @@ void Assembler::emit_cleanup_for_node(Node *node) {
         emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
         emit_int32(var_decl->memory_index);
         emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+      } else if (var_decl->type_info.is_function_pointer) {
+        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+        emit_int32(var_decl->memory_index);
+        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF_CALLABLE));
       }
     }
   }
@@ -553,10 +570,16 @@ void Assembler::emit_cleanup_for_function(Node *func_node) {
       emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
     }
     for (const auto &param : m->parameters) {
-      if (param && param->is_reference_type) {
-        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
-        emit_int32(param->memory_index);
-        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+      if (param) {
+        if (param->is_reference_type) {
+          emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+          emit_int32(param->memory_index);
+          emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+        } else if (param->type_info.is_function_pointer) {
+          emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+          emit_int32(param->memory_index);
+          emit_byte(static_cast<uint8_t>(OpCode::DEC_REF_CALLABLE));
+        }
       }
     }
   } else if (func_node->node_type == NodeType::CONSTRUCTOR_DECL) {
@@ -572,6 +595,44 @@ void Assembler::emit_cleanup_for_function(Node *func_node) {
       }
     }
   }
+}
+
+void Assembler::emit_cleanup_for_lambda(LambdaExpression &node) {
+  for (const auto &param : node.parameters) {
+    if (param) {
+      if (param->is_reference_type) {
+        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+        emit_int32(param->memory_index);
+        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+      } else if (param->type_info.is_function_pointer) {
+        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+        emit_int32(param->memory_index);
+        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF_CALLABLE));
+      }
+    }
+  }
+}
+
+void Assembler::compile_lambda_method(LambdaExpression &node) {
+  auto *synth_m = node.synthesized_method.get();
+  function_ips[synth_m] = bytecode().size();
+
+  emit_byte(static_cast<uint8_t>(OpCode::ALLOC_FRAME));
+  emit_int32(synth_m->frame_size);
+
+  if (!node.resolved_captures.empty()) {
+    emit_byte(static_cast<uint8_t>(OpCode::UNPACK_CAPTURES));
+    emit_int32(node.parameters.size());
+    emit_int32(node.resolved_captures.size());
+  }
+
+  if (node.body) {
+    compile_node(node.body.get());
+  }
+
+  emit_byte(static_cast<uint8_t>(OpCode::PUSH_NULL));
+  emit_cleanup_for_lambda(node);
+  emit_byte(static_cast<uint8_t>(OpCode::RETURN));
 }
 
 void Assembler::compile_expression(Node *expr) {
@@ -888,6 +949,10 @@ void Assembler::visit(ReturnStatement &node) {
     compile_expression(ret_stmt->value.get());
     if (is_reference_type(ret_stmt->value->expression_type)) {
       emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    } else if (ret_stmt->value->expression_type.is_function_pointer) {
+      if (ret_stmt->value->node_type != NodeType::LAMBDA_EXPR) {
+        emit_byte(static_cast<uint8_t>(OpCode::INC_REF_CALLABLE));
+      }
     }
   } else {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_NULL));
@@ -905,6 +970,9 @@ void Assembler::visit(ReturnStatement &node) {
       if (try_stmt->finally_block && prev_child != try_stmt->finally_block.get()) {
         compile_node(try_stmt->finally_block.get());
       }
+    } else if (current->node_type == NodeType::LAMBDA_EXPR) {
+      func_node = current;
+      break;
     } else if (current->node_type == NodeType::METHOD_DECL ||
                current->node_type == NodeType::CONSTRUCTOR_DECL) {
       func_node = current;
@@ -915,7 +983,11 @@ void Assembler::visit(ReturnStatement &node) {
   }
 
   if (func_node) {
-    emit_cleanup_for_function(func_node);
+    if (func_node->node_type == NodeType::LAMBDA_EXPR) {
+      emit_cleanup_for_lambda(*static_cast<LambdaExpression*>(func_node));
+    } else {
+      emit_cleanup_for_function(func_node);
+    }
   }
 
   emit_byte(static_cast<uint8_t>(OpCode::RETURN));
@@ -1089,7 +1161,7 @@ void Assembler::visit(IdentifierNode &node) {
     return;
   } else if (ident->name == "this" || ident->name == "super") {
     emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
-    emit_int32(0);
+    emit_int32(ident->resolved_declaration ? ident->resolved_declaration->memory_index : 0);
     return;
   }
   if (!ident->resolved_declaration) {
@@ -1148,6 +1220,10 @@ void Assembler::visit(AssignmentExpression &node) {
     bool is_ref = is_reference_type(assign->value->expression_type);
     if (is_ref) {
       emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    } else if (assign->value->expression_type.is_function_pointer) {
+      if (assign->value->node_type != NodeType::LAMBDA_EXPR) {
+        emit_byte(static_cast<uint8_t>(OpCode::INC_REF_CALLABLE));
+      }
     }
     emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
     return;
@@ -1184,6 +1260,7 @@ void Assembler::visit(AssignmentExpression &node) {
   }
 
   bool target_is_ref = false;
+  bool target_is_callable = false;
   if (assign->target->node_type == NodeType::IDENTIFIER) {
     auto *ident = static_cast<IdentifierNode *>(assign->target.get());
     if (ident->resolved_declaration) {
@@ -1193,6 +1270,7 @@ void Assembler::visit(AssignmentExpression &node) {
       } else if (ident->resolved_declaration->node_type == NodeType::VAR_DECL) {
         auto *var = static_cast<VariableDeclaration *>(ident->resolved_declaration);
         target_is_ref = var->is_reference_type;
+        target_is_callable = var->type_info.is_function_pointer;
       }
     }
   } else if (assign->target->node_type == NodeType::MEMBER_ACCESS) {
@@ -1206,6 +1284,10 @@ void Assembler::visit(AssignmentExpression &node) {
 
   if (target_is_ref) {
     emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+  } else if (target_is_callable) {
+    if (assign->value->node_type != NodeType::LAMBDA_EXPR) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF_CALLABLE));
+    }
   }
 
   emit_byte(static_cast<uint8_t>(OpCode::DUP));
@@ -1244,6 +1326,10 @@ void Assembler::visit(AssignmentExpression &node) {
         emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
         emit_int32(var->memory_index);
         emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+      } else if (var->type_info.is_function_pointer) {
+        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+        emit_int32(var->memory_index);
+        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF_CALLABLE));
       }
 
       emit_byte(static_cast<uint8_t>(OpCode::SET_LOCAL));
@@ -1883,6 +1969,64 @@ void Assembler::visit(SizeOfExpression &node) {
   } else {
     compile_expression(node.target_expr.get());
     emit_byte(static_cast<uint8_t>(OpCode::SIZEOF));
+  }
+}
+
+void Assembler::visit(LambdaExpression &node) {
+  pending_lambdas.push_back(&node);
+  if (node.resolved_captures.empty()) {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    linker_patches.push_back({bytecode().size(), node.synthesized_method.get()});
+    emit_int32(0xFFFFFFFF);
+  } else {
+    uint32_t cap_count = static_cast<uint32_t>(node.resolved_captures.size());
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    emit_int32(cap_count + 2);
+    emit_byte(static_cast<uint8_t>(OpCode::ALLOC_DYNAMIC));
+
+    emit_byte(static_cast<uint8_t>(OpCode::DUP));
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    emit_int32(0);
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I64));
+    emit_int64(node.capture_ref_mask);
+    emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
+    emit_byte(static_cast<uint8_t>(OpCode::POP));
+
+    emit_byte(static_cast<uint8_t>(OpCode::DUP));
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    emit_int32(1);
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I64));
+    emit_int64(node.capture_callable_mask);
+    emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
+    emit_byte(static_cast<uint8_t>(OpCode::POP));
+
+    for (uint32_t i = 0; i < cap_count; ++i) {
+      emit_byte(static_cast<uint8_t>(OpCode::DUP));
+      emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+      emit_int32(i + 2);
+      if (node.capture_names[i] == "this") {
+        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+        emit_int32(node.resolved_captures[i] ? node.resolved_captures[i]->memory_index : 0);
+        emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+      } else {
+        auto *var = node.resolved_captures[i].get();
+        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+        emit_int32(var->memory_index);
+        if (node.capture_ref_mask & (1ULL << i)) {
+          emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+        } else if (node.capture_callable_mask & (1ULL << i)) {
+          emit_byte(static_cast<uint8_t>(OpCode::INC_REF_CALLABLE));
+        }
+      }
+      emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
+      emit_byte(static_cast<uint8_t>(OpCode::POP));
+    }
+
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    linker_patches.push_back({bytecode().size(), node.synthesized_method.get()});
+    emit_int32(0xFFFFFFFF);
+
+    emit_byte(static_cast<uint8_t>(OpCode::PACK_CLOSURE));
   }
 }
 
