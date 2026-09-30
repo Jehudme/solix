@@ -57,6 +57,10 @@ void TemplateSubstitutionVisitor::visit(TernaryExpression& n) {
     if (n.true_branch) n.true_branch->accept(*this);
     if (n.false_branch) n.false_branch->accept(*this);
 }
+void TemplateSubstitutionVisitor::visit(SizeOfExpression& n) {
+    if (n.target_type) substitute_type(*n.target_type);
+    if (n.target_expr) n.target_expr->accept(*this);
+}
 void TemplateSubstitutionVisitor::visit(BlockStatement& n) {
     for (auto& child : n.children) {
         if (child) child->accept(*this);

@@ -170,6 +170,18 @@ std::unique_ptr<Node> TernaryExpression::clone() const {
     return cloned;
 }
 
+std::unique_ptr<Node> SizeOfExpression::clone() const {
+    auto cloned = std::make_unique<SizeOfExpression>(
+        make_dummy_token(this),
+        target_type ? std::make_shared<TypeInfo>(*target_type) : nullptr,
+        target_expr ? target_expr->clone() : nullptr
+    );
+    cloned->constant_size = constant_size;
+    cloned->is_compile_time_constant = is_compile_time_constant;
+    copy_children(this, cloned.get());
+    return cloned;
+}
+
 // ==========================================
 // Statements
 // ==========================================

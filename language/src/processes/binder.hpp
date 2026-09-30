@@ -52,6 +52,7 @@ public:
     void visit(CastExpression& node) override;
     void visit(InstanceofExpression& node) override;
     void visit(TernaryExpression& node) override;
+    void visit(SizeOfExpression& node) override;
     void visit(BlockStatement& node) override;
     void visit(IfStatement& node) override;
     void visit(ForStatement& node) override;

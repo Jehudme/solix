@@ -330,6 +330,7 @@ vm_dispatch:
     case 87: goto op_CONV_I_TO_F;
     case 88: goto op_CONV_F_TO_I;
     case 89: goto op_NEGATE_I64;
+    case 90: goto op_SIZEOF;
     default: goto op_HALT;
   }
 #else
@@ -423,7 +424,8 @@ vm_dispatch:
       &&op_CLEAR_EXCEPTION,
       &&op_CONV_I_TO_F,
       &&op_CONV_F_TO_I,
-      &&op_NEGATE_I64
+      &&op_NEGATE_I64,
+      &&op_SIZEOF
   };
 
 #define DISPATCH() goto *dispatch_table[code[program_counter++]]
@@ -1204,6 +1206,18 @@ op_CLEAR_EXCEPTION:
       if (active_exception != 0) {
           memory.decrease_reference(active_exception);
           active_exception = 0;
+      }
+      DISPATCH();
+  }
+op_SIZEOF:
+  {
+      Address addr = static_cast<Address>(POP());
+      if (addr == 0) {
+          PUSH(0);
+      } else {
+          uint64_t header = memory.heap[addr - 1];
+          uint32_t blk_size = static_cast<uint32_t>(header >> 32);
+          PUSH(static_cast<uint64_t>(blk_size * 8));
       }
       DISPATCH();
   }

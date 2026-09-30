@@ -15,7 +15,7 @@ enum class NodeType {
     IDENTIFIER, LITERAL, BINARY_EXPR, UNARY_EXPR, ASSIGNMENT_EXPR,
     ARRAY_ACCESS, MEMBER_ACCESS, METHOD_CALL, NEW_INSTANCE, ARRAY_CREATION,
     ARRAY_LITERAL, CAST_EXPR,
-    INSTANCEOF_EXPR, TERNARY_EXPR,
+    INSTANCEOF_EXPR, TERNARY_EXPR, SIZEOF_EXPR,
 
     // Statements
     BLOCK, IF_STMT, FOR_STMT, WHILE_STMT, DO_WHILE_STMT, SWITCH_STMT, CASE_STMT,
@@ -269,6 +269,22 @@ struct TernaryExpression : public Node {
             if(condition) condition->parent = this;
             if(true_branch) true_branch->parent = this;
             if(false_branch) false_branch->parent = this;
+        }
+};
+
+struct SizeOfExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
+    std::shared_ptr<TypeInfo> target_type; // non-null if sizeof(Type)
+    std::unique_ptr<Node> target_expr;     // non-null if sizeof(expr)
+    int32_t constant_size = -1;
+    bool is_compile_time_constant = false;
+
+    SizeOfExpression(const Token& t, std::shared_ptr<TypeInfo> type, std::unique_ptr<Node> expr)
+        : Node(NodeType::SIZEOF_EXPR, t), target_type(std::move(type)), target_expr(std::move(expr)) {
+            if (target_expr) target_expr->parent = this;
         }
 };
 

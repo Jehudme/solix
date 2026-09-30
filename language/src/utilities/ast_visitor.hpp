@@ -16,6 +16,7 @@ struct ArrayLiteralExpression;
 struct CastExpression;
 struct InstanceofExpression;
 struct TernaryExpression;
+struct SizeOfExpression;
 
 struct BlockStatement;
 struct IfStatement;
@@ -59,6 +60,7 @@ struct NodeVisitor {
     virtual void visit(CastExpression& node) = 0;
     virtual void visit(InstanceofExpression& node) = 0;
     virtual void visit(TernaryExpression& node) = 0;
+    virtual void visit(SizeOfExpression& node) = 0;
 
     virtual void visit(BlockStatement& node) = 0;
     virtual void visit(IfStatement& node) = 0;
