@@ -2168,7 +2168,7 @@ try {
 
 ---
 
-### Case 3.2: Rethrowing Caught Exception Instance [NOT IMPLEMENTED]
+### Case 3.2: Rethrowing Caught Exception Instance [IMPLEMENTED]
 ```solix
 static int32 main() {
     bool caught_outer = false;
@@ -2213,7 +2213,7 @@ void test() {
 [FATAL VM PANIC] NullReferenceException: Attempted to throw null exception reference
 ```
 
-### Case 4.3: Throwing Uninstantiated Class Identifier [NOT IMPLEMENTED]
+### Case 4.3: Throwing Uninstantiated Class Identifier [IMPLEMENTED]
 ```solix
 void test() {
     throw Exception; // Error: expected instance, got type identifier
@@ -2224,7 +2224,7 @@ void test() {
 [ERROR] binder.cpp: Cannot throw non-instantiated type 'Exception'
 ```
 
-### Case 4.5: Throw Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+### Case 4.5: Throw Statement Placed Directly in Class Body [IMPLEMENTED]
 ```solix
 class BadClass {
     throw new Exception("bad"); // Error

@@ -21,6 +21,27 @@ static int32 main() {
         CHECK(run_source(code) == 1);
     }
 
+    SECTION("Case 3.2: Rethrowing Caught Exception Instance") {
+        std::string code = R"(
+class Exception {}
+
+static int32 main() {
+    bool caught_outer = false;
+    try {
+        try {
+            throw new Exception();
+        } catch (Exception e) {
+            throw e;
+        }
+    } catch (Exception outer) {
+        caught_outer = true;
+    }
+    return caught_outer ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
     SECTION("Case 4.1: Throwing Primitive Value") {
         std::string code = R"(
 void test() {
@@ -40,5 +61,25 @@ static int32 main() {
 }
 )";
         CHECK_THROWS_WITH(run_source(code), Catch::Matchers::ContainsSubstring("NullPointer"));
+    }
+
+    SECTION("Case 4.3: Throwing Uninstantiated Class Identifier") {
+        std::string code = R"(
+class Exception {}
+void test() {
+    throw Exception;
+}
+)";
+        assert_compile_error(code, "Cannot throw non-instantiated type 'Exception'");
+    }
+
+    SECTION("Case 4.5: Throw Statement Placed Directly in Class Body") {
+        std::string code = R"(
+class Exception {}
+class BadClass {
+    throw new Exception();
+}
+)";
+        assert_compile_error(code, "Statements are not allowed directly in class body");
     }
 }

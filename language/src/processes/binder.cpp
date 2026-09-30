@@ -3087,6 +3087,13 @@ void Binder::visit(ThrowStatement& n) {
     } else if (current_pass == BinderPass::BIND_EXECUTION) {
         if (n.exception_expression) {
             TypeInfo ex_type = evaluate_expression(n.exception_expression.get());
+            if (n.exception_expression->node_type == NodeType::IDENTIFIER) {
+                auto *id = static_cast<IdentifierNode *>(n.exception_expression.get());
+                if (id->resolved_declaration && id->resolved_declaration->node_type == NodeType::CLASS_DECL) {
+                    record_error(&n, fmt::format("Cannot throw non-instantiated type '{}'", id->name));
+                    return;
+                }
+            }
             Node *target = global_scope.resolve(ex_type.name);
             bool is_exc = false;
             if (target && target->node_type == NodeType::CLASS_DECL) {
