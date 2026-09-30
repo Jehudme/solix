@@ -956,6 +956,10 @@ void Binder::bind_types_and_memory() {
                 std::string base_sig = get_method_sig(vtable[i]->mangled_name);
                 std::string drv_sig = get_method_sig(method->mangled_name);
                 if (base_sig == drv_sig) {
+                  if (vtable[i]->return_type != method->return_type) {
+                    record_error(method, fmt::format("Overriding method '{}' has incompatible return type '{}' (expected '{}')",
+                                                     method->method_name, method->return_type.name, vtable[i]->return_type.name));
+                  }
                   vtable[i] = method;
                   method->vtable_index = i;
                   method->is_virtual = true;
@@ -1293,6 +1297,42 @@ void Binder::bind_tree(Node *root) {
       bind_node(child.get());
     }
 
+    if (current_method->return_type.name != "void" &&
+        !current_method->is_abstract && !current_method->is_native &&
+        !current_method->children.empty()) {
+      std::function<bool(Node *)> returns_on_all_paths = [&](Node *node) -> bool {
+        if (!node) return false;
+        if (node->node_type == NodeType::RETURN_STMT) return true;
+        if (node->node_type == NodeType::THROW_STMT) return true;
+        if (node->node_type == NodeType::BLOCK) {
+          for (const auto &c : node->children) {
+            if (returns_on_all_paths(c.get())) return true;
+          }
+          return false;
+        }
+        if (node->node_type == NodeType::IF_STMT) {
+          auto *if_stmt = static_cast<IfStatement *>(node);
+          if (if_stmt->then_branch && if_stmt->else_branch) {
+            return returns_on_all_paths(if_stmt->then_branch.get()) &&
+                   returns_on_all_paths(if_stmt->else_branch.get());
+          }
+          return false;
+        }
+        return false;
+      };
+
+      bool returns = false;
+      for (const auto &c : current_method->children) {
+        if (returns_on_all_paths(c.get())) {
+          returns = true;
+          break;
+        }
+      }
+      if (!returns) {
+        record_error(current_method, fmt::format("Not all control paths return a value in function '{}'", current_method->method_name));
+      }
+    }
+
     current_method->frame_size = local_variable_index;
     log_debug("Method '{}' frame size resolved to {} words",
               current_method->method_name, current_method->frame_size);
@@ -1448,9 +1488,10 @@ bool Binder::check_access(Node *member_decl, Node *owner_class_node,
   if (access == TokenType::KEYWORD_PRIVATE) {
     if (current_class == owner_class)
       return true;
+    std::string kind = (member_decl->node_type == NodeType::METHOD_DECL) ? "method" : "member";
     if (!member_name.empty()) {
-      record_error(expr, fmt::format("Cannot access private member '{}' of class '{}'",
-                                     member_name, owner_class->class_name));
+      record_error(expr, fmt::format("Cannot access private {} '{}' of class '{}'",
+                                     kind, member_name, owner_class->class_name));
     } else {
       record_error(expr, "Cannot access private member of class '" +
                              owner_class->class_name + "'");

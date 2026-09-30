@@ -1089,7 +1089,7 @@ void test() {
 
 ---
 
-### Case 3.2: Static Utility Method Invocation [NOT IMPLEMENTED]
+### Case 3.2: Static Utility Method Invocation [IMPLEMENTED]
 ```solix
 class MathUtil {
     public static int32 add(int32 a, int32 b) {
@@ -1103,7 +1103,7 @@ static int32 main() {
 ```
 *Expected Result*: Static method invoked directly without class instance allocation.
 
-### Case 3.3: Method Overloading with Multiple Types [NOT IMPLEMENTED]
+### Case 3.3: Method Overloading with Multiple Types [IMPLEMENTED]
 ```solix
 class Calculator {
     public int32 compute(int32 x) { return x * 2; }
@@ -1117,7 +1117,7 @@ static int32 main() {
 ```
 *Expected Result*: Dispatches to correct overload based on argument types.
 
-### Case 3.4: Protected Method Accessible in Subclass [NOT IMPLEMENTED]
+### Case 3.4: Protected Method Accessible in Subclass [IMPLEMENTED]
 ```solix
 class BaseWorker {
     protected int32 getCode() { return 100; }
@@ -1143,7 +1143,7 @@ abstract class Base {
 [ERROR] parser.cpp: Abstract method 'run' cannot have a body
 ```
 
-### Case 4.2: Calling Private Method from Outside Class [NOT IMPLEMENTED]
+### Case 4.2: Calling Private Method from Outside Class [IMPLEMENTED]
 ```solix
 class Encapsulated {
     private void secret() {}
@@ -1159,7 +1159,7 @@ void test() {
 [ERROR] binder.cpp: Cannot access private method 'secret' of class 'Encapsulated'
 ```
 
-### Case 4.3: Missing Return Statement in Non-Void Method [NOT IMPLEMENTED]
+### Case 4.3: Missing Return Statement in Non-Void Method [IMPLEMENTED]
 ```solix
 int32 badMethod(bool flag) {
     if (flag) {
@@ -1173,7 +1173,7 @@ int32 badMethod(bool flag) {
 [ERROR] binder.cpp: Not all control paths return a value in function 'badMethod'
 ```
 
-### Case 4.4: Incompatible Override Signature Return Type [NOT IMPLEMENTED]
+### Case 4.4: Incompatible Override Signature Return Type [IMPLEMENTED]
 ```solix
 class SuperClass {
     public virtual int32 getValue() { return 0; }
@@ -1187,7 +1187,7 @@ class SubClass extends SuperClass {
 [ERROR] binder.cpp: Overriding method 'getValue' has incompatible return type 'String' (expected 'int32')
 ```
 
-### Case 4.7: Nested Method Declaration Inside Another Method [NOT IMPLEMENTED]
+### Case 4.7: Nested Method Declaration Inside Another Method [IMPLEMENTED]
 ```solix
 void outer() {
     void inner() {} // Error: nested functions are not supported

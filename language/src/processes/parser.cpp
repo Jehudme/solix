@@ -708,17 +708,20 @@ std::unique_ptr<Node> ParserState::parse_statement() {
 
   if (is_var_decl) {
     size_t restore = current;
+    bool looks_like_var_decl = false;
     try {
       TypeInfo type = parse_type_info();
       bool is_ref = match(TokenType::PUNCTUATION_AMPERSAND);
       if (check(TokenType::IDENTIFIER)) {
-        current = restore;
-        return parse_variable_declaration(false, false);
+        looks_like_var_decl = true;
       }
     } catch (...) {
-      current = restore;
+      looks_like_var_decl = false;
     }
     current = restore;
+    if (looks_like_var_decl) {
+      return parse_variable_declaration(false, false);
+    }
   }
 
   return parse_expression_statement();
@@ -892,6 +895,9 @@ std::unique_ptr<Node> ParserState::parse_variable_declaration(bool is_const,
   }
 
   Token name_tok = consume(TokenType::IDENTIFIER, "Expected variable name");
+  if (check(TokenType::PUNCTUATION_OPEN_PAREN)) {
+    throw ParseError("Methods cannot be declared inside another method", name_tok.line, name_tok.column);
+  }
   std::string v_name = std::get<std::string>(name_tok.value);
   log_debug("Parsing local variable declaration '{}' of type '{}' at line {}",
             v_name, type.to_string(), start.line);
