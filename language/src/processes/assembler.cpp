@@ -876,16 +876,23 @@ void Assembler::visit(ReturnStatement &node) {
   }
 
   // Cleanup block locals before return
+  Node *prev_child = nullptr;
   Node *current = node.parent;
   Node *func_node = nullptr;
   while (current) {
     if (current->node_type == NodeType::BLOCK) {
       emit_cleanup_for_node(current);
+    } else if (current->node_type == NodeType::TRY_STMT) {
+      auto *try_stmt = static_cast<TryStatement *>(current);
+      if (try_stmt->finally_block && prev_child != try_stmt->finally_block.get()) {
+        compile_node(try_stmt->finally_block.get());
+      }
     } else if (current->node_type == NodeType::METHOD_DECL ||
                current->node_type == NodeType::CONSTRUCTOR_DECL) {
       func_node = current;
       break;
     }
+    prev_child = current;
     current = current->parent;
   }
 

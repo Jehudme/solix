@@ -1318,6 +1318,24 @@ void Binder::bind_tree(Node *root) {
           }
           return false;
         }
+        if (node->node_type == NodeType::TRY_STMT) {
+          auto *try_stmt = static_cast<TryStatement *>(node);
+          if (try_stmt->finally_block && returns_on_all_paths(try_stmt->finally_block.get())) {
+            return true;
+          }
+          if (try_stmt->try_block && returns_on_all_paths(try_stmt->try_block.get())) {
+            bool all_catches_return = true;
+            for (const auto &c : try_stmt->catch_clauses) {
+              auto *catch_c = static_cast<CatchClause *>(c.get());
+              if (!returns_on_all_paths(catch_c->body.get())) {
+                all_catches_return = false;
+                break;
+              }
+            }
+            if (all_catches_return) return true;
+          }
+          return false;
+        }
         return false;
       };
 
@@ -2732,7 +2750,9 @@ void Binder::visit(ReturnStatement &n) {
   if (current_pass == BinderPass::BIND_EXECUTION) {
     if (n.value) {
       TypeInfo return_type = evaluate_expression(n.value.get());
-      if (current_method &&
+      if (current_method && current_method->return_type.name == "void") {
+        record_error(&n, "Cannot return a value from a void method");
+      } else if (current_method &&
           !is_assignable(current_method->return_type, return_type)) {
         record_error(&n, "Return type mismatch: expected '" +
                              current_method->return_type.name + "', got '" +

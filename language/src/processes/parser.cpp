@@ -605,7 +605,9 @@ std::unique_ptr<Node> ParserState::parse_block() {
   log_trace("Entering block statement at line {}", brace.line);
   auto block = std::make_unique<BlockStatement>(brace);
   while (!check(TokenType::PUNCTUATION_CLOSE_BRACE) && !is_at_end()) {
-    block->children.push_back(parse_statement());
+    auto stmt = parse_statement();
+    if (stmt) stmt->parent = block.get();
+    block->children.push_back(std::move(stmt));
   }
   consume(TokenType::PUNCTUATION_CLOSE_BRACE, "Expected '}' after block");
   log_trace("Exiting block statement at line {} with {} statements", brace.line,
@@ -954,6 +956,10 @@ std::unique_ptr<Node> ParserState::parse_top_level_declaration() {
   }
   if (match(TokenType::KEYWORD_ALIAS))
     return parse_alias_statement();
+
+  if (match(TokenType::KEYWORD_RETURN)) {
+    throw ParseError("'return' statement outside of function or method body", previous().line, previous().column);
+  }
 
   has_parsed_type_declaration = true;
 
@@ -1494,6 +1500,7 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
       if (auto* b = dynamic_cast<BlockStatement*>(block.get())) {
           b->block_kind = BlockKind::FUNCTION_BODY;
       }
+      block->parent = method.get();
       method->children.push_back(std::move(block));
     }
     return method;

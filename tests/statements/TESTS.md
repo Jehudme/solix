@@ -1988,7 +1988,7 @@ int32 find(bool fast) {
 
 ---
 
-### Case 3.2: Return from Inside Try-Finally Executing Finally First [NOT IMPLEMENTED]
+### Case 3.2: Return from Inside Try-Finally Executing Finally First [IMPLEMENTED]
 ```solix
 static int32 result = 0;
 
@@ -2033,7 +2033,7 @@ int32 get_num() {
 [ERROR] binder.cpp: Return type mismatch: expected 'int32', got 'String'
 ```
 
-### Case 4.3: Returning Value from Void Method [NOT IMPLEMENTED]
+### Case 4.3: Returning Value from Void Method [IMPLEMENTED]
 ```solix
 void test() {
     return 42; // Error
@@ -2044,7 +2044,7 @@ void test() {
 [ERROR] binder.cpp: Cannot return a value from a void method
 ```
 
-### Case 4.5: Return Statement Placed at File Top Level [NOT IMPLEMENTED]
+### Case 4.5: Return Statement Placed at File Top Level [IMPLEMENTED]
 ```solix
 return 0; // Error: return at top level outside any function
 ```
@@ -2053,7 +2053,7 @@ return 0; // Error: return at top level outside any function
 [ERROR] parser.cpp: 'return' statement outside of function or method body
 ```
 
-### Case 4.6: Return Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+### Case 4.6: Return Statement Placed Directly in Class Body [IMPLEMENTED]
 ```solix
 class BadClass {
     return 0; // Error
