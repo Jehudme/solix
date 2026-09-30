@@ -17,6 +17,35 @@ static int32 main() {
         CHECK(run_source(code) == 0);
     }
 
+    SECTION("Case 3.2: Compound Assignments") {
+        std::string code = R"(
+static int32 main() {
+    int32 x = 10;
+    x += 5;
+    x -= 3;
+    x *= 2;
+    x /= 4;
+    return x == 6 ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
+    SECTION("Case 3.3: Assigning to Object Field Target") {
+        std::string code = R"(
+class Box {
+    public int32 weight;
+}
+
+static int32 main() {
+    Box b = new Box();
+    b.weight = 50;
+    return b.weight == 50 ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
     SECTION("Case 4.1: Assigning to Literal / RValue") {
         std::string code = R"(
 void test() {
@@ -25,5 +54,15 @@ void test() {
 }
 )";
         assert_compile_error(code, "Invalid assignment target");
+    }
+
+    SECTION("Case 4.2: Compound Assignment Type Mismatch") {
+        std::string code = R"(
+void test() {
+    int32 x = 10;
+    x += "text";
+}
+)";
+        assert_compile_error(code, "Cannot apply operator '+=' to types 'int32' and 'String'");
     }
 }

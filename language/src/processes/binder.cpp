@@ -1820,7 +1820,17 @@ void Binder::visit(AssignmentExpression &n) {
       }
     }
     if (!is_assignable(target_type, value_type)) {
-      if (left_decl && left_decl->node_type == NodeType::ENUM_DECL) {
+      if (n.op != TokenType::OPERATOR_ASSIGN) {
+        std::string op_str = "+=";
+        if (n.op == TokenType::OPERATOR_MINUS_ASSIGN) op_str = "-=";
+        else if (n.op == TokenType::OPERATOR_MULTIPLY_ASSIGN) op_str = "*=";
+        else if (n.op == TokenType::OPERATOR_DIVIDE_ASSIGN) op_str = "/=";
+        else if (n.op == TokenType::OPERATOR_MODULO_ASSIGN) op_str = "%=";
+        std::string val_name = value_type.name;
+        if (value_type.array_depth == 1 && value_type.name == "char") val_name = "String";
+        record_error(&n, fmt::format("Cannot apply operator '{}' to types '{}' and '{}'",
+                                     op_str, target_type.name, val_name));
+      } else if (left_decl && left_decl->node_type == NodeType::ENUM_DECL) {
         record_error(&n, "Cannot convert type '" + value_type.name +
                              "' to enum '" + target_type.name + "'");
       } else {

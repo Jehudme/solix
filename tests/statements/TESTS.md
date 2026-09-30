@@ -2804,7 +2804,7 @@ a = b = c = 10;
 
 ---
 
-### Case 3.2: Compound Assignments (+=, -=, *=, /=) [NOT IMPLEMENTED]
+### Case 3.2: Compound Assignments (+=, -=, *=, /=) [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 x = 10;
@@ -2817,7 +2817,7 @@ static int32 main() {
 ```
 *Expected Result*: In-place arithmetic compound assignment computes cleanly.
 
-### Case 3.3: Assigning to Object Field Target [NOT IMPLEMENTED]
+### Case 3.3: Assigning to Object Field Target [IMPLEMENTED]
 ```solix
 class Box {
     public int32 weight;
@@ -2846,7 +2846,7 @@ void test() {
 [ERROR] parser.cpp: Invalid assignment target
 ```
 
-### Case 4.2: Compound Assignment Type Mismatch [NOT IMPLEMENTED]
+### Case 4.2: Compound Assignment Type Mismatch [IMPLEMENTED]
 ```solix
 void test() {
     int32 x = 10;
