@@ -567,6 +567,36 @@ std::unique_ptr<Node> ParserState::parse_primary() {
     return arr_lit;
   }
 
+  if (match(TokenType::KEYWORD_SIZEOF)) {
+    Token sizeof_tok = previous();
+    consume(TokenType::PUNCTUATION_OPEN_PAREN, "Expected '(' after 'sizeof'");
+
+    if (peek().type >= TokenType::PRIMITIVE_VOID && peek().type <= TokenType::PRIMITIVE_CHAR) {
+      TypeInfo type = parse_type_info();
+      consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after sizeof argument");
+      return std::make_unique<SizeOfExpression>(sizeof_tok, std::make_shared<TypeInfo>(type), nullptr);
+    }
+
+    if (peek().type == TokenType::IDENTIFIER &&
+        (tokens[current + 1]->type == TokenType::PUNCTUATION_ARRAY_BRACKETS ||
+         tokens[current + 1]->type == TokenType::PUNCTUATION_OPEN_BRACKET)) {
+      size_t restore = current;
+      try {
+        TypeInfo type = parse_type_info();
+        if (match(TokenType::PUNCTUATION_CLOSE_PAREN)) {
+          return std::make_unique<SizeOfExpression>(sizeof_tok, std::make_shared<TypeInfo>(type), nullptr);
+        }
+      } catch (...) {
+        current = restore;
+      }
+      current = restore;
+    }
+
+    std::unique_ptr<Node> expr = parse_expression();
+    consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after sizeof argument");
+    return std::make_unique<SizeOfExpression>(sizeof_tok, nullptr, std::move(expr));
+  }
+
   if (match(TokenType::PUNCTUATION_OPEN_PAREN)) {
     Token paren = previous();
     if ((peek().type >= TokenType::PRIMITIVE_VOID &&

@@ -1834,6 +1834,15 @@ void Assembler::visit(TernaryExpression &node) {
   bytecode()[end_jump_idx + 3] = end_ip & 0xFF;
 }
 
+void Assembler::visit(SizeOfExpression &node) {
+  if (node.is_compile_time_constant) {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    emit_int32(static_cast<uint32_t>(node.constant_size));
+  } else {
+    compile_expression(node.target_expr.get());
+    emit_byte(static_cast<uint8_t>(OpCode::SIZEOF));
+  }
+}
 
 void Assembler::visit(TryStatement& n) {
     if (n.try_block) {

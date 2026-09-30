@@ -2742,6 +2742,99 @@ void Binder::visit(TernaryExpression &n) {
   }
 }
 
+void Binder::visit(SizeOfExpression &n) {
+  if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+    n.expression_type = {"int32", 0};
+    evaluated_type = n.expression_type;
+
+    auto get_primitive_size = [](const std::string &name) -> int32_t {
+      if (name == "bool" || name == "char" || name == "int8" || name == "uint8") return 1;
+      if (name == "int16" || name == "uint16") return 2;
+      if (name == "int32" || name == "uint32" || name == "float32") return 4;
+      if (name == "int64" || name == "uint64" || name == "float64") return 8;
+      if (name == "void") return 0;
+      return -1;
+    };
+
+    if (n.target_type) {
+      if (n.target_type->array_depth > 0) {
+        n.constant_size = 8;
+        n.is_compile_time_constant = true;
+      } else {
+        int32_t prim_size = get_primitive_size(n.target_type->name);
+        if (prim_size != -1) {
+          n.constant_size = prim_size;
+          n.is_compile_time_constant = true;
+        } else {
+          Node *decl = resolve_symbol(n.target_type->name, &n);
+          if (decl && decl->node_type == NodeType::CLASS_DECL) {
+            auto *cls = static_cast<ClassDeclaration *>(decl);
+            n.constant_size = cls->instance_size * 8;
+            n.is_compile_time_constant = true;
+          } else if (decl && decl->node_type == NodeType::ENUM_DECL) {
+            n.constant_size = 4;
+            n.is_compile_time_constant = true;
+          } else {
+            record_error(&n, "Unknown type '" + n.target_type->to_string() + "' in sizeof expression");
+          }
+        }
+      }
+      evaluated_type = n.expression_type;
+      return;
+    }
+
+    if (n.target_expr) {
+      std::string path;
+      std::string root_name;
+      bool extracted = extract_symbol_path(n.target_expr.get(), path, root_name);
+      Node *local_var = current_scope ? current_scope->resolve(root_name) : nullptr;
+      if (extracted) {
+        bool is_type_name = (!local_var || local_var->node_type == NodeType::CLASS_DECL ||
+                             local_var->node_type == NodeType::ENUM_DECL ||
+                             local_var->node_type == NodeType::ALIAS_STMT);
+        if (is_type_name) {
+          int32_t prim_size = get_primitive_size(path);
+          if (prim_size != -1) {
+            n.constant_size = prim_size;
+            n.is_compile_time_constant = true;
+            evaluated_type = n.expression_type;
+            return;
+          }
+          Node *decl = resolve_symbol(path, &n);
+          if (decl && decl->node_type == NodeType::CLASS_DECL) {
+            auto *cls = static_cast<ClassDeclaration *>(decl);
+            n.constant_size = cls->instance_size * 8;
+            n.is_compile_time_constant = true;
+            evaluated_type = n.expression_type;
+            return;
+          } else if (decl && decl->node_type == NodeType::ENUM_DECL) {
+            n.constant_size = 4;
+            n.is_compile_time_constant = true;
+            evaluated_type = n.expression_type;
+            return;
+          } else if (n.target_expr->node_type == NodeType::IDENTIFIER) {
+            record_error(&n, "Unknown type '" + path + "' in sizeof expression");
+            return;
+          }
+        }
+      }
+
+      TypeInfo expr_type = evaluate_expression(n.target_expr.get());
+      if (expr_type.array_depth == 0) {
+        int32_t prim_size = get_primitive_size(expr_type.name);
+        if (prim_size != -1) {
+          n.constant_size = prim_size;
+          n.is_compile_time_constant = true;
+          evaluated_type = n.expression_type;
+          return;
+        }
+      }
+      n.is_compile_time_constant = false;
+      evaluated_type = n.expression_type;
+    }
+  }
+}
+
 void Binder::visit(BlockStatement &n) {
   if (current_pass == BinderPass::BIND_EXECUTION) {
     if (n.block_kind == BlockKind::TRANSPARENT) {

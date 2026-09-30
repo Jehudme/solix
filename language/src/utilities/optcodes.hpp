@@ -115,7 +115,10 @@ enum class OpCode : uint8_t {
   // Extended Type Conversions & Negation
   CONV_I_TO_F,
   CONV_F_TO_I,
-  NEGATE_I64
+  NEGATE_I64,
+
+  // Memory Introspection
+  SIZEOF
 };
 
 inline const char* opcode_to_string(uint8_t op) {
@@ -210,6 +213,7 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::CONV_I_TO_F: return "CONV_I_TO_F";
         case OpCode::CONV_F_TO_I: return "CONV_F_TO_I";
         case OpCode::NEGATE_I64: return "NEGATE_I64";
+        case OpCode::SIZEOF: return "SIZEOF";
         default: return "UNKNOWN";
     }
 }
@@ -305,6 +309,7 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "CONV_I_TO_F") return OpCode::CONV_I_TO_F;
     if (str == "CONV_F_TO_I") return OpCode::CONV_F_TO_I;
     if (str == "NEGATE_I64") return OpCode::NEGATE_I64;
+    if (str == "SIZEOF") return OpCode::SIZEOF;
     return OpCode::HALT; // fallback
 }
 
