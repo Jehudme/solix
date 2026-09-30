@@ -3379,7 +3379,7 @@ void test() {
 
 ---
 
-### Case 3.2: Instantiating Class with In-Class Field Initializers [NOT IMPLEMENTED]
+### Case 3.2: Instantiating Class with In-Class Field Initializers [IMPLEMENTED]
 ```solix
 class Config {
     public int32 timeout = 3000;
@@ -3407,7 +3407,7 @@ Base b = new Base(); // Error
 [ERROR] binder.cpp: Cannot instantiate abstract class 'Base'
 ```
 
-### Case 4.2: Calling Non-Existent Constructor Overload [NOT IMPLEMENTED]
+### Case 4.2: Calling Non-Existent Constructor Overload [IMPLEMENTED]
 ```solix
 class Box {
     public Box(int32 w) {}

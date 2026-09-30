@@ -23,6 +23,21 @@ static int32 main() {
         CHECK(run_source(code) == 0);
     }
 
+    SECTION("Case 3.2: Instantiating Class with In-Class Field Initializers") {
+        std::string code = R"(
+class Config {
+    public int32 timeout = 3000;
+    public bool enabled = true;
+}
+
+static int32 main() {
+    Config c = new Config();
+    return (c.timeout == 3000 && c.enabled == true) ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
     SECTION("Case 4.1: Instantiating Abstract Class (Compile-Time Error)") {
         std::string code = R"(
 abstract class Base {}
@@ -34,4 +49,18 @@ static int32 main() {
 )";
         assert_compile_error(code, "Cannot instantiate abstract class 'Base'");
     }
+
+    SECTION("Case 4.2: Calling Non-Existent Constructor Overload") {
+        std::string code = R"(
+class Box {
+    public Box(int32 w) {}
 }
+
+void test() {
+    Box b = new Box("bad");
+}
+)";
+        assert_compile_error(code, "No matching constructor");
+    }
+}
+
