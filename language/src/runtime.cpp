@@ -331,6 +331,7 @@ vm_dispatch:
     case 88: goto op_CONV_F_TO_I;
     case 89: goto op_NEGATE_I64;
     case 90: goto op_SIZEOF;
+    case 91: goto op_ALLOC_FRAME;
     default: goto op_HALT;
   }
 #else
@@ -425,7 +426,8 @@ vm_dispatch:
       &&op_CONV_I_TO_F,
       &&op_CONV_F_TO_I,
       &&op_NEGATE_I64,
-      &&op_SIZEOF
+      &&op_SIZEOF,
+      &&op_ALLOC_FRAME
   };
 
 #define DISPATCH() goto *dispatch_table[code[program_counter++]]
@@ -932,7 +934,6 @@ op_NEGATE_I64:
 op_CALL:
   {
     uint32_t arg_count = static_cast<uint32_t>(POP());
-    uint32_t frame_size = static_cast<uint32_t>(POP());
     uint32_t target_ip = static_cast<uint32_t>(POP());
 
     uint32_t current_sp_idx = static_cast<uint32_t>(sp - stack);
@@ -942,11 +943,7 @@ op_CALL:
     }
     if (call_depth >= 65536)
       throw std::runtime_error("Stack overflow: max call depth exceeded");
-    call_stack[call_depth++] = Frame(program_counter, new_frame_pointer);
-
-    if (frame_size > arg_count) {
-      sp += (frame_size - arg_count);
-    }
+    call_stack[call_depth++] = Frame(program_counter, new_frame_pointer, arg_count);
 
     program_counter = target_ip;
     DISPATCH();
@@ -1052,7 +1049,6 @@ op_SET_VTABLE:
 op_CALL_VIRTUAL:
   {
     uint32_t vtable_index = read_u32(bytecode, program_counter);
-    uint32_t frame_size = read_u32(bytecode, program_counter);
     uint32_t arg_count = read_u32(bytecode, program_counter);
 
     uint32_t current_sp_idx = static_cast<uint32_t>(sp - stack);
@@ -1068,12 +1064,9 @@ op_CALL_VIRTUAL:
     uint32_t new_frame_pointer = current_sp_idx - arg_count;
     if (call_depth >= 65536)
       throw std::runtime_error("Stack overflow: max call depth exceeded");
-    call_stack[call_depth++] = Frame(program_counter, new_frame_pointer);
+    call_stack[call_depth++] = Frame(program_counter, new_frame_pointer, arg_count);
     program_counter = target_ip;
 
-    if (frame_size > arg_count) {
-      sp += (frame_size - arg_count);
-    }
     DISPATCH();
   }
 op_DEFINE_NATIVE:
@@ -1218,6 +1211,17 @@ op_SIZEOF:
           uint64_t header = memory.heap[addr - 1];
           uint32_t blk_size = static_cast<uint32_t>(header >> 32);
           PUSH(static_cast<uint64_t>(blk_size * 8));
+      }
+      DISPATCH();
+  }
+op_ALLOC_FRAME:
+  {
+      uint32_t frame_size = read_u32(bytecode, program_counter);
+      uint32_t arg_count = call_stack[call_depth - 1].arg_count;
+      if (frame_size > arg_count) {
+          uint32_t diff = frame_size - arg_count;
+          std::fill(sp, sp + diff, 0);
+          sp += diff;
       }
       DISPATCH();
   }

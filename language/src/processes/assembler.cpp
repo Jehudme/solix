@@ -225,9 +225,13 @@ std::string Assembler::disassemble() const {
     }
     case OpCode::CALL_VIRTUAL: {
       uint32_t slot = read_u32_local(pc);
-      uint32_t frame_sz = read_u32_local(pc);
       uint32_t args = read_u32_local(pc);
-      ss << "slot=" << slot << ", frame_size=" << frame_sz << ", args=" << args;
+      ss << "slot=" << slot << ", args=" << args;
+      break;
+    }
+    case OpCode::ALLOC_FRAME: {
+      uint32_t frame_sz = read_u32_local(pc);
+      ss << "size=" << frame_sz;
       break;
     }
     case OpCode::REGISTER_RETURN_CLEANUP: {
@@ -457,9 +461,6 @@ void Assembler::compile_boot_sequence() {
       emit_int32(0xFFFFFFFF);
 
       emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-      emit_int32(entry_method->frame_size);
-
-      emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
       emit_int32(entry_method->parameters.size());
 
       emit_byte(static_cast<uint8_t>(OpCode::CALL));
@@ -492,6 +493,7 @@ void Assembler::compile_class(ClassDeclaration *class_node) {
 void Assembler::compile_function(Node *function_node) {
   bool is_native = false;
   bool is_abstract = false;
+  int frame_size = 0;
 
   if (function_node->node_type == NodeType::METHOD_DECL) {
     auto *m = static_cast<MethodDeclaration *>(function_node);
@@ -500,16 +502,21 @@ void Assembler::compile_function(Node *function_node) {
 
     is_native = m->is_native;
     is_abstract = m->is_abstract;
+    frame_size = m->frame_size;
   } else if (function_node->node_type == NodeType::CONSTRUCTOR_DECL) {
     auto *c = static_cast<ConstructorDeclaration *>(function_node);
     if (!c->template_parameters.empty())
       return; // SHIELD: Skip compiling constructor blueprints
+    frame_size = c->frame_size;
   }
 
   if (is_native || is_abstract)
     return;
 
   function_ips[function_node] = bytecode().size();
+
+  emit_byte(static_cast<uint8_t>(OpCode::ALLOC_FRAME));
+  emit_int32(frame_size);
 
   for (const auto &child : function_node->children) {
     compile_node(child.get());
@@ -581,6 +588,9 @@ void Assembler::visit(ConstructorDeclaration &node) {
     return;
 
   function_ips[c] = bytecode().size();
+
+  emit_byte(static_cast<uint8_t>(OpCode::ALLOC_FRAME));
+  emit_int32(c->frame_size);
 
   // Compile non-static field initializers
   if (c->parent && c->parent->node_type == NodeType::CLASS_DECL) {
@@ -1119,9 +1129,6 @@ void Assembler::visit(AssignmentExpression &node) {
     emit_int32(0xFFFFFFFF);
 
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-    emit_int32(method->frame_size);
-
-    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
     emit_int32(2); // this + 1 parameter
 
     emit_byte(static_cast<uint8_t>(OpCode::CALL));
@@ -1285,9 +1292,6 @@ void Assembler::visit(BinaryExpression &node) {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
     linker_patches.push_back({bytecode().size(), method});
     emit_int32(0xFFFFFFFF);
-
-    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-    emit_int32(method->frame_size);
 
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
     emit_int32(2); // this + 1 parameter
@@ -1562,7 +1566,6 @@ void Assembler::visit(MethodCallExpression &node) {
     }
         emit_byte(static_cast<uint8_t>(OpCode::CALL_VIRTUAL));
     emit_int32(target_method->vtable_index);
-    emit_int32(target_method->frame_size);
     emit_int32(total_args);
     if (!exception_cleanup_patches.empty()) {
         uint32_t ret_ip = bytecode().size();
@@ -1581,9 +1584,6 @@ void Assembler::visit(MethodCallExpression &node) {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
     linker_patches.push_back({bytecode().size(), call->resolved_declaration});
     emit_int32(0xFFFFFFFF);
-
-    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-    emit_int32(frame_size);
 
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
     emit_int32(total_args);
@@ -1651,9 +1651,6 @@ void Assembler::visit(NewInstanceExpression &node) {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
     linker_patches.push_back({bytecode().size(), ctor});
     emit_int32(0xFFFFFFFF);
-
-    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-    emit_int32(ctor->frame_size);
 
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
     emit_int32(inst->arguments.size() + 1);

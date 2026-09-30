@@ -36,9 +36,11 @@ struct RuntimeOptions {
 struct Frame {
   Address return_ip = 0;
   uint32_t frame_pointer = 0; // Points to the start of locals in the unified Stack
+  uint32_t arg_count = 0;
 
   Frame() = default;
-  Frame(Address rip, uint32_t fp) : return_ip(rip), frame_pointer(fp) {}
+  Frame(Address rip, uint32_t fp, uint32_t args = 0)
+      : return_ip(rip), frame_pointer(fp), arg_count(args) {}
 };
 
 // -----------------------------------------------------------------------------

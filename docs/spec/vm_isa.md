@@ -16,7 +16,7 @@ This document specifies the complete Instruction Set Architecture (ISA) of the S
    - [3.5 Memory & Objects (opcodes 51–58, 90)](#35-memory--objects-opcodes-5158-90)
    - [3.6 ARC Reference Counting (opcodes 59–60)](#36-arc-reference-counting-opcodes-5960)
    - [3.7 Type Conversions (opcodes 61–70, 87–89)](#37-type-conversions-opcodes-6170-8789)
-   - [3.8 Calls & Dispatch (opcodes 71–78)](#38-calls--dispatch-opcodes-7178)
+   - [3.8 Calls & Dispatch (opcodes 71–78, 91)](#38-calls--dispatch-opcodes-7178-91)
    - [3.9 Return & Halt (opcodes 79–80)](#39-return--halt-opcodes-7980)
    - [3.10 Exception Handling (opcodes 81–86)](#310-exception-handling-opcodes-8186)
 4. [Stack Frame Layout](#4-stack-frame-layout)
@@ -218,24 +218,25 @@ Conversion instructions pop the top stack word, reinterpret or convert its value
 | 88 | `CONV_F_TO_I`  | `( f64 -- bits )`   | Reinterpret the IEEE 754 `double` bit pattern as a raw `uint64_t` (bit-cast). |
 | 89 | `NEGATE_I64`   | `( n -- -n )`       | Negate the top value as a signed 64-bit integer (two's complement). |
 
-### 3.8 Calls & Dispatch (opcodes 71–78)
+### 3.8 Calls & Dispatch (opcodes 71–78, 91)
 
 | Op | Mnemonic             | Immediate | Stack Effect                                 | Description |
 |----|----------------------|-----------|----------------------------------------------|-------------|
-| 71 | `CALL`               | `imm32`   | `( args... -- retval )`                      | Save `pc` and frame info; jump to absolute bytecode address `imm32`. Arguments are expected on the stack in left-to-right (first-argument deepest) order. On `RETURN`, the return value replaces the arguments. |
+| 71 | `CALL`               | —         | `( target_ip arg_count -- retval )`          | Pop `arg_count` and `target_ip`. Create return frame recording caller's `pc`, `frame_pointer = (sp - arg_count)`, and `arg_count`. Jump to `target_ip`. Arguments reside in slots `0..arg_count-1`. Callee reserves local slots via `ALLOC_FRAME`. |
 | 72 | `CALL_NATIVE`        | `imm32`   | `( args... -- retval )`                      | Invoke the C++ native function registered under ID `imm32`. Arguments are popped from the stack; the native function may push a return value. |
 | 73 | `DEFINE_NATIVE`      | `imm32`   | `( -- )`                                     | Register a binding entry for native ID `imm32`. This is an initialization-time instruction emitted once per native method. |
-| 74 | `CALL_VIRTUAL`       | `imm32`   | `( this args... -- retval )`                 | Read the vtable ID from `heap[this + 0]`; look up slot `imm32` in that vtable; call the resolved function address. |
+| 74 | `CALL_VIRTUAL`       | `imm32(slot) imm32(args)` | `( this args... -- retval )` | Read object address at `stack[sp - args]`; look up `slot` in `heap[this].vtable_id`; push return frame; jump to target. Callee allocates local slots via `ALLOC_FRAME`. |
 | 75 | `DEFINE_VTABLE`      | `imm32`   | `( -- )`                                     | Define a new vtable with ID `imm32`. Subsequent `SET_VTABLE` + `DEFINE_VTABLE` pairs populate its slots. Initialization-time instruction. |
 | 76 | `SET_VTABLE`         | `imm32`   | `( obj -- obj )`                             | Set the vtable ID of the object at the top of the stack (stored in `heap[obj + 0]`) to `imm32`. Does not pop the reference. |
 | 77 | `CAST_CHECK`         | `imm32`   | `( ref -- ref )`                             | Verify that the object at `ref` is an instance of the type with vtable ID `imm32` (traverses the vtable hierarchy). If the check fails, throw a `TypeCastException`. If `ref == null`, pass through (null is assignable to any reference type). |
 | 78 | `INSTANCEOF`         | `imm32`   | `( ref -- bool )`                            | Pop `ref`; push `1` if the object's vtable hierarchy includes vtable ID `imm32`, else push `0`. If `ref == null`, push `0`. Does not throw. |
+| 91 | `ALLOC_FRAME`        | `imm32`   | `( -- )`                                     | Callee function prologue instruction. Given `frame_size` (`imm32`), compares with caller `arg_count`. If `frame_size > arg_count`, expands the operand stack by `(frame_size - arg_count)` zeroed slots to reserve local variable storage. |
 
 ### 3.9 Return & Halt (opcodes 79–80)
 
 | Op | Mnemonic  | Immediate | Stack Effect         | Description |
 |----|-----------|-----------|----------------------|-------------|
-| 79 | `RETURN`  | —         | `( retval -- )`      | Restore the previous call frame (return address and frame base). If the callee left a return value on the stack, it remains as the top word in the caller's frame. For `void` methods, no value is expected. |
+| 79 | `RETURN`  | —         | `( retval -- )`      | Restore the previous call frame (`sp = stack + frame.frame_pointer`). If the callee left a return value on the stack, it is restored and pushed as the top word in the caller's frame. For `void` methods, `null` (0) is returned. |
 | 80 | `HALT`    | —         | `( -- )`             | Terminate VM execution immediately. Any value remaining on the stack is ignored. |
 
 ### 3.10 Exception Handling (opcodes 81–86)
@@ -253,24 +254,21 @@ Conversion instructions pop the top stack word, reinterpret or convert its value
 
 ## 4. Stack Frame Layout
 
-When a `CALL` or `CALL_VIRTUAL` instruction fires, the VM creates a new call frame. The frame records:
+Solix uses a callee-allocated stack frame architecture. When a `CALL` or `CALL_VIRTUAL` instruction fires, caller arguments reside on the unified operand stack. The call instruction establishes a `Frame` record:
 
 ```
 ┌─────────────────────────────────────────────┐
-│  return_pc      (uint64_t) — caller's pc    │  ← saved when CALL executes
-│  frame_base     (uint64_t) — caller's frame │
-│  local_slot[0]  (uint64_t) — 'this' or arg0 │
-│  local_slot[1]  (uint64_t)                  │
-│  ...                                         │
-│  local_slot[N-1](uint64_t)                  │
+│  return_ip      (uint32_t) — caller's pc    │  ← saved when CALL executes
+│  frame_pointer  (uint32_t) — caller's sp    │  ← start of arguments/locals
+│  arg_count      (uint32_t) — parameter count│
 └─────────────────────────────────────────────┘
 ```
 
-- **`return_pc`**: the bytecode offset of the instruction following the call site. Restored by `RETURN`.
-- **`frame_base`**: the operand stack index at the point of the call. After `RETURN`, the stack is unwound to this depth (plus the optional return value).
-- **`local_slot[i]`**: the callee's local variables, pre-allocated by the compiler. Arguments passed to the method are copied into the leading slots (slot 0 = `this` for instance methods, slot 0 = first parameter for static methods).
-
-The compiler statically determines the maximum number of local slots required for each method and encodes this in a method header (used by `CALL` to pre-zero the slots).
+In the callee's prologue, the `ALLOC_FRAME <frame_size>` instruction executes:
+1. `slot[0] .. slot[arg_count - 1]` contain the incoming arguments (or `this` instance reference followed by arguments).
+2. If `frame_size > arg_count`, the VM reserves `(frame_size - arg_count)` additional zeroed stack slots above the arguments for local variables.
+3. Subsequent statements access locals using `GET_LOCAL <idx>` and `SET_LOCAL <idx>` relative to `frame_pointer`.
+4. When `RETURN` executes, `sp` is restored directly to `stack + frame.frame_pointer`, automatically collapsing all arguments and local variables before pushing the return value.
 
 ---
 

@@ -731,9 +731,9 @@ Solix lacks a `sizeof` operator or memory introspection mechanism. Developers wr
 
 ---
 
-## Phase 23: Function Call Architecture Modernization & Callee Frame Allocation (`ALLOC_FRAME`)
+## Phase 23: Function Call Architecture Modernization & Callee Frame Allocation (`ALLOC_FRAME`) [COMPLETED]
 
-### Status: PLANNED
+### Status: COMPLETED
 
 ### Issue & Architectural Motivation
 1. **Inverted Caller/Callee Responsibility (Leaky Abstraction)**:

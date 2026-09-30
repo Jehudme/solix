@@ -118,7 +118,10 @@ enum class OpCode : uint8_t {
   NEGATE_I64,
 
   // Memory Introspection
-  SIZEOF
+  SIZEOF,
+
+  // Call Frame Allocation
+  ALLOC_FRAME
 };
 
 inline const char* opcode_to_string(uint8_t op) {
@@ -214,6 +217,7 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::CONV_F_TO_I: return "CONV_F_TO_I";
         case OpCode::NEGATE_I64: return "NEGATE_I64";
         case OpCode::SIZEOF: return "SIZEOF";
+        case OpCode::ALLOC_FRAME: return "ALLOC_FRAME";
         default: return "UNKNOWN";
     }
 }
@@ -310,6 +314,7 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "CONV_F_TO_I") return OpCode::CONV_F_TO_I;
     if (str == "NEGATE_I64") return OpCode::NEGATE_I64;
     if (str == "SIZEOF") return OpCode::SIZEOF;
+    if (str == "ALLOC_FRAME") return OpCode::ALLOC_FRAME;
     return OpCode::HALT; // fallback
 }
 
