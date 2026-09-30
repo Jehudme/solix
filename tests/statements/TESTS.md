@@ -2388,7 +2388,7 @@ void test() {
 ```
 *Expected Result*: Passes type checking; `Cat` instance stored in `Animal` slot.
 
-### Case 3.3: Interface Binding [NOT IMPLEMENTED]
+### Case 3.3: Interface Binding [IMPLEMENTED]
 ```solix
 interface Printable { void print(); }
 class Doc implements Printable { void print() {} }
@@ -2401,7 +2401,7 @@ void test() {
 
 ---
 
-### Case 3.4: Multiple Declarations on Single Line [NOT IMPLEMENTED]
+### Case 3.4: Multiple Declarations on Single Line [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 a = 1, b = 2, c = 3;
@@ -2410,7 +2410,7 @@ static int32 main() {
 ```
 *Expected Result*: Emits sequential local allocations for comma-separated variables.
 
-### Case 3.5: Constant Local Variable Declaration [NOT IMPLEMENTED]
+### Case 3.5: Constant Local Variable Declaration [IMPLEMENTED]
 ```solix
 static int32 main() {
     const int32 LIMIT = 100;
@@ -2480,7 +2480,7 @@ void test() {
 [ERROR] binder.cpp: Variable cannot be of type 'void'
 ```
 
-### Case 4.5: Reassigning Const Local Variable [NOT IMPLEMENTED]
+### Case 4.5: Reassigning Const Local Variable [IMPLEMENTED]
 ```solix
 void test() {
     const int32 x = 10;
@@ -2492,7 +2492,7 @@ void test() {
 [ERROR] binder.cpp: Cannot assign to const variable 'x'
 ```
 
-### Case 4.6: Assigning Null to Primitive Type [NOT IMPLEMENTED]
+### Case 4.6: Assigning Null to Primitive Type [IMPLEMENTED]
 ```solix
 void test() {
     int32 x = null; // Error: primitive types are non-nullable
@@ -2503,7 +2503,7 @@ void test() {
 [ERROR] binder.cpp: Cannot assign 'null' to primitive type 'int32'
 ```
 
-### Case 4.7: Solitary Variable Declaration in If Without Braces [NOT IMPLEMENTED]
+### Case 4.7: Solitary Variable Declaration in If Without Braces [IMPLEMENTED]
 ```solix
 void test() {
     if (true)
@@ -2515,7 +2515,7 @@ void test() {
 [ERROR] parser.cpp: Variable declarations are not allowed as immediate solitary branch statements without a block
 ```
 
-### Case 4.8: Solitary Variable Declaration in While Without Braces [NOT IMPLEMENTED]
+### Case 4.8: Solitary Variable Declaration in While Without Braces [IMPLEMENTED]
 ```solix
 void test() {
     while (true)

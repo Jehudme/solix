@@ -279,7 +279,8 @@ struct TernaryExpression : public Node {
 enum class BlockKind {
     NORMAL,
     FUNCTION_BODY,
-    TRY_BODY
+    TRY_BODY,
+    TRANSPARENT
 };
 
 struct BlockStatement : public Node {

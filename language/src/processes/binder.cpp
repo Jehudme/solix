@@ -653,6 +653,7 @@ void Binder::process_imports() {
         target_pkg += '.';
       if (known_packages.count(target_pkg)) {
         // Already exact match
+        wildcard_imported_packages.insert(target_pkg);
       } else {
         std::vector<std::string> matches;
         for (const auto &pkg : known_packages) {
@@ -1191,6 +1192,7 @@ void Binder::execute() {
             static_variable_index);
 
   log_debug("Pass 3: Binding statement execution logic and bodies...");
+  current_pass = BinderPass::BIND_EXECUTION;
   for (const auto &[source, nodes] : context.nodes) {
     current_package = "";
     for (const auto &node : nodes) {
@@ -1454,7 +1456,7 @@ bool Binder::is_assignable(const TypeInfo &target, const TypeInfo &source) {
     // Allow assigning null to arrays or to classes (reference types)
     if (target.array_depth > 0) return true;
     Node *tgt_node = global_scope.resolve(target.name);
-    if (tgt_node && tgt_node->node_type == NodeType::CLASS_DECL) return true;
+    if (tgt_node && tgt_node->node_type == NodeType::CLASS_DECL && !tgt_node->is_primitive) return true;
   }
   // Allow numeric conversions
   auto is_integer = [](const std::string &name) {
@@ -1759,6 +1761,18 @@ void Binder::visit(UnaryExpression &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
     n.expression_type = evaluate_expression(n.operand.get());
     evaluated_type = n.expression_type;
+    if (n.op == TokenType::OPERATOR_INCREMENT || n.op == TokenType::OPERATOR_DECREMENT) {
+      Node *operand_decl = nullptr;
+      if (n.operand->node_type == NodeType::IDENTIFIER) {
+        operand_decl = static_cast<IdentifierNode *>(n.operand.get())->resolved_declaration;
+      }
+      if (operand_decl && operand_decl->node_type == NodeType::VAR_DECL) {
+        auto *v = static_cast<VariableDeclaration *>(operand_decl);
+        if (v->is_const) {
+          record_error(&n, fmt::format("Cannot assign to const variable '{}'", v->var_name));
+        }
+      }
+    }
     log_trace("Evaluated unary operation -> '{}'", evaluated_type.to_string());
   }
 }
@@ -1778,6 +1792,12 @@ void Binder::visit(AssignmentExpression &n) {
       auto *f = static_cast<FieldDeclaration *>(assigned_decl);
       if (f->is_const) {
         record_error(&n, fmt::format("Cannot assign to read-only constant field '{}'", f->field_name));
+      }
+    }
+    if (assigned_decl && assigned_decl->node_type == NodeType::VAR_DECL) {
+      auto *v = static_cast<VariableDeclaration *>(assigned_decl);
+      if (v->is_const) {
+        record_error(&n, fmt::format("Cannot assign to const variable '{}'", v->var_name));
       }
     }
 
@@ -2632,6 +2652,11 @@ void Binder::visit(TernaryExpression &n) {
 
 void Binder::visit(BlockStatement &n) {
   if (current_pass == BinderPass::BIND_EXECUTION) {
+    if (n.block_kind == BlockKind::TRANSPARENT) {
+      for (const auto &child : n.children)
+        bind_node(child.get());
+      return;
+    }
     SymbolTable block_scope;
     enter_scope(&block_scope);
     for (const auto &child : n.children)
@@ -2747,7 +2772,10 @@ void Binder::visit(VariableDeclaration &n) {
     if (n.initializer) {
       TypeInfo initializer_type = evaluate_expression(n.initializer.get());
       if (!is_assignable(n.type_info, initializer_type)) {
-        if (type_decl && type_decl->node_type == NodeType::ENUM_DECL) {
+        if ((initializer_type.name == "null" || (initializer_type.name == "void" && initializer_type.array_depth == 0)) &&
+            type_decl && type_decl->is_primitive && n.type_info.array_depth == 0) {
+          record_error(&n, fmt::format("Cannot assign 'null' to primitive type '{}'", n.type_info.name));
+        } else if (type_decl && type_decl->node_type == NodeType::ENUM_DECL) {
           record_error(&n, "Cannot convert type '" + initializer_type.name +
                                "' to enum '" + n.type_info.name + "'");
         } else {

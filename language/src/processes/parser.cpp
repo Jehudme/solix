@@ -606,8 +606,18 @@ std::unique_ptr<Node> ParserState::parse_block() {
   auto block = std::make_unique<BlockStatement>(brace);
   while (!check(TokenType::PUNCTUATION_CLOSE_BRACE) && !is_at_end()) {
     auto stmt = parse_statement();
-    if (stmt) stmt->parent = block.get();
-    block->children.push_back(std::move(stmt));
+    if (stmt) {
+      if (stmt->node_type == NodeType::BLOCK &&
+          static_cast<BlockStatement*>(stmt.get())->block_kind == BlockKind::TRANSPARENT) {
+        for (auto &child : stmt->children) {
+          child->parent = block.get();
+          block->children.push_back(std::move(child));
+        }
+      } else {
+        stmt->parent = block.get();
+        block->children.push_back(std::move(stmt));
+      }
+    }
   }
   consume(TokenType::PUNCTUATION_CLOSE_BRACE, "Expected '}' after block");
   log_trace("Exiting block statement at line {} with {} statements", brace.line,
@@ -747,6 +757,16 @@ std::unique_ptr<Node> ParserState::parse_statement() {
   return parse_expression_statement();
 }
 
+static bool is_solitary_var_decl(const Node *node) {
+  if (!node) return false;
+  if (node->node_type == NodeType::VAR_DECL) return true;
+  if (node->node_type == NodeType::BLOCK &&
+      static_cast<const BlockStatement *>(node)->block_kind == BlockKind::TRANSPARENT) {
+    return true;
+  }
+  return false;
+}
+
 std::unique_ptr<Node> ParserState::parse_if_statement() {
   Token if_tok = previous();
   log_trace("Parsing 'if' statement at line {}", if_tok.line);
@@ -756,10 +776,18 @@ std::unique_ptr<Node> ParserState::parse_if_statement() {
           "Expected ')' after if condition");
 
   std::unique_ptr<Node> then_branch = parse_statement();
+  if (is_solitary_var_decl(then_branch.get())) {
+    throw ParseError("Variable declarations are not allowed as immediate solitary branch statements without a block",
+                     then_branch->line, then_branch->column);
+  }
   std::unique_ptr<Node> else_branch = nullptr;
   if (match(TokenType::KEYWORD_ELSE)) {
     log_trace("Parsing 'else' branch for 'if' at line {}", if_tok.line);
     else_branch = parse_statement();
+    if (is_solitary_var_decl(else_branch.get())) {
+      throw ParseError("Variable declarations are not allowed as immediate solitary branch statements without a block",
+                       else_branch->line, else_branch->column);
+    }
   }
 
   return std::make_unique<IfStatement>(if_tok, std::move(condition),
@@ -774,6 +802,10 @@ std::unique_ptr<Node> ParserState::parse_while_statement() {
   std::unique_ptr<Node> condition = parse_expression();
   consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after condition");
   std::unique_ptr<Node> body = parse_statement();
+  if (is_solitary_var_decl(body.get())) {
+    throw ParseError("Variable declarations are not allowed as immediate solitary loop statements without a block",
+                     body->line, body->column);
+  }
 
   auto stmt = std::make_unique<WhileStatement>(while_tok);
   stmt->condition = std::move(condition);
@@ -785,6 +817,10 @@ std::unique_ptr<Node> ParserState::parse_do_while_statement() {
   Token do_tok = previous();
   log_trace("Parsing 'do-while' loop at line {}", do_tok.line);
   std::unique_ptr<Node> body = parse_statement();
+  if (is_solitary_var_decl(body.get())) {
+    throw ParseError("Variable declarations are not allowed as immediate solitary loop statements without a block",
+                     body->line, body->column);
+  }
   consume(TokenType::KEYWORD_WHILE, "Expected 'while' after do body");
   consume(TokenType::PUNCTUATION_OPEN_PAREN, "Expected '(' after 'while'");
   std::unique_ptr<Node> condition = parse_expression();
@@ -829,6 +865,10 @@ std::unique_ptr<Node> ParserState::parse_for_statement() {
   consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after for clauses");
 
   stmt->body = parse_statement();
+  if (is_solitary_var_decl(stmt->body.get())) {
+    throw ParseError("Variable declarations are not allowed as immediate solitary loop statements without a block",
+                     stmt->body->line, stmt->body->column);
+  }
   return stmt;
 }
 
@@ -917,26 +957,43 @@ std::unique_ptr<Node> ParserState::parse_variable_declaration(bool is_const,
     is_ref = true;
   }
 
-  Token name_tok = consume(TokenType::IDENTIFIER, "Expected variable name");
-  if (check(TokenType::PUNCTUATION_OPEN_PAREN)) {
-    throw ParseError("Methods cannot be declared inside another method", name_tok.line, name_tok.column);
-  }
-  std::string v_name = std::get<std::string>(name_tok.value);
-  log_debug("Parsing local variable declaration '{}' of type '{}' at line {}",
-            v_name, type.to_string(), start.line);
+  std::vector<std::unique_ptr<VariableDeclaration>> decls;
 
-  auto decl =
-      std::make_unique<VariableDeclaration>(name_tok, v_name, std::move(type));
-  decl->is_const = is_const;
-  decl->is_reference_type = is_ref;
+  do {
+    Token name_tok = consume(TokenType::IDENTIFIER, "Expected variable name");
+    if (check(TokenType::PUNCTUATION_OPEN_PAREN)) {
+      throw ParseError("Methods cannot be declared inside another method", name_tok.line, name_tok.column);
+    }
+    std::string v_name = std::get<std::string>(name_tok.value);
+    log_debug("Parsing local variable declaration '{}' of type '{}' at line {}",
+              v_name, type.to_string(), start.line);
 
-  if (match(TokenType::OPERATOR_ASSIGN)) {
-    log_trace("Parsing initializer for variable '{}'", v_name);
-    decl->initializer = parse_expression();
-  }
+    auto decl =
+        std::make_unique<VariableDeclaration>(name_tok, v_name, type);
+    decl->is_const = is_const;
+    decl->is_reference_type = is_ref;
+
+    if (match(TokenType::OPERATOR_ASSIGN)) {
+      log_trace("Parsing initializer for variable '{}'", v_name);
+      decl->initializer = parse_expression();
+    }
+    decls.push_back(std::move(decl));
+  } while (match(TokenType::PUNCTUATION_COMMA));
+
   consume(TokenType::PUNCTUATION_SEMICOLON,
           "Expected ';' after variable declaration");
-  return decl;
+
+  if (decls.size() == 1) {
+    return std::move(decls[0]);
+  }
+
+  auto block = std::make_unique<BlockStatement>(start);
+  block->block_kind = BlockKind::TRANSPARENT;
+  for (auto &d : decls) {
+    d->parent = block.get();
+    block->children.push_back(std::move(d));
+  }
+  return block;
 }
 
 std::unique_ptr<Node> ParserState::parse_top_level_declaration() {

@@ -29,6 +29,38 @@ static int32 main() {
         CHECK(run_source(code) == 0);
     }
 
+    SECTION("Case 3.3: Interface Binding") {
+        std::string code = R"(
+interface Printable { void print(); }
+class Doc implements Printable { void print() {} }
+
+void test() {
+    Printable p = new Doc();
+}
+)";
+        assert_compile_success(code);
+    }
+
+    SECTION("Case 3.4: Multiple Declarations on Single Line") {
+        std::string code = R"(
+static int32 main() {
+    int32 a = 1, b = 2, c = 3;
+    return (a + b + c) == 6 ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
+    SECTION("Case 3.5: Constant Local Variable Declaration") {
+        std::string code = R"(
+static int32 main() {
+    const int32 LIMIT = 100;
+    return LIMIT == 100 ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
     SECTION("Case 3.6: File-Scope Global Variable Declaration") {
         std::string code = R"(
 int32 global_counter = 45;
@@ -61,9 +93,7 @@ void test() {
 
     SECTION("Case 4.3: Unknown Type Name") {
         std::string code = R"(
-void test() {
-    NonExistentType obj = null;
-}
+NonExistentType obj = null;
 )";
         assert_compile_error(code, "Unknown type");
     }
@@ -76,18 +106,43 @@ void test() {
 )";
         assert_compile_error(code, "Variable cannot be of type 'void'");
     }
-}
 
-TEST_CASE("VariableDeclarationStatement - Interface Binding", "[control_flow][variable_declaration][!mayfail]") {
-    SECTION("Case 3.3: Interface Binding") {
+    SECTION("Case 4.5: Reassigning Const Local Variable") {
         std::string code = R"(
-interface Printable { void print(); }
-class Doc implements Printable { void print() {} }
-
 void test() {
-    Printable p = new Doc();
+    const int32 x = 10;
+    x = 20;
 }
 )";
-        assert_compile_success(code);
+        assert_compile_error(code, "Cannot assign to const variable 'x'");
+    }
+
+    SECTION("Case 4.6: Assigning Null to Primitive Type") {
+        std::string code = R"(
+void test() {
+    int32 x = null;
+}
+)";
+        assert_compile_error(code, "Cannot assign 'null' to primitive type 'int32'");
+    }
+
+    SECTION("Case 4.7: Solitary Variable Declaration in If Without Braces") {
+        std::string code = R"(
+void test() {
+    if (true)
+        int32 x = 5;
+}
+)";
+        assert_compile_error(code, "Variable declarations are not allowed as immediate solitary branch statements without a block");
+    }
+
+    SECTION("Case 4.8: Solitary Variable Declaration in While Without Braces") {
+        std::string code = R"(
+void test() {
+    while (true)
+        int32 x = 5;
+}
+)";
+        assert_compile_error(code, "Variable declarations are not allowed as immediate solitary loop statements without a block");
     }
 }

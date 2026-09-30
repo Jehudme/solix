@@ -612,6 +612,13 @@ void Assembler::visit(ConstructorDeclaration &node) {
 }
 
 void Assembler::visit(BlockStatement &node) {
+  if (node.block_kind == BlockKind::TRANSPARENT) {
+    for (const auto &child : node.children) {
+      compile_node(child.get());
+    }
+    return;
+  }
+
   exception_cleanup_patches.emplace_back();
 
   for (const auto &child : node.children) {
