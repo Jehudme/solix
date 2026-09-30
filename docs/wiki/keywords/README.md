@@ -46,6 +46,7 @@ Solix keywords are divided into four categories:
 | [`protected`](modifiers/protected.md) | Modifier | Restricts visibility to the declaring class and its subclasses |
 | [`public`](modifiers/public.md) | Modifier | Makes a declaration accessible from any compilation unit |
 | [`return`](control_flow/return.md) | Control Flow | Exits the current method and optionally returns a value to the caller |
+| [`sizeof`](expressions/sizeof.md) | Expression | Returns the byte size of a primitive type, class instance, or heap object |
 | [`static`](modifiers/static.md) | Modifier | Associates a member with the class itself rather than with instances |
 | [`super`](expressions/super.md) | Expression | Refers to the immediate superclass; used to call parent constructors or methods |
 | [`switch`](control_flow/switch.md) | Control Flow | Multi-way branch that dispatches on the value of an expression |
@@ -63,4 +64,4 @@ Solix keywords are divided into four categories:
 - 📁 [Control Flow](control_flow/) — `if`, `else`, `while`, `do`, `for`, `switch`, `case`, `default`, `break`, `continue`, `return`, `try`, `catch`, `finally`, `throw`
 - 📁 [Declarations](declarations/) — `class`, `interface`, `enum`, `package`, `import`, `alias`
 - 📁 [Modifiers](modifiers/) — `public`, `private`, `protected`, `internal`, `static`, `inline`, `native`, `const`, `virtual`, `override`, `weak`, `abstract`
-- 📁 [Expressions](expressions/) — `new`, `super`, `this`, `instanceof`, `operator`, `extends`, `implements`
+- 📁 [Expressions](expressions/) — `new`, `super`, `this`, `instanceof`, `sizeof`, `operator`, `extends`, `implements`

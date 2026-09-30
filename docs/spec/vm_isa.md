@@ -13,7 +13,7 @@ This document specifies the complete Instruction Set Architecture (ISA) of the S
    - [3.2 Arithmetic & Logic (opcodes 17–43)](#32-arithmetic--logic-opcodes-1743)
    - [3.3 Local & Global Variables (opcodes 44–47)](#33-local--global-variables-opcodes-4447)
    - [3.4 Control Flow (opcodes 48–50)](#34-control-flow-opcodes-4850)
-   - [3.5 Memory & Objects (opcodes 51–58)](#35-memory--objects-opcodes-5158)
+   - [3.5 Memory & Objects (opcodes 51–58, 90)](#35-memory--objects-opcodes-5158-90)
    - [3.6 ARC Reference Counting (opcodes 59–60)](#36-arc-reference-counting-opcodes-5960)
    - [3.7 Type Conversions (opcodes 61–70, 87–89)](#37-type-conversions-opcodes-6170-8789)
    - [3.8 Calls & Dispatch (opcodes 71–78)](#38-calls--dispatch-opcodes-7178)
@@ -177,7 +177,7 @@ All jump targets are **absolute byte offsets** into the bytecode stream, encoded
 | 49 | `JUMP_IF_FALSE`  | `imm32`   | `( val -- )`    | Pop `val`; if `val == 0` (false), jump to `imm32`. Otherwise continue. |
 | 50 | `JUMP_IF_TRUE`   | `imm32`   | `( val -- )`    | Pop `val`; if `val != 0` (true), jump to `imm32`. Otherwise continue. |
 
-### 3.5 Memory & Objects (opcodes 51–58)
+### 3.5 Memory & Objects (opcodes 51–58, 90)
 
 | Op | Mnemonic            | Immediate | Stack Effect                    | Description |
 |----|---------------------|-----------|---------------------------------|-------------|
@@ -189,6 +189,7 @@ All jump targets are **absolute byte offsets** into the bytecode stream, encoded
 | 56 | `GET_ARRAY`         | —         | `( arr idx -- val )`            | Pop index `idx` and array address `arr`. Bounds-check `idx` against `heap[arr]` (element count); throw `IndexOutOfBoundsException` if out of range. Push `heap[arr + 1 + idx]`. |
 | 57 | `SET_ARRAY`         | —         | `( arr idx val -- )`            | Pop `val`, `idx`, and `arr`. Bounds-check as above. Store `val` at `heap[arr + 1 + idx]`. |
 | 58 | `ARRAY_LENGTH`      | —         | `( arr -- len )`                | Pop array address `arr`; push `heap[arr]` (the element count stored in the first payload word). |
+| 90 | `SIZEOF`            | —         | `( ref -- size_bytes )`         | Pop heap object reference `ref`. Look up block header at `heap[ref - 1]` to retrieve allocated block size in words, multiply by 8, and push the byte size. If `ref == 0`, push `0`. |
 
 ### 3.6 ARC Reference Counting (opcodes 59–60)
 

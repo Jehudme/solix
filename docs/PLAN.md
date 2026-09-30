@@ -683,7 +683,9 @@ The repository lacks clean, runnable sample programs demonstrating language feat
 
 ---
 
-## Phase 22: Type & Instance Sizing: `sizeof` Operator & Memory Introspection
+## Phase 22: Type & Instance Sizing: `sizeof` Operator & Memory Introspection [COMPLETED]
+
+### Status: COMPLETED
 
 ### Issue
 Solix lacks a `sizeof` operator or memory introspection mechanism. Developers writing low-level systems code, binary serialization libraries, network buffers, or performance-critical data structures have no way to determine the byte size occupied by primitive types or dynamically allocated class instances.

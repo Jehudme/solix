@@ -120,7 +120,7 @@ café         // non-ASCII character
 
 ## 5. Reserved Keywords
 
-The following 39 tokens are **reserved keywords**. They may not be used as identifiers.
+The following 40 tokens are **reserved keywords**. They may not be used as identifiers.
 
 ### Control Flow
 
@@ -178,6 +178,7 @@ The following 39 tokens are **reserved keywords**. They may not be used as ident
 | `super`      | Reference the superclass or its constructor                |
 | `this`       | Reference the current object instance                      |
 | `instanceof` | Test whether a reference is an instance of a type          |
+| `sizeof`     | Query compile-time or runtime byte size of a type or instance |
 | `operator`   | Declare an operator overload                               |
 | `null`       | The null reference literal                                 |
 | `true`       | Boolean literal true                                       |
