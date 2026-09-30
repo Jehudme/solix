@@ -3819,6 +3819,172 @@ static int32 main() {
 ```
 *Expected Result*: Returns 0 indicating compile-time sizeof operator evaluates function pointer type to 8 bytes.
 
+---
 
+# Test Suite 41: First-Class Lambdas & Closures
 
+## Positive Test Scenarios
 
+### Case 1.1: Stateless Lambda Expression (`[]`) [NOT IMPLEMENTED]
+```solix
+public class Main {
+    public static int32 main() {
+        int32(*)(int32, int32) add = [](int32 a, int32 b) => a + b;
+        return add(10, 20) == 30 ? 0 : 1;
+    }
+}
+```
+*Expected Result*: Evaluates stateless lambda via fat-arrow expression, returning 0 with zero heap allocations.
+
+### Case 1.2: Lambda Capturing Primitive Local Variable [NOT IMPLEMENTED]
+```solix
+public class Main {
+    public static int32 main() {
+        int32 factor = 5;
+        int32(*)(int32) mult = [factor](int32 x) => x * factor;
+        return mult(6) == 30 ? 0 : 1;
+    }
+}
+```
+*Expected Result*: Allocates closure backpack, stores `factor` in heap environment, unpacks inside lambda invocation, returning 0.
+
+### Case 1.3: Multi-Parameter Lambda with Block Body and Explicit Return Type [NOT IMPLEMENTED]
+```solix
+public class Main {
+    public static int32 main() {
+        int32 base = 100;
+        int32(*)(int32, int32) compute = [base](int32 a, int32 b) : int32 {
+            int32 sum = a + b;
+            return base + sum;
+        };
+        return compute(20, 3) == 123 ? 0 : 1;
+    }
+}
+```
+*Expected Result*: Lambda with explicit return type and block statement compiles and executes correctly, returning 0.
+
+### Case 1.4: Lambda Capturing Object Reference with ARC Tracking [NOT IMPLEMENTED]
+```solix
+public class Counter {
+    public int32 val;
+    public Counter(int32 v) { this.val = v; }
+}
+
+public class Main {
+    public static int32 main() {
+        Counter c = new Counter(42);
+        int32(*)() getVal = [c]() => c.val;
+        return getVal() == 42 ? 0 : 1;
+    }
+}
+```
+*Expected Result*: Object reference `c` is captured in closure environment with ref count incremented, and decremented when closure is reclaimed.
+
+### Case 1.5: Returning Closure from Function (Escaping Stack Frame) [NOT IMPLEMENTED]
+```solix
+public class Main {
+    public static int32(*)(int32) makeAdder(int32 x) {
+        return [x](int32 y) => x + y;
+    }
+
+    public static int32 main() {
+        int32(*)(int32) addTen = makeAdder(10);
+        return addTen(25) == 35 ? 0 : 1;
+    }
+}
+```
+*Expected Result*: Closure escapes outer stack frame, retaining its backpack captures on the heap.
+
+### Case 1.6: Capturing `this` in Instance Method [NOT IMPLEMENTED]
+```solix
+public class Multiplier {
+    public int32 factor;
+    public Multiplier(int32 f) { this.factor = f; }
+
+    public int32(*)(int32) getMultiplier() {
+        return [this](int32 x) => x * this.factor;
+    }
+}
+
+public class Main {
+    public static int32 main() {
+        Multiplier m = new Multiplier(7);
+        int32(*)(int32) fn = m.getMultiplier();
+        return fn(6) == 42 ? 0 : 1;
+    }
+}
+```
+*Expected Result*: Capturing `this` binds instance pointer into closure backpack and correctly accesses instance members.
+
+### Case 1.7: Reassigning Closure Variable in a Loop (ARC Recycling) [NOT IMPLEMENTED]
+```solix
+public class Main {
+    public static int32 main() {
+        int32(*)(int32) fn = [](int32 x) => x;
+        for (int32 i = 0; i < 50; ++i) {
+            int32 cur = i;
+            fn = [cur](int32 x) => x + cur;
+        }
+        return fn(10) == 59 ? 0 : 1;
+    }
+}
+```
+*Expected Result*: Loop repeatedly reassigns closure variable; old closure environments are recycled via `decrease_reference_callable`.
+
+### Case 1.8: Nested Closures with Deep Capture Hierarchy [NOT IMPLEMENTED]
+```solix
+public class Main {
+    public static int32 main() {
+        int32 a = 10;
+        int32(*)(int32) outer = [a](int32 b) => {
+            int32(*)(int32) inner = [a, b](int32 c) => a + b + c;
+            return inner(30);
+        };
+        return outer(20) == 60 ? 0 : 1;
+    }
+}
+```
+*Expected Result*: Nested closure correctly unpacks multi-level captured variables and produces correct result.
+
+---
+
+## Negative Test Scenarios (Expected Errors & Faults)
+
+### Case 2.1: Undefined Variable in Capture List (Compile-Time Error) [NOT IMPLEMENTED]
+```solix
+public class Main {
+    public static void test() {
+        int32(*)() fn = [nonExistentVar]() => 0;
+    }
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] Undefined capture variable: nonExistentVar
+```
+
+### Case 2.2: Capturing `this` Outside Instance Method (Compile-Time Error) [NOT IMPLEMENTED]
+```solix
+public class Main {
+    public static void test() {
+        int32(*)() fn = [this]() => 0;
+    }
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] Cannot capture 'this' outside of an instance method
+```
+
+### Case 2.3: Lambda Signature Incompatible with Target Function Pointer (Compile-Time Error) [NOT IMPLEMENTED]
+```solix
+public class Main {
+    public static void test() {
+        int32(*)(int32, int32) fn = [](int32 a) => a;
+    }
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] Type mismatch in variable declaration
+```
