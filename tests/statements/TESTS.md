@@ -3825,7 +3825,7 @@ static int32 main() {
 
 ## Positive Test Scenarios
 
-### Case 1.1: Stateless Lambda Expression (`[]`) [NOT IMPLEMENTED]
+### Case 1.1: Stateless Lambda Expression (`[]`) [IMPLEMENTED]
 ```solix
 public class Main {
     public static int32 main() {
@@ -3836,7 +3836,7 @@ public class Main {
 ```
 *Expected Result*: Evaluates stateless lambda via fat-arrow expression, returning 0 with zero heap allocations.
 
-### Case 1.2: Lambda Capturing Primitive Local Variable [NOT IMPLEMENTED]
+### Case 1.2: Lambda Capturing Primitive Local Variable [IMPLEMENTED]
 ```solix
 public class Main {
     public static int32 main() {
@@ -3848,7 +3848,7 @@ public class Main {
 ```
 *Expected Result*: Allocates closure backpack, stores `factor` in heap environment, unpacks inside lambda invocation, returning 0.
 
-### Case 1.3: Multi-Parameter Lambda with Block Body and Explicit Return Type [NOT IMPLEMENTED]
+### Case 1.3: Multi-Parameter Lambda with Block Body and Explicit Return Type [IMPLEMENTED]
 ```solix
 public class Main {
     public static int32 main() {
@@ -3863,7 +3863,7 @@ public class Main {
 ```
 *Expected Result*: Lambda with explicit return type and block statement compiles and executes correctly, returning 0.
 
-### Case 1.4: Lambda Capturing Object Reference with ARC Tracking [NOT IMPLEMENTED]
+### Case 1.4: Lambda Capturing Object Reference with ARC Tracking [IMPLEMENTED]
 ```solix
 public class Counter {
     public int32 val;
@@ -3880,7 +3880,7 @@ public class Main {
 ```
 *Expected Result*: Object reference `c` is captured in closure environment with ref count incremented, and decremented when closure is reclaimed.
 
-### Case 1.5: Returning Closure from Function (Escaping Stack Frame) [NOT IMPLEMENTED]
+### Case 1.5: Returning Closure from Function (Escaping Stack Frame) [IMPLEMENTED]
 ```solix
 public class Main {
     public static int32(*)(int32) makeAdder(int32 x) {
@@ -3895,7 +3895,7 @@ public class Main {
 ```
 *Expected Result*: Closure escapes outer stack frame, retaining its backpack captures on the heap.
 
-### Case 1.6: Capturing `this` in Instance Method [NOT IMPLEMENTED]
+### Case 1.6: Capturing `this` in Instance Method [IMPLEMENTED]
 ```solix
 public class Multiplier {
     public int32 factor;
@@ -3916,7 +3916,7 @@ public class Main {
 ```
 *Expected Result*: Capturing `this` binds instance pointer into closure backpack and correctly accesses instance members.
 
-### Case 1.7: Reassigning Closure Variable in a Loop (ARC Recycling) [NOT IMPLEMENTED]
+### Case 1.7: Reassigning Closure Variable in a Loop (ARC Recycling) [IMPLEMENTED]
 ```solix
 public class Main {
     public static int32 main() {
@@ -3931,7 +3931,7 @@ public class Main {
 ```
 *Expected Result*: Loop repeatedly reassigns closure variable; old closure environments are recycled via `decrease_reference_callable`.
 
-### Case 1.8: Nested Closures with Deep Capture Hierarchy [NOT IMPLEMENTED]
+### Case 1.8: Nested Closures with Deep Capture Hierarchy [IMPLEMENTED]
 ```solix
 public class Main {
     public static int32 main() {
@@ -3950,7 +3950,7 @@ public class Main {
 
 ## Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 2.1: Undefined Variable in Capture List (Compile-Time Error) [NOT IMPLEMENTED]
+### Case 2.1: Undefined Variable in Capture List (Compile-Time Error) [IMPLEMENTED]
 ```solix
 public class Main {
     public static void test() {
@@ -3963,7 +3963,7 @@ public class Main {
 [ERROR] Undefined capture variable: nonExistentVar
 ```
 
-### Case 2.2: Capturing `this` Outside Instance Method (Compile-Time Error) [NOT IMPLEMENTED]
+### Case 2.2: Capturing `this` Outside Instance Method (Compile-Time Error) [IMPLEMENTED]
 ```solix
 public class Main {
     public static void test() {
@@ -3976,7 +3976,7 @@ public class Main {
 [ERROR] Cannot capture 'this' outside of an instance method
 ```
 
-### Case 2.3: Lambda Signature Incompatible with Target Function Pointer (Compile-Time Error) [NOT IMPLEMENTED]
+### Case 2.3: Lambda Signature Incompatible with Target Function Pointer (Compile-Time Error) [IMPLEMENTED]
 ```solix
 public class Main {
     public static void test() {
