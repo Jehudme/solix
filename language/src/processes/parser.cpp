@@ -595,6 +595,9 @@ std::unique_ptr<Node> ParserState::parse_primary() {
     std::unique_ptr<Node> expr = parse_expression();
     consume(TokenType::PUNCTUATION_CLOSE_PAREN,
             "Expected ')' after expression");
+    if (check(TokenType::IDENTIFIER) || check(TokenType::NUMBER) || check(TokenType::STRING)) {
+      throw ParseError("Expected type name in cast expression", paren.line, paren.column);
+    }
     return expr;
   }
 

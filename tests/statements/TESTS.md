@@ -2941,7 +2941,7 @@ Dog d = (Dog)a; // Succeeds
 
 ---
 
-### Case 3.2: Numeric Widening and Narrowing Conversions [NOT IMPLEMENTED]
+### Case 3.2: Numeric Widening and Narrowing Conversions [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 small = 42;
@@ -2954,7 +2954,7 @@ static int32 main() {
 
 ---
 
-### Case 3.4: Casting Null Literal to Reference Type [NOT IMPLEMENTED]
+### Case 3.4: Casting Null Literal to Reference Type [IMPLEMENTED]
 ```solix
 class Person {}
 
@@ -2979,7 +2979,7 @@ Dog d = (Dog)a; // Fails!
 [FATAL VM PANIC] TypeCastException: Cannot cast 'Cat' to 'Dog'
 ```
 
-### Case 4.2: Compile-Time Rejection of Unrelated Class Cast [NOT IMPLEMENTED]
+### Case 4.2: Compile-Time Rejection of Unrelated Class Cast [IMPLEMENTED]
 ```solix
 class Cat {}
 class Dog {}
@@ -2994,7 +2994,7 @@ void test() {
 [ERROR] binder.cpp: Cannot cast between unrelated types 'Cat' and 'Dog'
 ```
 
-### Case 4.4: Cast Expression with Non-Type Identifier [NOT IMPLEMENTED]
+### Case 4.4: Cast Expression with Non-Type Identifier [IMPLEMENTED]
 ```solix
 void test(int32 x) {
     int32 y = (123)x; // Error: 123 is not a type

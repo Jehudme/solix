@@ -2617,9 +2617,8 @@ void Binder::visit(CastExpression &n) {
               static_cast<ClassDeclaration *>(target_class)->vtable_id;
         }
       } else {
-        record_error(&n, "Cannot cast '" + source_type.name + "' to '" +
-                             n.target_type.name +
-                             "': no inheritance relationship");
+        record_error(&n, fmt::format("Cannot cast between unrelated types '{}' and '{}'",
+                                     source_type.name, n.target_type.name));
       }
     }
     n.expression_type = n.target_type;
