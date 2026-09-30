@@ -30,6 +30,19 @@ static int32 main() {
         CHECK(run_source(code) == 0);
     }
 
+    SECTION("Case 3.2: Nested Ternary Evaluation") {
+        std::string code = R"(
+static int32 classify(int32 x) {
+    return x > 0 ? 1 : (x < 0 ? -1 : 0);
+}
+
+static int32 main() {
+    return (classify(10) == 1 && classify(-5) == -1 && classify(0) == 0) ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
     SECTION("Case 4.1: Non-Boolean Condition (Compile-Time Error)") {
         std::string code = R"(
 static int32 main() {
@@ -39,4 +52,14 @@ static int32 main() {
 )";
         assert_compile_error(code, "Ternary condition must be of type 'bool', got 'int32'");
     }
+
+    SECTION("Case 4.2: Mismatched Branch Types") {
+        std::string code = R"(
+void test(bool cond) {
+    int32 val = cond ? 42 : "string";
 }
+)";
+        assert_compile_error(code, "Ternary branches must have the same type");
+    }
+}
+

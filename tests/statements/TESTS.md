@@ -3439,7 +3439,7 @@ int32 len = (s != null) ? s.length() : 0; // Short-circuits; does not call s.len
 
 ---
 
-### Case 3.2: Nested Ternary Evaluation [NOT IMPLEMENTED]
+### Case 3.2: Nested Ternary Evaluation [IMPLEMENTED]
 ```solix
 static int32 classify(int32 x) {
     return x > 0 ? 1 : (x < 0 ? -1 : 0);
@@ -3464,7 +3464,7 @@ int32 res = 5 ? 1 : 2; // Error
 [ERROR] binder.cpp: Ternary condition must be of type 'bool', got 'int32'
 ```
 
-### Case 4.2: Mismatched Branch Types [NOT IMPLEMENTED]
+### Case 4.2: Mismatched Branch Types [IMPLEMENTED]
 ```solix
 void test(bool cond) {
     int32 val = cond ? 42 : "string"; // Error: incompatible branch types
