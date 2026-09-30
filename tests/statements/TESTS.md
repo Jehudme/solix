@@ -1810,7 +1810,7 @@ for (int32 i = 0; i < 10; i++) {
 
 ---
 
-### Case 3.2: Empty Header Clauses for Infinite Loop with Break [NOT IMPLEMENTED]
+### Case 3.2: Empty Header Clauses for Infinite Loop with Break [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 count = 0;
@@ -1825,7 +1825,7 @@ static int32 main() {
 ```
 *Expected Result*: `for (;;)` runs infinitely until terminated by internal `break`.
 
-### Case 3.3: Nested For Loops for Matrix Summation [NOT IMPLEMENTED]
+### Case 3.3: Nested For Loops for Matrix Summation [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 total = 0;
@@ -1855,7 +1855,7 @@ void test() {
 [ERROR] binder.cpp: Undefined identifier: i
 ```
 
-### Case 4.2: Non-Boolean Condition in For Loop [NOT IMPLEMENTED]
+### Case 4.2: Non-Boolean Condition in For Loop [IMPLEMENTED]
 ```solix
 void test() {
     for (int32 i = 0; 100; i++) {} // Error
@@ -1866,7 +1866,7 @@ void test() {
 [ERROR] binder.cpp: Loop condition must be of type 'bool', got 'int32'
 ```
 
-### Case 4.3: For Loop Placed Directly in Class Body [NOT IMPLEMENTED]
+### Case 4.3: For Loop Placed Directly in Class Body [IMPLEMENTED]
 ```solix
 class BadClass {
     for (int32 i = 0; i < 10; i++) {} // Error

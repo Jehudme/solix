@@ -2618,7 +2618,7 @@ void Binder::visit(ForStatement &n) {
     if (n.condition) {
       TypeInfo condition_type = evaluate_expression(n.condition.get());
       if (condition_type.name != "bool")
-        record_error(&n, "Condition must be bool");
+        record_error(&n, fmt::format("Loop condition must be of type 'bool', got '{}'", condition_type.name));
     }
     if (n.iteration)
       evaluate_expression(n.iteration.get());
