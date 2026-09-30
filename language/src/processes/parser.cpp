@@ -593,7 +593,9 @@ std::unique_ptr<Node> ParserState::parse_primary() {
           p++;
         }
         if (p < tokens.size()) {
-          if (tokens[p]->type == TokenType::OPERATOR_FAT_ARROW || tokens[p]->type == TokenType::PUNCTUATION_COLON) {
+          if (tokens[p]->type == TokenType::OPERATOR_FAT_ARROW ||
+              tokens[p]->type == TokenType::PUNCTUATION_COLON ||
+              tokens[p]->type == TokenType::PUNCTUATION_OPEN_BRACE) {
             return true;
           }
           if (tokens[p]->type == TokenType::OPERATOR_ASSIGN && p + 1 < tokens.size() && tokens[p + 1]->type == TokenType::OPERATOR_GREATER_THAN) {
@@ -623,7 +625,9 @@ std::unique_ptr<Node> ParserState::parse_primary() {
         p++;
       }
       if (p < tokens.size()) {
-        if (tokens[p]->type == TokenType::OPERATOR_FAT_ARROW || tokens[p]->type == TokenType::PUNCTUATION_COLON) {
+        if (tokens[p]->type == TokenType::OPERATOR_FAT_ARROW ||
+            tokens[p]->type == TokenType::PUNCTUATION_COLON ||
+            tokens[p]->type == TokenType::PUNCTUATION_OPEN_BRACE) {
           return true;
         }
         if (tokens[p]->type == TokenType::OPERATOR_ASSIGN && p + 1 < tokens.size() && tokens[p + 1]->type == TokenType::OPERATOR_GREATER_THAN) {
@@ -674,6 +678,8 @@ std::unique_ptr<Node> ParserState::parse_primary() {
       // ok
     } else if (match(TokenType::OPERATOR_ASSIGN) && match(TokenType::OPERATOR_GREATER_THAN)) {
       // '=' followed by '>'
+    } else if (check(TokenType::PUNCTUATION_OPEN_BRACE)) {
+      // ok, block body directly without fat arrow
     } else {
       throw ParseError("Expected '=>' in lambda expression", peek().line, peek().column);
     }

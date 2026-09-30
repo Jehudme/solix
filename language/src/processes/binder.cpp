@@ -3166,6 +3166,7 @@ void Binder::visit(LambdaExpression &n) {
     bool has_explicit_return = (n.explicit_return_type != nullptr);
     if (has_explicit_return) {
       return_type = resolve_type(*n.explicit_return_type, &n);
+      synth_method->return_type = return_type;
     }
 
     // If body is expression (not block), wrap into block
@@ -3202,7 +3203,7 @@ void Binder::visit(LambdaExpression &n) {
 
     SymbolTable lambda_scope;
     lambda_scope.parent = &global_scope;
-    enter_scope(&lambda_scope);
+    current_scope = &lambda_scope;
 
     // Bind parameters
     for (auto &param_node : synth_method->parameters) {
@@ -3221,45 +3222,20 @@ void Binder::visit(LambdaExpression &n) {
 
     // Deduce return type if not explicit
     if (!has_explicit_return) {
-      std::vector<ReturnStatement*> rets;
-      std::function<void(Node*)> find_rets = [&](Node* node) {
-        if (!node) return;
-        if (node->node_type == NodeType::RETURN_STMT) {
-          rets.push_back(static_cast<ReturnStatement*>(node));
-        } else if (node->node_type == NodeType::LAMBDA_EXPR) {
-          return;
-        } else {
-          for (auto& c : node->children) find_rets(c.get());
-        }
-      };
-      find_rets(n.body.get());
-      if (rets.empty()) {
+      return_type = synth_method->return_type;
+      if (return_type.name.empty()) {
         return_type = {"void", 0};
-      } else {
-        bool set_first = false;
-        for (auto* r : rets) {
-          if (r->value) {
-            TypeInfo t = r->value->expression_type;
-            if (!set_first) {
-              return_type = t;
-              set_first = true;
-            }
-          }
-        }
-        if (!set_first) {
-          return_type = {"void", 0};
-        }
+        synth_method->return_type = return_type;
       }
     }
 
-    synth_method->return_type = return_type;
+    n.inferred_return_type = return_type;
     synth_method->frame_size = local_variable_index;
     n.synthesized_method = synth_method;
 
     global_scope.define(synth_method->mangled_name, synth_method.get());
 
     // Restore state
-    exit_scope();
     current_method = saved_method;
     local_variable_index = saved_local_idx;
     current_scope = saved_scope;
@@ -3433,7 +3409,9 @@ void Binder::visit(ReturnStatement &n) {
   if (current_pass == BinderPass::BIND_EXECUTION) {
     if (n.value) {
       TypeInfo return_type = evaluate_expression(n.value.get());
-      if (current_method && current_method->return_type.name == "void") {
+      if (current_method && current_method->return_type.name.empty()) {
+        current_method->return_type = return_type;
+      } else if (current_method && current_method->return_type.name == "void") {
         record_error(&n, "Cannot return a value from a void method");
       } else if (current_method &&
           !is_assignable(current_method->return_type, return_type)) {
@@ -3441,6 +3419,8 @@ void Binder::visit(ReturnStatement &n) {
                              current_method->return_type.name + "', got '" +
                              return_type.name + "'");
       }
+    } else if (current_method && current_method->return_type.name.empty()) {
+      current_method->return_type = {"void", 0};
     } else if (current_method && current_method->return_type.name != "void") {
       record_error(&n, "Must return a value from non-void method");
     }
