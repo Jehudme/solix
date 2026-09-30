@@ -2561,7 +2561,7 @@ while (true) {
 
 ---
 
-### Case 3.3: While Loop with Complex Short-Circuit Condition [NOT IMPLEMENTED]
+### Case 3.3: While Loop with Complex Short-Circuit Condition [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 count = 0;
@@ -2596,7 +2596,7 @@ void test() {
 
 # Part IV: Expressions & Operators
 
-### Case 4.2: While Loop Missing Condition Parentheses [NOT IMPLEMENTED]
+### Case 4.2: While Loop Missing Condition Parentheses [IMPLEMENTED]
 ```solix
 void test() {
     while true {} // Error
@@ -2607,7 +2607,7 @@ void test() {
 [ERROR] parser.cpp: Expected '(' after 'while'
 ```
 
-### Case 4.3: While Loop Placed Directly in Class Body [NOT IMPLEMENTED]
+### Case 4.3: While Loop Placed Directly in Class Body [IMPLEMENTED]
 ```solix
 class BadClass {
     while (true) {} // Error
