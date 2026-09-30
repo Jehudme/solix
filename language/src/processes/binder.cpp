@@ -2779,19 +2779,25 @@ void Binder::visit(SizeOfExpression &n) {
           }
         }
       }
+      evaluated_type = n.expression_type;
       return;
     }
 
     if (n.target_expr) {
       std::string path;
       std::string root_name;
-      if (extract_symbol_path(n.target_expr.get(), path, root_name)) {
-        Node *local_var = current_scope ? current_scope->resolve(root_name) : nullptr;
-        if (!local_var) {
+      bool extracted = extract_symbol_path(n.target_expr.get(), path, root_name);
+      Node *local_var = current_scope ? current_scope->resolve(root_name) : nullptr;
+      if (extracted) {
+        bool is_type_name = (!local_var || local_var->node_type == NodeType::CLASS_DECL ||
+                             local_var->node_type == NodeType::ENUM_DECL ||
+                             local_var->node_type == NodeType::ALIAS_STMT);
+        if (is_type_name) {
           int32_t prim_size = get_primitive_size(path);
           if (prim_size != -1) {
             n.constant_size = prim_size;
             n.is_compile_time_constant = true;
+            evaluated_type = n.expression_type;
             return;
           }
           Node *decl = resolve_symbol(path, &n);
@@ -2799,10 +2805,15 @@ void Binder::visit(SizeOfExpression &n) {
             auto *cls = static_cast<ClassDeclaration *>(decl);
             n.constant_size = cls->instance_size * 8;
             n.is_compile_time_constant = true;
+            evaluated_type = n.expression_type;
             return;
           } else if (decl && decl->node_type == NodeType::ENUM_DECL) {
             n.constant_size = 4;
             n.is_compile_time_constant = true;
+            evaluated_type = n.expression_type;
+            return;
+          } else if (n.target_expr->node_type == NodeType::IDENTIFIER) {
+            record_error(&n, "Unknown type '" + path + "' in sizeof expression");
             return;
           }
         }
@@ -2814,10 +2825,12 @@ void Binder::visit(SizeOfExpression &n) {
         if (prim_size != -1) {
           n.constant_size = prim_size;
           n.is_compile_time_constant = true;
+          evaluated_type = n.expression_type;
           return;
         }
       }
       n.is_compile_time_constant = false;
+      evaluated_type = n.expression_type;
     }
   }
 }
