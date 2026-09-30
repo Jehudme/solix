@@ -1052,9 +1052,9 @@ struct TypeInfo {
 
 ---
 
-## Phase 25: First-Class Lambdas & Closures [PLANNED]
+## Phase 25: First-Class Lambdas & Closures [COMPLETED]
 
-### Status: PLANNED
+### Status: COMPLETED
 
 ### Architectural Overview
 In Solix, lambdas and function pointers are unified under the same first-class primitive callable type:
