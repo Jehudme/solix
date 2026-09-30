@@ -281,7 +281,9 @@ The initial testing suite relied on legacy monolithic test files (`test_phase*.c
 
 ---
 
-## Phase 9: Root Project Gateway & Onboarding (`README.md`)
+## Phase 9: Root Project Gateway & Onboarding (`README.md`) [COMPLETED]
+
+### Status: COMPLETED
 
 ### Issue
 The repository currently lacks a top-level `README.md`. New contributors or developers exploring the project have no structured overview of language design principles, memory model, compilation pipeline, build prerequisites, or CLI quickstart commands.
@@ -307,7 +309,9 @@ Author an industry-standard `README.md` at the project root containing:
 
 ---
 
-## Phase 10: Formal Language & VM Lowering Specification (`docs/spec/`)
+## Phase 10: Formal Language & VM Lowering Specification (`docs/spec/`) [COMPLETED]
+
+### Status: COMPLETED
 
 ### Issue
 The formal specification of the language is currently incomplete and partially misplaced in `docs/wiki/statements/`. A production language specification must rigorously define the lexical grammar, static semantics/type system, virtual machine instruction set (ISA), and AST-to-bytecode lowering rules for all grammar constructs.
@@ -336,7 +340,9 @@ The formal specification of the language is currently incomplete and partially m
 
 ---
 
-## Phase 11: Developer Keyword Reference Wiki (`docs/wiki/keywords/`)
+## Phase 11: Developer Keyword Reference Wiki (`docs/wiki/keywords/`) [COMPLETED]
+
+### Status: COMPLETED
 
 ### Issue
 Application developers need a quick-lookup lexicon explaining language keywords in plain English, providing syntax patterns, permitted declaration contexts, common pitfalls, and code examples without wading through compiler opcode lowering tables.
@@ -364,7 +370,9 @@ Create `docs/wiki/keywords/` containing dedicated reference pages for all 39 res
 
 ---
 
-## Phase 12: Developer Guides, Standard Library API & Architecture Internals
+## Phase 12: Developer Guides, Standard Library API & Architecture Internals [COMPLETED]
+
+### Status: COMPLETED
 
 ### Issue
 To support both application developers writing Solix software and systems engineers maintaining the Solix VM/compiler, documentation must cover progressive user guides, complete standard library API references, and internal compiler pipeline deep dives.
