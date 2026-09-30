@@ -295,7 +295,7 @@ class Account { User owner; }
 
 ---
 
-### Case 3.3: Package Isolation Across Unimported Namespaces [NOT IMPLEMENTED]
+### Case 3.3: Package Isolation Across Unimported Namespaces [IMPLEMENTED]
 ```solix
 package alpha;
 public class Secret {
@@ -332,7 +332,7 @@ package beta; // Error: duplicate
 
 # Part II: Declarations
 
-### Case 4.3: Invalid Package Identifier Syntax [NOT IMPLEMENTED]
+### Case 4.3: Invalid Package Identifier Syntax [IMPLEMENTED]
 ```solix
 package 123.invalid; // Error: numeric start in package segment
 ```
@@ -341,7 +341,7 @@ package 123.invalid; // Error: numeric start in package segment
 [ERROR] parser.cpp: Expected identifier in package statement, got number
 ```
 
-### Case 4.4: Package Statement Inside Class Body [NOT IMPLEMENTED]
+### Case 4.4: Package Statement Inside Class Body [IMPLEMENTED]
 ```solix
 class Foo {
     package invalid.placement;
@@ -352,7 +352,7 @@ class Foo {
 [ERROR] parser.cpp: 'package' statement must be the first statement in the file
 ```
 
-### Case 4.5: Package Statement Inside Function Body [NOT IMPLEMENTED]
+### Case 4.5: Package Statement Inside Function Body [IMPLEMENTED]
 ```solix
 void test() {
     package invalid.placement;

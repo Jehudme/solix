@@ -71,4 +71,55 @@ TEST_CASE("PackageStatement - Modules", "[modules][package]") {
         )";
         assert_compile_error(code, "Only one 'package' statement is allowed per file");
     }
+
+    SECTION("Case 3.3: Package Isolation Across Unimported Namespaces") {
+        std::unordered_map<std::string, std::string> sources = {
+            {"alpha.slx", R"(
+                package alpha;
+                public class Secret {
+                    public int32 code;
+                    public Secret() { this.code = 42; }
+                }
+            )"},
+            {"beta.slx", R"(
+                package beta;
+                class Main {
+                    public static int32 main() {
+                        Secret s = new Secret();
+                        return 0;
+                    }
+                }
+            )"}
+        };
+        assert_compile_sources_error(sources, "Secret");
+    }
+
+    SECTION("Case 4.3: Invalid Package Identifier Syntax") {
+        const std::string code = R"(
+            package 123.invalid;
+        )";
+        assert_compile_error(code, "Expected identifier in package statement");
+    }
+
+    SECTION("Case 4.4: Package Statement Inside Class Body") {
+        const std::string code = R"(
+            class Foo {
+                package invalid.placement;
+            }
+        )";
+        assert_compile_error(code, "'package' statement must be the first statement in the file");
+    }
+
+    SECTION("Case 4.5: Package Statement Inside Function Body") {
+        const std::string code = R"(
+            class Main {
+                public static int32 main() {
+                    package invalid.placement;
+                    return 0;
+                }
+            }
+        )";
+        assert_compile_error(code, "'package' statement must be the first statement in the file");
+    }
 }
+

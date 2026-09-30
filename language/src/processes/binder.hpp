@@ -107,6 +107,7 @@ public:
     MethodDeclaration* current_method = nullptr;
     std::string current_package;
     std::unordered_set<std::string> known_packages; // All registered package prefixes
+    std::unordered_set<std::string> wildcard_imported_packages; // Packages imported via wildcard/symbol
     std::unordered_map<std::string, std::string> imported_symbols; // Short symbol -> full qualified name
     
     BinderPass current_pass;

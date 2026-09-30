@@ -490,6 +490,18 @@ Node *Binder::resolve_symbol(const std::string &name, Node *error_node,
         sym_node->node_type != NodeType::ALIAS_STMT) {
       continue;
     }
+    // If unqualified (no dot in query), enforce package isolation:
+    // Only allow matching if symbol belongs to current package, an imported package, or stdlib root
+    if (name.find('.') == std::string::npos) {
+      size_t dot = sym_name.rfind('.');
+      if (dot != std::string::npos) {
+        std::string sym_pkg = sym_name.substr(0, dot + 1);
+        if (sym_pkg != node_pkg && !wildcard_imported_packages.count(sym_pkg) &&
+            sym_pkg != "solix." && sym_pkg != "solix.core.") {
+          continue; // Isolated in an unimported external package
+        }
+      }
+    }
     if (sym_name == name ||
         (sym_name.length() > name.length() &&
          sym_name.compare(sym_name.length() - suffix.length(), suffix.length(),
@@ -651,6 +663,7 @@ void Binder::process_imports() {
         }
         if (matches.size() == 1) {
           known_packages.insert(matches[0]);
+          wildcard_imported_packages.insert(matches[0]);
           log_debug("Wildcard import resolved '{}' -> '{}'", target_pkg,
                     matches[0]);
         } else if (matches.size() > 1) {
@@ -665,6 +678,7 @@ void Binder::process_imports() {
                               ")");
         } else {
           known_packages.insert(target_pkg);
+          wildcard_imported_packages.insert(target_pkg);
         }
       }
     } else {
@@ -675,6 +689,7 @@ void Binder::process_imports() {
         size_t dot = sym->mangled_name.rfind('.');
         if (dot != std::string::npos) {
           known_packages.insert(sym->mangled_name.substr(0, dot + 1));
+          wildcard_imported_packages.insert(sym->mangled_name.substr(0, dot + 1));
         }
         log_debug("Symbol import resolved: '{}' -> '{}'", n->symbol_name,
                   sym->mangled_name);
@@ -685,6 +700,7 @@ void Binder::process_imports() {
           size_t dot = tmpl.rfind('.');
           if (dot != std::string::npos) {
             known_packages.insert(tmpl.substr(0, dot + 1));
+            wildcard_imported_packages.insert(tmpl.substr(0, dot + 1));
           }
           log_debug("Template import resolved: '{}' -> '{}'", n->symbol_name,
                     tmpl);
