@@ -1910,7 +1910,7 @@ if (score >= 90) {
 
 ---
 
-### Case 3.3: Complex Short-Circuit Logical Condition [NOT IMPLEMENTED]
+### Case 3.3: Complex Short-Circuit Logical Condition [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 a = 10;
@@ -1942,7 +1942,7 @@ void test() {
 [ERROR] binder.cpp: If condition must be of type 'bool', got 'int32'
 ```
 
-### Case 4.2: Incompatible Assignment in Condition [NOT IMPLEMENTED]
+### Case 4.2: Incompatible Assignment in Condition [IMPLEMENTED]
 ```solix
 void test() {
     int32 x = 0;
@@ -1954,7 +1954,7 @@ void test() {
 [ERROR] binder.cpp: If condition must be of type 'bool', got 'int32'
 ```
 
-### Case 4.3: If Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+### Case 4.3: If Statement Placed Directly in Class Body [IMPLEMENTED]
 ```solix
 class BadClass {
     if (true) {} // Error

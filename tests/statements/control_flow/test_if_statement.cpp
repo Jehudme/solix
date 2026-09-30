@@ -34,6 +34,21 @@ static int32 main() {
         CHECK(run_source(code) == 2);
     }
 
+    SECTION("Case 3.3: Complex Short-Circuit Logical Condition") {
+        std::string code = R"(
+static int32 main() {
+    int32 a = 10;
+    int32 b = 20;
+    bool executed = false;
+    if (a == 10 && (b == 20 || false)) {
+        executed = true;
+    }
+    return executed ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
     SECTION("Case 4.1: Non-Boolean Condition Type") {
         std::string code = R"(
 void test() {
@@ -43,5 +58,24 @@ void test() {
 }
 )";
         assert_compile_error(code, "If condition must be of type 'bool', got 'int32'");
+    }
+
+    SECTION("Case 4.2: Incompatible Assignment in Condition") {
+        std::string code = R"(
+void test() {
+    int32 x = 0;
+    if (x = 5) {}
+}
+)";
+        assert_compile_error(code, "If condition must be of type 'bool', got 'int32'");
+    }
+
+    SECTION("Case 4.3: If Statement Placed Directly in Class Body") {
+        std::string code = R"(
+class BadClass {
+    if (true) {}
+}
+)";
+        assert_compile_error(code, "Statements are not allowed directly in class body");
     }
 }
