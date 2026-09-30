@@ -1418,7 +1418,7 @@ void test() {
 [ERROR] parser.cpp: Syntax error: unexpected token '}'
 ```
 
-### Case 4.6: Bare Execution Block Directly in Class Body [NOT IMPLEMENTED]
+### Case 4.6: Bare Execution Block Directly in Class Body [IMPLEMENTED]
 ```solix
 class BadClass {
     {

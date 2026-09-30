@@ -115,4 +115,16 @@ void test() {
 )";
         assert_compile_error(code, "unexpected token '}'");
     }
+
+    SECTION("Case 4.6: Bare Execution Block Directly in Class Body") {
+        std::string code = R"(
+class BadClass {
+    {
+        int32 x = 5;
+    }
 }
+)";
+        assert_compile_error(code, "Executable blocks are not allowed directly in class body");
+    }
+}
+

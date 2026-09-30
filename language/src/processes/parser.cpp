@@ -1204,6 +1204,10 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
       }
     }
 
+    if (check(TokenType::PUNCTUATION_OPEN_BRACE)) {
+      throw ParseError("Executable blocks are not allowed directly in class body", peek().line, peek().column);
+    }
+
     if (match(TokenType::KEYWORD_CLASS)) {
       decl->children.push_back(parse_class_declaration(field_mod, is_abstract));
       continue;
