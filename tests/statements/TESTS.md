@@ -3537,7 +3537,7 @@ void test() {
 
 ### Positive Test Scenarios (Functional Execution & State)
 
-### Case 1.1: Primitive Type Sizing [NOT IMPLEMENTED]
+### Case 1.1: Primitive Type Sizing [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 s1 = sizeof(int8);
@@ -3556,7 +3556,7 @@ static int32 main() {
 ```
 *Expected Result*: Returns 0 indicating all primitive types have correct byte sizes.
 
-### Case 1.2: Class Type Compile-Time Sizing [NOT IMPLEMENTED]
+### Case 1.2: Class Type Compile-Time Sizing [IMPLEMENTED]
 ```solix
 class Point {
     int32 x;
@@ -3569,7 +3569,7 @@ static int32 main() {
 ```
 *Expected Result*: Returns 0 indicating compile-time class instance size includes fields and vtable header.
 
-### Case 2.1: Dynamic Instance Sizing on Heap Objects [NOT IMPLEMENTED]
+### Case 2.1: Dynamic Instance Sizing on Heap Objects [IMPLEMENTED]
 ```solix
 class Item {
     int32 a;
@@ -3585,7 +3585,7 @@ static int32 main() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 3.1: SizeOf on Undeclared Identifier [NOT IMPLEMENTED]
+### Case 3.1: SizeOf on Undeclared Identifier [IMPLEMENTED]
 ```solix
 void test() {
     int32 s = sizeof(NonExistentType);
