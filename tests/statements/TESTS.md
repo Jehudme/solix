@@ -1554,7 +1554,7 @@ for (int32 i = 0; i < 6; i++) {
 
 ---
 
-### Case 3.2: Continue in While Loop [NOT IMPLEMENTED]
+### Case 3.2: Continue in While Loop [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 i = 0;
@@ -1586,7 +1586,7 @@ void test() {
 [ERROR] binder.cpp: 'continue' statement not allowed outside of loop
 ```
 
-### Case 4.2: Continue Inside Switch Not in Loop [NOT IMPLEMENTED]
+### Case 4.2: Continue Inside Switch Not in Loop [IMPLEMENTED]
 ```solix
 void test(int32 x) {
     switch (x) {
@@ -1600,7 +1600,7 @@ void test(int32 x) {
 [ERROR] binder.cpp: 'continue' statement outside of loop
 ```
 
-### Case 4.3: Continue Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+### Case 4.3: Continue Statement Placed Directly in Class Body [IMPLEMENTED]
 ```solix
 class BadClass {
     continue; // Error
@@ -1611,7 +1611,7 @@ class BadClass {
 [ERROR] parser.cpp: Statements are not allowed directly in class body
 ```
 
-### Case 4.4: Continue Inside If Not Enclosed in Loop [NOT IMPLEMENTED]
+### Case 4.4: Continue Inside If Not Enclosed in Loop [IMPLEMENTED]
 ```solix
 void test(bool flag) {
     if (flag) {
