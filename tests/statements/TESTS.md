@@ -1643,7 +1643,7 @@ do {
 
 ---
 
-### Case 3.2: Multi-Pass Iteration and Condition Evaluation [NOT IMPLEMENTED]
+### Case 3.2: Multi-Pass Iteration and Condition Evaluation [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 sum = 0;
@@ -1675,7 +1675,7 @@ void test() {
 [ERROR] binder.cpp: Undefined identifier: inner
 ```
 
-### Case 4.2: Non-Boolean Condition in Do-While [NOT IMPLEMENTED]
+### Case 4.2: Non-Boolean Condition in Do-While [IMPLEMENTED]
 ```solix
 void test() {
     do {} while (42); // Error
@@ -1686,7 +1686,7 @@ void test() {
 [ERROR] binder.cpp: Do-while loop condition must be of type 'bool', got 'int32'
 ```
 
-### Case 4.3: Do-While Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+### Case 4.3: Do-While Statement Placed Directly in Class Body [IMPLEMENTED]
 ```solix
 class BadClass {
     do {} while (true); // Error

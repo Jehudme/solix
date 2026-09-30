@@ -2647,7 +2647,7 @@ void Binder::visit(DoWhileStatement &n) {
     loop_depth--;
     TypeInfo condition_type = evaluate_expression(n.condition.get());
     if (condition_type.name != "bool")
-      record_error(&n, "Condition must be bool");
+      record_error(&n, fmt::format("Do-while loop condition must be of type 'bool', got '{}'", condition_type.name));
   }
 }
 
