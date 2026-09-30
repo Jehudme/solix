@@ -1226,7 +1226,7 @@ void test() {
 
 ---
 
-### Case 3.2: Overloading Subtraction and Equality Operators [NOT IMPLEMENTED]
+### Case 3.2: Overloading Subtraction and Equality Operators [IMPLEMENTED]
 ```solix
 class Complex {
     public int32 re;
@@ -1269,7 +1269,7 @@ class Test {
 
 # Part III: Control Flow & Execution Statements
 
-### Case 4.2: Binary Operator Declared with Wrong Arity [NOT IMPLEMENTED]
+### Case 4.2: Binary Operator Declared with Wrong Arity [IMPLEMENTED]
 ```solix
 class Vector {
     public Vector operator+(Vector a, Vector b) {} // Error: member operator+ takes 1 argument
@@ -1280,7 +1280,7 @@ class Vector {
 [ERROR] binder.cpp: Member binary operator '+' must take exactly 1 argument
 ```
 
-### Case 4.4: Operator Overload Declared at Top Level [NOT IMPLEMENTED]
+### Case 4.4: Operator Overload Declared at Top Level [IMPLEMENTED]
 ```solix
 public int32 operator+(int32 a, int32 b) {
     return a + b;
@@ -1291,7 +1291,7 @@ public int32 operator+(int32 a, int32 b) {
 [ERROR] parser.cpp: Operator overloads can only be declared inside a class body
 ```
 
-### Case 4.5: Operator Overload Declared Inside Method Body [NOT IMPLEMENTED]
+### Case 4.5: Operator Overload Declared Inside Method Body [IMPLEMENTED]
 ```solix
 void test() {
     operator+(int32 a) {}

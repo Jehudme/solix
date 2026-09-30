@@ -1637,6 +1637,18 @@ void Binder::visit(BinaryExpression &n) {
         op_name += "*";
       else if (n.op == TokenType::OPERATOR_DIVIDE)
         op_name += "/";
+      else if (n.op == TokenType::OPERATOR_EQUAL)
+        op_name += "==";
+      else if (n.op == TokenType::OPERATOR_NOT_EQUAL)
+        op_name += "!=";
+      else if (n.op == TokenType::OPERATOR_LESS_THAN)
+        op_name += "<";
+      else if (n.op == TokenType::OPERATOR_GREATER_THAN)
+        op_name += ">";
+      else if (n.op == TokenType::OPERATOR_LESS_EQUAL)
+        op_name += "<=";
+      else if (n.op == TokenType::OPERATOR_GREATER_EQUAL)
+        op_name += ">=";
       else
         goto primitive_fallback;
 
@@ -2940,6 +2952,12 @@ void Binder::visit(MethodDeclaration &n) {
     for (const auto &param : n.parameters) {
       auto *var_decl = static_cast<VariableDeclaration *>(param.get());
       var_decl->type_info = resolve_type(var_decl->type_info, var_decl);
+    }
+    if (n.method_name.rfind("operator", 0) == 0) {
+      std::string op = n.method_name.substr(8);
+      if (current_class != nullptr && n.parameters.size() != 1) {
+        record_error(&n, fmt::format("Member binary operator '{}' must take exactly 1 argument", op));
+      }
     }
     std::string full_name = current_prefix + mangle_method(&n);
     if (global_scope.symbols.count(full_name) && !n.is_native)

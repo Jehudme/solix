@@ -618,6 +618,9 @@ std::unique_ptr<Node> ParserState::parse_statement() {
              TokenType::KEYWORD_PROTECTED, TokenType::KEYWORD_INTERNAL})) {
     throw ParseError("Access modifiers ('public', 'private', 'protected') are not allowed on local variables", previous().line, previous().column);
   }
+  if (match(TokenType::KEYWORD_OPERATOR)) {
+    throw ParseError("Operator overloads can only be declared inside a class body", previous().line, previous().column);
+  }
 
   if (check(TokenType::IDENTIFIER) && current + 1 < tokens.size() &&
       tokens[current + 1]->type == TokenType::PUNCTUATION_OPEN_PAREN) {
@@ -1342,6 +1345,9 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
   Token name;
   std::string name_str;
   if (match(TokenType::KEYWORD_OPERATOR)) {
+    if (!is_inside_class) {
+      throw ParseError("Operator overloads can only be declared inside a class body", previous().line, previous().column);
+    }
     name = previous();
     Token op_token = peek();
     advance();
@@ -1356,6 +1362,18 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
       name_str += "/";
     else if (op_token.type == TokenType::OPERATOR_ASSIGN)
       name_str += "=";
+    else if (op_token.type == TokenType::OPERATOR_EQUAL)
+      name_str += "==";
+    else if (op_token.type == TokenType::OPERATOR_NOT_EQUAL)
+      name_str += "!=";
+    else if (op_token.type == TokenType::OPERATOR_LESS_THAN)
+      name_str += "<";
+    else if (op_token.type == TokenType::OPERATOR_GREATER_THAN)
+      name_str += ">";
+    else if (op_token.type == TokenType::OPERATOR_LESS_EQUAL)
+      name_str += "<=";
+    else if (op_token.type == TokenType::OPERATOR_GREATER_EQUAL)
+      name_str += ">=";
     else
       throw ParseError(fmt::format("Operator '{}' cannot be overloaded", operator_token_to_string(op_token.type)));
   } else {
