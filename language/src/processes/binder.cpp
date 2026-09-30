@@ -1336,6 +1336,30 @@ void Binder::bind_tree(Node *root) {
           }
           return false;
         }
+        if (node->node_type == NodeType::SWITCH_STMT) {
+          auto *switch_stmt = static_cast<SwitchStatement *>(node);
+          bool has_default = false;
+          bool all_cases_return = true;
+          for (const auto &case_node : switch_stmt->children) {
+            auto *c = static_cast<CaseStatement *>(case_node.get());
+            if (c->is_default) has_default = true;
+            bool case_returns = false;
+            for (const auto &stmt : c->children) {
+              if (returns_on_all_paths(stmt.get())) {
+                case_returns = true;
+                break;
+              }
+            }
+            if (!case_returns) {
+              all_cases_return = false;
+              break;
+            }
+          }
+          if (has_default && all_cases_return && !switch_stmt->children.empty()) {
+            return true;
+          }
+          return false;
+        }
         return false;
       };
 

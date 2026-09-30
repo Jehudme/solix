@@ -850,6 +850,9 @@ std::unique_ptr<Node> ParserState::parse_switch_statement() {
       log_trace("Parsing 'case' block at line {}", previous().line);
       auto case_stmt = std::make_unique<CaseStatement>(previous());
       case_stmt->case_value = parse_expression();
+      if (case_stmt->case_value->node_type == NodeType::IDENTIFIER) {
+        throw ParseError("Case label must be a constant literal", case_stmt->case_value->line, case_stmt->case_value->column);
+      }
       consume(TokenType::PUNCTUATION_COLON, "Expected ':' after case value");
       stmt->children.push_back(std::move(case_stmt));
     } else if (match(TokenType::KEYWORD_DEFAULT)) {

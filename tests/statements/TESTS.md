@@ -2086,7 +2086,7 @@ switch (value) {
 
 ---
 
-### Case 3.2: Switch on Strongly Typed Enum [NOT IMPLEMENTED]
+### Case 3.2: Switch on Strongly Typed Enum [IMPLEMENTED]
 ```solix
 enum Status { PENDING, APPROVED, REJECTED }
 
@@ -2123,7 +2123,7 @@ void test(int32 x) {
 [ERROR] binder.cpp: Duplicate case value '1' in switch statement
 ```
 
-### Case 4.2: Variable Expression in Case Label [NOT IMPLEMENTED]
+### Case 4.2: Variable Expression in Case Label [IMPLEMENTED]
 ```solix
 void test(int32 x, int32 dynamicVal) {
     switch (x) {
@@ -2136,7 +2136,7 @@ void test(int32 x, int32 dynamicVal) {
 [ERROR] parser.cpp: Case label must be a constant literal
 ```
 
-### Case 4.4: Switch Statement Placed Directly in Class Body [NOT IMPLEMENTED]
+### Case 4.4: Switch Statement Placed Directly in Class Body [IMPLEMENTED]
 ```solix
 class BadClass {
     switch (1) { case 1: break; } // Error
