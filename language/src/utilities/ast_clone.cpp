@@ -318,6 +318,8 @@ std::unique_ptr<Node> ClassDeclaration::clone() const {
     cloned->base_class_name = base_class_name;
     cloned->access_modifier = access_modifier;
     cloned->is_abstract = is_abstract;
+    cloned->is_interface = is_interface;
+    cloned->implemented_interfaces = implemented_interfaces;
     copy_children(this, cloned.get());
     return cloned;
 }

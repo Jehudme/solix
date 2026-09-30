@@ -156,6 +156,7 @@ public:
   // Top Level parsing
   std::unique_ptr<Node> parse_top_level_declaration();
   std::unique_ptr<Node> parse_class_declaration(TokenType modifier, bool is_abstract = false);
+  std::unique_ptr<Node> parse_interface_declaration(TokenType modifier);
   std::unique_ptr<Node> parse_enum_declaration(TokenType modifier);
   std::unique_ptr<Node> parse_package_statement();
   std::unique_ptr<Node> parse_alias_statement();
@@ -610,6 +611,9 @@ std::unique_ptr<Node> ParserState::parse_statement() {
   if (match(TokenType::KEYWORD_ENUM)) {
     throw ParseError("Enums cannot be declared inside a function or method body", previous().line, previous().column);
   }
+  if (match(TokenType::KEYWORD_INTERFACE)) {
+    throw ParseError("Interfaces cannot be declared inside a function or method body", previous().line, previous().column);
+  }
   if (match({TokenType::KEYWORD_PUBLIC, TokenType::KEYWORD_PRIVATE,
              TokenType::KEYWORD_PROTECTED, TokenType::KEYWORD_INTERNAL})) {
     throw ParseError("Access modifiers ('public', 'private', 'protected') are not allowed on local variables", previous().line, previous().column);
@@ -958,6 +962,8 @@ std::unique_ptr<Node> ParserState::parse_top_level_declaration() {
 
   if (match(TokenType::KEYWORD_CLASS))
     return parse_class_declaration(modifier, is_abstract);
+  if (match(TokenType::KEYWORD_INTERFACE))
+    return parse_interface_declaration(modifier);
   if (match(TokenType::KEYWORD_ENUM))
     return parse_enum_declaration(modifier);
 
@@ -1068,6 +1074,54 @@ std::unique_ptr<Node> ParserState::parse_enum_declaration(TokenType modifier) {
   return decl;
 }
 
+std::unique_ptr<Node> ParserState::parse_interface_declaration(TokenType modifier) {
+  Token iface_tok = previous();
+  Token name = consume(TokenType::IDENTIFIER, "Expected interface name");
+  std::string iface_name = std::get<std::string>(name.value);
+  log_trace("Parsing interface '{}' at line {}", iface_name, iface_tok.line);
+
+  auto decl = std::make_unique<ClassDeclaration>(iface_tok, iface_name);
+  decl->is_interface = true;
+  decl->is_abstract = true;
+  decl->access_modifier = modifier;
+
+  if (match(TokenType::KEYWORD_EXTENDS) || match(TokenType::PUNCTUATION_COLON)) {
+    TypeInfo base_type = parse_type_info();
+    decl->base_class_name = base_type.name;
+  }
+
+  consume(TokenType::PUNCTUATION_OPEN_BRACE, "Expected '{' before interface body");
+  while (!check(TokenType::PUNCTUATION_CLOSE_BRACE) && !is_at_end()) {
+    TypeInfo type = parse_type_info();
+    Token m_name = consume(TokenType::IDENTIFIER, "Expected method name");
+    std::string m_name_str = std::get<std::string>(m_name.value);
+    if (!check(TokenType::PUNCTUATION_OPEN_PAREN)) {
+      throw ParseError("Interfaces must not declare instance fields", m_name.line, m_name.column);
+    }
+    consume(TokenType::PUNCTUATION_OPEN_PAREN, "Expected '(' after method name");
+    auto method = std::make_unique<MethodDeclaration>(m_name, m_name_str, std::move(type));
+    method->is_abstract = true;
+    method->access_modifier = TokenType::KEYWORD_PUBLIC;
+    while (!check(TokenType::PUNCTUATION_CLOSE_PAREN) && !is_at_end()) {
+      TypeInfo p_type = parse_type_info();
+      Token p_name = consume(TokenType::IDENTIFIER, "Expected parameter name");
+      method->parameters.push_back(std::make_unique<VariableDeclaration>(p_name, std::get<std::string>(p_name.value), std::move(p_type)));
+      if (!match(TokenType::PUNCTUATION_COMMA)) break;
+    }
+    consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after parameters");
+    if (check(TokenType::PUNCTUATION_OPEN_BRACE)) {
+      throw ParseError("Interface methods cannot have a body", peek().line, peek().column);
+    }
+    consume(TokenType::PUNCTUATION_SEMICOLON, "Expected ';' after interface method declaration");
+    decl->children.push_back(std::move(method));
+  }
+  consume(TokenType::PUNCTUATION_CLOSE_BRACE, "Expected '}' after interface body");
+  for (auto &child : decl->children) {
+    child->parent = decl.get();
+  }
+  return decl;
+}
+
 std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, bool is_abstract) {
   Token class_tok = previous();
   Token name = consume(TokenType::IDENTIFIER, "Expected class name");
@@ -1095,6 +1149,12 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
     TypeInfo base_type = parse_type_info();
     decl->base_class_name = base_type.name;
     log_debug("Class '{}' extends '{}'", cls_name, decl->base_class_name);
+  }
+  if (match(TokenType::KEYWORD_IMPLEMENTS)) {
+    do {
+      Token iface_tok = consume(TokenType::IDENTIFIER, "Expected interface name");
+      decl->implemented_interfaces.push_back(std::get<std::string>(iface_tok.value));
+    } while (match(TokenType::PUNCTUATION_COMMA));
   }
   decl->access_modifier = modifier;
 
@@ -1137,6 +1197,10 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
 
     if (match(TokenType::KEYWORD_CLASS)) {
       decl->children.push_back(parse_class_declaration(field_mod, is_abstract));
+      continue;
+    }
+    if (match(TokenType::KEYWORD_INTERFACE)) {
+      decl->children.push_back(parse_interface_declaration(field_mod));
       continue;
     }
     if (match(TokenType::KEYWORD_ENUM)) {

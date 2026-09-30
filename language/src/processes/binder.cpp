@@ -993,6 +993,39 @@ void Binder::bind_types_and_memory() {
             }
           }
         }
+
+        if (!cls->is_abstract && !cls->is_interface) {
+          for (const auto &iface_name : cls->implemented_interfaces) {
+            Node *iface_node = resolve_symbol(iface_name, cls, false);
+            if (iface_node && iface_node->node_type == NodeType::CLASS_DECL) {
+              auto *iface = static_cast<ClassDeclaration *>(iface_node);
+              for (const auto &c : iface->children) {
+                if (c && c->node_type == NodeType::METHOD_DECL) {
+                  auto *im = static_cast<MethodDeclaration *>(c.get());
+                  bool implemented = false;
+                  ClassDeclaration *curr = cls;
+                  while (curr) {
+                    for (const auto &mc : curr->children) {
+                      if (mc && mc->node_type == NodeType::METHOD_DECL) {
+                        auto *m = static_cast<MethodDeclaration *>(mc.get());
+                        if (m->method_name == im->method_name && !m->is_abstract) {
+                          implemented = true;
+                          break;
+                        }
+                      }
+                    }
+                    if (implemented || curr->base_class_name.empty()) break;
+                    Node *bn = global_scope.resolve(curr->base_class_name);
+                    curr = (bn && bn->node_type == NodeType::CLASS_DECL) ? static_cast<ClassDeclaration *>(bn) : nullptr;
+                  }
+                  if (!implemented) {
+                    record_error(cls, fmt::format("Class '{}' does not implement interface method '{}()'", cls->class_name, im->method_name));
+                  }
+                }
+              }
+            }
+          }
+        }
       };
 
   for (const auto &[name, node] : global_scope.symbols) {
@@ -1372,6 +1405,10 @@ bool Binder::is_assignable(const TypeInfo &target, const TypeInfo &source) {
     auto *cls = static_cast<ClassDeclaration *>(src_node);
     if (src_node == target_node || cls->mangled_name == target.name || cls->class_name == target.name)
       return true;
+    for (const auto &iface : cls->implemented_interfaces) {
+      if (iface == target.name || (target_node && (iface == static_cast<ClassDeclaration *>(target_node)->class_name || iface == static_cast<ClassDeclaration *>(target_node)->mangled_name)))
+        return true;
+    }
     if (cls->base_class_name.empty())
       break;
     src_node = global_scope.resolve(cls->base_class_name);
@@ -2769,7 +2806,7 @@ void Binder::visit(ClassDeclaration &n) {
         break;
       }
     }
-    if (!has_ctor) {
+    if (!has_ctor && !n.is_interface) {
       Token tok{TokenType::IDENTIFIER, n.line, n.column, n.source, n.class_name};
       auto default_ctor = std::make_unique<ConstructorDeclaration>(tok, n.class_name);
       default_ctor->parent = &n;

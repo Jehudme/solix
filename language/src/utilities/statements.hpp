@@ -522,6 +522,8 @@ struct ClassDeclaration : public Node {
     std::string base_class_name;
     TokenType access_modifier = TokenType::KEYWORD_INTERNAL;
     bool is_abstract = false;
+    bool is_interface = false;
+    std::vector<std::string> implemented_interfaces;
     int instance_size = 0;
     ClassDeclaration(const Token& t, std::string name) : Node(NodeType::CLASS_DECL, t), class_name(std::move(name)) {}
 };

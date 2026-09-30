@@ -962,7 +962,7 @@ public int32 globalField = 42; // Error: Solix requires fields to be in a class
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Multiple Interface Conformance [NOT IMPLEMENTED]
+### Case 3.1: Multiple Interface Conformance [IMPLEMENTED]
 ```solix
 interface Printable { void print(); }
 interface Serializable { void save(); }
@@ -976,7 +976,7 @@ class Doc implements Printable, Serializable {
 
 ---
 
-### Case 3.2: Interface Hierarchy with Sub-Interface Extension [NOT IMPLEMENTED]
+### Case 3.2: Interface Hierarchy with Sub-Interface Extension [IMPLEMENTED]
 ```solix
 interface Reader {
     int32 read();
@@ -987,7 +987,7 @@ interface AdvancedReader extends Reader {
 ```
 *Expected Result*: `AdvancedReader` inherits abstract method requirement `read()`.
 
-### Case 3.3: Polymorphic Method Invocation via Interface Variable [NOT IMPLEMENTED]
+### Case 3.3: Polymorphic Method Invocation via Interface Variable [IMPLEMENTED]
 ```solix
 interface Worker {
     int32 work();
@@ -1005,7 +1005,7 @@ static int32 main() {
 
 ---
 
-### Case 3.4: Nested Interface Declaration Inside Class [NOT IMPLEMENTED]
+### Case 3.4: Nested Interface Declaration Inside Class [IMPLEMENTED]
 ```solix
 class Button {
     public interface OnClickListener {
@@ -1019,7 +1019,7 @@ class Button {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Interface Method with Body [NOT IMPLEMENTED]
+### Case 4.1: Interface Method with Body [IMPLEMENTED]
 ```solix
 interface Reader {
     int32 read() { return 0; } // Error: method cannot have body
@@ -1030,7 +1030,7 @@ interface Reader {
 [ERROR] parser.cpp: Interface methods cannot have a body
 ```
 
-### Case 4.2: Class Incompletely Implementing Interface [NOT IMPLEMENTED]
+### Case 4.2: Class Incompletely Implementing Interface [IMPLEMENTED]
 ```solix
 interface Service {
     void start();
@@ -1045,7 +1045,7 @@ class IncompleteService implements Service {
 [ERROR] binder.cpp: Class 'IncompleteService' does not implement interface method 'stop()'
 ```
 
-### Case 4.3: Interface Containing State Fields [NOT IMPLEMENTED]
+### Case 4.3: Interface Containing State Fields [IMPLEMENTED]
 ```solix
 interface BadInterface {
     int32 stateField; // Error: interfaces cannot contain instance state
@@ -1056,7 +1056,7 @@ interface BadInterface {
 [ERROR] parser.cpp: Interfaces must not declare instance fields
 ```
 
-### Case 4.5: Interface Declared Inside Function Body [NOT IMPLEMENTED]
+### Case 4.5: Interface Declared Inside Function Body [IMPLEMENTED]
 ```solix
 void test() {
     interface LocalInterface {} // Error
