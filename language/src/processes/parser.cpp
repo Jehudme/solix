@@ -31,6 +31,21 @@ static std::string operator_token_to_string(TokenType type) {
   }
 }
 
+static std::string token_type_to_string(TokenType type) {
+  switch (type) {
+    case TokenType::PUNCTUATION_SEMICOLON: return "';'";
+    case TokenType::PUNCTUATION_COMMA: return "','";
+    case TokenType::PUNCTUATION_OPEN_PAREN: return "'('";
+    case TokenType::PUNCTUATION_CLOSE_PAREN: return "')'";
+    case TokenType::PUNCTUATION_OPEN_BRACE: return "'{'";
+    case TokenType::PUNCTUATION_CLOSE_BRACE: return "'}'";
+    case TokenType::PUNCTUATION_OPEN_BRACKET: return "'['";
+    case TokenType::PUNCTUATION_CLOSE_BRACKET: return "']'";
+    case TokenType::EOF_TOKEN: return "<EOF>";
+    default: return std::to_string((int)type);
+  }
+}
+
 class ParserState {
   std::vector<const Token *> tokens;
   size_t current = 0;
@@ -581,7 +596,7 @@ std::unique_ptr<Node> ParserState::parse_primary() {
   }
 
   throw ParseError("Expected expression, got " +
-                   std::to_string((int)peek().type));
+                   token_type_to_string(peek().type));
 }
 
 std::unique_ptr<Node> ParserState::parse_block() {
@@ -1208,7 +1223,10 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
       throw ParseError("Executable blocks are not allowed directly in class body", peek().line, peek().column);
     }
 
-    if (peek().type == TokenType::KEYWORD_BREAK ||
+    if (peek().type == TokenType::NUMBER ||
+        peek().type == TokenType::STRING ||
+        peek().type == TokenType::CHAR ||
+        peek().type == TokenType::KEYWORD_BREAK ||
         peek().type == TokenType::KEYWORD_CONTINUE ||
         peek().type == TokenType::KEYWORD_RETURN ||
         peek().type == TokenType::KEYWORD_IF ||

@@ -1726,7 +1726,7 @@ void test() {
 
 ---
 
-### Case 3.3: Chained Fluent Method Calls [NOT IMPLEMENTED]
+### Case 3.3: Chained Fluent Method Calls [IMPLEMENTED]
 ```solix
 class Builder {
     public int32 val;
@@ -1768,7 +1768,7 @@ void test() {
 [FATAL VM PANIC] NullReferenceException: Attempted to invoke method on null object reference
 ```
 
-### Case 4.3: Incomplete Expression Statement [NOT IMPLEMENTED]
+### Case 4.3: Incomplete Expression Statement [IMPLEMENTED]
 ```solix
 void test() {
     int32 x = ; // Error
@@ -1779,7 +1779,7 @@ void test() {
 [ERROR] parser.cpp: Expected expression, got ';'
 ```
 
-### Case 4.4: Expression Statement Directly in Class Body [NOT IMPLEMENTED]
+### Case 4.4: Expression Statement Directly in Class Body [IMPLEMENTED]
 ```solix
 class BadClass {
     10 + 20; // Error

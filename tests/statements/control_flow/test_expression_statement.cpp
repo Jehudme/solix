@@ -30,6 +30,22 @@ static int32 main() {
         CHECK(run_source(code) == 0);
     }
 
+    SECTION("Case 3.3: Chained Fluent Method Calls") {
+        std::string code = R"(
+class Builder {
+    public int32 val;
+    public Builder add(int32 x) { this.val += x; return this; }
+}
+
+static int32 main() {
+    Builder b = new Builder();
+    b.add(10).add(20).add(30);
+    return b.val == 60 ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
     SECTION("Case 4.1: Missing Semicolon") {
         std::string code = R"(
 void test() {
@@ -51,5 +67,23 @@ static int32 main() {
 }
 )";
         CHECK_THROWS_WITH(run_source(code), Catch::Matchers::ContainsSubstring("NullPointer"));
+    }
+
+    SECTION("Case 4.3: Incomplete Expression Statement") {
+        std::string code = R"(
+void test() {
+    int32 x = ;
+}
+)";
+        assert_compile_error(code, "Expected expression, got ';'");
+    }
+
+    SECTION("Case 4.4: Expression Statement Directly in Class Body") {
+        std::string code = R"(
+class BadClass {
+    10 + 20;
+}
+)";
+        assert_compile_error(code, "Statements are not allowed directly in class body");
     }
 }
