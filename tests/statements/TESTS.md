@@ -3656,4 +3656,169 @@ static int32 main() {
 ```
 *Expected Result*: Returns 0 indicating ALLOC_FRAME reserves all local variable slots and computes correct result.
 
+---
+
+## Suite 40: FunctionPointers (<return_type>(*)(<arguments_types>))
+
+### Positive Test Scenarios (Functional Execution & State)
+
+### Case 1.1: Direct Assignment and Invocation [IMPLEMENTED]
+```solix
+public class MathUtils {
+    public static int32 add(int32 a, int32 b) {
+        return a + b;
+    }
+}
+
+static int32 main() {
+    int32(*)(int32, int32) op = MathUtils.add;
+    return op(10, 20) == 30 ? 0 : 1;
+}
+```
+*Expected Result*: Returns 0 indicating direct function pointer assignment and indirect invocation computes 30.
+
+### Case 1.2: Null Initialization and Reassignment [IMPLEMENTED]
+```solix
+public class MathUtils {
+    public static int32 mul(int32 a, int32 b) {
+        return a * b;
+    }
+}
+
+static int32 main() {
+    int32(*)(int32, int32) op = null;
+    if (op != null) return 1;
+    op = MathUtils.mul;
+    if (op == null) return 2;
+    return op(6, 7) == 42 ? 0 : 3;
+}
+```
+*Expected Result*: Returns 0 indicating null initialization, null checks, and reassignment work correctly.
+
+### Case 1.3: Higher-Order Function Passing [IMPLEMENTED]
+```solix
+public class Operations {
+    public static int32 sub(int32 a, int32 b) {
+        return a - b;
+    }
+
+    public static int32 apply(int32 a, int32 b, int32(*)(int32, int32) fn) {
+        return fn(a, b);
+    }
+}
+
+static int32 main() {
+    int32 res = Operations.apply(50, 18, Operations.sub);
+    return res == 32 ? 0 : 1;
+}
+```
+*Expected Result*: Returns 0 indicating function pointer successfully passed as a parameter and invoked in higher-order method.
+
+### Case 1.4: Type Aliasing (alias) with Function Pointers [IMPLEMENTED]
+```solix
+alias BinaryOp = int32(*)(int32, int32);
+
+public class Calc {
+    public static int32 add(int32 a, int32 b) {
+        return a + b;
+    }
+}
+
+static int32 main() {
+    BinaryOp op = Calc.add;
+    return op(100, 200) == 300 ? 0 : 1;
+}
+```
+*Expected Result*: Returns 0 indicating aliased function pointer type definition behaves identically to raw type signature.
+
+### Case 1.5: Returning Function Pointer from Method [IMPLEMENTED]
+```solix
+public class Factory {
+    public static int32 double_val(int32 x) {
+        return x * 2;
+    }
+
+    public static int32(*)(int32) get_fn() {
+        return Factory.double_val;
+    }
+}
+
+static int32 main() {
+    int32(*)(int32) f = Factory.get_fn();
+    return f(21) == 42 ? 0 : 1;
+}
+```
+*Expected Result*: Returns 0 indicating returning function pointer from method preserves instruction address and executes correctly.
+
+### Negative Test Scenarios (Expected Errors & Faults)
+
+### Case 2.1: Invoking Null Function Pointer Throws NullPointerException [IMPLEMENTED]
+```solix
+static int32 main() {
+    int32(*)(int32, int32) op = null;
+    return op(1, 2);
+}
+```
+*Expected Result*: Throws `NullPointerException: Attempted to invoke null function pointer`.
+
+### Case 2.2: Parameter Count Mismatch (Compile-Time Error) [IMPLEMENTED]
+```solix
+public class MathUtils {
+    public static int32 add(int32 a, int32 b) {
+        return a + b;
+    }
+}
+
+static void test() {
+    int32(*)(int32) op = MathUtils.add;
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] Type mismatch in variable declaration
+```
+
+### Case 2.3: Return Type Mismatch (Compile-Time Error) [IMPLEMENTED]
+```solix
+public class MathUtils {
+    public static int32 add(int32 a, int32 b) {
+        return a + b;
+    }
+}
+
+static void test() {
+    void(*)(int32, int32) op = MathUtils.add;
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] Type mismatch in variable declaration
+```
+
+### Case 2.4: Address of Non-Static Method Error [IMPLEMENTED]
+```solix
+public class Greeter {
+    public void greet() {}
+}
+
+static void test() {
+    void(*)() f = Greeter.greet;
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] Cannot take address of non-static method 'greet'
+```
+
+### Case 2.5: SizeOf Function Pointer Type [IMPLEMENTED]
+```solix
+static int32 main() {
+    int32 sz = sizeof(int32(*)(int32, int32));
+    return sz == 8 ? 0 : 1;
+}
+```
+*Expected Result*: Returns 0 indicating compile-time sizeof operator evaluates function pointer type to 8 bytes.
+
+
+
 

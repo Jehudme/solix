@@ -103,6 +103,8 @@ std::unique_ptr<Node> MethodCallExpression::clone() const {
         cloned->arguments.push_back(arg ? arg->clone() : nullptr);
     }
     cloned->is_virtual_call = is_virtual_call;
+    cloned->is_function_pointer_call = is_function_pointer_call;
+    cloned->type_args = type_args;
     copy_children(this, cloned.get());
     return cloned;
 }

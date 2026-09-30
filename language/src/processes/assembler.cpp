@@ -11,6 +11,7 @@
 namespace solix {
 
 static bool is_reference_type(const TypeInfo &t) {
+  if (t.is_function_pointer) return false;
   if (t.array_depth > 0) return true;
   if (t.name.empty() || t.name == "void") return false;
   static const std::unordered_set<std::string> primitives = {
@@ -1112,6 +1113,10 @@ void Assembler::visit(IdentifierNode &node) {
     auto *var = static_cast<VariableDeclaration *>(ident->resolved_declaration);
     emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
     emit_int32(var->memory_index);
+  } else if (ident->resolved_declaration->node_type == NodeType::METHOD_DECL) {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    linker_patches.push_back({bytecode().size(), ident->resolved_declaration});
+    emit_int32(0xFFFFFFFF);
   }
 }
 
@@ -1498,6 +1503,39 @@ void Assembler::visit(UnaryExpression &node) {
 void Assembler::visit(MethodCallExpression &node) {
   auto *call = &node;
 
+  if (call->is_function_pointer_call) {
+    for (const auto &arg : call->arguments) {
+      compile_expression(arg.get());
+      if (is_reference_type(arg->expression_type)) {
+        emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+      }
+    }
+
+    compile_expression(call->callee.get());
+
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    emit_int32(call->arguments.size());
+
+    uint32_t reg_inst = bytecode().size();
+    if (!exception_cleanup_patches.empty()) {
+      emit_byte(static_cast<uint8_t>(OpCode::REGISTER_RETURN_CLEANUP));
+      emit_int32(0); // ret_ip
+      exception_cleanup_patches.back().push_back(bytecode().size());
+      emit_int32(0xFFFFFFFF); // cleanup_ip
+    }
+
+    emit_byte(static_cast<uint8_t>(OpCode::CALL));
+
+    if (!exception_cleanup_patches.empty()) {
+      uint32_t ret_ip = bytecode().size();
+      bytecode()[reg_inst + 1] = (ret_ip >> 24) & 0xFF;
+      bytecode()[reg_inst + 2] = (ret_ip >> 16) & 0xFF;
+      bytecode()[reg_inst + 3] = (ret_ip >> 8) & 0xFF;
+      bytecode()[reg_inst + 4] = ret_ip & 0xFF;
+    }
+    return;
+  }
+
   if (!call->resolved_declaration) {
     throw_error(call, "Unresolved method call in assembler.");
   }
@@ -1682,6 +1720,13 @@ void Assembler::visit(MemberAccessExpression &node) {
   if (mem_acc->enum_value != -1) {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
     emit_int32(mem_acc->enum_value);
+    return;
+  }
+
+  if (mem_acc->resolved_declaration && mem_acc->resolved_declaration->node_type == NodeType::METHOD_DECL) {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    linker_patches.push_back({bytecode().size(), mem_acc->resolved_declaration});
+    emit_int32(0xFFFFFFFF);
     return;
   }
 
