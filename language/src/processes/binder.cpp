@@ -773,6 +773,8 @@ void Binder::bind_types_and_memory() {
         std::string tmpl = resolve_template_name(alias->target_type.name, alias);
         if (!tmpl.empty() && template_registry.count(tmpl)) {
           alias->resolved_declaration = template_registry[tmpl];
+        } else {
+          record_error(alias, "Cannot resolve alias target '" + alias->target_type.name + "'");
         }
       }
     }
@@ -2569,7 +2571,7 @@ void Binder::visit(AliasStatement &n) {
     std::string full_name = current_prefix + n.alias_name;
     n.package_context = current_prefix;
     if (global_scope.symbols.count(full_name))
-      record_error(&n, "Duplicate global symbol: " + full_name);
+      record_error(&n, "Duplicate declaration of alias '" + n.alias_name + "'");
     n.mangled_name = full_name;
     global_scope.define(full_name, &n);
     log_debug("Registered global alias: '{}'", full_name);

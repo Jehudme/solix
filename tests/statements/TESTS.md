@@ -78,7 +78,7 @@ void test() {
 
 ---
 
-### Case 3.3: Class and Qualified Type Alias [NOT IMPLEMENTED]
+### Case 3.3: Class and Qualified Type Alias [IMPLEMENTED]
 ```solix
 alias Text = solix.core.String;
 
@@ -88,7 +88,7 @@ void test() {
 ```
 *Expected Result*: `Text` resolves cleanly to `solix.core.String`.
 
-### Case 3.4: Alias in Method Signature [NOT IMPLEMENTED]
+### Case 3.4: Alias in Method Signature [IMPLEMENTED]
 ```solix
 alias ID = int64;
 
@@ -126,7 +126,7 @@ void test() {
 [ERROR] binder.cpp: Alias 'Pair' expects 2 generic type arguments, got 1
 ```
 
-### Case 4.3: Aliasing Undeclared Type [NOT IMPLEMENTED]
+### Case 4.3: Aliasing Undeclared Type [IMPLEMENTED]
 ```solix
 alias Bad = NonExistentType;
 ```
@@ -135,7 +135,7 @@ alias Bad = NonExistentType;
 [ERROR] binder.cpp: Cannot resolve alias target 'NonExistentType'
 ```
 
-### Case 4.4: Duplicate Alias in Same Scope [NOT IMPLEMENTED]
+### Case 4.4: Duplicate Alias in Same Scope [IMPLEMENTED]
 ```solix
 alias Value = int32;
 alias Value = float64;
