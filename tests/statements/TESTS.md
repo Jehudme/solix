@@ -3025,7 +3025,7 @@ int32 val = 100;
 
 ---
 
-### Case 3.2: Explicit Member Access via this Identifier [NOT IMPLEMENTED]
+### Case 3.2: Explicit Member Access via this Identifier [IMPLEMENTED]
 ```solix
 class ScopeTest {
     public int32 val;
@@ -3051,7 +3051,7 @@ void test() {
 [ERROR] binder.cpp: Undefined identifier: unknown_var
 ```
 
-### Case 4.2: Accessing Local Variable Before Declaration [NOT IMPLEMENTED]
+### Case 4.2: Accessing Local Variable Before Declaration [IMPLEMENTED]
 ```solix
 void test() {
     x = 10; // Error: x not yet declared
@@ -3063,7 +3063,7 @@ void test() {
 [ERROR] binder.cpp: Undeclared identifier 'x'
 ```
 
-### Case 4.3: Using This Keyword Outside Any Class [NOT IMPLEMENTED]
+### Case 4.3: Using This Keyword Outside Any Class [IMPLEMENTED]
 ```solix
 void test() {
     int32 x = this.val; // Error: 'this' outside class
@@ -3074,7 +3074,7 @@ void test() {
 [ERROR] binder.cpp: Keyword 'this' is only valid within non-static class member methods
 ```
 
-### Case 4.4: Using This Keyword Inside Static Method [NOT IMPLEMENTED]
+### Case 4.4: Using This Keyword Inside Static Method [IMPLEMENTED]
 ```solix
 class Example {
     public static void staticMethod() {

@@ -1604,6 +1604,19 @@ void Binder::visit(IdentifierNode &n) {
       return;
     }
 
+    if (n.name == "this") {
+      if (!current_class) {
+        record_error(&n, "Keyword 'this' is only valid within non-static class member methods");
+        evaluated_type = {"void", 0};
+        return;
+      }
+      if (current_method && current_method->is_static) {
+        record_error(&n, "Keyword 'this' cannot be used in a static method");
+        evaluated_type = {"void", 0};
+        return;
+      }
+    }
+
     Node *declaration = resolve_symbol(n.name, &n, true);
 
     if (!declaration) {
