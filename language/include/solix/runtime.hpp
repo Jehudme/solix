@@ -37,10 +37,11 @@ struct Frame {
   Address return_ip = 0;
   uint32_t frame_pointer = 0; // Points to the start of locals in the unified Stack
   uint32_t arg_count = 0;
+  Address closure_env = 0;
 
   Frame() = default;
-  Frame(Address rip, uint32_t fp, uint32_t args = 0)
-      : return_ip(rip), frame_pointer(fp), arg_count(args) {}
+  Frame(Address rip, uint32_t fp, uint32_t args = 0, Address c_env = 0)
+      : return_ip(rip), frame_pointer(fp), arg_count(args), closure_env(c_env) {}
 };
 
 // -----------------------------------------------------------------------------
@@ -108,6 +109,7 @@ struct RuntimeContext {
 
   std::array<Frame, 65536> call_stack;
   size_t call_depth = 0;
+  Address active_closure_env = 0;
   
   // Exception handling state
   Address active_exception = 0;

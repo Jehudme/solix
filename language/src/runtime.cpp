@@ -934,7 +934,13 @@ op_NEGATE_I64:
 op_CALL:
   {
     uint32_t arg_count = static_cast<uint32_t>(POP());
-    uint32_t target_ip = static_cast<uint32_t>(POP());
+    uint64_t callable = POP();
+    uint32_t target_ip = static_cast<uint32_t>(callable & 0xFFFFFFFF);
+    uint32_t env_address = static_cast<uint32_t>(callable >> 32);
+
+    if (target_ip == 0) {
+      throw std::runtime_error("NullPointerException: Attempted to invoke null function pointer");
+    }
 
     uint32_t current_sp_idx = static_cast<uint32_t>(sp - stack);
     uint32_t new_frame_pointer = current_sp_idx - arg_count;
@@ -943,7 +949,8 @@ op_CALL:
     }
     if (call_depth >= 65536)
       throw std::runtime_error("Stack overflow: max call depth exceeded");
-    call_stack[call_depth++] = Frame(program_counter, new_frame_pointer, arg_count);
+    call_stack[call_depth++] = Frame(program_counter, new_frame_pointer, arg_count, active_closure_env);
+    active_closure_env = env_address;
 
     program_counter = target_ip;
     DISPATCH();
@@ -1064,7 +1071,8 @@ op_CALL_VIRTUAL:
     uint32_t new_frame_pointer = current_sp_idx - arg_count;
     if (call_depth >= 65536)
       throw std::runtime_error("Stack overflow: max call depth exceeded");
-    call_stack[call_depth++] = Frame(program_counter, new_frame_pointer, arg_count);
+    call_stack[call_depth++] = Frame(program_counter, new_frame_pointer, arg_count, active_closure_env);
+    active_closure_env = 0;
     program_counter = target_ip;
 
     DISPATCH();
@@ -1099,6 +1107,7 @@ op_RETURN:
     if (call_depth > 0) {
       PUSH(ret_val);
       program_counter = frame.return_ip;
+      active_closure_env = frame.closure_env;
     } else {
       SYNC_SP();
       exit_code = static_cast<int32_t>(ret_val);

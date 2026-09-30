@@ -30,8 +30,25 @@ struct TypeInfo {
     std::string name;
     int array_depth = 0;
     std::vector<TypeInfo> type_args;
+
+    // Function Pointer Extension
+    bool is_function_pointer = false;
+    std::shared_ptr<TypeInfo> return_type = nullptr;
+    std::vector<TypeInfo> param_types;
+
     bool operator==(const TypeInfo& other) const {
-        if (name != other.name || array_depth != other.array_depth || type_args.size() != other.type_args.size()) return false;
+        if (is_function_pointer != other.is_function_pointer) return false;
+        if (array_depth != other.array_depth) return false;
+        if (is_function_pointer) {
+            if ((return_type == nullptr) != (other.return_type == nullptr)) return false;
+            if (return_type && *return_type != *other.return_type) return false;
+            if (param_types.size() != other.param_types.size()) return false;
+            for (size_t i = 0; i < param_types.size(); i++) {
+                if (param_types[i] != other.param_types[i]) return false;
+            }
+            return true;
+        }
+        if (name != other.name || type_args.size() != other.type_args.size()) return false;
         for (size_t i = 0; i < type_args.size(); i++) if (type_args[i] != other.type_args[i]) return false;
         return true;
     }
@@ -39,6 +56,17 @@ struct TypeInfo {
         return !(*this == other);
     }
     std::string to_string() const {
+        if (is_function_pointer) {
+            std::string res = return_type ? return_type->to_string() : "void";
+            res += "(*)(";
+            for (size_t i = 0; i < param_types.size(); i++) {
+                res += param_types[i].to_string();
+                if (i + 1 < param_types.size()) res += ", ";
+            }
+            res += ")";
+            for (int i = 0; i < array_depth; i++) res += "[]";
+            return res;
+        }
         std::string res = name;
         if (!type_args.empty()) {
             res += "<";
@@ -186,6 +214,7 @@ struct MethodCallExpression : public Node {
     std::unique_ptr<Node> callee;
     std::vector<std::unique_ptr<Node>> arguments;
     bool is_virtual_call = false;
+    bool is_function_pointer_call = false;
     std::vector<TypeInfo> type_args;
     MethodCallExpression(const Token& t, std::unique_ptr<Node> cal)
         : Node(NodeType::METHOD_CALL, t), callee(std::move(cal)) {

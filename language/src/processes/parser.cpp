@@ -251,6 +251,39 @@ TypeInfo ParserState::parse_type_info() {
     type.array_depth++;
   }
 
+  while (check(TokenType::PUNCTUATION_OPEN_PAREN) && current + 2 < tokens.size() &&
+         tokens[current + 1]->type == TokenType::OPERATOR_MULTIPLY &&
+         tokens[current + 2]->type == TokenType::PUNCTUATION_CLOSE_PAREN) {
+    advance(); // '('
+    advance(); // '*'
+    advance(); // ')'
+    TypeInfo fp;
+    fp.is_function_pointer = true;
+    fp.return_type = std::make_shared<TypeInfo>(type);
+    consume(TokenType::PUNCTUATION_OPEN_PAREN, "Expected '(' for function pointer parameters");
+    if (!check(TokenType::PUNCTUATION_CLOSE_PAREN)) {
+      do {
+        fp.param_types.push_back(parse_type_info());
+      } while (match(TokenType::PUNCTUATION_COMMA));
+    }
+    consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after function pointer parameters");
+
+    while (match(TokenType::PUNCTUATION_ARRAY_BRACKETS)) {
+      fp.array_depth++;
+    }
+
+    while (check(TokenType::PUNCTUATION_OPEN_BRACKET) &&
+           current + 1 < tokens.size() &&
+           tokens[current + 1]->type == TokenType::PUNCTUATION_CLOSE_BRACKET) {
+      advance();
+      advance();
+      fp.array_depth++;
+    }
+
+    fp.name = fp.to_string();
+    type = std::move(fp);
+  }
+
   log_trace("Parsed type: {}", type.to_string());
   return type;
 }

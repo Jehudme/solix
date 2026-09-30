@@ -152,9 +152,13 @@ Node *Binder::instantiate_template(const std::string &template_name,
       if (child && child->node_type == NodeType::FIELD_DECL) {
         auto *field = static_cast<FieldDeclaration *>(child.get());
         field->type_info = resolve_type(field->type_info, field);
-        Node *type_decl = global_scope.resolve(field->type_info.name);
-        field->is_reference_type = !(type_decl && type_decl->is_primitive &&
-                                     field->type_info.array_depth == 0);
+        if (field->type_info.is_function_pointer) {
+          field->is_reference_type = false;
+        } else {
+          Node *type_decl = global_scope.resolve(field->type_info.name);
+          field->is_reference_type = !(type_decl && type_decl->is_primitive &&
+                                       field->type_info.array_depth == 0);
+        }
         if (!field->is_static) {
           field->memory_index = offset++;
         }
@@ -740,6 +744,18 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
   if (raw_type.name.empty()) {
     return raw_type;
   }
+  if (raw_type.is_function_pointer) {
+    TypeInfo result = raw_type;
+    if (raw_type.return_type) {
+      result.return_type = std::make_shared<TypeInfo>(resolve_type(*raw_type.return_type, error_node));
+    }
+    result.param_types.clear();
+    for (const auto &p : raw_type.param_types) {
+      result.param_types.push_back(resolve_type(p, error_node));
+    }
+    result.name = result.to_string();
+    return result;
+  }
   if (raw_type.name == "void" || raw_type.name == "bool" ||
       raw_type.name == "char" || raw_type.name == "int8" ||
       raw_type.name == "uint8" || raw_type.name == "int16" ||
@@ -784,6 +800,11 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
     auto *alias = static_cast<AliasStatement *>(resolved);
     log_trace("Resolving alias '{}' -> '{}'", alias->alias_name,
               alias->target_type.to_string());
+    if (alias->target_type.is_function_pointer) {
+      TypeInfo res = alias->target_type;
+      res.array_depth += raw_type.array_depth;
+      return resolve_type(res, error_node);
+    }
     result.name = alias->target_type.name;
     result.array_depth += alias->target_type.array_depth;
     result.type_args = alias->target_type.type_args;
@@ -805,6 +826,10 @@ void Binder::bind_types_and_memory() {
   for (const auto &[name, node] : global_scope.symbols) {
     if (node->node_type == NodeType::ALIAS_STMT) {
       auto *alias = static_cast<AliasStatement *>(node);
+      if (alias->target_type.is_function_pointer) {
+        alias->target_type = resolve_type(alias->target_type, alias);
+        continue;
+      }
       Node *target = resolve_symbol(alias->target_type.name, alias, false);
       if (target) {
         alias->resolved_declaration = target;
@@ -843,9 +868,13 @@ void Binder::bind_types_and_memory() {
               : nullptr;
       field->type_info = resolve_type(field->type_info, field);
 
-      Node *type_decl = global_scope.resolve(field->type_info.name);
-      field->is_reference_type = !(type_decl && type_decl->is_primitive &&
-                                   field->type_info.array_depth == 0);
+      if (field->type_info.is_function_pointer) {
+        field->is_reference_type = false;
+      } else {
+        Node *type_decl = global_scope.resolve(field->type_info.name);
+        field->is_reference_type = !(type_decl && type_decl->is_primitive &&
+                                     field->type_info.array_depth == 0);
+      }
 
       if (field->is_static || !field->parent) {
         field->memory_index = static_variable_index++;
@@ -1285,9 +1314,13 @@ void Binder::bind_tree(Node *root) {
       auto *param_var = static_cast<VariableDeclaration *>(param.get());
       param_var->type_info = resolve_type(param_var->type_info, param_var);
 
-      Node *type_decl = global_scope.resolve(param_var->type_info.name);
-      param_var->is_reference_type = !(type_decl && type_decl->is_primitive &&
-                                       param_var->type_info.array_depth == 0);
+      if (param_var->type_info.is_function_pointer) {
+        param_var->is_reference_type = false;
+      } else {
+        Node *type_decl = global_scope.resolve(param_var->type_info.name);
+        param_var->is_reference_type = !(type_decl && type_decl->is_primitive &&
+                                         param_var->type_info.array_depth == 0);
+      }
 
       param_var->memory_index = local_variable_index++;
       declare_local(param_var->var_name, param_var);
@@ -1402,9 +1435,13 @@ void Binder::bind_tree(Node *root) {
       auto *param_var = static_cast<VariableDeclaration *>(param.get());
       param_var->type_info = resolve_type(param_var->type_info, param_var);
 
-      Node *type_decl = global_scope.resolve(param_var->type_info.name);
-      param_var->is_reference_type = !(type_decl && type_decl->is_primitive &&
-                                       param_var->type_info.array_depth == 0);
+      if (param_var->type_info.is_function_pointer) {
+        param_var->is_reference_type = false;
+      } else {
+        Node *type_decl = global_scope.resolve(param_var->type_info.name);
+        param_var->is_reference_type = !(type_decl && type_decl->is_primitive &&
+                                         param_var->type_info.array_depth == 0);
+      }
 
       param_var->memory_index = local_variable_index++;
       declare_local(param_var->var_name, param_var);
@@ -1451,13 +1488,29 @@ void Binder::bind_tree(Node *root) {
 bool Binder::is_assignable(const TypeInfo &target, const TypeInfo &source) {
   if (target == source)
     return true;
-  // null (void) is assignable to any reference type or array
-  if (source.name == "void" && source.array_depth == 0) {
+  // null (void) is assignable to any reference type, array, or function pointer
+  if (source.name == "void" && source.array_depth == 0 && !source.is_function_pointer) {
+    if (target.is_function_pointer) return true;
     // Allow assigning null to arrays or to classes (reference types)
     if (target.array_depth > 0) return true;
     Node *tgt_node = global_scope.resolve(target.name);
     if (tgt_node && tgt_node->node_type == NodeType::CLASS_DECL && !tgt_node->is_primitive) return true;
   }
+  if (target.is_function_pointer) {
+    if (!source.is_function_pointer) return false;
+    if (target.array_depth != source.array_depth) return false;
+    if (target.param_types.size() != source.param_types.size()) return false;
+    if (target.return_type && source.return_type) {
+      if (!is_assignable(*target.return_type, *source.return_type)) return false;
+    } else if ((target.return_type == nullptr) != (source.return_type == nullptr)) {
+      return false;
+    }
+    for (size_t i = 0; i < target.param_types.size(); ++i) {
+      if (!is_assignable(source.param_types[i], target.param_types[i])) return false;
+    }
+    return true;
+  }
+  if (source.is_function_pointer) return false;
   // Allow numeric conversions
   auto is_integer = [](const std::string &name) {
     return name == "int8" || name == "int16" || name == "int32" || name == "int64" ||
@@ -1641,6 +1694,28 @@ void Binder::visit(IdentifierNode &n) {
     }
 
     Node *declaration = resolve_symbol(n.name, &n, true);
+    if (!declaration && current_class) {
+      for (const auto &child : current_class->children) {
+        if (child && child->node_type == NodeType::METHOD_DECL) {
+          auto *m = static_cast<MethodDeclaration *>(child.get());
+          if (m->method_name == n.name) {
+            declaration = m;
+            break;
+          }
+        }
+      }
+    }
+    if (!declaration) {
+      for (const auto &[sym_name, node] : global_scope.symbols) {
+        if (node && node->node_type == NodeType::METHOD_DECL) {
+          auto *m = static_cast<MethodDeclaration *>(node);
+          if (m->method_name == n.name) {
+            declaration = m;
+            break;
+          }
+        }
+      }
+    }
 
     if (!declaration) {
       record_error(&n, "Undefined identifier: " + n.name);
@@ -1665,6 +1740,23 @@ void Binder::visit(IdentifierNode &n) {
       if (target_decl) {
         n.resolved_declaration = target_decl;
       }
+    } else if (declaration->node_type == NodeType::METHOD_DECL) {
+      auto *method = static_cast<MethodDeclaration *>(declaration);
+      if (!method->is_static) {
+        record_error(&n, "[ERROR] Cannot take address of non-static method '" + method->method_name + "'");
+        evaluated_type = {"void", 0};
+        return;
+      }
+      TypeInfo fp_type;
+      fp_type.is_function_pointer = true;
+      fp_type.return_type = std::make_shared<TypeInfo>(method->return_type);
+      for (const auto &param : method->parameters) {
+        fp_type.param_types.push_back(static_cast<VariableDeclaration *>(param.get())->type_info);
+      }
+      fp_type.name = fp_type.to_string();
+      n.expression_type = fp_type;
+      evaluated_type = fp_type;
+      return;
     } else {
       record_error(&n, "Invalid identifier usage: " + n.name);
       evaluated_type = {"void", 0};
@@ -2000,6 +2092,27 @@ void Binder::visit(MemberAccessExpression &n) {
                                            "." + n.member_name);
       }
       if (!member_decl) {
+        ClassDeclaration *search_class = class_decl;
+        while (!member_decl && search_class) {
+          for (const auto &child : search_class->children) {
+            if (child && child->node_type == NodeType::METHOD_DECL) {
+              auto *m = static_cast<MethodDeclaration *>(child.get());
+              if (m->method_name == n.member_name) {
+                member_decl = m;
+                current_resolve_class = search_class;
+                break;
+              }
+            }
+          }
+          if (!member_decl && !search_class->base_class_name.empty()) {
+            Node *bn = global_scope.resolve(search_class->base_class_name);
+            search_class = bn ? static_cast<ClassDeclaration *>(bn) : nullptr;
+          } else {
+            break;
+          }
+        }
+      }
+      if (!member_decl) {
         record_error(&n, fmt::format("Class '{}' has no member named '{}'",
                              class_decl->class_name, n.member_name));
         evaluated_type = {"void", 0};
@@ -2010,6 +2123,26 @@ void Binder::visit(MemberAccessExpression &n) {
         return;
       }
       n.resolved_declaration = member_decl;
+      if (member_decl->node_type == NodeType::METHOD_DECL) {
+        auto *method = static_cast<MethodDeclaration *>(member_decl);
+        if (!method->is_static) {
+          record_error(&n, "[ERROR] Cannot take address of non-static method '" + method->method_name + "'");
+          evaluated_type = {"void", 0};
+          return;
+        }
+        TypeInfo fp_type;
+        fp_type.is_function_pointer = true;
+        fp_type.return_type = std::make_shared<TypeInfo>(method->return_type);
+        for (const auto &param : method->parameters) {
+          fp_type.param_types.push_back(static_cast<VariableDeclaration *>(param.get())->type_info);
+        }
+        fp_type.name = fp_type.to_string();
+        n.expression_type = fp_type;
+        evaluated_type = fp_type;
+        log_trace("Resolved static method address member access '{}.{}' -> '{}'",
+                  object_type.name, n.member_name, evaluated_type.to_string());
+        return;
+      }
       if (member_decl->node_type == NodeType::FIELD_DECL) {
         n.expression_type =
             static_cast<FieldDeclaration *>(member_decl)->type_info;
@@ -2055,6 +2188,98 @@ void Binder::visit(MethodCallExpression &n) {
     std::vector<TypeInfo> argument_types;
     for (const auto &arg : n.arguments) {
       argument_types.push_back(evaluate_expression(arg.get()));
+    }
+
+    bool is_fp_call = false;
+    if (n.callee->node_type == NodeType::IDENTIFIER) {
+      auto *id = static_cast<IdentifierNode *>(n.callee.get());
+      Node *target_var = nullptr;
+      if (current_scope) {
+        target_var = current_scope->resolve(id->name);
+      }
+      if (!target_var && current_class) {
+        Node *cls_field = global_scope.resolve(current_class->mangled_name + "." + id->name);
+        if (cls_field && cls_field->node_type == NodeType::FIELD_DECL) {
+          target_var = cls_field;
+        }
+      }
+      if (!target_var) {
+        Node *glob = resolve_symbol(id->name, &n, false);
+        if (glob && (glob->node_type == NodeType::VAR_DECL || glob->node_type == NodeType::FIELD_DECL)) {
+          target_var = glob;
+        }
+      }
+      if (target_var) {
+        if (target_var->node_type == NodeType::VAR_DECL &&
+            static_cast<VariableDeclaration *>(target_var)->type_info.is_function_pointer) {
+          is_fp_call = true;
+        } else if (target_var->node_type == NodeType::FIELD_DECL &&
+                   static_cast<FieldDeclaration *>(target_var)->type_info.is_function_pointer) {
+          is_fp_call = true;
+        }
+      }
+    } else if (n.callee->node_type == NodeType::MEMBER_ACCESS) {
+      auto *mem = static_cast<MemberAccessExpression *>(n.callee.get());
+      std::string sym_path, root_name;
+      Node *field_decl = nullptr;
+      if (extract_symbol_path(mem->object.get(), sym_path, root_name)) {
+        Node *target = resolve_symbol(sym_path, &n, false);
+        if (target && target->node_type == NodeType::CLASS_DECL) {
+          auto *cd = static_cast<ClassDeclaration *>(target);
+          for (const auto &child : cd->children) {
+            if (child && child->node_type == NodeType::FIELD_DECL &&
+                static_cast<FieldDeclaration *>(child.get())->field_name == mem->member_name) {
+              field_decl = child.get();
+              break;
+            }
+          }
+        }
+      }
+      if (!field_decl) {
+        TypeInfo obj_t = evaluate_expression(mem->object.get());
+        Node *target = global_scope.resolve(obj_t.name);
+        if (target && target->node_type == NodeType::CLASS_DECL) {
+          auto *cd = static_cast<ClassDeclaration *>(target);
+          for (const auto &child : cd->children) {
+            if (child && child->node_type == NodeType::FIELD_DECL &&
+                static_cast<FieldDeclaration *>(child.get())->field_name == mem->member_name) {
+              field_decl = child.get();
+              break;
+            }
+          }
+        }
+      }
+      if (field_decl && static_cast<FieldDeclaration *>(field_decl)->type_info.is_function_pointer) {
+        is_fp_call = true;
+      }
+    } else {
+      is_fp_call = true;
+    }
+
+    if (is_fp_call) {
+      n.is_function_pointer_call = true;
+      TypeInfo callee_type = evaluate_expression(n.callee.get());
+      if (!callee_type.is_function_pointer) {
+        record_error(&n, "Expression of type '" + callee_type.to_string() + "' is not callable as a function pointer");
+        evaluated_type = {"void", 0};
+        return;
+      }
+      if (n.arguments.size() != callee_type.param_types.size()) {
+        record_error(&n, fmt::format("Function pointer call expects {} arguments, but got {}",
+                                     callee_type.param_types.size(), n.arguments.size()));
+        evaluated_type = {"void", 0};
+        return;
+      }
+      for (size_t i = 0; i < n.arguments.size(); ++i) {
+        if (!is_assignable(callee_type.param_types[i], argument_types[i])) {
+          record_error(&n, fmt::format("Type mismatch for argument {}: cannot convert '{}' to '{}'",
+                                       i + 1, argument_types[i].to_string(),
+                                       callee_type.param_types[i].to_string()));
+        }
+      }
+      n.expression_type = callee_type.return_type ? *callee_type.return_type : TypeInfo{"void", 0};
+      evaluated_type = n.expression_type;
+      return;
     }
 
     if (n.callee->node_type == NodeType::MEMBER_ACCESS) {
@@ -2757,6 +2982,12 @@ void Binder::visit(SizeOfExpression &n) {
     };
 
     if (n.target_type) {
+      if (n.target_type->is_function_pointer) {
+        n.constant_size = 8;
+        n.is_compile_time_constant = true;
+        evaluated_type = n.expression_type;
+        return;
+      }
       if (n.target_type->array_depth > 0) {
         n.constant_size = 8;
         n.is_compile_time_constant = true;
@@ -2820,6 +3051,12 @@ void Binder::visit(SizeOfExpression &n) {
       }
 
       TypeInfo expr_type = evaluate_expression(n.target_expr.get());
+      if (expr_type.is_function_pointer) {
+        n.constant_size = 8;
+        n.is_compile_time_constant = true;
+        evaluated_type = n.expression_type;
+        return;
+      }
       if (expr_type.array_depth == 0) {
         int32_t prim_size = get_primitive_size(expr_type.name);
         if (prim_size != -1) {
@@ -2946,27 +3183,33 @@ void Binder::visit(CaseStatement &n) {
 
 void Binder::visit(VariableDeclaration &n) {
   if (current_pass == BinderPass::BIND_EXECUTION) {
-    if (n.type_info.name == "void" && n.type_info.array_depth == 0) {
+    if (n.type_info.name == "void" && n.type_info.array_depth == 0 && !n.type_info.is_function_pointer) {
       record_error(&n, "Variable cannot be of type 'void'");
       return;
     }
     n.type_info = resolve_type(n.type_info, &n);
-    Node *type_decl = global_scope.resolve(n.type_info.name);
-    n.is_reference_type =
-        !(type_decl && type_decl->is_primitive && n.type_info.array_depth == 0);
+    Node *type_decl = nullptr;
+    if (n.type_info.is_function_pointer) {
+      n.is_reference_type = false;
+      n.is_primitive = true;
+    } else {
+      type_decl = global_scope.resolve(n.type_info.name);
+      n.is_reference_type =
+          !(type_decl && type_decl->is_primitive && n.type_info.array_depth == 0);
+    }
     if (n.initializer) {
       TypeInfo initializer_type = evaluate_expression(n.initializer.get());
       if (!is_assignable(n.type_info, initializer_type)) {
         if ((initializer_type.name == "null" || (initializer_type.name == "void" && initializer_type.array_depth == 0)) &&
             type_decl && type_decl->is_primitive && n.type_info.array_depth == 0) {
-          record_error(&n, fmt::format("Cannot assign 'null' to primitive type '{}'", n.type_info.name));
+          record_error(&n, fmt::format("Cannot assign 'null' to primitive type '{}'", n.type_info.to_string()));
         } else if (type_decl && type_decl->node_type == NodeType::ENUM_DECL) {
-          record_error(&n, "Cannot convert type '" + initializer_type.name +
-                               "' to enum '" + n.type_info.name + "'");
+          record_error(&n, "Cannot convert type '" + initializer_type.to_string() +
+                               "' to enum '" + n.type_info.to_string() + "'");
         } else {
           record_error(&n, "Type mismatch in variable declaration: expected '" +
-                               n.type_info.name + "', got '" +
-                               initializer_type.name + "'");
+                               n.type_info.to_string() + "', got '" +
+                               initializer_type.to_string() + "'");
         }
       }
     }
