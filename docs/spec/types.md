@@ -382,3 +382,38 @@ class Demo {
     }
 }
 ```
+
+---
+
+## 12. Function Pointer Types
+
+Solix supports primitive function pointers with explicit type syntax cleanly separated from variable identifiers:
+
+$$\text{Type: } \texttt{<return\_type>(*)(<arguments\_types>)} \quad\quad \text{Variable: } \texttt{<name>}$$
+
+### Syntax and Characteristics
+
+- **Signature**: `<return_type>(*)(<param_type_1>, <param_type_2>, ...)`
+- **Void Arguments**: Empty argument list `()` represents zero arguments: `void(*)()`.
+- **Value Semantics**: Function pointer values occupy 64 bits (8 bytes) on the evaluation stack and local frames. The lower 32 bits represent the bytecode instruction pointer (`target_ip`), while the upper 32 bits hold the environment address (`0` for stateless function pointers).
+- **Size**: `sizeof(<ret>(*)(<args>))` evaluates to `8` bytes at compile time.
+- **Reference Management**: Unlike heap object references (`std.string`, classes, arrays), function pointers are primitive 64-bit scalar values and do not produce ARC `INC_REF` or `DEC_REF` bytecode operations on their own.
+
+### Usage Example
+
+```solix
+alias BinaryOp = int32(*)(int32, int32);
+
+public class Math {
+    public static int32 add(int32 a, int32 b) {
+        return a + b;
+    }
+}
+
+static int32 main() {
+    BinaryOp op = Math.add;
+    int32 result = op(10, 20); // 30
+    return result == 30 ? 0 : 1;
+}
+```
+
