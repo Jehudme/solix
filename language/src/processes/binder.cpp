@@ -1841,8 +1841,11 @@ void Binder::visit(ArrayAccessExpression &n) {
     if (array_type.array_depth == 0)
       record_error(&n, "Cannot index a non-array value");
     TypeInfo index_type = evaluate_expression(n.index.get());
-    if (index_type.name != "int32")
-      record_error(&n, "Array index must be int32");
+    if (index_type.name != "int32" || index_type.array_depth != 0) {
+      std::string got_type = index_type.name;
+      if (index_type.array_depth == 1 && index_type.name == "char") got_type = "String";
+      record_error(&n, fmt::format("Array index must be int32, got '{}'", got_type));
+    }
     n.expression_type = array_type;
     n.expression_type.array_depth--;
     evaluated_type = n.expression_type;

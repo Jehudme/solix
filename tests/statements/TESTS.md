@@ -2637,11 +2637,11 @@ int32 sum = buffer[0] + buffer[1]; // 300
 
 ---
 
-### Case 3.2: Multi-Dimensional Array Access [NOT IMPLEMENTED]
+### Case 3.2: Multi-Dimensional Array Access [IMPLEMENTED]
 ```solix
 static int32 main() {
-    int32[][] grid = new int32[][](2);
-    grid[0] = new int32[](2);
+    int32[][] grid = new int32[][2];
+    grid[0] = new int32[2];
     grid[0][1] = 42;
     return grid[0][1] == 42 ? 0 : 1;
 }
@@ -2662,7 +2662,7 @@ int32 fail = data[5]; // Out of bounds
 [FATAL VM PANIC] IndexOutOfBoundsException: Index 5 out of bounds for array length 2
 ```
 
-### Case 4.2: Non-Integer Array Subscript [NOT IMPLEMENTED]
+### Case 4.2: Non-Integer Array Subscript [IMPLEMENTED]
 ```solix
 void test(int32[] arr) {
     int32 v = arr["key"]; // Error
@@ -2673,7 +2673,7 @@ void test(int32[] arr) {
 [ERROR] binder.cpp: Array index must be int32, got 'String'
 ```
 
-### Case 4.4: Subscript Access on Null Reference at Runtime [NOT IMPLEMENTED]
+### Case 4.4: Subscript Access on Null Reference at Runtime [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32[] arr = null;

@@ -16,6 +16,18 @@ static int32 main() {
         CHECK(run_source(code) == 300);
     }
 
+    SECTION("Case 3.2: Multi-Dimensional Array Access") {
+        std::string code = R"(
+static int32 main() {
+    int32[][] grid = new int32[][2];
+    grid[0] = new int32[2];
+    grid[0][1] = 42;
+    return grid[0][1] == 42 ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
     SECTION("Case 4.1: Index Out of Bounds (Runtime Fault)") {
         std::string code = R"(
 static int32 main() {
@@ -25,5 +37,25 @@ static int32 main() {
 }
 )";
         CHECK_THROWS_WITH(run_source(code), Catch::Matchers::ContainsSubstring("Out of Bounds"));
+    }
+
+    SECTION("Case 4.2: Non-Integer Array Subscript") {
+        std::string code = R"(
+void test(int32[] arr) {
+    int32 v = arr["key"];
+}
+)";
+        assert_compile_error(code, "Array index must be int32, got 'String'");
+    }
+
+    SECTION("Case 4.4: Subscript Access on Null Reference at Runtime") {
+        std::string code = R"(
+static int32 main() {
+    int32[] arr = null;
+    int32 v = arr[0];
+    return 0;
+}
+)";
+        CHECK_THROWS_WITH(run_source(code), Catch::Matchers::ContainsSubstring("NullPointer"));
     }
 }
