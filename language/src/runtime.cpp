@@ -130,6 +130,33 @@ void Memory::decrease_reference(Address address) {
   }
 }
 
+void Memory::decrease_reference_callable(Address env) {
+  if (env == 0)
+    return;
+  uint64_t &header = heap[env - 1];
+  uint32_t ref_count = static_cast<uint32_t>(header & 0xFFFFFFFF);
+  if (ref_count > 0) {
+    ref_count--;
+    header = (header & 0xFFFFFFFF00000000ULL) | ref_count;
+    if (ref_count == 0) {
+      uint64_t ref_mask = heap[env];
+      uint64_t callable_mask = heap[env + 1];
+      uint32_t size = static_cast<uint32_t>(header >> 32);
+      uint32_t count = size >= 2 ? size - 2 : 0;
+      for (uint32_t i = 0; i < count; ++i) {
+        if ((ref_mask >> i) & 1) {
+          decrease_reference(static_cast<Address>(heap[env + 2 + i]));
+        } else if ((callable_mask >> i) & 1) {
+          uint64_t val = heap[env + 2 + i];
+          Address nested_env = static_cast<Address>(val >> 32);
+          decrease_reference_callable(nested_env);
+        }
+      }
+      deallocate(env);
+    }
+  }
+}
+
 RuntimeContext::RuntimeContext(const RuntimeOptions &opts)
     : options(opts), memory(opts.stack_capacity, opts.heap_capacity) {
 
@@ -332,6 +359,10 @@ vm_dispatch:
     case 89: goto op_NEGATE_I64;
     case 90: goto op_SIZEOF;
     case 91: goto op_ALLOC_FRAME;
+    case 92: goto op_INC_REF_CALLABLE;
+    case 93: goto op_DEC_REF_CALLABLE;
+    case 94: goto op_UNPACK_CAPTURES;
+    case 95: goto op_PACK_CLOSURE;
     default: goto op_HALT;
   }
 #else
@@ -427,7 +458,11 @@ vm_dispatch:
       &&op_CONV_F_TO_I,
       &&op_NEGATE_I64,
       &&op_SIZEOF,
-      &&op_ALLOC_FRAME
+      &&op_ALLOC_FRAME,
+      &&op_INC_REF_CALLABLE,
+      &&op_DEC_REF_CALLABLE,
+      &&op_UNPACK_CAPTURES,
+      &&op_PACK_CLOSURE
   };
 
 #define DISPATCH() goto *dispatch_table[code[program_counter++]]
@@ -1146,6 +1181,7 @@ op_JMP_TO_OUTER_CLEANUP:
       
       call_depth--;
       sp = stack + current_frame.frame_pointer; // Pop locals
+      active_closure_env = current_frame.closure_env;
       
       if (call_depth == 0) {
           if (active_exception != 0) {
@@ -1178,6 +1214,7 @@ op_JMP_TO_OUTER_CLEANUP:
               }
               call_depth--;
               sp = stack + caller.frame_pointer;
+              active_closure_env = caller.closure_env;
           }
       }
       DISPATCH();
@@ -1232,6 +1269,45 @@ op_ALLOC_FRAME:
           std::fill(sp, sp + diff, 0);
           sp += diff;
       }
+      DISPATCH();
+  }
+op_INC_REF_CALLABLE:
+  {
+      uint64_t val = POP();
+      Address env = static_cast<Address>(val >> 32);
+      if (env != 0) memory.increase_reference(env);
+      PUSH(val);
+      DISPATCH();
+  }
+op_DEC_REF_CALLABLE:
+  {
+      uint64_t val = POP();
+      Address env = static_cast<Address>(val >> 32);
+      if (env != 0) memory.decrease_reference_callable(env);
+      DISPATCH();
+  }
+op_UNPACK_CAPTURES:
+  {
+      uint32_t dest_slot = read_u32(bytecode, program_counter);
+      uint32_t count = read_u32(bytecode, program_counter);
+      Address env = active_closure_env;
+      if (env != 0) {
+          uint32_t fp = call_stack[call_depth - 1].frame_pointer;
+          for (uint32_t i = 0; i < count; ++i) {
+              if (fp + dest_slot + i >= memory.stack.size()) {
+                  throw std::runtime_error("Frame out of bounds on UNPACK_CAPTURES");
+              }
+              stack[fp + dest_slot + i] = heap_data[env + 2 + i];
+          }
+      }
+      DISPATCH();
+  }
+op_PACK_CLOSURE:
+  {
+      uint32_t target_ip = static_cast<uint32_t>(POP());
+      Address env = static_cast<Address>(POP());
+      uint64_t callable = (static_cast<uint64_t>(env) << 32) | (static_cast<uint64_t>(target_ip) & 0xFFFFFFFFULL);
+      PUSH(callable);
       DISPATCH();
   }
 #undef PUSH

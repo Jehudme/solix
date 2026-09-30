@@ -121,7 +121,13 @@ enum class OpCode : uint8_t {
   SIZEOF,
 
   // Call Frame Allocation
-  ALLOC_FRAME
+  ALLOC_FRAME,
+
+  // First-Class Lambdas & Closures
+  INC_REF_CALLABLE,
+  DEC_REF_CALLABLE,
+  UNPACK_CAPTURES,
+  PACK_CLOSURE
 };
 
 inline const char* opcode_to_string(uint8_t op) {
@@ -218,6 +224,10 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::NEGATE_I64: return "NEGATE_I64";
         case OpCode::SIZEOF: return "SIZEOF";
         case OpCode::ALLOC_FRAME: return "ALLOC_FRAME";
+        case OpCode::INC_REF_CALLABLE: return "INC_REF_CALLABLE";
+        case OpCode::DEC_REF_CALLABLE: return "DEC_REF_CALLABLE";
+        case OpCode::UNPACK_CAPTURES: return "UNPACK_CAPTURES";
+        case OpCode::PACK_CLOSURE: return "PACK_CLOSURE";
         default: return "UNKNOWN";
     }
 }
@@ -315,6 +325,10 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "NEGATE_I64") return OpCode::NEGATE_I64;
     if (str == "SIZEOF") return OpCode::SIZEOF;
     if (str == "ALLOC_FRAME") return OpCode::ALLOC_FRAME;
+    if (str == "INC_REF_CALLABLE") return OpCode::INC_REF_CALLABLE;
+    if (str == "DEC_REF_CALLABLE") return OpCode::DEC_REF_CALLABLE;
+    if (str == "UNPACK_CAPTURES") return OpCode::UNPACK_CAPTURES;
+    if (str == "PACK_CLOSURE") return OpCode::PACK_CLOSURE;
     return OpCode::HALT; // fallback
 }
 

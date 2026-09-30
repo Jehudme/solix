@@ -417,3 +417,53 @@ static int32 main() {
 }
 ```
 
+---
+
+## 13. First-Class Lambdas and Closures
+
+Solix unifies function pointers and closures into the same 64-bit primitive callable type `<return_type>(*)(<param_types>)`.
+
+### Syntax
+
+Lambdas support explicit captures in brackets, parameter declarations, optional return type specifications, and expression or block bodies:
+
+```solix
+// Stateless lambda (zero heap allocation, env_address = 0)
+int32(*)(int32, int32) add = [](int32 a, int32 b) => a + b;
+
+// Capturing local variables by value
+int32 factor = 5;
+int32(*)(int32) mult = [factor](int32 x) => x * factor;
+
+// Multi-line block body with explicit return type
+int32(*)(int32, int32) compute = [factor](int32 a, int32 b) : int32 {
+    int32 sum = a + b;
+    return sum * factor;
+};
+
+// Capturing `this` in instance methods
+public int32(*)(int32) getHandler() {
+    return [this](int32 x) => x + this.offset;
+}
+```
+
+### Word Representation & Memory Model
+
+- **Word Packing**:
+  $$\texttt{callable} = (\texttt{env\_address} \ll 32) \mid \texttt{target\_ip}$$
+  - Stateless lambdas (`[]`) have `env_address = 0`. They behave identically to primitive function pointers with zero heap allocations.
+  - Closures with captures allocate an environment array on the dynamic heap (`ALLOC_DYNAMIC`).
+- **Environment Layout**:
+  - `heap[env + 0]`: Reference bitmask (`ref_mask`), where bit `i` indicates whether capture `i` is an ARC reference.
+  - `heap[env + 1]`: Callable bitmask (`callable_mask`), where bit `i` indicates whether capture `i` is a nested closure callable.
+  - `heap[env + 2 + i]`: Stored capture value `i`.
+- **Automatic Reference Counting (ARC)**:
+  - Capturing object references or nested callables increments their reference count upon environment creation (`INC_REF` / `INC_REF_CALLABLE`).
+  - When closure variables are reassigned or exit their lexical scope, the compiler emits `DEC_REF_CALLABLE`.
+  - When the closure environment's ref count drops to zero, `decrease_reference_callable` recursively decrements all captured reference objects and nested closures via the bitmasks and releases the environment block.
+- **Invocation & Capture Unpacking**:
+  - Invoking a closure via `op(...)` saves the previous `active_closure_env` on the call stack frame and sets `active_closure_env` to the upper 32 bits of the callable word.
+  - The synthesized lambda method prologue executes `UNPACK_CAPTURES`, copying capture values from `heap[active_closure_env + 2 + i]` directly into the lambda's local frame slots.
+  - On method return or stack unwinding, `active_closure_env` is restored from the call frame.
+
+

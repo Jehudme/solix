@@ -48,6 +48,10 @@ private:
     
     void emit_cleanup_for_node(Node* node);
     void emit_cleanup_for_function(Node* func_node);
+    void emit_cleanup_for_lambda(LambdaExpression &node);
+
+    std::vector<LambdaExpression*> pending_lambdas;
+    void compile_lambda_method(LambdaExpression &node);
     
     void apply_linker_patches();
     void throw_error(Node* node, const std::string& msg);
@@ -67,6 +71,7 @@ private:
     void visit(InstanceofExpression& node) override;
     void visit(TernaryExpression& node) override;
     void visit(SizeOfExpression& node) override;
+    void visit(LambdaExpression& node) override;
 
     void visit(BlockStatement& node) override;
     void visit(IfStatement& node) override;

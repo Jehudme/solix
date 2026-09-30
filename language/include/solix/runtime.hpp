@@ -79,6 +79,7 @@ struct Memory {
   // ARC Reference Counting Methods (Replaces GarbageCollector class)
   void increase_reference(Address address);
   void decrease_reference(Address address);
+  void decrease_reference_callable(Address env);
 
   // Casting Helpers for 64-bit blocks
   void write_u64(Address address, uint32_t offset, uint64_t value);

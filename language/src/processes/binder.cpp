@@ -1658,6 +1658,14 @@ void Binder::visit(IdentifierNode &n) {
     }
 
     if (n.name == "this") {
+      Node *sym = current_scope ? current_scope->resolve("this") : nullptr;
+      if (sym) {
+        n.resolved_declaration = sym;
+        auto *v = dynamic_cast<VariableDeclaration *>(sym);
+        n.expression_type = v ? v->type_info : TypeInfo{current_class ? current_class->mangled_name : "", 0};
+        evaluated_type = n.expression_type;
+        return;
+      }
       if (!current_class) {
         record_error(&n, "Keyword 'this' is only valid within non-static class member methods");
         evaluated_type = {"void", 0};
@@ -3072,6 +3080,177 @@ void Binder::visit(SizeOfExpression &n) {
   }
 }
 
+void Binder::visit(LambdaExpression &n) {
+  if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+    // 1. Capture Resolution & Mask Generation
+    n.capture_ref_mask = 0;
+    n.capture_callable_mask = 0;
+    n.resolved_captures.clear();
+
+    for (size_t i = 0; i < n.capture_names.size(); ++i) {
+      const std::string &name = n.capture_names[i];
+      if (name == "this") {
+        if (!current_class || (current_method && current_method->is_static && !current_scope->resolve("this"))) {
+          record_error(&n, "Cannot capture 'this' outside of an instance method");
+          continue;
+        }
+        Node *this_sym = current_scope->resolve("this");
+        auto *this_var = dynamic_cast<VariableDeclaration *>(this_sym);
+        n.resolved_captures.push_back(this_var ? std::shared_ptr<VariableDeclaration>(this_var, [](VariableDeclaration*){}) : nullptr);
+        n.capture_ref_mask |= (1ULL << i);
+      } else {
+        Node *sym = current_scope->resolve(name);
+        if (!sym) {
+          record_error(&n, "Undefined capture variable: " + name);
+          continue;
+        }
+        auto *var_decl = dynamic_cast<VariableDeclaration *>(sym);
+        if (!var_decl) {
+          record_error(&n, "Captured identifier '" + name + "' is not a variable");
+          continue;
+        }
+        n.resolved_captures.push_back(std::shared_ptr<VariableDeclaration>(var_decl, [](VariableDeclaration*){}));
+        if (var_decl->type_info.is_function_pointer) {
+          n.capture_callable_mask |= (1ULL << i);
+        } else if (var_decl->is_reference_type) {
+          n.capture_ref_mask |= (1ULL << i);
+        }
+      }
+    }
+
+    // 2. Synthesize Method Declaration
+    std::string lambda_name = "__lambda_" + std::to_string(lambda_counter++);
+    n.synthesized_func_name = lambda_name;
+    Token lambda_tok{TokenType::IDENTIFIER, n.line, n.column, n.source, lambda_name};
+
+    auto synth_method = std::make_shared<MethodDeclaration>(lambda_tok, lambda_name, TypeInfo{});
+    synth_method->is_static = true;
+    synth_method->access_modifier = TokenType::KEYWORD_PUBLIC;
+    synth_method->package_context = current_package;
+    synth_method->mangled_name = (current_prefix.empty() ? "" : current_prefix) + lambda_name;
+    synth_method->parent = current_class ? static_cast<Node*>(current_class) : nullptr;
+
+    // Parameters: user-declared params first
+    for (auto &param : n.parameters) {
+      param->type_info = resolve_type(param->type_info, param.get());
+      if (param->type_info.is_function_pointer) {
+        param->is_reference_type = false;
+        param->is_primitive = true;
+      } else {
+        Node *type_decl = global_scope.resolve(param->type_info.name);
+        param->is_reference_type = !(type_decl && type_decl->is_primitive && param->type_info.array_depth == 0);
+      }
+      synth_method->parameters.push_back(
+          std::unique_ptr<VariableDeclaration>(static_cast<VariableDeclaration*>(param->clone().release())));
+    }
+
+    // Internal capture parameters next
+    for (size_t i = 0; i < n.capture_names.size(); ++i) {
+      const std::string &cap_name = n.capture_names[i];
+      TypeInfo cap_type;
+      if (cap_name == "this") {
+        cap_type = TypeInfo{current_class ? current_class->mangled_name : "", 0};
+      } else if (i < n.resolved_captures.size() && n.resolved_captures[i]) {
+        cap_type = n.resolved_captures[i]->type_info;
+      }
+      Token dummy_tok = lambda_tok;
+      dummy_tok.type = TokenType::IDENTIFIER;
+      dummy_tok.value = cap_name;
+      auto cap_param = std::make_unique<VariableDeclaration>(dummy_tok, cap_name, cap_type);
+      cap_param->is_reference_type = (n.capture_ref_mask & (1ULL << i)) != 0;
+      synth_method->parameters.push_back(std::move(cap_param));
+    }
+
+    // 3. Explicit or Inferred Return Type
+    TypeInfo return_type;
+    bool has_explicit_return = (n.explicit_return_type != nullptr);
+    if (has_explicit_return) {
+      return_type = resolve_type(*n.explicit_return_type, &n);
+      synth_method->return_type = return_type;
+    }
+
+    // If body is expression (not block), wrap into block
+    if (n.body && n.body->node_type != NodeType::BLOCK) {
+      if (has_explicit_return && return_type.name == "void") {
+        auto expr_stmt = std::make_unique<ExpressionStatement>(lambda_tok, std::move(n.body));
+        auto ret_stmt = std::make_unique<ReturnStatement>(lambda_tok, nullptr);
+        auto block = std::make_unique<BlockStatement>(lambda_tok);
+        block->block_kind = BlockKind::FUNCTION_BODY;
+        expr_stmt->parent = block.get();
+        ret_stmt->parent = block.get();
+        block->children.push_back(std::move(expr_stmt));
+        block->children.push_back(std::move(ret_stmt));
+        block->parent = &n;
+        n.body = std::move(block);
+      } else {
+        auto ret_stmt = std::make_unique<ReturnStatement>(lambda_tok, std::move(n.body));
+        auto block = std::make_unique<BlockStatement>(lambda_tok);
+        block->block_kind = BlockKind::FUNCTION_BODY;
+        ret_stmt->parent = block.get();
+        block->children.push_back(std::move(ret_stmt));
+        block->parent = &n;
+        n.body = std::move(block);
+      }
+    }
+
+    // 4. Bind the lambda body inside synthetic method scope
+    MethodDeclaration *saved_method = current_method;
+    int saved_local_idx = local_variable_index;
+    SymbolTable *saved_scope = current_scope;
+
+    current_method = synth_method.get();
+    local_variable_index = 0;
+
+    SymbolTable lambda_scope;
+    lambda_scope.parent = &global_scope;
+    current_scope = &lambda_scope;
+
+    // Bind parameters
+    for (auto &param_node : synth_method->parameters) {
+      auto *p = static_cast<VariableDeclaration *>(param_node.get());
+      p->memory_index = local_variable_index++;
+      declare_local(p->var_name, p);
+    }
+    for (size_t i = 0; i < n.parameters.size(); ++i) {
+      n.parameters[i]->memory_index = i;
+    }
+
+    // Bind body statements
+    if (n.body) {
+      bind_node(n.body.get());
+    }
+
+    // Deduce return type if not explicit
+    if (!has_explicit_return) {
+      return_type = synth_method->return_type;
+      if (return_type.name.empty()) {
+        return_type = {"void", 0};
+        synth_method->return_type = return_type;
+      }
+    }
+
+    n.inferred_return_type = return_type;
+    synth_method->frame_size = local_variable_index;
+    n.synthesized_method = synth_method;
+
+    global_scope.define(synth_method->mangled_name, synth_method.get());
+
+    // Restore state
+    current_method = saved_method;
+    local_variable_index = saved_local_idx;
+    current_scope = saved_scope;
+
+    // 5. Synthesize Expression Type
+    n.expression_type = TypeInfo{};
+    n.expression_type.is_function_pointer = true;
+    n.expression_type.return_type = std::make_shared<TypeInfo>(return_type);
+    for (const auto &p : n.parameters) {
+      n.expression_type.param_types.push_back(p->type_info);
+    }
+    evaluated_type = n.expression_type;
+  }
+}
+
 void Binder::visit(BlockStatement &n) {
   if (current_pass == BinderPass::BIND_EXECUTION) {
     if (n.block_kind == BlockKind::TRANSPARENT) {
@@ -3230,7 +3409,9 @@ void Binder::visit(ReturnStatement &n) {
   if (current_pass == BinderPass::BIND_EXECUTION) {
     if (n.value) {
       TypeInfo return_type = evaluate_expression(n.value.get());
-      if (current_method && current_method->return_type.name == "void") {
+      if (current_method && current_method->return_type.name.empty()) {
+        current_method->return_type = return_type;
+      } else if (current_method && current_method->return_type.name == "void") {
         record_error(&n, "Cannot return a value from a void method");
       } else if (current_method &&
           !is_assignable(current_method->return_type, return_type)) {
@@ -3238,6 +3419,8 @@ void Binder::visit(ReturnStatement &n) {
                              current_method->return_type.name + "', got '" +
                              return_type.name + "'");
       }
+    } else if (current_method && current_method->return_type.name.empty()) {
+      current_method->return_type = {"void", 0};
     } else if (current_method && current_method->return_type.name != "void") {
       record_error(&n, "Must return a value from non-void method");
     }

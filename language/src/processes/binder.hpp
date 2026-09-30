@@ -53,6 +53,7 @@ public:
     void visit(InstanceofExpression& node) override;
     void visit(TernaryExpression& node) override;
     void visit(SizeOfExpression& node) override;
+    void visit(LambdaExpression& node) override;
     void visit(BlockStatement& node) override;
     void visit(IfStatement& node) override;
     void visit(ForStatement& node) override;
@@ -103,6 +104,7 @@ public:
     int local_variable_index = 0;
     int loop_depth = 0;
     int switch_depth = 0;
+    int lambda_counter = 0;
     
     ClassDeclaration* current_class = nullptr;
     ConstructorDeclaration* current_constructor = nullptr;

@@ -581,6 +581,121 @@ std::unique_ptr<Node> ParserState::parse_primary() {
     }
   }
 
+  auto is_lambda_ahead = [&]() -> bool {
+    if (current >= tokens.size()) return false;
+    if (tokens[current]->type == TokenType::PUNCTUATION_ARRAY_BRACKETS) {
+      if (current + 1 < tokens.size() && tokens[current + 1]->type == TokenType::PUNCTUATION_OPEN_PAREN) {
+        size_t p = current + 2;
+        int paren_depth = 1;
+        while (p < tokens.size() && paren_depth > 0) {
+          if (tokens[p]->type == TokenType::PUNCTUATION_OPEN_PAREN) paren_depth++;
+          else if (tokens[p]->type == TokenType::PUNCTUATION_CLOSE_PAREN) paren_depth--;
+          p++;
+        }
+        if (p < tokens.size()) {
+          if (tokens[p]->type == TokenType::OPERATOR_FAT_ARROW ||
+              tokens[p]->type == TokenType::PUNCTUATION_COLON ||
+              tokens[p]->type == TokenType::PUNCTUATION_OPEN_BRACE) {
+            return true;
+          }
+          if (tokens[p]->type == TokenType::OPERATOR_ASSIGN && p + 1 < tokens.size() && tokens[p + 1]->type == TokenType::OPERATOR_GREATER_THAN) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    if (tokens[current]->type == TokenType::PUNCTUATION_OPEN_BRACKET) {
+      size_t p = current + 1;
+      while (p < tokens.size() && tokens[p]->type != TokenType::PUNCTUATION_CLOSE_BRACKET) {
+        if (tokens[p]->type != TokenType::IDENTIFIER &&
+            tokens[p]->type != TokenType::PUNCTUATION_COMMA) {
+          return false;
+        }
+        p++;
+      }
+      if (p >= tokens.size() || tokens[p]->type != TokenType::PUNCTUATION_CLOSE_BRACKET) return false;
+      p++; // skip ']'
+      if (p >= tokens.size() || tokens[p]->type != TokenType::PUNCTUATION_OPEN_PAREN) return false;
+      p++; // skip '('
+      int paren_depth = 1;
+      while (p < tokens.size() && paren_depth > 0) {
+        if (tokens[p]->type == TokenType::PUNCTUATION_OPEN_PAREN) paren_depth++;
+        else if (tokens[p]->type == TokenType::PUNCTUATION_CLOSE_PAREN) paren_depth--;
+        p++;
+      }
+      if (p < tokens.size()) {
+        if (tokens[p]->type == TokenType::OPERATOR_FAT_ARROW ||
+            tokens[p]->type == TokenType::PUNCTUATION_COLON ||
+            tokens[p]->type == TokenType::PUNCTUATION_OPEN_BRACE) {
+          return true;
+        }
+        if (tokens[p]->type == TokenType::OPERATOR_ASSIGN && p + 1 < tokens.size() && tokens[p + 1]->type == TokenType::OPERATOR_GREATER_THAN) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return false;
+  };
+
+  if (is_lambda_ahead()) {
+    Token start_tok = peek();
+    auto lambda = std::make_unique<LambdaExpression>(start_tok);
+
+    if (match(TokenType::PUNCTUATION_ARRAY_BRACKETS)) {
+      // Stateless lambda []
+    } else if (match(TokenType::PUNCTUATION_OPEN_BRACKET)) {
+      if (!check(TokenType::PUNCTUATION_CLOSE_BRACKET)) {
+        do {
+          if (match(TokenType::IDENTIFIER)) {
+            lambda->capture_names.push_back(std::get<std::string>(previous().value));
+          } else {
+            throw ParseError("Expected variable identifier or 'this' in capture list", peek().line, peek().column);
+          }
+        } while (match(TokenType::PUNCTUATION_COMMA));
+      }
+      consume(TokenType::PUNCTUATION_CLOSE_BRACKET, "Expected ']' after capture list");
+    }
+
+    consume(TokenType::PUNCTUATION_OPEN_PAREN, "Expected '(' after lambda capture list");
+    if (!check(TokenType::PUNCTUATION_CLOSE_PAREN)) {
+      do {
+        TypeInfo param_type = parse_type_info();
+        Token name_tok = consume(TokenType::IDENTIFIER, "Expected parameter name in lambda");
+        auto param_decl = std::make_unique<VariableDeclaration>(name_tok, std::get<std::string>(name_tok.value), param_type);
+        param_decl->parent = lambda.get();
+        lambda->parameters.push_back(std::move(param_decl));
+      } while (match(TokenType::PUNCTUATION_COMMA));
+    }
+    consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after lambda parameters");
+
+    if (match(TokenType::PUNCTUATION_COLON)) {
+      lambda->explicit_return_type = std::make_shared<TypeInfo>(parse_type_info());
+    }
+
+    if (match(TokenType::OPERATOR_FAT_ARROW)) {
+      // ok
+    } else if (match(TokenType::OPERATOR_ASSIGN) && match(TokenType::OPERATOR_GREATER_THAN)) {
+      // '=' followed by '>'
+    } else if (check(TokenType::PUNCTUATION_OPEN_BRACE)) {
+      // ok, block body directly without fat arrow
+    } else {
+      throw ParseError("Expected '=>' in lambda expression", peek().line, peek().column);
+    }
+
+    if (check(TokenType::PUNCTUATION_OPEN_BRACE)) {
+      lambda->body = parse_block();
+    } else {
+      lambda->body = parse_expression();
+    }
+    if (lambda->body) {
+      lambda->body->parent = lambda.get();
+    }
+
+    return lambda;
+  }
+
   if (match({TokenType::PUNCTUATION_OPEN_BRACE, TokenType::PUNCTUATION_OPEN_BRACKET})) {
     Token open_tok = previous();
     TokenType closing_tok = (open_tok.type == TokenType::PUNCTUATION_OPEN_BRACE)
