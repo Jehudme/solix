@@ -3161,7 +3161,7 @@ String empty = "";
 
 ---
 
-### Case 3.2: Hexadecimal and Binary Numeric Literals [NOT IMPLEMENTED]
+### Case 3.2: Hexadecimal and Binary Numeric Literals [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 hex = 0x2A;    // 42
@@ -3171,13 +3171,12 @@ static int32 main() {
 ```
 *Expected Result*: Hex (`0x`) and Binary (`0b`) integer prefixes parse correctly.
 
-### Case 3.3: Character Literals with Escapes [NOT IMPLEMENTED]
+### Case 3.3: Character Literals with Escapes [IMPLEMENTED]
 ```solix
 static int32 main() {
-    char newline = '
-';
-    char tab = '	';
-    char quote = ''';
+    char newline = '\n';
+    char tab = '\t';
+    char quote = '\'';
     return 0;
 }
 ```
@@ -3196,7 +3195,7 @@ int32 x = 99999999999999999999;
 [ERROR] lexer.cpp: Integer literal out of range for type 'int32'
 ```
 
-### Case 4.2: Unterminated String Literal [NOT IMPLEMENTED]
+### Case 4.2: Unterminated String Literal [IMPLEMENTED]
 ```solix
 void test() {
     String s = "unterminated;

@@ -64,7 +64,7 @@ class LexerState {
         }
 
         if (is_at_end()) {
-            add_token(TokenType::UNKNOWN_TOKEN, std::string("Unterminated string"));
+            add_token(TokenType::UNKNOWN_TOKEN, std::string("Unterminated string literal"));
             return;
         }
 
@@ -132,19 +132,69 @@ class LexerState {
         add_token(TokenType::CHAR, static_cast<int64_t>(codepoint));
     }
 
-    void handle_number() {
+    void handle_number(char first_char) {
+        if (first_char == '0' && (peek() == 'x' || peek() == 'X')) {
+            advance(); // Consume 'x'
+            while (std::isxdigit(peek())) advance();
+            if (peek() == 'L' || peek() == 'l') advance();
+            std::string text = source_code.substr(start_pos, current_pos - start_pos);
+            std::string clean = text;
+            if (clean.back() == 'L' || clean.back() == 'l') clean.pop_back();
+            if (clean.size() <= 2) {
+                add_token(TokenType::UNKNOWN_TOKEN, "Invalid hexadecimal literal: " + text);
+                return;
+            }
+            try {
+                int64_t val = static_cast<int64_t>(std::stoull(clean.substr(2), nullptr, 16));
+                add_token(TokenType::NUMBER, val);
+            } catch (const std::out_of_range &) {
+                add_token(TokenType::UNKNOWN_TOKEN, "Integer literal out of range: " + text);
+            } catch (const std::exception &) {
+                add_token(TokenType::UNKNOWN_TOKEN, "Invalid hexadecimal literal: " + text);
+            }
+            return;
+        }
+
+        if (first_char == '0' && (peek() == 'b' || peek() == 'B')) {
+            advance(); // Consume 'b'
+            while (peek() == '0' || peek() == '1') advance();
+            if (peek() == 'L' || peek() == 'l') advance();
+            std::string text = source_code.substr(start_pos, current_pos - start_pos);
+            std::string clean = text;
+            if (clean.back() == 'L' || clean.back() == 'l') clean.pop_back();
+            if (clean.size() <= 2) {
+                add_token(TokenType::UNKNOWN_TOKEN, "Invalid binary literal: " + text);
+                return;
+            }
+            try {
+                int64_t val = static_cast<int64_t>(std::stoull(clean.substr(2), nullptr, 2));
+                add_token(TokenType::NUMBER, val);
+            } catch (const std::out_of_range &) {
+                add_token(TokenType::UNKNOWN_TOKEN, "Integer literal out of range: " + text);
+            } catch (const std::exception &) {
+                add_token(TokenType::UNKNOWN_TOKEN, "Invalid binary literal: " + text);
+            }
+            return;
+        }
+
         while (std::isdigit(peek())) advance();
 
         if (peek() == '.' && std::isdigit(peek_next())) {
             advance(); // Consume the "."
             while (std::isdigit(peek())) advance();
+            if (peek() == 'f' || peek() == 'F') advance();
             
             std::string text = source_code.substr(start_pos, current_pos - start_pos);
-            add_token(TokenType::NUMBER, std::stod(text));
+            std::string clean = text;
+            if (clean.back() == 'f' || clean.back() == 'F') clean.pop_back();
+            add_token(TokenType::NUMBER, std::stod(clean));
         } else {
+            if (peek() == 'L' || peek() == 'l') advance();
             std::string text = source_code.substr(start_pos, current_pos - start_pos);
+            std::string clean = text;
+            if (clean.back() == 'L' || clean.back() == 'l') clean.pop_back();
             try {
-                add_token(TokenType::NUMBER, (int64_t)std::stoll(text));
+                add_token(TokenType::NUMBER, (int64_t)std::stoll(clean));
             } catch (const std::out_of_range &) {
                 add_token(TokenType::UNKNOWN_TOKEN, "Integer literal out of range: " + text);
             }
@@ -187,7 +237,7 @@ public:
             if (std::isalpha(current_character) || current_character == '_') {
                 handle_identifier();
             } else if (std::isdigit(current_character)) {
-                handle_number();
+                handle_number(current_character);
             } else if (current_character == '"') {
                 handle_string();
             } else if (current_character == '\'') {
