@@ -689,7 +689,29 @@ void Binder::process_imports() {
           log_debug("Template import resolved: '{}' -> '{}'", n->symbol_name,
                     tmpl);
         } else {
-          record_error(n, "Cannot resolve imported symbol: " + query);
+          std::string pkg_dot = n->package_name + ".";
+          bool pkg_exists = known_packages.count(pkg_dot);
+          if (!pkg_exists) {
+            for (const auto &pkg : known_packages) {
+              if (pkg.length() > pkg_dot.length() && pkg.substr(pkg.length() - pkg_dot.length()) == pkg_dot) {
+                pkg_exists = true;
+                break;
+              }
+            }
+          }
+          if (!pkg_exists) {
+            for (const auto &[sname, snode] : global_scope.symbols) {
+              if (sname.rfind(pkg_dot, 0) == 0) {
+                pkg_exists = true;
+                break;
+              }
+            }
+          }
+          if (pkg_exists) {
+            record_error(n, "Symbol '" + n->symbol_name + "' not found in package '" + n->package_name + "'");
+          } else {
+            record_error(n, "Cannot resolve import '" + query + "': package or symbol not found");
+          }
         }
       }
     }

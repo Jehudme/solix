@@ -175,7 +175,7 @@ void test() {
 
 ---
 
-### Case 3.3: Hierarchical Multi-Level Wildcard Import [NOT IMPLEMENTED]
+### Case 3.3: Hierarchical Multi-Level Wildcard Import [IMPLEMENTED]
 ```solix
 import solix.collections.*;
 
@@ -185,7 +185,7 @@ void test() {
 ```
 *Expected Result*: Wildcard import exposes all public types from nested package.
 
-### Case 3.4: Qualified Access with Active Import [NOT IMPLEMENTED]
+### Case 3.4: Qualified Access with Active Import [IMPLEMENTED]
 ```solix
 import solix.core.String;
 
@@ -223,7 +223,7 @@ void test() {
 [ERROR] binder.cpp: Reference to 'Token' is ambiguous: matches 'pkg_a.Token' and 'pkg_b.Token'
 ```
 
-### Case 4.3: Misplaced Import Statement [NOT IMPLEMENTED]
+### Case 4.3: Misplaced Import Statement [IMPLEMENTED]
 ```solix
 class Foo {}
 import solix.core.String; // Error: imports must precede declarations
@@ -233,7 +233,7 @@ import solix.core.String; // Error: imports must precede declarations
 [ERROR] parser.cpp: Import statements must appear before class declarations
 ```
 
-### Case 4.4: Importing Non-Existent Member from Existing Package [NOT IMPLEMENTED]
+### Case 4.4: Importing Non-Existent Member from Existing Package [IMPLEMENTED]
 ```solix
 import solix.core.FakeSymbol;
 ```
@@ -242,7 +242,7 @@ import solix.core.FakeSymbol;
 [ERROR] binder.cpp: Symbol 'FakeSymbol' not found in package 'solix.core'
 ```
 
-### Case 4.5: Import Statement Inside Class Body [NOT IMPLEMENTED]
+### Case 4.5: Import Statement Inside Class Body [IMPLEMENTED]
 ```solix
 class Foo {
     import solix.core.String;
@@ -253,7 +253,7 @@ class Foo {
 [ERROR] parser.cpp: Import statements must appear before class declarations
 ```
 
-### Case 4.6: Import Statement Inside Function Body [NOT IMPLEMENTED]
+### Case 4.6: Import Statement Inside Function Body [IMPLEMENTED]
 ```solix
 void test() {
     import solix.core.String;

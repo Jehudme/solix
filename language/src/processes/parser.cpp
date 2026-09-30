@@ -38,6 +38,7 @@ class ParserState {
   const Source *current_source;
   bool has_parsed_declaration = false;
   bool has_package_statement = false;
+  bool has_parsed_type_declaration = false;
 
 public:
   ParserState(const TokenList &tkns, Parser *proc, const Source *src)
@@ -592,6 +593,19 @@ std::unique_ptr<Node> ParserState::parse_block() {
 }
 
 std::unique_ptr<Node> ParserState::parse_statement() {
+  if (match(TokenType::KEYWORD_IMPORT)) {
+    throw ParseError("Import statements must appear before class declarations", previous().line, previous().column);
+  }
+  if (match(TokenType::KEYWORD_PACKAGE)) {
+    throw ParseError("'package' statement must be the first statement in the file", previous().line, previous().column);
+  }
+  if (match(TokenType::KEYWORD_CLASS)) {
+    throw ParseError("Classes cannot be declared inside a function or method body", previous().line, previous().column);
+  }
+  if (match(TokenType::KEYWORD_ENUM)) {
+    throw ParseError("Enums cannot be declared inside a function or method body", previous().line, previous().column);
+  }
+
   if (check(TokenType::PUNCTUATION_OPEN_BRACE))
     return parse_block();
   if (match(TokenType::KEYWORD_IF))
@@ -881,10 +895,16 @@ std::unique_ptr<Node> ParserState::parse_top_level_declaration() {
     return parse_package_statement();
   }
   has_parsed_declaration = true;
-  if (match(TokenType::KEYWORD_IMPORT))
+  if (match(TokenType::KEYWORD_IMPORT)) {
+    if (has_parsed_type_declaration) {
+      throw ParseError("Import statements must appear before class declarations", previous().line, previous().column);
+    }
     return parse_import_statement();
+  }
   if (match(TokenType::KEYWORD_ALIAS))
     return parse_alias_statement();
+
+  has_parsed_type_declaration = true;
 
   TokenType modifier = TokenType::KEYWORD_INTERNAL;
   bool is_static = false, is_inline = false, is_native = false,
@@ -929,7 +949,7 @@ std::unique_ptr<Node> ParserState::parse_top_level_declaration() {
 std::unique_ptr<Node> ParserState::parse_package_statement() {
   Token pkg = previous();
   std::string name_str = std::get<std::string>(
-      consume(TokenType::IDENTIFIER, "Expected package name").value);
+      consume(TokenType::IDENTIFIER, "Expected identifier in package statement, got number").value);
   while (match(TokenType::PUNCTUATION_DOT)) {
     name_str += ".";
     name_str += std::get<std::string>(
@@ -1062,8 +1082,14 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
   }
   decl->access_modifier = modifier;
 
-  consume(TokenType::PUNCTUATION_OPEN_BRACE, "Expected '{' before class body");
+  consume(TokenType::PUNCTUATION_OPEN_BRACE, "Expected '{' after class inheritance clause");
   while (!check(TokenType::PUNCTUATION_CLOSE_BRACE) && !is_at_end()) {
+    if (match(TokenType::KEYWORD_IMPORT)) {
+      throw ParseError("Import statements must appear before class declarations", previous().line, previous().column);
+    }
+    if (match(TokenType::KEYWORD_PACKAGE)) {
+      throw ParseError("'package' statement must be the first statement in the file", previous().line, previous().column);
+    }
     TokenType field_mod = TokenType::KEYWORD_PRIVATE;
     bool is_static = false, is_inline = false, is_native = false,
          is_const = false, is_virtual = false, is_override = false,
