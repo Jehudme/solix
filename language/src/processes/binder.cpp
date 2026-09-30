@@ -1617,6 +1617,29 @@ void Binder::visit(IdentifierNode &n) {
       }
     }
 
+    if (n.name == "super") {
+      if (!current_class) {
+        record_error(&n, "Keyword 'super' is only valid within class member methods");
+        evaluated_type = {"void", 0};
+        return;
+      }
+      if (current_class->base_class_name.empty()) {
+        record_error(&n, "Keyword 'super' cannot be used in a class with no superclass");
+        evaluated_type = {"void", 0};
+        return;
+      }
+      if (current_method && current_method->is_static) {
+        record_error(&n, "Keyword 'super' cannot be used in a static method");
+        evaluated_type = {"void", 0};
+        return;
+      }
+      Node *base_decl = global_scope.resolve(current_class->base_class_name);
+      n.expression_type = {current_class->base_class_name, 0};
+      evaluated_type = n.expression_type;
+      n.resolved_declaration = base_decl;
+      return;
+    }
+
     Node *declaration = resolve_symbol(n.name, &n, true);
 
     if (!declaration) {
@@ -1893,6 +1916,9 @@ void Binder::visit(MemberAccessExpression &n) {
     bool is_static_path = false;
     if (extract_symbol_path(n.object.get(), sym_path, root_name)) {
       bool is_local_var = false;
+      if (root_name == "this" || root_name == "super") {
+        is_local_var = true;
+      }
       if (current_scope) {
         Node *local_sym = current_scope->resolve(root_name);
         if (local_sym && local_sym->node_type == NodeType::VAR_DECL) {
@@ -1955,8 +1981,8 @@ void Binder::visit(MemberAccessExpression &n) {
                                            "." + n.member_name);
       }
       if (!member_decl) {
-        record_error(&n, "Member not found: " + n.member_name + " on " +
-                             class_decl->mangled_name);
+        record_error(&n, fmt::format("Class '{}' has no member named '{}'",
+                             class_decl->class_name, n.member_name));
         evaluated_type = {"void", 0};
         return;
       }

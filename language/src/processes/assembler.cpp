@@ -1076,7 +1076,7 @@ void Assembler::visit(IdentifierNode &node) {
   } else if (ident->name == "null") {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_NULL));
     return;
-  } else if (ident->name == "this") {
+  } else if (ident->name == "this" || ident->name == "super") {
     emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
     emit_int32(0);
     return;

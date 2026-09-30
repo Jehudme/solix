@@ -3227,7 +3227,7 @@ void test(Person p) {
 
 ---
 
-### Case 3.2: Static Field Access on Class Name [NOT IMPLEMENTED]
+### Case 3.2: Static Field Access on Class Name [IMPLEMENTED]
 ```solix
 class MathConstants {
     public static int32 SCALE = 100;
@@ -3253,7 +3253,7 @@ String c = p.addr; // Throws NullReferenceException
 [FATAL VM PANIC] NullReferenceException: Attempted to read property from null object reference
 ```
 
-### Case 4.2: Accessing Non-Existent Member Field [NOT IMPLEMENTED]
+### Case 4.2: Accessing Non-Existent Member Field [IMPLEMENTED]
 ```solix
 class Empty {}
 
@@ -3267,7 +3267,7 @@ void test() {
 [ERROR] binder.cpp: Class 'Empty' has no member named 'unknownField'
 ```
 
-### Case 4.4: Using Super Keyword in Non-Derived Class [NOT IMPLEMENTED]
+### Case 4.4: Using Super Keyword in Non-Derived Class [IMPLEMENTED]
 ```solix
 class BaseOnly {
     public void test() {
