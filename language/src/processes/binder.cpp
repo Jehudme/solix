@@ -1815,6 +1815,25 @@ void Binder::visit(UnaryExpression &n) {
           record_error(&n, fmt::format("Cannot assign to const variable '{}'", v->var_name));
         }
       }
+    } else if (n.op == TokenType::OPERATOR_MINUS || n.op == TokenType::OPERATOR_PLUS) {
+      auto is_numeric = [](const TypeInfo &t) {
+        if (t.array_depth > 0) return false;
+        return t.name == "int8" || t.name == "uint8" || t.name == "int16" ||
+               t.name == "uint16" || t.name == "int32" || t.name == "uint32" ||
+               t.name == "int64" || t.name == "uint64" || t.name == "float32" ||
+               t.name == "float64";
+      };
+      if (!is_numeric(n.expression_type)) {
+        std::string op_str = (n.op == TokenType::OPERATOR_MINUS) ? "-" : "+";
+        std::string type_name = (n.expression_type.name == "char" && n.expression_type.array_depth == 1)
+                                    ? "String"
+                                    : n.expression_type.to_string();
+        record_error(&n, fmt::format("Cannot apply unary operator '{}' to type '{}'", op_str, type_name));
+      }
+    } else if (n.op == TokenType::OPERATOR_LOGICAL_NOT) {
+      if (n.expression_type.name != "bool" || n.expression_type.array_depth > 0) {
+        record_error(&n, fmt::format("Cannot apply unary operator '!' to type '{}'", n.expression_type.name));
+      }
     }
     log_trace("Evaluated unary operation -> '{}'", evaluated_type.to_string());
   }

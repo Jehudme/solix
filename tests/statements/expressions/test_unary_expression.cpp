@@ -18,6 +18,28 @@ static int32 main() {
         CHECK(run_source(code) == 0);
     }
 
+    SECTION("Case 3.2: Unary Negation on Numeric Expressions") {
+        std::string code = R"(
+static int32 main() {
+    int32 x = 42;
+    int32 neg = -x;
+    return neg == -42 ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
+    SECTION("Case 3.3: Logical NOT on Boolean Variable") {
+        std::string code = R"(
+static int32 main() {
+    bool active = false;
+    bool inverted = !active;
+    return inverted == true ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
     SECTION("Case 4.1: Increment on Constant (Compile-Time Error)") {
         std::string code = R"(
 static int32 main() {
@@ -26,5 +48,14 @@ static int32 main() {
 }
 )";
         assert_compile_error(code, "Invalid operand for increment operator: expected lvalue");
+    }
+
+    SECTION("Case 4.2: Unary Minus on Non-Numeric Operand") {
+        std::string code = R"(
+void test() {
+    String s = -"text";
+}
+)";
+        assert_compile_error(code, "Cannot apply unary operator '-' to type 'String'", true);
     }
 }

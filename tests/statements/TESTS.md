@@ -3493,7 +3493,7 @@ int32 pre = ++x;  // pre = 7, x = 7
 
 ---
 
-### Case 3.2: Unary Negation on Numeric Expressions [NOT IMPLEMENTED]
+### Case 3.2: Unary Negation on Numeric Expressions [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 x = 42;
@@ -3503,7 +3503,7 @@ static int32 main() {
 ```
 *Expected Result*: Evaluates `-x` to -42.
 
-### Case 3.3: Logical NOT on Boolean Variable [NOT IMPLEMENTED]
+### Case 3.3: Logical NOT on Boolean Variable [IMPLEMENTED]
 ```solix
 static int32 main() {
     bool active = false;
@@ -3526,7 +3526,7 @@ static int32 main() {
 [ERROR] parser.cpp: Invalid operand for increment operator: expected lvalue
 ```
 
-### Case 4.2: Unary Minus on Non-Numeric Operand [NOT IMPLEMENTED]
+### Case 4.2: Unary Minus on Non-Numeric Operand [IMPLEMENTED]
 ```solix
 void test() {
     String s = -"text"; // Error
