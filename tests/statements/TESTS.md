@@ -3531,11 +3531,69 @@ static int32 main() {
 void test() {
     String s = -"text"; // Error
 }
+---
+
+## Suite 38: SizeOfExpression
+
+### Positive Test Scenarios (Functional Execution & State)
+
+### Case 1.1: Primitive Type Sizing [NOT IMPLEMENTED]
+```solix
+static int32 main() {
+    int32 s1 = sizeof(int8);
+    int32 s2 = sizeof(int16);
+    int32 s4 = sizeof(int32);
+    int32 s8 = sizeof(int64);
+    int32 sf4 = sizeof(float32);
+    int32 sf8 = sizeof(float64);
+    int32 sb = sizeof(bool);
+    int32 sc = sizeof(char);
+    if (s1 == 1 && s2 == 2 && s4 == 4 && s8 == 8 && sf4 == 4 && sf8 == 8 && sb == 1 && sc == 1) {
+        return 0;
+    }
+    return 1;
+}
+```
+*Expected Result*: Returns 0 indicating all primitive types have correct byte sizes.
+
+### Case 1.2: Class Type Compile-Time Sizing [NOT IMPLEMENTED]
+```solix
+class Point {
+    int32 x;
+    int32 y;
+}
+static int32 main() {
+    int32 sz = sizeof(Point);
+    return sz >= 16 ? 0 : 1;
+}
+```
+*Expected Result*: Returns 0 indicating compile-time class instance size includes fields and vtable header.
+
+### Case 2.1: Dynamic Instance Sizing on Heap Objects [NOT IMPLEMENTED]
+```solix
+class Item {
+    int32 a;
+    int32 b;
+}
+static int32 main() {
+    Item item = new Item();
+    int32 sz = sizeof(item);
+    return sz >= 16 ? 0 : 1;
+}
+```
+*Expected Result*: Evaluates dynamic heap object capacity at runtime and returns 0.
+
+### Negative Test Scenarios (Expected Errors & Faults)
+
+### Case 3.1: SizeOf on Undeclared Identifier [NOT IMPLEMENTED]
+```solix
+void test() {
+    int32 s = sizeof(NonExistentType);
+}
 ```
 *Expected Compiler Diagnostic*:
 ```text
-[ERROR] binder.cpp: Cannot apply unary operator '-' to type 'String'
+[ERROR] binder.cpp: Unknown type 'NonExistentType' in sizeof expression
 ```
 
----
 
