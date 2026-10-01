@@ -19,12 +19,8 @@ namespace solix::cli {
         auto flush_every = std::make_shared<int>(0);
 
         auto asm_output = std::make_shared<std::string>();
-        auto import_stdlib = std::make_shared<bool>(true);
-        auto no_stdlib = std::make_shared<bool>(false);
 
         compile_cmd->add_option("files", *files, "Source files to compile")->required()->check(CLI::ExistingFile);
-        compile_cmd->add_flag("-s,--stdlib", *import_stdlib, "Explicitly enable Solix standard library (default: enabled)");
-        compile_cmd->add_flag("--no-stdlib", *no_stdlib, "Do not automatically import Solix standard library");
         compile_cmd->add_option("-e,--entry", opts->entry_point, "Entry point method name (default: main)");
         compile_cmd->add_option("-o,--output", *output, "Output bytecode file (default: out.slxb)");
         compile_cmd->add_option("-a,--asm", *asm_output, "Output assembly code to file");
@@ -38,7 +34,7 @@ namespace solix::cli {
         compile_cmd->add_flag("--multithreaded", opts->use_multithreading, "Enable multithreading");
         compile_cmd->add_option("--flush-every", *flush_every, "Flush logs every N seconds");
 
-        compile_cmd->callback([opts, files, output, asm_output, import_stdlib, no_stdlib, log_level_str, flush_level_str, sink_type_str, log_file_path, flush_every]() {
+        compile_cmd->callback([opts, files, output, asm_output, log_level_str, flush_level_str, sink_type_str, log_file_path, flush_every]() {
             // Map log levels
             auto map_level = [](const std::string& s) {
                 if (s == "TRACE") return CompilationOptions::LogLevel::TRACE;
@@ -61,53 +57,6 @@ namespace solix::cli {
             if (!log_file_path->empty()) opts->log_file_path = std::filesystem::path(*log_file_path);
             if (!asm_output->empty()) opts->assembly_output_path = std::filesystem::path(*asm_output);
             opts->flush_every_seconds = std::chrono::seconds(*flush_every);
-
-            bool should_import_stdlib = *import_stdlib && !*no_stdlib;
-            if (should_import_stdlib) {
-                std::filesystem::path stdlib_path;
-                try {
-                    auto exe_path = std::filesystem::canonical("/proc/self/exe");
-                    auto candidate = exe_path.parent_path() / "lib" / "solix";
-                    if (std::filesystem::exists(candidate)) {
-                        stdlib_path = candidate;
-                    }
-                } catch (...) {}
-
-                if (stdlib_path.empty()) {
-                    auto candidate = std::filesystem::path("build/launcher/lib/solix");
-                    if (std::filesystem::exists(candidate)) {
-                        stdlib_path = candidate;
-                    }
-                }
-
-                if (stdlib_path.empty()) {
-                    auto candidate = std::filesystem::path("launcher/rsc/lib/solix");
-                    if (std::filesystem::exists(candidate)) {
-                        stdlib_path = candidate;
-                    }
-                }
-
-                if (!stdlib_path.empty() && std::filesystem::exists(stdlib_path)) {
-                    for (const auto& entry : std::filesystem::recursive_directory_iterator(stdlib_path)) {
-                        if (entry.is_regular_file() && entry.path().extension() == ".slx") {
-                            if (std::filesystem::file_size(entry.path()) > 0) {
-                                std::ifstream sf(entry.path());
-                                if (sf.is_open()) {
-                                    std::stringstream sbuf;
-                                    sbuf << sf.rdbuf();
-                                    std::filesystem::path rel_path;
-                                    try {
-                                        rel_path = std::filesystem::relative(entry.path(), std::filesystem::current_path());
-                                    } catch (...) {
-                                        rel_path = entry.path();
-                                    }
-                                    opts->sources[rel_path.string()] = sbuf.str();
-                                }
-                            }
-                        }
-                    }
-                }
-            }
 
             for (const auto& file_path : *files) {
                 std::ifstream t(file_path);

@@ -52,10 +52,13 @@ static int32 main() {
 
     SECTION("Case 4.2: Unary Minus on Non-Numeric Operand") {
         std::string code = R"(
+class NonNumeric {}
+
 void test() {
-    String s = -"text";
+    NonNumeric obj = new NonNumeric();
+    NonNumeric neg = -obj;
 }
 )";
-        assert_compile_error(code, "Cannot apply unary operator '-' to type 'String'", true);
+        assert_compile_error(code, "Cannot apply unary operator '-' to type 'NonNumeric'");
     }
 }

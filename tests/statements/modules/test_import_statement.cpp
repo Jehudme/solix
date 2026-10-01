@@ -90,55 +90,78 @@ TEST_CASE("ImportStatement - Modules", "[modules][import]") {
     }
 
     SECTION("Case 3.3: Hierarchical Multi-Level Wildcard Import") {
-        const std::string code = R"(
-            import solix.collections.*;
+        std::unordered_map<std::string, std::string> sources;
+        sources["collections/list.slx"] = R"(
+            package my.collections;
+
+            public class MyList {
+                public int32 size() { return 0; }
+            }
+        )";
+        sources["main.slx"] = R"(
+            import my.collections.*;
 
             class Main {
                 public static int32 main() {
-                    List<int32> list = new List<int32>();
+                    MyList list = new MyList();
                     return list.size() == 0 ? 0 : 1;
                 }
             }
         )";
-        assert_compile_success(code, true);
-        REQUIRE(run_and_evaluate_int(code, true) == 0);
+        assert_compile_sources_success(sources);
+        REQUIRE(run_sources(sources) == 0);
     }
 
     SECTION("Case 3.4: Qualified Access with Active Import") {
-        const std::string code = R"(
-            import solix.core.String;
+        std::unordered_map<std::string, std::string> sources;
+        sources["core/item.slx"] = R"(
+            package my.core;
+
+            public class Item {
+                public int32 val;
+                public Item(int32 v) { this.val = v; }
+                public int32 getVal() { return this.val; }
+            }
+        )";
+        sources["main.slx"] = R"(
+            import my.core.Item;
 
             class Main {
                 public static int32 main() {
-                    solix.core.String s1 = new solix.core.String("qualified");
-                    String s2 = new String("unqualified");
-                    return (s1.size() == 9 && s2.size() == 11) ? 0 : 1;
+                    my.core.Item s1 = new my.core.Item(10);
+                    Item s2 = new Item(20);
+                    return (s1.getVal() == 10 && s2.getVal() == 20) ? 0 : 1;
                 }
             }
         )";
-        assert_compile_success(code, true);
-        REQUIRE(run_and_evaluate_int(code, true) == 0);
+        assert_compile_sources_success(sources);
+        REQUIRE(run_sources(sources) == 0);
     }
 
     SECTION("Case 4.3: Misplaced Import Statement") {
         const std::string code = R"(
             class Foo {}
-            import solix.core.String;
+            import my.core.Item;
         )";
         assert_compile_error(code, "Import statements must appear before class declarations");
     }
 
     SECTION("Case 4.4: Importing Non-Existent Member from Existing Package") {
-        const std::string code = R"(
-            import solix.core.FakeSymbol;
+        std::unordered_map<std::string, std::string> sources;
+        sources["core.slx"] = R"(
+            package my.core;
+            public class RealSymbol {}
         )";
-        assert_compile_error(code, "Symbol 'FakeSymbol' not found in package 'solix.core'", true);
+        sources["main.slx"] = R"(
+            import my.core.FakeSymbol;
+        )";
+        assert_compile_sources_error(sources, "Symbol 'FakeSymbol' not found in package 'my.core'");
     }
 
     SECTION("Case 4.5: Import Statement Inside Class Body") {
         const std::string code = R"(
             class Foo {
-                import solix.core.String;
+                import my.core.Item;
             }
         )";
         assert_compile_error(code, "Import statements must appear before class declarations");
@@ -148,7 +171,7 @@ TEST_CASE("ImportStatement - Modules", "[modules][import]") {
         const std::string code = R"(
             class Main {
                 public static int32 main() {
-                    import solix.core.String;
+                    import my.core.Item;
                     return 0;
                 }
             }
