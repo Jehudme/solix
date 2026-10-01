@@ -1,8 +1,7 @@
 # `Result<TValue, TError>` — API Reference
 
 **Package:** `solix.core`  
-**Import:** `import solix.core.Result;`  
-**Source:** [`Result.slx`](../../../../launcher/rsc/lib/solix/core/Result.slx)
+**Import:** `import solix.core.Result;`
 
 ---
 

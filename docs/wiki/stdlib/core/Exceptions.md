@@ -1,8 +1,7 @@
 # `Exceptions` — API Reference
 
 **Package:** `solix.core`  
-**Import:** `import solix.core.Exceptions;` (or `import solix.core.*;`)  
-**Source:** [`Exceptions.slx`](../../../../launcher/rsc/lib/solix/core/Exceptions.slx)
+**Import:** `import solix.core.Exceptions;` (or `import solix.core.*;`)
 
 ---
 

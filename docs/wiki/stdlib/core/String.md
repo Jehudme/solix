@@ -1,8 +1,7 @@
 # `String` — API Reference
 
 **Package:** `solix.core`  
-**Import:** `import solix.core.String;`  
-**Source:** [`String.slx`](../../../../launcher/rsc/lib/solix/core/String.slx)
+**Import:** `import solix.core.String;`
 
 ---
 
