@@ -196,7 +196,16 @@ class LexerState {
             try {
                 add_token(TokenType::NUMBER, (int64_t)std::stoll(clean));
             } catch (const std::out_of_range &) {
-                add_token(TokenType::UNKNOWN_TOKEN, "Integer literal out of range: " + text);
+                try {
+                    uint64_t uval = std::stoull(clean);
+                    if (uval <= 9223372036854775808ULL) {
+                        add_token(TokenType::NUMBER, static_cast<int64_t>(uval));
+                    } else {
+                        add_token(TokenType::UNKNOWN_TOKEN, "Integer literal out of range: " + text);
+                    }
+                } catch (...) {
+                    add_token(TokenType::UNKNOWN_TOKEN, "Integer literal out of range: " + text);
+                }
             }
         }
     }

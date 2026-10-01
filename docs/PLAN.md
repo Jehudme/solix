@@ -147,18 +147,18 @@ Abstract binary path resolution to support Linux, macOS, and Windows cleanly wit
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `runtime`, `compiler`, `tests`
-- **Status**: - [ ] Pending
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Prevent signed integer overflow crashes on extreme boundary values such as `INT32_MIN` (`-2147483648`) and `INT64_MIN`.
 
 ### Action Items
-- [ ] **Guard Boundary Negation**:
+- [x] **Guard Boundary Negation**:
   - Protect integer-to-string formatting against `-INT32_MIN` overflow UB in C++ runtime logic.
   - Ensure compiler constant folding handles `-2147483648` correctly without accidental promotion or overflow warnings.
-- [ ] **Harden Hash Table Indexing**:
+- [x] **Harden Hash Table Indexing**:
   - Apply positive bitmasking (`(hash & 0x7FFFFFFF) % capacity`) to prevent negative array indexing when hashing negative integers or `INT32_MIN`.
-- [ ] **Add Arithmetic Boundary Tests**:
+- [x] **Add Arithmetic Boundary Tests**:
   - Implement test cases covering `INT32_MIN`, `INT32_MAX`, `INT64_MIN`, and `INT64_MAX` across arithmetic, unary negation, string conversion, and comparisons.
 
 ### Acceptance Criteria

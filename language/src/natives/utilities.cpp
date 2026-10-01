@@ -105,12 +105,53 @@ void register_utilities_natives(std::unordered_map<std::string, NativeFunction> 
         return std::bit_cast<uint64_t>(parsed_value);
       };
 
+  native_registry["solix.NativeUtilities.int32_to_chars(int32)"] =
+      [](RuntimeContext &runtime_context, uint64_t instance_id, uint64_t *arguments, size_t argument_count) -> uint64_t {
+        (void)instance_id;
+        (void)argument_count;
+        int32_t integer_value = static_cast<int32_t>(arguments[0]);
+        std::string integer_string;
+        if (integer_value == INT32_MIN) {
+          integer_string = "-2147483648";
+        } else {
+          integer_string = std::to_string(integer_value);
+        }
+        Address result_address = allocate_solix_char_array_from_string(runtime_context, integer_string);
+        return static_cast<uint64_t>(result_address);
+      };
+
+  native_registry["solix.NativeUtilities.chars_to_int32(char[])"] =
+      [](RuntimeContext &runtime_context, uint64_t instance_id, uint64_t *arguments, size_t argument_count) -> uint64_t {
+        (void)instance_id;
+        (void)argument_count;
+        Address array_address = static_cast<Address>(arguments[0]);
+        std::string integer_string = read_solix_char_array_to_string(runtime_context, array_address);
+        int32_t parsed_value = 0;
+        try {
+          if (!integer_string.empty()) {
+            if (integer_string == "-2147483648") {
+              parsed_value = INT32_MIN;
+            } else {
+              parsed_value = static_cast<int32_t>(std::stoll(integer_string));
+            }
+          }
+        } catch (...) {
+          parsed_value = 0;
+        }
+        return static_cast<uint64_t>(static_cast<uint32_t>(parsed_value));
+      };
+
   native_registry["solix.NativeUtilities.int64_to_chars(int64)"] =
       [](RuntimeContext &runtime_context, uint64_t instance_id, uint64_t *arguments, size_t argument_count) -> uint64_t {
         (void)instance_id;
         (void)argument_count;
         int64_t integer_value = static_cast<int64_t>(arguments[0]);
-        std::string integer_string = std::to_string(integer_value);
+        std::string integer_string;
+        if (integer_value == INT64_MIN) {
+          integer_string = "-9223372036854775808";
+        } else {
+          integer_string = std::to_string(integer_value);
+        }
         Address result_address = allocate_solix_char_array_from_string(runtime_context, integer_string);
         return static_cast<uint64_t>(result_address);
       };
@@ -124,12 +165,37 @@ void register_utilities_natives(std::unordered_map<std::string, NativeFunction> 
         int64_t parsed_value = 0;
         try {
           if (!integer_string.empty()) {
-            parsed_value = std::stoll(integer_string);
+            if (integer_string == "-9223372036854775808") {
+              parsed_value = INT64_MIN;
+            } else {
+              parsed_value = std::stoll(integer_string);
+            }
           }
         } catch (...) {
           parsed_value = 0;
         }
         return static_cast<uint64_t>(parsed_value);
+      };
+
+  native_registry["solix.NativeUtilities.hash_code(int32)"] =
+      [](RuntimeContext &runtime_context, uint64_t instance_id, uint64_t *arguments, size_t argument_count) -> uint64_t {
+        (void)runtime_context;
+        (void)instance_id;
+        (void)argument_count;
+        int32_t val = static_cast<int32_t>(arguments[0]);
+        return static_cast<uint64_t>(static_cast<uint32_t>(val));
+      };
+
+  native_registry["solix.NativeUtilities.hash_bucket(int32,int32)"] =
+      [](RuntimeContext &runtime_context, uint64_t instance_id, uint64_t *arguments, size_t argument_count) -> uint64_t {
+        (void)runtime_context;
+        (void)instance_id;
+        (void)argument_count;
+        int32_t hash = static_cast<int32_t>(arguments[0]);
+        int32_t capacity = static_cast<int32_t>(arguments[1]);
+        if (capacity <= 0) return 0;
+        uint32_t positive_hash = static_cast<uint32_t>(hash) & 0x7FFFFFFFU;
+        return static_cast<uint64_t>(positive_hash % static_cast<uint32_t>(capacity));
       };
 
   native_registry["solix.NativeUtilities.current_time_millis()"] =
@@ -154,12 +220,14 @@ void register_utilities_natives(std::unordered_map<std::string, NativeFunction> 
         return static_cast<uint64_t>(nanoseconds_count);
       };
 
-  // Also register solix.core.NativeUtilities.* variants
+  // Also register solix.core.NativeUtilities.* and unqualified NativeUtilities.* variants
   std::vector<std::pair<std::string, NativeFunction>> core_entries;
   for (const auto &[name, func] : native_registry) {
     if (name.rfind("solix.NativeUtilities.", 0) == 0) {
-      std::string core_name = "solix.core.NativeUtilities." + name.substr(std::string("solix.NativeUtilities.").length());
+      std::string suffix = name.substr(std::string("solix.NativeUtilities.").length());
+      std::string core_name = "solix.core.NativeUtilities." + suffix;
       core_entries.emplace_back(core_name, func);
+      core_entries.emplace_back("NativeUtilities." + suffix, func);
     }
   }
   for (auto &pair : core_entries) {
