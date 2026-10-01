@@ -220,6 +220,11 @@ void register_utilities_natives(std::unordered_map<std::string, NativeFunction> 
         return static_cast<uint64_t>(nanoseconds_count);
       };
 
+  native_registry["solix.NativeUtilities.get_live_object_count()"] =
+      [](RuntimeContext &runtime_context, uint64_t, uint64_t *, size_t) -> uint64_t {
+        return static_cast<uint64_t>(runtime_context.memory.live_objects_count);
+      };
+
   // Also register solix.core.NativeUtilities.* and unqualified NativeUtilities.* variants
   std::vector<std::pair<std::string, NativeFunction>> core_entries;
   for (const auto &[name, func] : native_registry) {

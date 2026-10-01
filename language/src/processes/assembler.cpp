@@ -432,6 +432,10 @@ void Assembler::compile_boot_sequence() {
       linker_patches.push_back({bytecode().size(), method});
       emit_int32(0xFFFFFFFF);
     }
+    emit_int32(cls->reference_field_offsets.size());
+    for (uint32_t off : cls->reference_field_offsets) {
+      emit_int32(off);
+    }
   }
 
   for (auto *cls : classes_with_vtables) {
@@ -447,6 +451,46 @@ void Assembler::compile_boot_sequence() {
         }
       }
     }
+  }
+
+  std::string entry_point = context.options.entry_point;
+  MethodDeclaration *entry_method = nullptr;
+  if (!entry_point.empty()) {
+    for (const auto &[source, nodes] : context.nodes) {
+      for (const auto &node : nodes) {
+        if (node->node_type == NodeType::CLASS_DECL) {
+          auto *class_decl = static_cast<ClassDeclaration *>(node.get());
+          if (!class_decl->template_parameters.empty())
+            continue; // SHIELD
+
+          for (const auto &child : class_decl->children) {
+            if (child->node_type == NodeType::METHOD_DECL) {
+              auto *method = static_cast<MethodDeclaration *>(child.get());
+              if (method->method_name == entry_point) {
+                entry_method = method;
+                break;
+              }
+            }
+          }
+        } else if (node->node_type == NodeType::METHOD_DECL) {
+          auto *method = static_cast<MethodDeclaration *>(node.get());
+          if (!method->template_parameters.empty())
+            continue; // SHIELD
+
+          if (method->method_name == entry_point) {
+            entry_method = method;
+            break;
+          }
+        }
+      }
+      if (entry_method)
+        break;
+    }
+  }
+
+  // If entry point takes no arguments, discard the default startup args_array
+  if (!entry_method || entry_method->parameters.empty()) {
+    emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
   }
 
   uint32_t total_globals = 1;
@@ -482,54 +526,19 @@ void Assembler::compile_boot_sequence() {
     }
   }
 
-  std::string entry_point = context.options.entry_point;
-  if (!entry_point.empty()) {
-    MethodDeclaration *entry_method = nullptr;
-    for (const auto &[source, nodes] : context.nodes) {
-      for (const auto &node : nodes) {
-        if (node->node_type == NodeType::CLASS_DECL) {
-          auto *class_decl = static_cast<ClassDeclaration *>(node.get());
-          if (!class_decl->template_parameters.empty())
-            continue; // SHIELD
-
-          for (const auto &child : class_decl->children) {
-            if (child->node_type == NodeType::METHOD_DECL) {
-              auto *method = static_cast<MethodDeclaration *>(child.get());
-              if (method->method_name == entry_point) {
-                entry_method = method;
-                break;
-              }
-            }
-          }
-        } else if (node->node_type == NodeType::METHOD_DECL) {
-          auto *method = static_cast<MethodDeclaration *>(node.get());
-          if (!method->template_parameters.empty())
-            continue; // SHIELD
-
-          if (method->method_name == entry_point) {
-            entry_method = method;
-            break;
-          }
-        }
-      }
-      if (entry_method)
-        break;
+  if (entry_method) {
+    if (!entry_method->is_static) {
+      throw_error(nullptr,
+                  "Entry point '" + entry_point + "' must be static.");
     }
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    linker_patches.push_back({bytecode().size(), entry_method});
+    emit_int32(0xFFFFFFFF);
 
-    if (entry_method) {
-      if (!entry_method->is_static) {
-        throw_error(nullptr,
-                    "Entry point '" + entry_point + "' must be static.");
-      }
-      emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-      linker_patches.push_back({bytecode().size(), entry_method});
-      emit_int32(0xFFFFFFFF);
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    emit_int32(entry_method->parameters.size());
 
-      emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
-      emit_int32(entry_method->parameters.size());
-
-      emit_byte(static_cast<uint8_t>(OpCode::CALL));
-    }
+    emit_byte(static_cast<uint8_t>(OpCode::CALL));
   }
 
   emit_byte(static_cast<uint8_t>(OpCode::HALT));

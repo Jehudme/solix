@@ -938,7 +938,7 @@ void Binder::bind_types_and_memory() {
     }
   }
 
-  int next_vtable_id = 0;
+  int next_vtable_id = 1;
   for (const auto &[name, node] : global_scope.symbols) {
     if (node->node_type == NodeType::CLASS_DECL) {
       auto *cls = static_cast<ClassDeclaration *>(node);
@@ -1282,10 +1282,13 @@ void Binder::bind_types_and_memory() {
     layout_in_progress.insert(cls->mangled_name);
 
     int offset = (!cls->base_class_name.empty() ? 0 : 1);
+    cls->reference_field_offsets.clear();
     if (!cls->base_class_name.empty()) {
       Node *base_node = global_scope.resolve(cls->base_class_name);
       if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
-        offset = calculate_layout(static_cast<ClassDeclaration *>(base_node));
+        auto *base_cls = static_cast<ClassDeclaration *>(base_node);
+        offset = calculate_layout(base_cls);
+        cls->reference_field_offsets = base_cls->reference_field_offsets;
       } else {
         throw std::runtime_error("Base class not found: " +
                                  cls->base_class_name);
@@ -1296,6 +1299,9 @@ void Binder::bind_types_and_memory() {
         auto *field = static_cast<FieldDeclaration *>(child.get());
         if (!field->is_static) {
           field->memory_index = offset++;
+          if (field->is_reference_type && !field->is_weak) {
+            cls->reference_field_offsets.push_back(static_cast<uint32_t>(field->memory_index));
+          }
           log_trace("Field '{}' in '{}' assigned instance offset {}",
                     field->field_name, cls->mangled_name, field->memory_index);
         }

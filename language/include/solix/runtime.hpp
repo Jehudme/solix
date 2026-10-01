@@ -66,6 +66,9 @@ struct Memory {
   // Memory Usage Statistics
   size_t currently_used_words = 0;
   size_t peak_used_words = 0;
+  size_t live_objects_count = 0;
+
+  std::function<void(Memory &, Address)> object_destructor = nullptr;
 
   Memory(size_t stack_cap, size_t heap_cap) {
     stack.resize(stack_cap);
@@ -94,6 +97,8 @@ struct Memory {
 
 int32_t run(RuntimeOptions &options);
 
+size_t get_live_object_count();
+
 const std::unordered_map<std::string, NativeFunction>& get_builtin_natives();
 
 // -----------------------------------------------------------------------------
@@ -120,6 +125,7 @@ struct RuntimeContext {
   std::unordered_map<uint32_t, std::vector<uint32_t>> vtables;
   std::unordered_map<uint32_t, int32_t> vtable_bases;
   std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::vector<uint32_t>>> itables;
+  std::unordered_map<uint32_t, std::vector<uint32_t>> vtable_ref_fields;
 
   RuntimeContext(const RuntimeOptions &opts);
 
