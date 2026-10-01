@@ -15,7 +15,7 @@
 
 | Phase | Title | Priority | Affected Modules | Status |
 |---|---|---|---|---|
-| **Phase 1** | Total Decoupling & Legacy Stdlib Purge | `P0 Blocker` | `launcher`, `tests`, `build` | - [ ] Not Started |
+| **Phase 1** | Total Decoupling & Legacy Stdlib Purge | `P0 Blocker` | `launcher`, `tests`, `build` | - [x] Completed |
 | **Phase 2** | Interface VTable Dynamic Dispatch Stabilization | `P0 Blocker` | `compiler`, `runtime`, `tests` | - [ ] Not Started |
 | **Phase 3** | Generic Type Safety & Default Value Slot Clearance | `P0 Blocker` | `compiler`, `runtime`, `tests` | - [ ] Not Started |
 | **Phase 4** | Cross-Platform Path & Toolchain Portability | `P1 High` | `launcher`, `runtime` | - [ ] Not Started |
@@ -29,13 +29,13 @@
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `tests`, `launcher`, `build`
-- **Status**: - [ ] Pending
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Completely eliminate the bundled standard library (`launcher/rsc/lib/`), removing disk-based stdlib injection in the test harness, and converting all dependent unit tests into self-contained test scenarios.
 
 ### Action Items
-- [ ] **Purge Test Harness Stdlib Injection (`tests/include/test_helper.hpp`)**:
+- [x] **Purge Test Harness Stdlib Injection (`tests/include/test_helper.hpp`)**:
   - Delete `load_stdlib_into_options()` and all directory scanning under `launcher/rsc/lib`.
   - Remove parameter `bool include_stdlib = false` across all helper functions:
     - `compile_sources`
@@ -46,11 +46,11 @@ Completely eliminate the bundled standard library (`launcher/rsc/lib/`), removin
     - `assert_compile_error`
     - `run_and_evaluate_int`
   - Enforce that test compilation relies exclusively on in-memory source strings provided in unit tests.
-- [ ] **Refactor Dependent Test Suites**:
+- [x] **Refactor Dependent Test Suites**:
   - `tests/statements/declarations/test_field_declaration.cpp`: Rewrite Cases 3.5 and 3.6 to remove `solix.core.String` and `include_stdlib = true`, validating in-class and static field initialization with local user-defined classes and primitives.
   - `tests/statements/expressions/test_unary_expression.cpp`: Rewrite Case 4.2 to remove `include_stdlib = true` and assert unary minus rejection on an isolated user class rather than `String`.
   - Audit all files in `tests/statements/**/*.cpp` to ensure zero dependencies on `solix.core.*`, `solix.collections.*`, or `solix.systems.*`.
-- [ ] **Purge Launcher Build Targets & Assets**:
+- [x] **Purge Launcher Build Targets & Assets**:
   - Remove the `copy_stdlib` custom target and dependencies in `launcher/CMakeLists.txt`.
   - Remove CLI flags `--stdlib` / `--no-stdlib` and stdlib path resolution logic from `launcher/src/commands/compile.cpp`.
   - Permanently delete the directory `launcher/rsc/lib/`.
