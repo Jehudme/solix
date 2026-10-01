@@ -538,9 +538,9 @@ op_DUP2:
 
 op_ADD_I64:
   {
-    int64_t b = static_cast<int64_t>(POP());
-    int64_t a = static_cast<int64_t>(POP());
-    PUSH(static_cast<uint64_t>(a + b));
+    uint64_t b = POP();
+    uint64_t a = POP();
+    PUSH(a + b);
     DISPATCH();
   }
 op_ADD_F64:
@@ -552,9 +552,9 @@ op_ADD_F64:
   }
 op_SUB_I64:
   {
-    int64_t b = static_cast<int64_t>(POP());
-    int64_t a = static_cast<int64_t>(POP());
-    PUSH(static_cast<uint64_t>(a - b));
+    uint64_t b = POP();
+    uint64_t a = POP();
+    PUSH(a - b);
     DISPATCH();
   }
 op_SUB_F64:
@@ -566,9 +566,9 @@ op_SUB_F64:
   }
 op_MUL_I64:
   {
-    int64_t b = static_cast<int64_t>(POP());
-    int64_t a = static_cast<int64_t>(POP());
-    PUSH(static_cast<uint64_t>(a * b));
+    uint64_t b = POP();
+    uint64_t a = POP();
+    PUSH(a * b);
     DISPATCH();
   }
 op_MUL_F64:
@@ -583,7 +583,11 @@ op_DIV_I64:
     int64_t b = static_cast<int64_t>(POP());
     int64_t a = static_cast<int64_t>(POP());
     if (b == 0) throw std::runtime_error("ArithmeticException: Division by zero");
-    PUSH(static_cast<uint64_t>(a / b));
+    if (a == INT64_MIN && b == -1) {
+      PUSH(static_cast<uint64_t>(INT64_MIN));
+    } else {
+      PUSH(static_cast<uint64_t>(a / b));
+    }
     DISPATCH();
   }
 op_DIV_F64:
@@ -598,7 +602,11 @@ op_MOD_I64:
     int64_t b = static_cast<int64_t>(POP());
     int64_t a = static_cast<int64_t>(POP());
     if (b == 0) throw std::runtime_error("ArithmeticException: Division by zero");
-    PUSH(static_cast<uint64_t>(a % b));
+    if (a == INT64_MIN && b == -1) {
+      PUSH(0);
+    } else {
+      PUSH(static_cast<uint64_t>(a % b));
+    }
     DISPATCH();
   }
 op_EQ_I64:
@@ -967,8 +975,8 @@ op_CONV_F_TO_I:
   }
 op_NEGATE_I64:
   {
-    int64_t a = static_cast<int64_t>(POP());
-    PUSH(static_cast<uint64_t>(-a));
+    uint64_t a = POP();
+    PUSH((~a) + 1ULL);
     DISPATCH();
   }
 

@@ -1974,8 +1974,14 @@ void Binder::visit(LiteralNode &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
     if (n.token_type == TokenType::CHAR)
       n.expression_type = {"char", 0};
-    else if (std::holds_alternative<int64_t>(n.value))
-      n.expression_type = {"int32", 0};
+    else if (std::holds_alternative<int64_t>(n.value)) {
+      int64_t val = std::get<int64_t>(n.value);
+      if (val < -2147483648LL || val > 2147483647LL) {
+        n.expression_type = {"int64", 0};
+      } else {
+        n.expression_type = {"int32", 0};
+      }
+    }
     else if (std::holds_alternative<double>(n.value))
       n.expression_type = {"float64", 0};
     else if (std::holds_alternative<std::string>(n.value)) {
@@ -2123,6 +2129,15 @@ void Binder::visit(UnaryExpression &n) {
                                     ? "String"
                                     : n.expression_type.to_string();
         record_error(&n, fmt::format("Cannot apply unary operator '{}' to type '{}'", op_str, type_name));
+      } else if (n.op == TokenType::OPERATOR_MINUS && n.operand && n.operand->node_type == NodeType::LITERAL) {
+        auto *lit = static_cast<LiteralNode *>(n.operand.get());
+        if (std::holds_alternative<int64_t>(lit->value)) {
+          int64_t val = std::get<int64_t>(lit->value);
+          if (val == 2147483648LL) {
+            n.expression_type = {"int32", 0};
+            evaluated_type = n.expression_type;
+          }
+        }
       }
     } else if (n.op == TokenType::OPERATOR_LOGICAL_NOT) {
       if (n.expression_type.name != "bool" || n.expression_type.array_depth > 0) {
