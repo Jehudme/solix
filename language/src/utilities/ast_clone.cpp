@@ -357,6 +357,10 @@ std::unique_ptr<Node> EnumDeclaration::clone() const {
 
 std::unique_ptr<Node> ClassDeclaration::clone() const {
     auto cloned = std::make_unique<ClassDeclaration>(make_dummy_token(this), class_name);
+    cloned->vtable_id = vtable_id;
+    cloned->base_vtable_id = base_vtable_id;
+    cloned->vtable = vtable;
+    cloned->itable = itable;
     cloned->template_parameters = template_parameters;
     cloned->base_class_name = base_class_name;
     cloned->access_modifier = access_modifier;

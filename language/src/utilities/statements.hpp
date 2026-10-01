@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <optional>
+#include <unordered_map>
 #include "utilities/token.hpp"
 
 namespace solix {
@@ -589,6 +590,7 @@ struct ClassDeclaration : public Node {
     int vtable_id = -1;
     int base_vtable_id = -1;
     std::vector<MethodDeclaration*> vtable;
+    std::unordered_map<int, std::vector<int>> itable;
     std::string class_name;
     std::vector<std::string> template_parameters;
     std::string base_class_name;

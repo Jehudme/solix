@@ -1021,8 +1021,8 @@ interface Printable { void print(); }
 interface Serializable { void save(); }
 
 class Doc implements Printable, Serializable {
-    void print() { Console.println("print"); }
-    void save() { Console.println("save"); }
+    public void print() {}
+    public void save() {}
 }
 ```
 *Expected Result*: Compiles cleanly; instances can be passed to functions taking either `Printable` or `Serializable`.
@@ -1067,6 +1067,131 @@ class Button {
 }
 ```
 *Expected Result*: Interface declared as a static member of a class compiles cleanly.
+
+---
+
+### Case 3.5: Multi-Interface Dynamic Dispatch Execution [IMPLEMENTED]
+```solix
+interface Worker { int32 work(); }
+interface Greeter { int32 greet(); }
+
+class Android implements Worker, Greeter {
+    public int32 work() { return 10; }
+    public int32 greet() { return 20; }
+}
+
+static int32 main() {
+    Android a = new Android();
+    Worker w = a;
+    Greeter g = a;
+    if (w.work() != 10) return 1;
+    if (g.greet() != 20) return 2;
+    return 0;
+}
+```
+*Expected Result*: Dynamic dispatch invokes correct concrete methods across multiple implemented interfaces.
+
+---
+
+### Case 3.6: Order-Independent Multi-Interface Resolution [IMPLEMENTED]
+```solix
+interface FirstIface { int32 getA(); }
+interface SecondIface { int32 getB(); }
+
+class ClassAB implements FirstIface, SecondIface {
+    public int32 getA() { return 1; }
+    public int32 getB() { return 2; }
+}
+
+class ClassBA implements SecondIface, FirstIface {
+    public int32 getA() { return 10; }
+    public int32 getB() { return 20; }
+}
+
+static int32 main() {
+    FirstIface a1 = new ClassAB();
+    SecondIface b1 = new ClassAB();
+    FirstIface a2 = new ClassBA();
+    SecondIface b2 = new ClassBA();
+
+    if (a1.getA() != 1) return 1;
+    if (b1.getB() != 2) return 2;
+    if (a2.getA() != 10) return 3;
+    if (b2.getB() != 20) return 4;
+    return 0;
+}
+```
+*Expected Result*: Dynamic interface dispatch functions correctly irrespective of interface implementation declaration order.
+
+---
+
+### Case 3.7: Sub-Interface Dynamic Dispatch and Cast [IMPLEMENTED]
+```solix
+interface Reader { int32 read(); }
+interface AdvancedReader extends Reader { int32 reset(); }
+
+class StreamBuffer implements AdvancedReader {
+    public int32 read() { return 42; }
+    public int32 reset() { return 7; }
+}
+
+static int32 main() {
+    AdvancedReader ar = new StreamBuffer();
+    Reader r = ar;
+    if (r.read() != 42) return 1;
+    if (ar.read() != 42) return 2;
+    if (ar.reset() != 7) return 3;
+    return 0;
+}
+```
+*Expected Result*: Methods declared in base interfaces and extended interfaces dispatch correctly through both reference types.
+
+---
+
+### Case 3.8: Class Inheritance with Interface Implementation Override [IMPLEMENTED]
+```solix
+interface Action { int32 execute(); }
+
+class BaseTask implements Action {
+    public int32 execute() { return 50; }
+}
+
+class DerivedTask extends BaseTask {
+    public override int32 execute() { return 100; }
+}
+
+static int32 main() {
+    Action a1 = new BaseTask();
+    Action a2 = new DerivedTask();
+    if (a1.execute() != 50) return 1;
+    if (a2.execute() != 100) return 2;
+    return 0;
+}
+```
+*Expected Result*: Overridden methods in derived classes dispatch polymorphically when invoked via interface reference.
+
+---
+
+### Case 3.9: InstanceOf Check for Interfaces [IMPLEMENTED]
+```solix
+interface Worker { int32 work(); }
+interface Sleeper { void sleep(); }
+
+class Human implements Worker {
+    public int32 work() { return 1; }
+}
+
+static int32 main() {
+    Human h = new Human();
+    Worker w = h;
+    if (!(h instanceof Worker)) return 1;
+    if (!(w instanceof Worker)) return 2;
+    if (h instanceof Sleeper) return 3;
+    if (w instanceof Sleeper) return 4;
+    return 0;
+}
+```
+*Expected Result*: `instanceof` correctly checks interface conformance dynamically against itable mappings.
 
 ---
 

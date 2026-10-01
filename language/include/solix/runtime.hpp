@@ -119,6 +119,7 @@ struct RuntimeContext {
   std::unordered_map<uint32_t, NativeFunction> native_registry;
   std::unordered_map<uint32_t, std::vector<uint32_t>> vtables;
   std::unordered_map<uint32_t, int32_t> vtable_bases;
+  std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::vector<uint32_t>>> itables;
 
   RuntimeContext(const RuntimeOptions &opts);
 

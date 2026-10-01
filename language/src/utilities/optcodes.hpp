@@ -127,7 +127,11 @@ enum class OpCode : uint8_t {
   INC_REF_CALLABLE,
   DEC_REF_CALLABLE,
   UNPACK_CAPTURES,
-  PACK_CLOSURE
+  PACK_CLOSURE,
+
+  // Interface Dispatch
+  CALL_INTERFACE,
+  DEFINE_ITABLE
 };
 
 inline const char* opcode_to_string(uint8_t op) {
@@ -228,6 +232,8 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::DEC_REF_CALLABLE: return "DEC_REF_CALLABLE";
         case OpCode::UNPACK_CAPTURES: return "UNPACK_CAPTURES";
         case OpCode::PACK_CLOSURE: return "PACK_CLOSURE";
+        case OpCode::CALL_INTERFACE: return "CALL_INTERFACE";
+        case OpCode::DEFINE_ITABLE: return "DEFINE_ITABLE";
         default: return "UNKNOWN";
     }
 }
@@ -329,6 +335,8 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "DEC_REF_CALLABLE") return OpCode::DEC_REF_CALLABLE;
     if (str == "UNPACK_CAPTURES") return OpCode::UNPACK_CAPTURES;
     if (str == "PACK_CLOSURE") return OpCode::PACK_CLOSURE;
+    if (str == "CALL_INTERFACE") return OpCode::CALL_INTERFACE;
+    if (str == "DEFINE_ITABLE") return OpCode::DEFINE_ITABLE;
     return OpCode::HALT; // fallback
 }
 
