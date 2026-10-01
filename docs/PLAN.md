@@ -18,7 +18,7 @@
 | **Phase 1** | Total Decoupling & Legacy Stdlib Purge | `P0 Blocker` | `launcher`, `tests`, `build` | - [x] Completed |
 | **Phase 2** | Interface VTable Dynamic Dispatch Stabilization | `P0 Blocker` | `compiler`, `runtime`, `tests` | - [x] Completed |
 | **Phase 3** | Generic Type Safety & Default Value Slot Clearance | `P0 Blocker` | `compiler`, `runtime`, `tests` | - [x] Completed |
-| **Phase 4** | Cross-Platform Path & Toolchain Portability | `P1 High` | `launcher`, `runtime` | - [ ] Not Started |
+| **Phase 4** | Cross-Platform Path & Toolchain Portability | `P1 High` | `launcher`, `runtime` | - [x] Completed |
 | **Phase 5** | Two's-Complement & Arithmetic Invariant Hardening | `P1 High` | `runtime`, `compiler`, `tests` | - [ ] Not Started |
 | **Phase 6** | Deterministic ARC Lifecycle Verification | `P1 High` | `runtime`, `tests` | - [ ] Not Started |
 | **Phase 7** | Documentation & Specification Synchronization | `P2 Polish` | `docs`, `launcher`, `tests` | - [ ] Not Started |
@@ -121,20 +121,20 @@ Resolve the contradiction between primitive non-nullability and generic containe
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `launcher`, `runtime`
-- **Status**: - [ ] Pending
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Abstract binary path resolution to support Linux, macOS, and Windows cleanly without relying exclusively on `/proc/self/exe`.
 
 ### Action Items
-- [ ] **Abstract Executable Path Discovery**:
+- [x] **Abstract Executable Path Discovery**:
   - Replace raw `/proc/self/exe` reads in `launcher/src/commands/compile.cpp` with a cross-platform helper:
     - Linux: `/proc/self/exe` via `readlink`
     - macOS: `_NSGetExecutablePath`
     - Windows: `GetModuleFileNameW`
-- [ ] **Normalize File System Paths**:
+- [x] **Normalize File System Paths**:
   - Use `std::filesystem::path` uniformly across all path joins and directory inspections.
-- [ ] **Verify Portability**:
+- [x] **Verify Portability**:
   - Verify executable builds and runs cleanly on Linux, macOS, and Windows environments without missing-file or path crashes.
 
 ### Acceptance Criteria

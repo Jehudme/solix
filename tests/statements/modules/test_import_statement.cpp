@@ -1,4 +1,5 @@
 #include "test_helper.hpp"
+#include "solix/path_utils.hpp"
 
 using namespace solix::test;
 
@@ -49,6 +50,16 @@ TEST_CASE("ImportStatement - Modules", "[modules][import]") {
         };
         assert_compile_sources_success(sources);
         REQUIRE(run_sources(sources) == 0);
+    }
+
+    SECTION("Case 3.5: Cross-Platform Binary Path Resolution") {
+        auto exe_path = solix::get_executable_path();
+        CHECK(!exe_path.empty());
+        CHECK(std::filesystem::exists(exe_path));
+        auto exe_dir = solix::get_executable_dir();
+        CHECK(!exe_dir.empty());
+        CHECK(std::filesystem::exists(exe_dir));
+        CHECK(exe_path.parent_path() == exe_dir);
     }
 
     SECTION("Case 4.1: Importing Non-Existent Package") {

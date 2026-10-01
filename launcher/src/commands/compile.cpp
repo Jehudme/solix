@@ -1,8 +1,10 @@
 #include "compile.hpp"
+#include "solix/path_utils.hpp"
 #include "solix/compilation.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 
 namespace solix::cli {
     void setup_compile_command(CLI::App& app) {
@@ -54,11 +56,18 @@ namespace solix::cli {
             else if (*sink_type_str == "BASIC_FILE") opts->sink_type = CompilationOptions::LogSinkType::BASIC_FILE;
             else if (*sink_type_str == "CONSOLE_AND_FILE") opts->sink_type = CompilationOptions::LogSinkType::CONSOLE_AND_FILE;
             
-            if (!log_file_path->empty()) opts->log_file_path = std::filesystem::path(*log_file_path);
-            if (!asm_output->empty()) opts->assembly_output_path = std::filesystem::path(*asm_output);
+            if (!log_file_path->empty()) opts->log_file_path = std::filesystem::path(*log_file_path).lexically_normal();
+            if (!asm_output->empty()) opts->assembly_output_path = std::filesystem::path(*asm_output).lexically_normal();
             opts->flush_every_seconds = std::chrono::seconds(*flush_every);
 
-            for (const auto& file_path : *files) {
+            std::filesystem::path out_path = std::filesystem::path(*output).lexically_normal();
+
+            for (const auto& file_str : *files) {
+                std::filesystem::path file_path = std::filesystem::path(file_str).lexically_normal();
+                if (!std::filesystem::exists(file_path)) {
+                    std::cerr << "Error: File does not exist: " << file_path << std::endl;
+                    exit(1);
+                }
                 std::ifstream t(file_path);
                 if (!t.is_open()) {
                     std::cerr << "Error: Could not open file " << file_path << std::endl;
@@ -66,23 +75,23 @@ namespace solix::cli {
                 }
                 std::stringstream buffer;
                 buffer << t.rdbuf();
-                opts->sources[file_path] = buffer.str();
+                opts->sources[file_path.string()] = buffer.str();
             }
             
             try {
                 std::vector<uint8_t> bytecode = solix::run(*opts);
                 
-                std::ofstream out_file(*output, std::ios::binary);
+                std::ofstream out_file(out_path, std::ios::binary);
                 if (!out_file) {
-                    std::cerr << "Error: Could not open output file " << *output << std::endl;
+                    std::cerr << "Error: Could not open output file " << out_path << std::endl;
                     exit(1);
                 }
                 out_file.write(reinterpret_cast<const char*>(bytecode.data()), bytecode.size());
-                std::cout << "Successfully compiled to " << *output << std::endl;
+                std::cout << "Successfully compiled to " << out_path.string() << std::endl;
                 
             } catch (const std::exception& e) {
                 std::error_code ec;
-                std::filesystem::remove(*output, ec);
+                std::filesystem::remove(out_path, ec);
                 std::cerr << "Compilation failed: " << e.what() << std::endl;
                 exit(1);
             }
