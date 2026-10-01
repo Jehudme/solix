@@ -54,11 +54,15 @@ Completely eliminate the bundled standard library (`launcher/rsc/lib/`), removin
   - Remove the `copy_stdlib` custom target and dependencies in `launcher/CMakeLists.txt`.
   - Remove CLI flags `--stdlib` / `--no-stdlib` and stdlib path resolution logic from `launcher/src/commands/compile.cpp`.
   - Permanently delete the directory `launcher/rsc/lib/`.
+- [x] **Purge Stdlib Native Function Implementations (`language/src/natives/`)**:
+  - Permanently remove directory `language/src/natives/` and built-in native implementations (`console.cpp`, `utilities.cpp`, etc.).
+  - Remove `solix::get_builtin_natives()` from `runtime.hpp` and CLI `--no-builtins` flag from `launcher/src/commands/execute.cpp`.
+  - Decouple `tests/include/test_helper.hpp` from native functions and refactor unit tests to operate without stdlib native dependencies.
 
 ### Acceptance Criteria
 - `tests/include/test_helper.hpp` has no file I/O or standard library loading logic.
-- `launcher/rsc/lib/` is completely removed from the repository.
-- All 41 unit test suites compile and pass 100% with `ctest --test-dir build --output-on-failure`.
+- `launcher/rsc/lib/` and `language/src/natives/` are completely removed from the repository.
+- All 42 unit test suites compile and pass 100% with `ctest --test-dir build --output-on-failure`.
 
 ---
 
