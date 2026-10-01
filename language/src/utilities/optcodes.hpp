@@ -131,7 +131,10 @@ enum class OpCode : uint8_t {
 
   // Interface Dispatch
   CALL_INTERFACE,
-  DEFINE_ITABLE
+  DEFINE_ITABLE,
+
+  // Generic Type Safety & Default Slot Clearance
+  DEC_REF_SLOT
 };
 
 inline const char* opcode_to_string(uint8_t op) {
@@ -234,6 +237,7 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::PACK_CLOSURE: return "PACK_CLOSURE";
         case OpCode::CALL_INTERFACE: return "CALL_INTERFACE";
         case OpCode::DEFINE_ITABLE: return "DEFINE_ITABLE";
+        case OpCode::DEC_REF_SLOT: return "DEC_REF_SLOT";
         default: return "UNKNOWN";
     }
 }
@@ -337,6 +341,7 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "PACK_CLOSURE") return OpCode::PACK_CLOSURE;
     if (str == "CALL_INTERFACE") return OpCode::CALL_INTERFACE;
     if (str == "DEFINE_ITABLE") return OpCode::DEFINE_ITABLE;
+    if (str == "DEC_REF_SLOT") return OpCode::DEC_REF_SLOT;
     return OpCode::HALT; // fallback
 }
 

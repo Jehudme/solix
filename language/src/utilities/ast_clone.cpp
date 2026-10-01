@@ -184,6 +184,15 @@ std::unique_ptr<Node> SizeOfExpression::clone() const {
     return cloned;
 }
 
+std::unique_ptr<Node> DefaultExpression::clone() const {
+    auto cloned = std::make_unique<DefaultExpression>(
+        make_dummy_token(this),
+        target_type ? std::make_shared<TypeInfo>(*target_type) : nullptr
+    );
+    copy_children(this, cloned.get());
+    return cloned;
+}
+
 std::unique_ptr<Node> LambdaExpression::clone() const {
     auto cloned = std::make_unique<LambdaExpression>(make_dummy_token(this));
     cloned->capture_names = capture_names;

@@ -745,6 +745,14 @@ std::unique_ptr<Node> ParserState::parse_primary() {
     return std::make_unique<SizeOfExpression>(sizeof_tok, nullptr, std::move(expr));
   }
 
+  if (match(TokenType::KEYWORD_DEFAULT)) {
+    Token default_tok = previous();
+    consume(TokenType::PUNCTUATION_OPEN_PAREN, "Expected '(' after 'default'");
+    TypeInfo type = parse_type_info();
+    consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after default type argument");
+    return std::make_unique<DefaultExpression>(default_tok, std::make_shared<TypeInfo>(type));
+  }
+
   if (match(TokenType::PUNCTUATION_OPEN_PAREN)) {
     Token paren = previous();
     if ((peek().type >= TokenType::PRIMITIVE_VOID &&

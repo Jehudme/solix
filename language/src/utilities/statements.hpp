@@ -16,7 +16,7 @@ enum class NodeType {
     IDENTIFIER, LITERAL, BINARY_EXPR, UNARY_EXPR, ASSIGNMENT_EXPR,
     ARRAY_ACCESS, MEMBER_ACCESS, METHOD_CALL, NEW_INSTANCE, ARRAY_CREATION,
     ARRAY_LITERAL, CAST_EXPR,
-    INSTANCEOF_EXPR, TERNARY_EXPR, SIZEOF_EXPR, LAMBDA_EXPR,
+    INSTANCEOF_EXPR, TERNARY_EXPR, SIZEOF_EXPR, DEFAULT_EXPR, LAMBDA_EXPR,
 
     // Statements
     BLOCK, IF_STMT, FOR_STMT, WHILE_STMT, DO_WHILE_STMT, SWITCH_STMT, CASE_STMT,
@@ -316,6 +316,17 @@ struct SizeOfExpression : public Node {
         : Node(NodeType::SIZEOF_EXPR, t), target_type(std::move(type)), target_expr(std::move(expr)) {
             if (target_expr) target_expr->parent = this;
         }
+};
+
+struct DefaultExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
+    std::shared_ptr<TypeInfo> target_type;
+
+    DefaultExpression(const Token& t, std::shared_ptr<TypeInfo> type)
+        : Node(NodeType::DEFAULT_EXPR, t), target_type(std::move(type)) {}
 };
 
 struct VariableDeclaration;
