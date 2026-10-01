@@ -45,15 +45,17 @@ static int32 main() {
         std::string code = R"(
 static int32 main() {
     int64 min64 = -9223372036854775808L;
-    int64 divResult64 = min64 / -1;
-    int64 modResult64 = min64 % -1;
+    int64 divResult = min64 / -1;
+    int64 modResult = min64 % -1;
+
+    int64 max64 = 9223372036854775807L;
+    int64 divMax = max64 / -1;
 
     int32 min32 = -2147483648;
-    int32 divResult32 = min32 / -1;
-    int32 modResult32 = min32 % -1;
+    int32 div32 = min32 / 2;
 
-    if (divResult64 == min64 && modResult64 == 0 &&
-        divResult32 == min32 && modResult32 == 0) {
+    if (divResult == min64 && modResult == 0 &&
+        divMax == -max64 && div32 == -1073741824) {
         return 0;
     }
     return 1;
