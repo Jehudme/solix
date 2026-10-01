@@ -4182,7 +4182,7 @@ public class Main {
 
 ## Positive Test Scenarios
 
-### Case 1.1: Primitive Default Value Evaluation [NOT IMPLEMENTED]
+### Case 1.1: Primitive Default Value Evaluation [IMPLEMENTED]
 ```solix
 public class Main {
     public static int32 main() {
@@ -4199,7 +4199,7 @@ public class Main {
 ```
 *Expected Result*: Returns 0 indicating all primitive types correctly initialize to their zero/false representations.
 
-### Case 1.2: Reference Type Default Values [NOT IMPLEMENTED]
+### Case 1.2: Reference Type Default Values [IMPLEMENTED]
 ```solix
 public class Item {
     public int32 id;
@@ -4218,7 +4218,7 @@ public class Main {
 ```
 *Expected Result*: Returns 0 indicating reference types and array types evaluate to null.
 
-### Case 1.3: Function Pointer Default Value [NOT IMPLEMENTED]
+### Case 1.3: Function Pointer Default Value [IMPLEMENTED]
 ```solix
 public class Main {
     public static int32 main() {
@@ -4232,7 +4232,7 @@ public class Main {
 ```
 *Expected Result*: Returns 0 indicating function pointer type defaults to null pointer.
 
-### Case 1.4: Generic Container Slot Clearance with `default(T)` [NOT IMPLEMENTED]
+### Case 1.4: Generic Container Slot Clearance with `default(T)` [IMPLEMENTED]
 ```solix
 public class Box<T> {
     public T val;
@@ -4261,7 +4261,7 @@ public class Main {
 ```
 *Expected Result*: Generic class instantiated with both scalar primitive `int32` and reference type `User` safely clears slots using `default(T)` without primitive nullability violations.
 
-### Case 1.5: Generic Function Returning `default(T)` [NOT IMPLEMENTED]
+### Case 1.5: Generic Function Returning `default(T)` [IMPLEMENTED]
 ```solix
 public class Helpers {
     public static T getDefault<T>() {
@@ -4286,11 +4286,11 @@ public class Main {
 
 ## Negative Test Scenarios
 
-### Case 2.1: Default of Void Type (Compile-Time Error) [NOT IMPLEMENTED]
+### Case 2.1: Default of Void Type (Compile-Time Error) [IMPLEMENTED]
 ```solix
 public class Main {
     public static void test() {
-        void v = default(void);
+        int32 x = default(void);
     }
 }
 ```
@@ -4299,7 +4299,7 @@ public class Main {
 [ERROR] Cannot use void in default expression
 ```
 
-### Case 2.2: Default of Undeclared Type (Compile-Time Error) [NOT IMPLEMENTED]
+### Case 2.2: Default of Undeclared Type (Compile-Time Error) [IMPLEMENTED]
 ```solix
 public class Main {
     public static void test() {
