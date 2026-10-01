@@ -4175,3 +4175,140 @@ public class Main {
 ```text
 [ERROR] Type mismatch in variable declaration
 ```
+
+---
+
+# Test Suite 42: DefaultExpression & Generic Slot Clearance
+
+## Positive Test Scenarios
+
+### Case 1.1: Primitive Default Value Evaluation [IMPLEMENTED]
+```solix
+public class Main {
+    public static int32 main() {
+        int32 i = default(int32);
+        bool b = default(bool);
+        float64 f = default(float64);
+        char c = default(char);
+        if (i == 0 && b == false && f == 0.0 && c == '\0') {
+            return 0;
+        }
+        return 1;
+    }
+}
+```
+*Expected Result*: Returns 0 indicating all primitive types correctly initialize to their zero/false representations.
+
+### Case 1.2: Reference Type Default Values [IMPLEMENTED]
+```solix
+public class Item {
+    public int32 id;
+}
+
+public class Main {
+    public static int32 main() {
+        Item item = default(Item);
+        int32[] arr = default(int32[]);
+        if (item == null && arr == null) {
+            return 0;
+        }
+        return 1;
+    }
+}
+```
+*Expected Result*: Returns 0 indicating reference types and array types evaluate to null.
+
+### Case 1.3: Function Pointer Default Value [IMPLEMENTED]
+```solix
+public class Main {
+    public static int32 main() {
+        int32(*)(int32) fn = default(int32(*)(int32));
+        if (fn == null) {
+            return 0;
+        }
+        return 1;
+    }
+}
+```
+*Expected Result*: Returns 0 indicating function pointer type defaults to null pointer.
+
+### Case 1.4: Generic Container Slot Clearance with `default(T)` [IMPLEMENTED]
+```solix
+public class Box<T> {
+    public T val;
+    public Box(T v) { this.val = v; }
+    public void clear() {
+        this.val = default(T);
+    }
+}
+
+public class User {
+    public int32 id;
+}
+
+public class Main {
+    public static int32 main() {
+        Box<int32> intBox = new Box<int32>(42);
+        intBox.clear();
+        Box<User> userBox = new Box<User>(new User());
+        userBox.clear();
+        if (intBox.val == 0 && userBox.val == null) {
+            return 0;
+        }
+        return 1;
+    }
+}
+```
+*Expected Result*: Generic class instantiated with both scalar primitive `int32` and reference type `User` safely clears slots using `default(T)` without primitive nullability violations.
+
+### Case 1.5: Generic Function Returning `default(T)` [IMPLEMENTED]
+```solix
+public class Helpers {
+    public static T getDefault<T>() {
+        return default(T);
+    }
+}
+
+public class Main {
+    public static int32 main() {
+        int32 defInt = Helpers.getDefault<int32>();
+        bool defBool = Helpers.getDefault<bool>();
+        if (defInt == 0 && defBool == false) {
+            return 0;
+        }
+        return 1;
+    }
+}
+```
+*Expected Result*: Generic method evaluates and returns `default(T)` correctly for instantiated types.
+
+---
+
+## Negative Test Scenarios
+
+### Case 2.1: Default of Void Type (Compile-Time Error) [IMPLEMENTED]
+```solix
+public class Main {
+    public static void test() {
+        int32 x = default(void);
+    }
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] Cannot use void in default expression
+```
+
+### Case 2.2: Default of Undeclared Type (Compile-Time Error) [IMPLEMENTED]
+```solix
+public class Main {
+    public static void test() {
+        var x = default(UnknownType);
+    }
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] Unknown type: UnknownType
+```
+

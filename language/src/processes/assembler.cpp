@@ -289,6 +289,12 @@ std::string Assembler::disassemble() const {
       ss << "vtable_id=" << vtid;
       break;
     }
+    case OpCode::DEC_REF_SLOT: {
+      uint32_t slot = read_u32_local(pc);
+      uint64_t mask = read_u64_local(pc);
+      ss << "slot=" << slot << ", mask=0x" << std::hex << mask << std::dec;
+      break;
+    }
     default:
       break;
     }
@@ -591,9 +597,10 @@ void Assembler::emit_cleanup_for_node(Node *node) {
     if ((*it)->node_type == NodeType::VAR_DECL) {
       auto *var_decl = static_cast<VariableDeclaration *>((*it).get());
       if (var_decl->is_reference_type) {
-        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF_SLOT));
         emit_int32(var_decl->memory_index);
-        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+        uint64_t mask = (var_decl->memory_index < 64) ? (1ULL << var_decl->memory_index) : 1ULL;
+        emit_int64(mask);
       } else if (var_decl->type_info.is_function_pointer) {
         emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
         emit_int32(var_decl->memory_index);
@@ -610,16 +617,17 @@ void Assembler::emit_cleanup_for_function(Node *func_node) {
     bool is_instance_method = !m->is_static && m->parent != nullptr &&
                               m->parent->node_type == NodeType::CLASS_DECL;
     if (is_instance_method) {
-      emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+      emit_byte(static_cast<uint8_t>(OpCode::DEC_REF_SLOT));
       emit_int32(0);
-      emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+      emit_int64(1ULL);
     }
     for (const auto &param : m->parameters) {
       if (param) {
         if (param->is_reference_type) {
-          emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+          emit_byte(static_cast<uint8_t>(OpCode::DEC_REF_SLOT));
           emit_int32(param->memory_index);
-          emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+          uint64_t mask = (param->memory_index < 64) ? (1ULL << param->memory_index) : 1ULL;
+          emit_int64(mask);
         } else if (param->type_info.is_function_pointer) {
           emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
           emit_int32(param->memory_index);
@@ -629,14 +637,15 @@ void Assembler::emit_cleanup_for_function(Node *func_node) {
     }
   } else if (func_node->node_type == NodeType::CONSTRUCTOR_DECL) {
     auto *c = static_cast<ConstructorDeclaration *>(func_node);
-    emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+    emit_byte(static_cast<uint8_t>(OpCode::DEC_REF_SLOT));
     emit_int32(0);
-    emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+    emit_int64(1ULL);
     for (const auto &param : c->parameters) {
       if (param && param->is_reference_type) {
-        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF_SLOT));
         emit_int32(param->memory_index);
-        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+        uint64_t mask = (param->memory_index < 64) ? (1ULL << param->memory_index) : 1ULL;
+        emit_int64(mask);
       }
     }
   }
@@ -646,9 +655,10 @@ void Assembler::emit_cleanup_for_lambda(LambdaExpression &node) {
   for (const auto &param : node.parameters) {
     if (param) {
       if (param->is_reference_type) {
-        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF_SLOT));
         emit_int32(param->memory_index);
-        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+        uint64_t mask = (param->memory_index < 64) ? (1ULL << param->memory_index) : 1ULL;
+        emit_int64(mask);
       } else if (param->type_info.is_function_pointer) {
         emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
         emit_int32(param->memory_index);
@@ -1368,9 +1378,10 @@ void Assembler::visit(AssignmentExpression &node) {
           static_cast<VariableDeclaration *>(ident->resolved_declaration);
 
       if (var->is_reference_type) {
-        emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF_SLOT));
         emit_int32(var->memory_index);
-        emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
+        uint64_t mask = (var->memory_index < 64) ? (1ULL << var->memory_index) : 1ULL;
+        emit_int64(mask);
       } else if (var->type_info.is_function_pointer) {
         emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
         emit_int32(var->memory_index);
@@ -2027,6 +2038,36 @@ void Assembler::visit(SizeOfExpression &node) {
   } else {
     compile_expression(node.target_expr.get());
     emit_byte(static_cast<uint8_t>(OpCode::SIZEOF));
+  }
+}
+
+void Assembler::visit(DefaultExpression &node) {
+  const TypeInfo &t = node.expression_type;
+  if (t.is_function_pointer) {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I64));
+    emit_int64(0);
+  } else if (is_reference_type(t)) {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_NULL));
+  } else if (t.name == "bool") {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_FALSE));
+  } else if (t.name == "float64" || t.name == "double") {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_F64));
+    emit_float64(0.0);
+  } else if (t.name == "float32" || t.name == "float") {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_F32));
+    emit_float32(0.0f);
+  } else if (t.name == "int64" || t.name == "uint64" || t.name == "long") {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I64));
+    emit_int64(0);
+  } else if (t.name == "int16" || t.name == "uint16" || t.name == "short") {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I16));
+    emit_int32(0);
+  } else if (t.name == "int8" || t.name == "uint8" || t.name == "byte" || t.name == "char") {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I8));
+    emit_int32(0);
+  } else {
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    emit_int32(0);
   }
 }
 

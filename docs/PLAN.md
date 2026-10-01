@@ -17,7 +17,7 @@
 |---|---|---|---|---|
 | **Phase 1** | Total Decoupling & Legacy Stdlib Purge | `P0 Blocker` | `launcher`, `tests`, `build` | - [x] Completed |
 | **Phase 2** | Interface VTable Dynamic Dispatch Stabilization | `P0 Blocker` | `compiler`, `runtime`, `tests` | - [x] Completed |
-| **Phase 3** | Generic Type Safety & Default Value Slot Clearance | `P0 Blocker` | `compiler`, `runtime`, `tests` | - [ ] Not Started |
+| **Phase 3** | Generic Type Safety & Default Value Slot Clearance | `P0 Blocker` | `compiler`, `runtime`, `tests` | - [x] Completed |
 | **Phase 4** | Cross-Platform Path & Toolchain Portability | `P1 High` | `launcher`, `runtime` | - [ ] Not Started |
 | **Phase 5** | Two's-Complement & Arithmetic Invariant Hardening | `P1 High` | `runtime`, `compiler`, `tests` | - [ ] Not Started |
 | **Phase 6** | Deterministic ARC Lifecycle Verification | `P1 High` | `runtime`, `tests` | - [ ] Not Started |
@@ -93,20 +93,20 @@ Stabilize interface polymorphism, correct multi-interface VTable layout and offs
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `compiler`, `runtime`, `tests`
-- **Status**: - [ ] Pending
-
+- **Status**: - [x] Completed & Merged
+ 
 ### Objective
 Resolve the contradiction between primitive non-nullability and generic container initialization by introducing a `default(T)` intrinsic and dedicated slot reclamation instruction.
 
 ### Action Items
-- [ ] **Implement `default(T)` Compiler Intrinsic**:
+- [x] **Implement `default(T)` Compiler Intrinsic**:
   - Parse and type-check `default(T)` expressions for primitive, object, and function pointer types.
   - Evaluate scalar types to `0`, `0.0`, `false`, `\0`, or `0ULL` (for function pointers).
   - Evaluate reference types (classes, arrays) to `null` (`0ULL`).
-- [ ] **VM Instruction `DEC_REF_SLOT`**:
+- [x] **VM Instruction `DEC_REF_SLOT`**:
   - Introduce `OpCode::DEC_REF_SLOT` taking a local frame slot index and reference mask.
   - Decrement reference counts on non-null object pointers without overwriting primitive value representations.
-- [ ] **Add Unit Tests for Default Values**:
+- [x] **Add Unit Tests for Default Values**:
   - Validate `default(int32)`, `default(bool)`, `default(float64)`, `default(CustomClass)`, `default(T)` in generic classes.
   - Assert slot cleanup and verify that primitive fields are not clobbered.
 

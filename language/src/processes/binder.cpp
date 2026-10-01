@@ -3287,6 +3287,29 @@ void Binder::visit(SizeOfExpression &n) {
   }
 }
 
+void Binder::visit(DefaultExpression &n) {
+  if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+    if (!n.target_type) {
+      record_error(&n, "Missing type in default expression");
+      n.expression_type = {"int32", 0};
+      evaluated_type = n.expression_type;
+      return;
+    }
+
+    if (n.target_type->name == "void" && n.target_type->array_depth == 0 && !n.target_type->is_function_pointer) {
+      record_error(&n, "Cannot use void in default expression");
+      n.expression_type = {"void", 0};
+      evaluated_type = n.expression_type;
+      return;
+    }
+
+    TypeInfo resolved = resolve_type(*n.target_type, &n);
+    *n.target_type = resolved;
+    n.expression_type = resolved;
+    evaluated_type = n.expression_type;
+  }
+}
+
 void Binder::visit(LambdaExpression &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
     // 1. Capture Resolution & Mask Generation

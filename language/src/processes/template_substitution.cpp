@@ -61,6 +61,9 @@ void TemplateSubstitutionVisitor::visit(SizeOfExpression& n) {
     if (n.target_type) substitute_type(*n.target_type);
     if (n.target_expr) n.target_expr->accept(*this);
 }
+void TemplateSubstitutionVisitor::visit(DefaultExpression& n) {
+    if (n.target_type) substitute_type(*n.target_type);
+}
 void TemplateSubstitutionVisitor::visit(LambdaExpression& n) {
     for (auto& p : n.parameters) {
         if (p) p->accept(*this);

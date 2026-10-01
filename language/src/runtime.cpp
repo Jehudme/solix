@@ -365,6 +365,7 @@ vm_dispatch:
     case 95: goto op_PACK_CLOSURE;
     case 96: goto op_CALL_INTERFACE;
     case 97: goto op_DEFINE_ITABLE;
+    case 98: goto op_DEC_REF_SLOT;
     default: goto op_HALT;
   }
 #else
@@ -466,7 +467,8 @@ vm_dispatch:
       &&op_UNPACK_CAPTURES,
       &&op_PACK_CLOSURE,
       &&op_CALL_INTERFACE,
-      &&op_DEFINE_ITABLE
+      &&op_DEFINE_ITABLE,
+      &&op_DEC_REF_SLOT
   };
 
 #define DISPATCH() goto *dispatch_table[code[program_counter++]]
@@ -1365,6 +1367,22 @@ op_PACK_CLOSURE:
       Address env = static_cast<Address>(POP());
       uint64_t callable = (static_cast<uint64_t>(env) << 32) | (static_cast<uint64_t>(target_ip) & 0xFFFFFFFFULL);
       PUSH(callable);
+      DISPATCH();
+  }
+op_DEC_REF_SLOT:
+  {
+      uint32_t index = read_u32(bytecode, program_counter);
+      uint64_t ref_mask = read_u64(bytecode, program_counter);
+      bool is_ref = (index < 64) ? (((ref_mask >> index) & 1ULL) != 0) : ((ref_mask & 1ULL) != 0);
+      if (is_ref && call_depth > 0) {
+        uint32_t fp = call_stack[call_depth - 1].frame_pointer;
+        if (fp + index < memory.stack.size()) {
+          uint64_t val = stack[fp + index];
+          if (val != 0) {
+            memory.decrease_reference(static_cast<Address>(val));
+          }
+        }
+      }
       DISPATCH();
   }
 #undef PUSH
