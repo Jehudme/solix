@@ -15,14 +15,6 @@ add_executable(solix
 
 target_link_libraries(solix PRIVATE solix_language CLI11::CLI11)
 
-add_custom_target(copy_stdlib ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/rsc/lib
-        $<TARGET_FILE_DIR:solix>/lib
-    COMMENT "Copying Solix library folder to launcher binary directory"
-)
-
-add_dependencies(solix copy_stdlib)
 
 # Provide backward-compatible binary link/alias for solix_launcher
 if(WIN32)

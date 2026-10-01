@@ -1,7 +1,0 @@
-// ============================================================================
-// Solix Standard Library - Generic Associative Map (Map<K, V>)
-// Package: solix.collections
-// ============================================================================
-package solix.collections;
-
-alias Map<K, V> = solix.collections.HashMap<K, V>;
