@@ -16,7 +16,7 @@
 | Phase | Title | Priority | Affected Modules | Status |
 |---|---|---|---|---|
 | **Phase 1** | Total Decoupling & Legacy Stdlib Purge | `P0 Blocker` | `launcher`, `tests`, `build` | - [x] Completed |
-| **Phase 2** | Interface VTable Dynamic Dispatch Stabilization | `P0 Blocker` | `compiler`, `runtime`, `tests` | - [ ] Not Started |
+| **Phase 2** | Interface VTable Dynamic Dispatch Stabilization | `P0 Blocker` | `compiler`, `runtime`, `tests` | - [x] Completed |
 | **Phase 3** | Generic Type Safety & Default Value Slot Clearance | `P0 Blocker` | `compiler`, `runtime`, `tests` | - [ ] Not Started |
 | **Phase 4** | Cross-Platform Path & Toolchain Portability | `P1 High` | `launcher`, `runtime` | - [ ] Not Started |
 | **Phase 5** | Two's-Complement & Arithmetic Invariant Hardening | `P1 High` | `runtime`, `compiler`, `tests` | - [ ] Not Started |
@@ -66,19 +66,19 @@ Completely eliminate the bundled standard library (`launcher/rsc/lib/`), removin
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `compiler` (Binder, Assembler), `runtime`, `tests`
-- **Status**: - [ ] Pending
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Stabilize interface polymorphism, correct multi-interface VTable layout and offset resolution in the compiler Binder, and ensure correct dynamic dispatch in the VM.
 
 ### Action Items
-- [ ] **Correct Interface VTable Layout in Binder Pass 3**:
+- [x] **Correct Interface VTable Layout in Binder Pass 3**:
   - Fix slot mapping when a class implements multiple interfaces or inherits interface implementations.
   - Ensure interface method indices align with class dispatch tables and interface stub offsets.
-- [ ] **Runtime Dynamic Dispatch for Multi-Interface Implementations**:
-  - Fix VM dynamic dispatch execution (`OpCode::CALL_VIRTUAL`) when dispatching through interface references.
+- [x] **Runtime Dynamic Dispatch for Multi-Interface Implementations**:
+  - Fix VM dynamic dispatch execution (`OpCode::CALL_VIRTUAL` / `OpCode::CALL_INTERFACE`) when dispatching through interface references.
   - Ensure correct resolution of `this` instance offset and virtual table slot across disparate interface hierarchies.
-- [ ] **Unblock and Verify Interface Unit Tests**:
+- [x] **Unblock and Verify Interface Unit Tests**:
   - Remove `[!mayfail]` tag from `tests/statements/declarations/test_interface_declaration.cpp`.
   - Ensure all positive and negative interface test scenarios execute cleanly and deterministically.
 
