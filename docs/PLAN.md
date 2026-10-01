@@ -195,22 +195,23 @@ Provide programmatic introspection of runtime heap allocations and verify determ
 
 - **Priority**: `P2 Polish`
 - **Affected Modules**: `docs`, `launcher`, `tests`
-- **Status**: - [ ] Pending
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Synchronize user-facing documentation, README badges, and code examples with the standalone Solix engine.
 
 ### Action Items
-- [ ] **Update `README.md`**:
-  - Update test suite badges and documentation to reflect 41 complete test suites.
+- [x] **Update `README.md`**:
+  - Update test suite badges and documentation to reflect 42 complete test suites.
   - Remove all mentions of `launcher/rsc/lib/` or bundled standard library paths.
-  - Fix syntax errors in example code snippets (such as the missing closing brace in `hello.slx`).
-- [ ] **Document Standard Entry Points**:
+  - Fix syntax errors in example code snippets (such as top-level method access and entry signatures).
+- [x] **Document Standard Entry Points**:
   - Explicitly document valid entry signatures:
     - `static int32 main()`
     - `static void main(char[][] args)`
-- [ ] **Synchronize `tests/statements/TESTS.md`**:
-  - Confirm all 41 test suites in `TESTS.md` reflect purely self-contained scenarios.
+    - `static int32 main(char[][] args)`
+- [x] **Synchronize `tests/statements/TESTS.md`**:
+  - Confirm all 42 test suites in `TESTS.md` reflect purely self-contained scenarios.
 
 ### Acceptance Criteria
 - `README.md` and `docs/` contain zero references to `launcher/rsc/lib/`.
