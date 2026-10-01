@@ -1,8 +1,7 @@
 # `Optional<T>` — API Reference
 
 **Package:** `solix.core`  
-**Import:** `import solix.core.Optional;`  
-**Source:** [`Optional.slx`](../../../../launcher/rsc/lib/solix/core/Optional.slx)
+**Import:** `import solix.core.Optional;`
 
 ---
 

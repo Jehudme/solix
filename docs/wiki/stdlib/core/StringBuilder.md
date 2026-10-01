@@ -1,8 +1,7 @@
 # `StringBuilder` — API Reference
 
 **Package:** `solix.core`  
-**Import:** `import solix.core.StringBuilder;`  
-**Source:** [`StringBuilder.slx`](../../../../launcher/rsc/lib/solix/core/StringBuilder.slx)
+**Import:** `import solix.core.StringBuilder;`
 
 ---
 

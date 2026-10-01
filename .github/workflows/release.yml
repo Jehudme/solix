@@ -74,9 +74,8 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           strip build/launcher/solix_launcher || true
-          mkdir -p dist/lib
+          mkdir -p dist
           cp build/launcher/solix_launcher dist/solix
-          cp -r launcher/rsc/lib/solix dist/lib/
           [ -f LICENSE ] && cp LICENSE dist/
           [ -f README.md ] && cp README.md dist/
           tar -czvf ${{ matrix.archive_name }} -C dist .
@@ -85,9 +84,8 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path dist\lib
+          New-Item -ItemType Directory -Force -Path dist
           Copy-Item build\launcher\solix_launcher.exe -Destination dist\solix.exe
-          Copy-Item -Recurse launcher\rsc\lib\solix -Destination dist\lib\solix
           if (Test-Path LICENSE) { Copy-Item LICENSE -Destination dist\ }
           if (Test-Path README.md) { Copy-Item README.md -Destination dist\ }
           Compress-Archive -Path dist\* -DestinationPath ${{ matrix.archive_name }}

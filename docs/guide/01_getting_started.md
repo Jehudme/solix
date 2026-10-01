@@ -43,7 +43,7 @@ After a successful build, the `solix` binary is located at `build/solix`.
 sudo cmake --install .
 ```
 
-This installs the `solix` binary to `/usr/local/bin` and copies the standard library to the appropriate resource directory.
+This installs the `solix` binary to `/usr/local/bin`.
 
 ---
 
@@ -58,11 +58,7 @@ solix/
 │       ├── natives/           # Native function implementations
 │       └── utilities/         # AST nodes, opcodes, diagnostics
 ├── launcher/                  # CLI front-end
-│   └── rsc/lib/solix/         # Standard library (.slx source files)
-│       ├── core/              # String, StringBuilder, Exceptions, etc.
-│       ├── collections/       # List, HashMap, Stack, Queue, etc.
-│       └── systems/           # Console I/O
-├── tests/                     # Unit and integration tests
+├── tests/                     # Unit and integration tests (Catch2)
 └── docs/                      # Documentation (this directory)
 ```
 
@@ -121,7 +117,10 @@ solix run main.slx -- Alice 42
 
 ## Hello, World!
 
-Every Solix program defines a top-level `main` function. The function is the entry point and receives the command-line arguments.
+Every Solix program defines an execution entry point. The following signatures are supported:
+- `static int32 main()` — directly returns an integer exit code.
+- `static void main(char[][] args)` — receives command-line arguments.
+- `static int32 main(char[][] args)` — receives command-line arguments and returns an integer exit code.
 
 **`hello.slx`**
 
@@ -130,7 +129,7 @@ package com.example;
 
 import solix.systems.Console;
 
-public void main(char[][] args) {
+static void main(char[][] args) {
     Console.println("Hello, World!");
 }
 ```
@@ -155,7 +154,7 @@ In Solix there are no built-in string literals that map directly to a `String` o
 import solix.systems.Console;
 import solix.core.String;
 
-public void main(char[][] args) {
+static void main(char[][] args) {
     Console.print("Argument count: ");
     Console.println(args.length);
 
@@ -183,7 +182,7 @@ Each element is a `char[]` which can be wrapped in a `String` for convenient man
 import solix.core.String;
 import solix.systems.Console;
 
-public void main(char[][] args) {
+static void main(char[][] args) {
     if (args.length == 0) {
         Console.println("No arguments provided.");
         return;
@@ -217,7 +216,10 @@ Solix programs exit with a code that reflects their outcome.
 
 The runtime prints the unhandled exception's `to_string()` to `stderr` before exiting with code `1`.
 
-To exit deliberately with a specific code, use the `return` statement in `main` — the return type of `main` is `void`, so there is no direct integer return. However, you can throw a specific exception to signal a non-zero exit, or rely on the runtime's default behavior.
+To exit deliberately with a specific code, define `main` with return type `int32`:
 
-> [!NOTE]
-> Future versions of Solix may allow `main` to return an `int32` exit code directly. Check the release notes for updates.
+```solix
+static int32 main() {
+    return 42;
+}
+```

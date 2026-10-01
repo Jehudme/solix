@@ -5,7 +5,7 @@
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](./docs/PLAN.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license--contributing)
 [![C++20](https://img.shields.io/badge/runtime-C%2B%2B20-orange)](./language/)
-[![Tests](https://img.shields.io/badge/tests-37%20suites-blueviolet)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-42%20suites-blueviolet)](./tests/)
 
 ---
 
@@ -139,7 +139,7 @@ Artifacts produced:
 ./build/tests/solix_tests
 ```
 
-The test suite covers 37 suites spanning lexer, parser, binder, assembler, and VM stages. All suites must pass on a clean build.
+The test suite covers 42 test suites spanning statement parsing, expression evaluation, declarations, control flow, modules, and VM execution. All suites must pass on a clean build.
 
 ---
 
@@ -179,9 +179,12 @@ Expected output:
 Hello, World!
 ```
 
-### Exit Code Propagation
+### Valid Execution Entry Points
 
-`main` may return `int32` to propagate an exit code to the host shell:
+Solix supports standard static entry point signatures:
+- `static int32 main()` — directly returns an integer exit code to the host environment.
+- `static void main(char[][] args)` — receives command-line arguments as an array of character buffers.
+- `static int32 main(char[][] args)` — receives command-line arguments and returns an integer exit code.
 
 ```solix
 package hello;
@@ -273,18 +276,27 @@ Pair<string, int32> entry = new Pair<string, int32>("age", 30);
 Console.println(entry.getFirst());   // age
 ```
 
-The standard library's `List<T>` follows the same pattern:
+Generic classes can also manage dynamic storage using array types:
 
 ```solix
-import solix.collections.List;
+class Stack<T> {
+    private T[] data;
+    private int32 top;
 
-List<int32> nums = new List<int32>();
-nums.add(10);
-nums.add(20);
-nums.add(30);
+    public Stack(int32 capacity) {
+        this.data = new T[capacity];
+        this.top = 0;
+    }
 
-for (int32 i = 0; i < nums.size(); i++) {
-    Console.println(nums.get(i));
+    public void push(T item) {
+        this.data[this.top] = item;
+        this.top = this.top + 1;
+    }
+
+    public T pop() {
+        this.top = this.top - 1;
+        return this.data[this.top];
+    }
 }
 ```
 
@@ -390,8 +402,8 @@ class Main {
 ```
 solix/
 ├── language/          # Core compiler and runtime
-├── launcher/          # CLI executable and standard library
-├── tests/             # Catch2 test suite
+├── launcher/          # CLI executable
+├── tests/             # Catch2 test suite (42 suites)
 ├── docs/
 │   ├── spec/          # Formal language & VM specification
 │   ├── wiki/          # Developer reference
@@ -403,8 +415,8 @@ solix/
 | Directory | Contents |
 |---|---|
 | [`language/`](./language/) | Core compiler and runtime: lexer, recursive descent parser, multi-pass binder, assembler, and stack/register hybrid bytecode VM — all implemented in C++20. |
-| [`launcher/`](./launcher/) | The `solix` CLI binary (compile, run, inspect subcommands) plus the standard library source files (`.slx`) shipped with the runtime. |
-| [`tests/`](./tests/) | Catch2 test suite with 37 test suites covering statement parsing, expression evaluation, type binding, assembler output, and VM execution correctness. |
+| [`launcher/`](./launcher/) | The `solix` CLI binary (`compile`, `run`, `inspect` subcommands). |
+| [`tests/`](./tests/) | Catch2 test suite with 42 self-contained test suites covering statement parsing, expression evaluation, type binding, assembler output, and VM execution correctness. |
 | [`docs/spec/`](./docs/spec/) | Formal language specification and VM specification documents detailing grammar, type rules, bytecode encoding, and ARC semantics. |
 | [`docs/wiki/`](./docs/wiki/) | Developer reference: complete keyword glossary, built-in type reference, and standard library API documentation. |
 | [`docs/guide/`](./docs/guide/) | Progressive developer guides, from getting started through advanced topics like generics, exception handling, and ARC patterns. |
@@ -419,7 +431,7 @@ Solix is open-source software released under the **MIT License**. See [`LICENSE`
 Contributions are warmly welcome — whether that is bug reports, documentation improvements, new standard library modules, or compiler features. To contribute:
 
 1. Fork the repository and create a feature branch.
-2. Ensure all 37 test suites pass (`./build/tests/solix_tests`).
+2. Ensure all 42 test suites pass (`ctest --test-dir build` or `./build/tests/solix_tests`).
 3. Add tests for any new language behaviour or compiler stage changes.
 4. Open a pull request with a clear description of the change and its motivation.
 
