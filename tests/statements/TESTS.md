@@ -919,6 +919,25 @@ static int32 main() {
 ```
 *Expected Result*: Static fields initialized with user class instances and primitives evaluate cleanly during class initialization.
 
+### Case 3.7: Deterministic Live Object Count Reclamation on Scope Exit [NOT IMPLEMENTED]
+```solix
+class Parent {
+    public Child c;
+}
+class Child {
+    public weak Parent p;
+}
+
+static int32 main() {
+    Parent p = new Parent();
+    Child c = new Child();
+    p.c = c;
+    c.p = p;
+    return 0;
+}
+```
+*Expected Result*: Weak reference breaks the circular dependency so both objects are deallocated upon scope exit, dropping live object count to zero.
+
 ---
 
 
@@ -1542,6 +1561,31 @@ int32 compute(bool early) {
 }
 ```
 *Expected Result*: Calling `compute(true)` frees `b` and `a` with 0 memory leaks.
+
+### Case 3.5: LIFO Scope Cleanup Drops Live Object Count to Zero [NOT IMPLEMENTED]
+```solix
+class Res {
+    int32 id;
+    Res(int32 id) { this.id = id; }
+}
+
+static int32 compute() {
+    Res a = new Res(1);
+    {
+        Res b = new Res(2);
+        {
+            Res c = new Res(3);
+        }
+    }
+    return 0;
+}
+
+static int32 main() {
+    compute();
+    return 0;
+}
+```
+*Expected Result*: Nested scopes unwind in LIFO order and all objects are deallocated with live object count dropping to zero.
 
 ---
 
