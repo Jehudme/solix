@@ -233,7 +233,7 @@ class Main {
 ```
 *Expected Result*: Both fully qualified and imported unqualified names resolve to same type.
 
-### Case 3.5: Cross-Platform Binary Path Resolution [NOT IMPLEMENTED]
+### Case 3.5: Cross-Platform Binary Path Resolution [IMPLEMENTED]
 *Expected Result*: Verifies `solix::get_executable_path()` and `solix::get_executable_dir()` correctly resolve the running binary path and containing directory across Linux, macOS, and Windows without platform crashes.
 
 ---
