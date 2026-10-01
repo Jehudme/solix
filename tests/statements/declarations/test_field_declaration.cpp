@@ -75,43 +75,54 @@ static int32 main() {
         CHECK(run_source(code) == 0);
     }
 
-    SECTION("Case 3.5: In-Class Field Initialization with String Literal") {
+    SECTION("Case 3.5: In-Class Field Initialization with Object and Primitive Literals") {
         std::string code = R"(
-alias String = solix.core.String;
+class Item {
+    public int32 id;
+    public Item(int32 i) { this.id = i; }
+}
 
 class Entity {
-    private String label = "DefaultLabel";
+    private Item item = new Item(42);
+    private int32 count = 100;
 
-    public String getLabel() {
-        return this.label;
+    public int32 getItemId() {
+        return this.item.id;
+    }
+    public int32 getCount() {
+        return this.count;
     }
 }
 
 static int32 main() {
     Entity e = new Entity();
-    return e.getLabel().equals(new String("DefaultLabel")) ? 0 : 1;
+    return (e.getItemId() == 42 && e.getCount() == 100) ? 0 : 1;
 }
 )";
-        CHECK(run_source(code, true) == 0);
+        CHECK(run_source(code) == 0);
     }
 
     SECTION("Case 3.6: Static Field Initialization with Object Instantiation") {
         std::string code = R"(
-alias String = solix.core.String;
+class Tag {
+    public int32 code;
+    public Tag(int32 c) { this.code = c; }
+}
 
 class Config {
-    public static String tag = new String("production");
+    public static Tag tag = new Tag(99);
+    public static int32 version = 3;
 
-    public static String getTag() {
+    public static Tag getTag() {
         return tag;
     }
 }
 
 static int32 main() {
-    return Config.getTag().equals(new String("production")) ? 0 : 1;
+    return (Config.getTag().code == 99 && Config.version == 3) ? 0 : 1;
 }
 )";
-        CHECK(run_source(code, true) == 0);
+        CHECK(run_source(code) == 0);
     }
 
     SECTION("Case 4.1: Duplicate Field Identifier") {

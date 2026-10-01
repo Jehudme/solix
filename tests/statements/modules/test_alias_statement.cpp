@@ -60,18 +60,28 @@ TEST_CASE("AliasStatement - Modules", "[modules][alias]") {
     }
 
     SECTION("Case 3.3: Class and Qualified Type Alias") {
-        const std::string code = R"(
-            alias Text = solix.core.String;
+        std::unordered_map<std::string, std::string> sources;
+        sources["helper.slx"] = R"(
+            package my.pkg;
+
+            public class Helper {
+                public int32 val;
+                public Helper(int32 v) { this.val = v; }
+                public int32 getVal() { return this.val; }
+            }
+        )";
+        sources["main.slx"] = R"(
+            alias MyHelper = my.pkg.Helper;
 
             class Main {
                 public static int32 main() {
-                    Text t = new Text("hello");
-                    return t.length() == 5 ? 0 : 1;
+                    MyHelper h = new MyHelper(42);
+                    return h.getVal() == 42 ? 0 : 1;
                 }
             }
         )";
-        assert_compile_success(code, true);
-        REQUIRE(run_and_evaluate_int(code, true) == 0);
+        assert_compile_sources_success(sources);
+        REQUIRE(run_sources(sources) == 0);
     }
 
     SECTION("Case 3.4: Alias in Method Signature") {

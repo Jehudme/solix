@@ -31,29 +31,10 @@ struct CompilationResult {
     std::string failure_message;
 };
 
-inline void load_stdlib_into_options(solix::CompilationOptions& options) {
-    std::filesystem::path stdlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "launcher" / "rsc" / "lib";
-    if (std::filesystem::exists(stdlib_path)) {
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(stdlib_path)) {
-            if (entry.is_regular_file() && entry.path().extension() == ".slx") {
-                std::ifstream ifs(entry.path());
-                if (ifs) {
-                    std::string content((std::istreambuf_iterator<char>(ifs)),
-                                        (std::istreambuf_iterator<char>()));
-                    options.sources[entry.path().string()] = content;
-                }
-            }
-        }
-    }
-}
-
-inline CompilationResult compile_sources(const std::unordered_map<std::string, std::string>& sources, bool include_stdlib = false) {
+inline CompilationResult compile_sources(const std::unordered_map<std::string, std::string>& sources) {
     CompilationResult result;
     solix::CompilationOptions options;
     options.log_level = solix::CompilationOptions::LogLevel::OFF;
-    if (include_stdlib) {
-        load_stdlib_into_options(options);
-    }
     for (const auto& [name, content] : sources) {
         options.sources[name] = content;
     }
@@ -119,14 +100,14 @@ inline CompilationResult compile_sources(const std::unordered_map<std::string, s
     return result;
 }
 
-inline CompilationResult compile_source(const std::string& code, bool include_stdlib = false, const std::string& filename = "test.slx") {
+inline CompilationResult compile_source(const std::string& code, const std::string& filename = "test.slx") {
     std::unordered_map<std::string, std::string> sources;
     sources[filename] = code;
-    return compile_sources(sources, include_stdlib);
+    return compile_sources(sources);
 }
 
-inline void assert_compile_sources_success(const std::unordered_map<std::string, std::string>& sources, bool include_stdlib = false) {
-    auto res = compile_sources(sources, include_stdlib);
+inline void assert_compile_sources_success(const std::unordered_map<std::string, std::string>& sources) {
+    auto res = compile_sources(sources);
     if (!res.success) {
         std::string err = "Expected compilation to succeed, but failed: " + res.failure_message + "\nReports:\n";
         for (const auto& r : res.reports) {
@@ -148,8 +129,8 @@ inline bool contains_ignore_case(const std::string& haystack, const std::string&
     return it != haystack.end();
 }
 
-inline void assert_compile_sources_error(const std::unordered_map<std::string, std::string>& sources, const std::string& expected_substr = "", bool include_stdlib = false) {
-    auto res = compile_sources(sources, include_stdlib);
+inline void assert_compile_sources_error(const std::unordered_map<std::string, std::string>& sources, const std::string& expected_substr = "") {
+    auto res = compile_sources(sources);
     if (res.success) {
         FAIL_CHECK("Expected compilation to fail, but it succeeded!");
         return;
@@ -180,8 +161,8 @@ inline void assert_compile_sources_error(const std::unordered_map<std::string, s
     }
 }
 
-inline int32_t run_sources(const std::unordered_map<std::string, std::string>& sources, bool include_stdlib = false) {
-    auto res = compile_sources(sources, include_stdlib);
+inline int32_t run_sources(const std::unordered_map<std::string, std::string>& sources) {
+    auto res = compile_sources(sources);
     if (!res.success) {
         std::string err = "Compilation failed: " + res.failure_message + "\nReports:\n";
         for (const auto& r : res.reports) {
@@ -194,8 +175,8 @@ inline int32_t run_sources(const std::unordered_map<std::string, std::string>& s
     return solix::run(opts);
 }
 
-inline void assert_compile_success(const std::string& code, bool include_stdlib = false, const std::string& filename = "test.slx") {
-    auto res = compile_source(code, include_stdlib, filename);
+inline void assert_compile_success(const std::string& code, const std::string& filename = "test.slx") {
+    auto res = compile_source(code, filename);
     if (!res.success) {
         std::string err = "Expected compilation to succeed, but failed: " + res.failure_message + "\nReports:\n";
         for (const auto& r : res.reports) {
@@ -207,8 +188,8 @@ inline void assert_compile_success(const std::string& code, bool include_stdlib 
     }
 }
 
-inline void assert_compile_error(const std::string& code, const std::string& expected_substr = "", bool include_stdlib = false, const std::string& filename = "test.slx") {
-    auto res = compile_source(code, include_stdlib, filename);
+inline void assert_compile_error(const std::string& code, const std::string& expected_substr = "", const std::string& filename = "test.slx") {
+    auto res = compile_source(code, filename);
     if (res.success) {
         FAIL_CHECK("Expected compilation to fail, but it succeeded!");
         return;
@@ -239,8 +220,8 @@ inline void assert_compile_error(const std::string& code, const std::string& exp
     }
 }
 
-inline int32_t run_source(const std::string& code, bool include_stdlib = false, const std::string& filename = "test.slx") {
-    auto res = compile_source(code, include_stdlib, filename);
+inline int32_t run_source(const std::string& code, const std::string& filename = "test.slx") {
+    auto res = compile_source(code, filename);
     if (!res.success) {
         std::string err = "Compilation failed: " + res.failure_message + "\nReports:\n";
         for (const auto& r : res.reports) {
@@ -253,8 +234,8 @@ inline int32_t run_source(const std::string& code, bool include_stdlib = false, 
     return solix::run(opts);
 }
 
-inline int32_t run_and_evaluate_int(const std::string& code, bool include_stdlib = false, const std::string& filename = "test.slx") {
-    return run_source(code, include_stdlib, filename);
+inline int32_t run_and_evaluate_int(const std::string& code, const std::string& filename = "test.slx") {
+    return run_source(code, filename);
 }
 
 } // namespace solix::test
