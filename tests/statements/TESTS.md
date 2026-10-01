@@ -919,7 +919,7 @@ static int32 main() {
 ```
 *Expected Result*: Static fields initialized with user class instances and primitives evaluate cleanly during class initialization.
 
-### Case 3.7: Deterministic Live Object Count Reclamation on Scope Exit [NOT IMPLEMENTED]
+### Case 3.7: Deterministic Live Object Count Reclamation on Scope Exit [IMPLEMENTED]
 ```solix
 class Parent {
     public Child c;
@@ -1562,7 +1562,7 @@ int32 compute(bool early) {
 ```
 *Expected Result*: Calling `compute(true)` frees `b` and `a` with 0 memory leaks.
 
-### Case 3.5: LIFO Scope Cleanup Drops Live Object Count to Zero [NOT IMPLEMENTED]
+### Case 3.5: LIFO Scope Cleanup Drops Live Object Count to Zero [IMPLEMENTED]
 ```solix
 class Res {
     int32 id;
