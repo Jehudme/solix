@@ -23,6 +23,44 @@ static bool is_reference_type(const TypeInfo &t) {
   return primitives.find(t.name) == primitives.end();
 }
 
+static bool produces_retained_reference(Node *expr) {
+  if (!expr) return false;
+  switch (expr->node_type) {
+    case NodeType::NEW_INSTANCE:
+    case NodeType::ARRAY_CREATION:
+    case NodeType::ARRAY_LITERAL:
+    case NodeType::METHOD_CALL:
+    case NodeType::MEMBER_ACCESS:
+    case NodeType::ARRAY_ACCESS:
+    case NodeType::ASSIGNMENT_EXPR:
+      return true;
+    case NodeType::LITERAL: {
+      auto *lit = static_cast<LiteralNode *>(expr);
+      return std::holds_alternative<std::string>(lit->value);
+    }
+    case NodeType::IDENTIFIER: {
+      auto *ident = static_cast<IdentifierNode *>(expr);
+      if (ident->name == "this") return false;
+      if (ident->resolved_declaration &&
+          ident->resolved_declaration->node_type == NodeType::FIELD_DECL) {
+        return true;
+      }
+      return false;
+    }
+    case NodeType::CAST_EXPR: {
+      auto *cast = static_cast<CastExpression *>(expr);
+      return produces_retained_reference(cast->expression.get());
+    }
+    case NodeType::TERNARY_EXPR: {
+      auto *tern = static_cast<TernaryExpression *>(expr);
+      return produces_retained_reference(tern->true_branch.get()) ||
+             produces_retained_reference(tern->false_branch.get());
+    }
+    default:
+      return false;
+  }
+}
+
 void Assembler::throw_error(Node *node, const std::string &msg) {
   if (context.diagnostic) {
     Report report;
@@ -726,7 +764,7 @@ void Assembler::visit(ConstructorDeclaration &node) {
         auto *field = static_cast<FieldDeclaration *>(member.get());
         if (!field->is_static && field->initializer) {
           compile_expression(field->initializer.get());
-          if (field->is_reference_type && !field->is_weak) {
+          if (field->is_reference_type && !field->is_weak && !produces_retained_reference(field->initializer.get())) {
             emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
           }
           emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
@@ -823,7 +861,7 @@ void Assembler::visit(VariableDeclaration &node) {
   auto *var_decl = &node;
   if (var_decl->initializer) {
     compile_expression(var_decl->initializer.get());
-    if (var_decl->is_reference_type) {
+    if (var_decl->is_reference_type && !produces_retained_reference(var_decl->initializer.get())) {
       emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
     }
     emit_byte(static_cast<uint8_t>(OpCode::SET_LOCAL));
@@ -1011,7 +1049,8 @@ void Assembler::visit(ReturnStatement &node) {
   auto *ret_stmt = &node;
   if (ret_stmt->value) {
     compile_expression(ret_stmt->value.get());
-    if (is_reference_type(ret_stmt->value->expression_type)) {
+    if (is_reference_type(ret_stmt->value->expression_type) &&
+        !produces_retained_reference(ret_stmt->value.get())) {
       emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
     } else if (ret_stmt->value->expression_type.is_function_pointer) {
       if (ret_stmt->value->node_type != NodeType::LAMBDA_EXPR) {
@@ -1282,7 +1321,7 @@ void Assembler::visit(AssignmentExpression &node) {
     compile_expression(arr_acc->index.get());
     compile_expression(assign->value.get());
     bool is_ref = is_reference_type(assign->value->expression_type);
-    if (is_ref) {
+    if (is_ref && !produces_retained_reference(assign->value.get())) {
       emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
     } else if (assign->value->expression_type.is_function_pointer) {
       if (assign->value->node_type != NodeType::LAMBDA_EXPR) {
@@ -1295,6 +1334,10 @@ void Assembler::visit(AssignmentExpression &node) {
 
   if (assign->op == TokenType::OPERATOR_ASSIGN) {
     compile_expression(assign->value.get());
+    if (is_reference_type(assign->value->expression_type) &&
+        !produces_retained_reference(assign->value.get())) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    }
   } else {
     compile_expression(assign->target.get());
     compile_expression(assign->value.get());
@@ -1670,7 +1713,8 @@ void Assembler::visit(MethodCallExpression &node) {
   if (call->is_function_pointer_call) {
     for (const auto &arg : call->arguments) {
       compile_expression(arg.get());
-      if (is_reference_type(arg->expression_type)) {
+      if (is_reference_type(arg->expression_type) &&
+          !produces_retained_reference(arg.get())) {
         emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
       }
     }
@@ -1735,7 +1779,8 @@ void Assembler::visit(MethodCallExpression &node) {
     auto *mem_acc = static_cast<MemberAccessExpression *>(call->callee.get());
     if (is_instance_method) {
       compile_expression(mem_acc->object.get());
-      if (is_reference_type(mem_acc->object->expression_type)) {
+      if (is_reference_type(mem_acc->object->expression_type) &&
+          !produces_retained_reference(mem_acc->object.get())) {
         emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
       }
     }
@@ -1748,7 +1793,8 @@ void Assembler::visit(MethodCallExpression &node) {
 
   for (const auto &arg : call->arguments) {
     compile_expression(arg.get());
-    if (is_reference_type(arg->expression_type)) {
+    if (is_reference_type(arg->expression_type) &&
+        !produces_retained_reference(arg.get())) {
       emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
     }
   }
@@ -1858,7 +1904,8 @@ void Assembler::visit(NewInstanceExpression &node) {
 
     for (const auto &arg : inst->arguments) {
       compile_expression(arg.get());
-      if (is_reference_type(arg->expression_type)) {
+      if (is_reference_type(arg->expression_type) &&
+          !produces_retained_reference(arg.get())) {
         emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
       }
     }
@@ -1962,7 +2009,8 @@ void Assembler::visit(ArrayLiteralExpression &node) {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
     emit_int32(i);
     compile_expression(arr_lit->elements[i].get());
-    if (is_reference_type(arr_lit->elements[i]->expression_type)) {
+    if (is_reference_type(arr_lit->elements[i]->expression_type) &&
+        !produces_retained_reference(arr_lit->elements[i].get())) {
       emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
     }
     emit_byte(static_cast<uint8_t>(OpCode::SET_ARRAY));
