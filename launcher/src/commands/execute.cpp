@@ -13,7 +13,6 @@ void setup_execute_command(CLI::App &app) {
 
   auto opts = std::make_shared<RuntimeOptions>();
   auto input_file = std::make_shared<std::string>();
-  auto no_builtins = std::make_shared<bool>(false);
 
   execute_cmd->add_option("file", *input_file, "Solix source compiled bytecode")
       ->required()
@@ -25,13 +24,10 @@ void setup_execute_command(CLI::App &app) {
   execute_cmd->add_option("-p,--heap", opts->heap_capacity,
                           "Heap capacity in words (default: 16777216)");
 
-  execute_cmd->add_flag("--no-builtins", *no_builtins,
-                        "Do not automatically register builtin native functions");
-
   execute_cmd->add_option("args", opts->program_args,
                           "Arguments passed to the Solix program");
 
-  execute_cmd->callback([opts, input_file, no_builtins]() {
+  execute_cmd->callback([opts, input_file]() {
     std::filesystem::path path(*input_file);
 
     if (!std::filesystem::exists(path)) {
@@ -40,15 +36,6 @@ void setup_execute_command(CLI::App &app) {
     }
 
     opts->bytecode_source = path;
-    
-    // Register builtin native functions unless explicitly disabled
-    if (!*no_builtins) {
-      for (const auto &[name, func] : solix::get_builtin_natives()) {
-        if (!opts->native_functions.count(name)) {
-          opts->native_functions[name] = func;
-        }
-      }
-    }
 
     try {
       int32_t exit_code = run(*opts);

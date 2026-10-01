@@ -99,8 +99,6 @@ int32_t run(RuntimeOptions &options);
 
 size_t get_live_object_count();
 
-const std::unordered_map<std::string, NativeFunction>& get_builtin_natives();
-
 // -----------------------------------------------------------------------------
 // Execution Engine
 // -----------------------------------------------------------------------------

@@ -55,7 +55,6 @@ solix/
 │   ├── include/               # Public headers (compilation, runtime)
 │   └── src/
 │       ├── processes/         # Lexer, Parser, Binder, Assembler
-│       ├── natives/           # Native function implementations
 │       └── utilities/         # AST nodes, opcodes, diagnostics
 ├── launcher/                  # CLI front-end
 ├── tests/                     # Unit and integration tests (Catch2)
