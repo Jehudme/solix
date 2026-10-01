@@ -363,6 +363,8 @@ vm_dispatch:
     case 93: goto op_DEC_REF_CALLABLE;
     case 94: goto op_UNPACK_CAPTURES;
     case 95: goto op_PACK_CLOSURE;
+    case 96: goto op_CALL_INTERFACE;
+    case 97: goto op_DEFINE_ITABLE;
     default: goto op_HALT;
   }
 #else
@@ -462,7 +464,9 @@ vm_dispatch:
       &&op_INC_REF_CALLABLE,
       &&op_DEC_REF_CALLABLE,
       &&op_UNPACK_CAPTURES,
-      &&op_PACK_CLOSURE
+      &&op_PACK_CLOSURE,
+      &&op_CALL_INTERFACE,
+      &&op_DEFINE_ITABLE
   };
 
 #define DISPATCH() goto *dispatch_table[code[program_counter++]]
@@ -1045,7 +1049,8 @@ op_INSTANCEOF:
     if (obj != 0) {
       int32_t current_vtable = static_cast<int32_t>(heap_data[obj]);
       while (current_vtable != -1) {
-        if (current_vtable == target_vtable_id) {
+        if (current_vtable == target_vtable_id ||
+            (itables.count(current_vtable) && itables[current_vtable].count(target_vtable_id))) {
           is_instance = true;
           break;
         }
@@ -1067,7 +1072,8 @@ op_CAST_CHECK:
       int32_t current_vtable = static_cast<int32_t>(heap_data[obj]);
       bool is_instance = false;
       while (current_vtable != -1) {
-        if (current_vtable == target_vtable_id) {
+        if (current_vtable == target_vtable_id ||
+            (itables.count(current_vtable) && itables[current_vtable].count(target_vtable_id))) {
           is_instance = true;
           break;
         }
@@ -1110,6 +1116,57 @@ op_CALL_VIRTUAL:
     active_closure_env = 0;
     program_counter = target_ip;
 
+    DISPATCH();
+  }
+op_CALL_INTERFACE:
+  {
+    uint32_t iface_id = read_u32(bytecode, program_counter);
+    uint32_t iface_method_index = read_u32(bytecode, program_counter);
+    uint32_t arg_count = read_u32(bytecode, program_counter);
+
+    uint32_t current_sp_idx = static_cast<uint32_t>(sp - stack);
+    Address obj = static_cast<Address>(stack[current_sp_idx - arg_count]);
+    if (obj == 0) throw std::runtime_error("NullPointer");
+    uint32_t class_vtable_id = heap_data[obj];
+
+    auto it_cls = itables.find(class_vtable_id);
+    if (it_cls == itables.end()) {
+      throw std::runtime_error("Virtual method resolution failed!");
+    }
+    auto it_iface = it_cls->second.find(iface_id);
+    if (it_iface == it_cls->second.end() ||
+        iface_method_index >= it_iface->second.size()) {
+      throw std::runtime_error("Virtual method resolution failed!");
+    }
+    uint32_t vtable_index = it_iface->second[iface_method_index];
+    if (vtables.find(class_vtable_id) == vtables.end() ||
+        vtable_index >= vtables[class_vtable_id].size()) {
+      throw std::runtime_error("Virtual method resolution failed!");
+    }
+    uint32_t target_ip = vtables[class_vtable_id][vtable_index];
+
+    uint32_t new_frame_pointer = current_sp_idx - arg_count;
+    if (call_depth >= 65536)
+      throw std::runtime_error("Stack overflow: max call depth exceeded");
+    call_stack[call_depth++] = Frame(program_counter, new_frame_pointer, arg_count, active_closure_env);
+    active_closure_env = 0;
+    program_counter = target_ip;
+
+    DISPATCH();
+  }
+op_DEFINE_ITABLE:
+  {
+    uint32_t class_vtable_id = read_u32(bytecode, program_counter);
+    uint32_t iface_count = read_u32(bytecode, program_counter);
+    for (uint32_t i = 0; i < iface_count; ++i) {
+      uint32_t iface_id = read_u32(bytecode, program_counter);
+      uint32_t method_count = read_u32(bytecode, program_counter);
+      std::vector<uint32_t> slots(method_count);
+      for (uint32_t j = 0; j < method_count; ++j) {
+        slots[j] = read_u32(bytecode, program_counter);
+      }
+      itables[class_vtable_id][iface_id] = std::move(slots);
+    }
     DISPATCH();
   }
 op_DEFINE_NATIVE:

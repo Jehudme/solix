@@ -153,6 +153,7 @@ public:
     std::vector<ImportStatement*> pending_imports;
     Node* instantiate_template(const std::string& template_name, const std::vector<TypeInfo>& type_args, Node* error_node);
     bool is_assignable(const TypeInfo& target, const TypeInfo& source);
+    bool class_implements_interface(ClassDeclaration *cls, const std::string &iface_name, Node *target_node);
     TypeInfo evaluate_expression(Node* expr);
     
     void record_error(Node* node, const std::string& msg);

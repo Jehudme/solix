@@ -237,6 +237,30 @@ std::string Assembler::disassemble() const {
       ss << "slot=" << slot << ", args=" << args;
       break;
     }
+    case OpCode::CALL_INTERFACE: {
+      uint32_t iface_id = read_u32_local(pc);
+      uint32_t slot = read_u32_local(pc);
+      uint32_t args = read_u32_local(pc);
+      ss << "iface_id=" << iface_id << ", slot=" << slot << ", args=" << args;
+      break;
+    }
+    case OpCode::DEFINE_ITABLE: {
+      uint32_t vtid = read_u32_local(pc);
+      uint32_t iface_count = read_u32_local(pc);
+      ss << "vtable_id=" << vtid << ", iface_count=" << iface_count;
+      for (uint32_t i = 0; i < iface_count; ++i) {
+        uint32_t iface_id = read_u32_local(pc);
+        uint32_t mcount = read_u32_local(pc);
+        ss << " [iface_id=" << iface_id << ", methods=" << mcount << ": ";
+        for (uint32_t j = 0; j < mcount; ++j) {
+          uint32_t slot = read_u32_local(pc);
+          if (j > 0) ss << ", ";
+          ss << slot;
+        }
+        ss << "]";
+      }
+      break;
+    }
     case OpCode::ALLOC_FRAME: {
       uint32_t frame_sz = read_u32_local(pc);
       ss << "size=" << frame_sz;
@@ -347,10 +371,16 @@ void Assembler::compile_boot_sequence() {
         if (!class_decl->template_parameters.empty())
           continue; // SHIELD: Skip uninstantiated blueprints
 
-        if (class_decl->vtable_id != -1)
+        if (class_decl->vtable_id != -1 && !class_decl->is_interface)
           classes_with_vtables.push_back(class_decl);
         for (const auto &child : class_decl->children) {
-          if (child->node_type == NodeType::METHOD_DECL) {
+          if (child->node_type == NodeType::CLASS_DECL) {
+            auto *nested_cls = static_cast<ClassDeclaration *>(child.get());
+            if (!nested_cls->template_parameters.empty())
+              continue;
+            if (nested_cls->vtable_id != -1 && !nested_cls->is_interface)
+              classes_with_vtables.push_back(nested_cls);
+          } else if (child->node_type == NodeType::METHOD_DECL) {
             auto *method = static_cast<MethodDeclaration *>(child.get());
             if (!method->template_parameters.empty())
               continue; // SHIELD
@@ -395,6 +425,21 @@ void Assembler::compile_boot_sequence() {
     for (auto *method : cls->vtable) {
       linker_patches.push_back({bytecode().size(), method});
       emit_int32(0xFFFFFFFF);
+    }
+  }
+
+  for (auto *cls : classes_with_vtables) {
+    if (!cls->itable.empty()) {
+      emit_byte(static_cast<uint8_t>(OpCode::DEFINE_ITABLE));
+      emit_int32(cls->vtable_id);
+      emit_int32(cls->itable.size());
+      for (const auto &[iface_id, slots] : cls->itable) {
+        emit_int32(iface_id);
+        emit_int32(slots.size());
+        for (int slot : slots) {
+          emit_int32(slot);
+        }
+      }
     }
   }
 
@@ -1680,6 +1725,10 @@ void Assembler::visit(MethodCallExpression &node) {
   if (call->is_virtual_call) {
     auto *target_method =
         static_cast<MethodDeclaration *>(call->resolved_declaration);
+    auto *parent_class =
+        target_method->parent && target_method->parent->node_type == NodeType::CLASS_DECL
+            ? static_cast<ClassDeclaration *>(target_method->parent)
+            : nullptr;
 
     uint32_t reg_inst = bytecode().size();
     if (!exception_cleanup_patches.empty()) {
@@ -1688,9 +1737,18 @@ void Assembler::visit(MethodCallExpression &node) {
         exception_cleanup_patches.back().push_back(bytecode().size());
         emit_int32(0xFFFFFFFF); // cleanup_ip
     }
+
+    if (parent_class && parent_class->is_interface) {
+        emit_byte(static_cast<uint8_t>(OpCode::CALL_INTERFACE));
+        emit_int32(parent_class->vtable_id);
+        emit_int32(target_method->vtable_index);
+        emit_int32(total_args);
+    } else {
         emit_byte(static_cast<uint8_t>(OpCode::CALL_VIRTUAL));
-    emit_int32(target_method->vtable_index);
-    emit_int32(total_args);
+        emit_int32(target_method->vtable_index);
+        emit_int32(total_args);
+    }
+
     if (!exception_cleanup_patches.empty()) {
         uint32_t ret_ip = bytecode().size();
         bytecode()[reg_inst + 1] = (ret_ip >> 24) & 0xFF;
