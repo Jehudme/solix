@@ -21,6 +21,7 @@ static int32 main() {
 }
 )";
         CHECK(run_source(code) == 0);
+        CHECK(solix::get_live_object_count() == 0);
     }
 
     SECTION("Case 3.2: Field Access Modifiers (Public, Private, Protected)") {
@@ -123,6 +124,27 @@ static int32 main() {
 }
 )";
         CHECK(run_source(code) == 0);
+    }
+
+    SECTION("Case 3.7: Deterministic Live Object Count Reclamation on Scope Exit") {
+        std::string code = R"(
+class Parent {
+    public Child c;
+}
+class Child {
+    public weak Parent p;
+}
+
+static int32 main() {
+    Parent p = new Parent();
+    Child c = new Child();
+    p.c = c;
+    c.p = p;
+    return 0;
+}
+)";
+        CHECK(run_source(code) == 0);
+        CHECK(solix::get_live_object_count() == 0);
     }
 
     SECTION("Case 4.1: Duplicate Field Identifier") {

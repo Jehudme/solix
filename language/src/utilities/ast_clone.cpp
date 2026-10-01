@@ -376,6 +376,7 @@ std::unique_ptr<Node> ClassDeclaration::clone() const {
     cloned->is_abstract = is_abstract;
     cloned->is_interface = is_interface;
     cloned->implemented_interfaces = implemented_interfaces;
+    cloned->reference_field_offsets = reference_field_offsets;
     copy_children(this, cloned.get());
     return cloned;
 }

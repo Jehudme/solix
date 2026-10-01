@@ -48,6 +48,7 @@ static int32 main() {
 }
 )";
         CHECK(run_source(code) == 0);
+        CHECK(solix::get_live_object_count() == 0);
     }
 
     SECTION("Case 3.4: Early Return from Nested Blocks") {
@@ -71,6 +72,34 @@ static int32 main() {
 }
 )";
         CHECK(run_source(code) == 100);
+        CHECK(solix::get_live_object_count() == 0);
+    }
+
+    SECTION("Case 3.5: LIFO Scope Cleanup Drops Live Object Count to Zero") {
+        std::string code = R"(
+class Res {
+    int32 id;
+    Res(int32 id) { this.id = id; }
+}
+
+static int32 compute() {
+    Res a = new Res(1);
+    {
+        Res b = new Res(2);
+        {
+            Res c = new Res(3);
+        }
+    }
+    return 0;
+}
+
+static int32 main() {
+    compute();
+    return 0;
+}
+)";
+        CHECK(run_source(code) == 0);
+        CHECK(solix::get_live_object_count() == 0);
     }
 
     SECTION("Case 4.1: Accessing Block-Scoped Variable Outside Its Block") {

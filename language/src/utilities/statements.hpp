@@ -610,6 +610,7 @@ struct ClassDeclaration : public Node {
     bool is_interface = false;
     std::vector<std::string> implemented_interfaces;
     int instance_size = 0;
+    std::vector<uint32_t> reference_field_offsets;
     ClassDeclaration(const Token& t, std::string name) : Node(NodeType::CLASS_DECL, t), class_name(std::move(name)) {}
 };
 

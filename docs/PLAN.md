@@ -171,18 +171,18 @@ Prevent signed integer overflow crashes on extreme boundary values such as `INT3
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `runtime`, `tests`
-- **Status**: - [ ] Pending
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Provide programmatic introspection of runtime heap allocations and verify deterministic deallocation and destruction order under ARC.
 
 ### Action Items
-- [ ] **Expose Runtime Live Object Hook**:
+- [x] **Expose Runtime Live Object Hook**:
   - Add `solix::get_live_object_count()` to the runtime memory subsystem.
   - Track active reference-counted allocations and deallocations.
-- [ ] **Update ARC Test Scenarios**:
+- [x] **Update ARC Test Scenarios**:
   - In `test_field_declaration.cpp` (Case 3.1: Cycle Breaking with Weak References), assert that `get_live_object_count()` drops to 0 when cycles are broken and scopes exit.
-- [ ] **LIFO Destruction & Nested Scope Regression Tests**:
+- [x] **LIFO Destruction & Nested Scope Regression Tests**:
   - Add unit tests verifying that destructors and cleanups run in strict reverse declaration order (LIFO) within blocks and call frames.
 
 ### Acceptance Criteria

@@ -63,6 +63,7 @@ uint64_t Memory::dynamic_allocation(size_t size_in_words, Address address) {
   currently_used_words += (size_in_words + 1);
   if (currently_used_words > peak_used_words)
     peak_used_words = currently_used_words;
+  live_objects_count++;
 
   for (size_t i = 0; i < size_in_words; ++i) {
     heap[header_addr + 1 + i] = 0;
@@ -88,6 +89,9 @@ void Memory::deallocate(Address address) {
   uint64_t header = heap[header_addr];
   uint32_t size = static_cast<uint32_t>(header >> 32);
   currently_used_words -= (size + 1);
+  if (live_objects_count > 0) {
+    live_objects_count--;
+  }
   free_blocks.push_back(header_addr);
 }
 
@@ -125,8 +129,12 @@ void Memory::decrease_reference(Address address) {
   if (ref_count > 0) {
     ref_count--;
     header = (header & 0xFFFFFFFF00000000ULL) | ref_count;
-    if (ref_count == 0)
+    if (ref_count == 0) {
+      if (object_destructor) {
+        object_destructor(*this, address);
+      }
       deallocate(address);
+    }
   }
 }
 
@@ -159,6 +167,26 @@ void Memory::decrease_reference_callable(Address env) {
 
 RuntimeContext::RuntimeContext(const RuntimeOptions &opts)
     : options(opts), memory(opts.stack_capacity, opts.heap_capacity) {
+
+  memory.object_destructor = [this](Memory &mem, Address address) {
+    if (address == 0 || address >= mem.heap.size()) return;
+    uint64_t raw_id = mem.heap[address];
+    if (raw_id > 0 && raw_id <= UINT32_MAX) {
+      uint32_t vtable_id = static_cast<uint32_t>(raw_id);
+      if (vtable_ref_fields.count(vtable_id)) {
+        const auto &fields = vtable_ref_fields[vtable_id];
+        for (uint32_t offset : fields) {
+          if (address + offset < mem.heap.size()) {
+            Address child_addr = static_cast<Address>(mem.heap[address + offset]);
+            if (child_addr != 0) {
+              mem.heap[address + offset] = 0;
+              mem.decrease_reference(child_addr);
+            }
+          }
+        }
+      }
+    }
+  };
 
   if (std::holds_alternative<Bytecode>(opts.bytecode_source)) {
     bytecode = std::get<Bytecode>(opts.bytecode_source);
@@ -232,7 +260,29 @@ template <typename T> inline T bit_cast_from_u64(uint64_t value) {
   return result;
 }
 
+static thread_local size_t g_last_live_object_count = 0;
+static thread_local Memory *g_active_memory = nullptr;
+
+size_t get_live_object_count() {
+  if (g_active_memory) {
+    return g_active_memory->live_objects_count;
+  }
+  return g_last_live_object_count;
+}
+
 void RuntimeContext::execute() {
+  struct MemoryScopeGuard {
+    Memory &mem;
+    MemoryScopeGuard(Memory &m) : mem(m) {
+      g_active_memory = &mem;
+    }
+    ~MemoryScopeGuard() {
+      g_last_live_object_count = mem.live_objects_count;
+      g_active_memory = nullptr;
+    }
+  };
+  MemoryScopeGuard scope_guard(memory);
+
   const uint8_t *code = bytecode.data();
   uint64_t *stack = memory.stack.data();
   uint64_t *heap_data = memory.heap.data();
@@ -1046,6 +1096,13 @@ op_DEFINE_VTABLE:
       }
       vtables[vtable_id] = std::move(vtable);
       vtable_bases[vtable_id] = base_vtable_id;
+
+      uint32_t ref_count = read_u32(bytecode, program_counter);
+      std::vector<uint32_t> ref_offsets(ref_count);
+      for (uint32_t i = 0; i < ref_count; ++i) {
+        ref_offsets[i] = read_u32(bytecode, program_counter);
+      }
+      vtable_ref_fields[vtable_id] = std::move(ref_offsets);
     }
     DISPATCH();
   }
