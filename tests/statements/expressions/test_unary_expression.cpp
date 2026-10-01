@@ -40,6 +40,22 @@ static int32 main() {
         CHECK(run_source(code) == 0);
     }
 
+    SECTION("Case 3.4: Extreme Signed Boundary Negation (INT32_MIN and INT64_MIN)") {
+        std::string code = R"(
+static int32 main() {
+    int32 min32 = -2147483648;
+    int32 neg32 = -min32;
+    int64 min64 = -9223372036854775808L;
+    int64 neg64 = -min64;
+    if (neg32 == -2147483648 && neg64 == -9223372036854775808L) {
+        return 0;
+    }
+    return 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
     SECTION("Case 4.1: Increment on Constant (Compile-Time Error)") {
         std::string code = R"(
 static int32 main() {

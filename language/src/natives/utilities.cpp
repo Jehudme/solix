@@ -220,12 +220,14 @@ void register_utilities_natives(std::unordered_map<std::string, NativeFunction> 
         return static_cast<uint64_t>(nanoseconds_count);
       };
 
-  // Also register solix.core.NativeUtilities.* variants
+  // Also register solix.core.NativeUtilities.* and unqualified NativeUtilities.* variants
   std::vector<std::pair<std::string, NativeFunction>> core_entries;
   for (const auto &[name, func] : native_registry) {
     if (name.rfind("solix.NativeUtilities.", 0) == 0) {
-      std::string core_name = "solix.core.NativeUtilities." + name.substr(std::string("solix.NativeUtilities.").length());
+      std::string suffix = name.substr(std::string("solix.NativeUtilities.").length());
+      std::string core_name = "solix.core.NativeUtilities." + suffix;
       core_entries.emplace_back(core_name, func);
+      core_entries.emplace_back("NativeUtilities." + suffix, func);
     }
   }
   for (auto &pair : core_entries) {

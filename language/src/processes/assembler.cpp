@@ -1558,6 +1558,19 @@ void Assembler::visit(UnaryExpression &node) {
       emit_byte(static_cast<uint8_t>(OpCode::NEGATE));
     } else {
       emit_byte(static_cast<uint8_t>(OpCode::NEGATE_I64));
+      if (uny->expression_type.name == "int32") {
+        emit_byte(static_cast<uint8_t>(OpCode::CONV_I32));
+      } else if (uny->expression_type.name == "int16") {
+        emit_byte(static_cast<uint8_t>(OpCode::CONV_I16));
+      } else if (uny->expression_type.name == "int8") {
+        emit_byte(static_cast<uint8_t>(OpCode::CONV_I8));
+      } else if (uny->expression_type.name == "uint32") {
+        emit_byte(static_cast<uint8_t>(OpCode::CONV_U32));
+      } else if (uny->expression_type.name == "uint16") {
+        emit_byte(static_cast<uint8_t>(OpCode::CONV_U16));
+      } else if (uny->expression_type.name == "uint8") {
+        emit_byte(static_cast<uint8_t>(OpCode::CONV_U8));
+      }
     }
   } else if (uny->op == TokenType::OPERATOR_INCREMENT ||
              uny->op == TokenType::OPERATOR_DECREMENT) {

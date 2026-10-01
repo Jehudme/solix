@@ -3081,9 +3081,11 @@ static int32 main() {
 ```
 *Expected Result*: All relational comparisons evaluate correctly.
 
-### Case 3.4: Extreme Boundary Arithmetic & Hash Modulo [NOT IMPLEMENTED]
+### Case 3.4: Extreme Boundary Arithmetic & Hash Modulo [IMPLEMENTED]
 ```solix
-import solix.NativeUtilities;
+class NativeUtilities {
+    public static native int32 hash_bucket(int32 hash, int32 capacity);
+}
 
 static int32 main() {
     int64 min64 = -9223372036854775808L;
@@ -3718,7 +3720,7 @@ static int32 main() {
 ```
 *Expected Result*: Inverts boolean operand with `LOGICAL_NOT` opcode.
 
-### Case 3.4: Extreme Signed Boundary Negation (INT32_MIN and INT64_MIN) [NOT IMPLEMENTED]
+### Case 3.4: Extreme Signed Boundary Negation (INT32_MIN and INT64_MIN) [IMPLEMENTED]
 ```solix
 static int32 main() {
     int32 min32 = -2147483648;
