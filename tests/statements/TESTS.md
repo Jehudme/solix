@@ -80,13 +80,26 @@ void test() {
 
 ### Case 3.3: Class and Qualified Type Alias [IMPLEMENTED]
 ```solix
-alias Text = solix.core.String;
+// helper.slx
+package my.pkg;
 
-void test() {
-    Text t = new Text("hello");
+public class Helper {
+    public int32 val;
+    public Helper(int32 v) { this.val = v; }
+    public int32 getVal() { return this.val; }
+}
+
+// main.slx
+alias MyHelper = my.pkg.Helper;
+
+class Main {
+    public static int32 main() {
+        MyHelper h = new MyHelper(42);
+        return h.getVal() == 42 ? 0 : 1;
+    }
 }
 ```
-*Expected Result*: `Text` resolves cleanly to `solix.core.String`.
+*Expected Result*: `MyHelper` resolves cleanly to `my.pkg.Helper`.
 
 ### Case 3.4: Alias in Method Signature [IMPLEMENTED]
 ```solix
@@ -177,21 +190,45 @@ void test() {
 
 ### Case 3.3: Hierarchical Multi-Level Wildcard Import [IMPLEMENTED]
 ```solix
-import solix.collections.*;
+// collections/list.slx
+package my.collections;
 
-void test() {
-    List<int32> list = new List<int32>();
+public class MyList {
+    public int32 size() { return 0; }
+}
+
+// main.slx
+import my.collections.*;
+
+class Main {
+    public static int32 main() {
+        MyList list = new MyList();
+        return list.size() == 0 ? 0 : 1;
+    }
 }
 ```
 *Expected Result*: Wildcard import exposes all public types from nested package.
 
 ### Case 3.4: Qualified Access with Active Import [IMPLEMENTED]
 ```solix
-import solix.core.String;
+// core/item.slx
+package my.core;
 
-void test() {
-    solix.core.String s1 = new solix.core.String("qualified");
-    String s2 = new String("unqualified");
+public class Item {
+    public int32 val;
+    public Item(int32 v) { this.val = v; }
+    public int32 getVal() { return this.val; }
+}
+
+// main.slx
+import my.core.Item;
+
+class Main {
+    public static int32 main() {
+        my.core.Item s1 = new my.core.Item(10);
+        Item s2 = new Item(20);
+        return (s1.getVal() == 10 && s2.getVal() == 20) ? 0 : 1;
+    }
 }
 ```
 *Expected Result*: Both fully qualified and imported unqualified names resolve to same type.
@@ -226,7 +263,7 @@ void test() {
 ### Case 4.3: Misplaced Import Statement [IMPLEMENTED]
 ```solix
 class Foo {}
-import solix.core.String; // Error: imports must precede declarations
+import my.core.Item; // Error: imports must precede declarations
 ```
 *Expected Compiler Diagnostic*:
 ```text
@@ -235,17 +272,22 @@ import solix.core.String; // Error: imports must precede declarations
 
 ### Case 4.4: Importing Non-Existent Member from Existing Package [IMPLEMENTED]
 ```solix
-import solix.core.FakeSymbol;
+// core.slx
+package my.core;
+public class RealSymbol {}
+
+// main.slx
+import my.core.FakeSymbol;
 ```
 *Expected Compiler Diagnostic*:
 ```text
-[ERROR] binder.cpp: Symbol 'FakeSymbol' not found in package 'solix.core'
+[ERROR] binder.cpp: Symbol 'FakeSymbol' not found in package 'my.core'
 ```
 
 ### Case 4.5: Import Statement Inside Class Body [IMPLEMENTED]
 ```solix
 class Foo {
-    import solix.core.String;
+    import my.core.Item;
 }
 ```
 *Expected Compiler Diagnostic*:
@@ -256,7 +298,7 @@ class Foo {
 ### Case 4.6: Import Statement Inside Function Body [IMPLEMENTED]
 ```solix
 void test() {
-    import solix.core.String;
+    import my.core.Item;
 }
 ```
 *Expected Compiler Diagnostic*:
@@ -826,42 +868,53 @@ static int32 main() {
 ```
 *Expected Result*: Const field inlines or preserves immutable compile-time value.
 
-### Case 3.5: In-Class Field Initialization with String Literal [IMPLEMENTED]
+### Case 3.5: In-Class Field Initialization with Object and Primitive Literals [IMPLEMENTED]
 ```solix
-alias String = solix.core.String;
+class Item {
+    public int32 id;
+    public Item(int32 i) { this.id = i; }
+}
 
 class Entity {
-    private String label = "DefaultLabel";
+    private Item item = new Item(42);
+    private int32 count = 100;
 
-    public String getLabel() {
-        return this.label;
+    public int32 getItemId() {
+        return this.item.id;
+    }
+    public int32 getCount() {
+        return this.count;
     }
 }
 
 static int32 main() {
     Entity e = new Entity();
-    return e.getLabel().equals(new String("DefaultLabel")) ? 0 : 1;
+    return (e.getItemId() == 42 && e.getCount() == 100) ? 0 : 1;
 }
 ```
-*Expected Result*: String literal `"DefaultLabel"` is implicitly converted or wrapped into a `solix.core.String` instance.
+*Expected Result*: In-class field initializers for reference and primitive types execute during constructor initialization.
 
 ### Case 3.6: Static Field Initialization with Object Instantiation [IMPLEMENTED]
 ```solix
-alias String = solix.core.String;
+class Tag {
+    public int32 code;
+    public Tag(int32 c) { this.code = c; }
+}
 
 class Config {
-    public static String tag = new String("production");
+    public static Tag tag = new Tag(99);
+    public static int32 version = 3;
 
-    public static String getTag() {
+    public static Tag getTag() {
         return tag;
     }
 }
 
 static int32 main() {
-    return Config.getTag().equals(new String("production")) ? 0 : 1;
+    return (Config.getTag().code == 99 && Config.version == 3) ? 0 : 1;
 }
 ```
-*Expected Result*: Static field `tag` initialized with `new String("production")` evaluates cleanly during program initialization.
+*Expected Result*: Static fields initialized with user class instances and primitives evaluate cleanly during class initialization.
 
 ---
 
@@ -3528,9 +3581,18 @@ static int32 main() {
 
 ### Case 4.2: Unary Minus on Non-Numeric Operand [IMPLEMENTED]
 ```solix
+class NonNumeric {}
+
 void test() {
-    String s = -"text"; // Error
+    NonNumeric obj = new NonNumeric();
+    NonNumeric neg = -obj; // Error
 }
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] binder.cpp: Cannot apply unary operator '-' to type 'NonNumeric'
+```
+
 ---
 
 ## Suite 38: SizeOfExpression
