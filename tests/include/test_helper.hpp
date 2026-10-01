@@ -171,7 +171,6 @@ inline int32_t run_sources(const std::unordered_map<std::string, std::string>& s
         throw std::runtime_error(err);
     }
     solix::RuntimeOptions opts;
-    opts.native_functions = solix::get_builtin_natives();
     opts.bytecode_source = res.bytecode;
     return solix::run(opts);
 }
@@ -231,7 +230,6 @@ inline int32_t run_source(const std::string& code, const std::string& filename =
         throw std::runtime_error(err);
     }
     solix::RuntimeOptions opts;
-    opts.native_functions = solix::get_builtin_natives();
     opts.bytecode_source = res.bytecode;
     return solix::run(opts);
 }

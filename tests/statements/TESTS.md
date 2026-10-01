@@ -3125,31 +3125,27 @@ static int32 main() {
 ```
 *Expected Result*: All relational comparisons evaluate correctly.
 
-### Case 3.4: Extreme Boundary Arithmetic & Hash Modulo [IMPLEMENTED]
+### Case 3.4: Extreme Boundary Arithmetic & Signed Limits [IMPLEMENTED]
 ```solix
-class NativeUtilities {
-    public static native int32 hash_bucket(int32 hash, int32 capacity);
-}
-
 static int32 main() {
     int64 min64 = -9223372036854775808L;
     int64 divResult = min64 / -1;
     int64 modResult = min64 % -1;
 
-    int32 bucket1 = NativeUtilities.hash_bucket(-2147483648, 16);
-    int32 bucket2 = NativeUtilities.hash_bucket(-1, 16);
-    int32 bucket3 = NativeUtilities.hash_bucket(42, 16);
+    int64 max64 = 9223372036854775807L;
+    int64 divMax = max64 / -1;
+
+    int32 min32 = -2147483648;
+    int32 div32 = min32 / 2;
 
     if (divResult == min64 && modResult == 0 &&
-        bucket1 >= 0 && bucket1 < 16 &&
-        bucket2 >= 0 && bucket2 < 16 &&
-        bucket3 >= 0 && bucket3 < 16) {
+        divMax == -max64 && div32 == -1073741824) {
         return 0;
     }
     return 1;
 }
 ```
-*Expected Result*: Evaluates division and modulo on INT64_MIN by -1 without hardware SIGFPE, and computes positive hash bucket indices for negative hashes.
+*Expected Result*: Evaluates division and modulo on INT64_MIN by -1 without hardware SIGFPE, and verifies extreme signed boundary arithmetic for int64 and int32.
 
 ---
 
