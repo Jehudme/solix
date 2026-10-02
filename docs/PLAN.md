@@ -50,7 +50,7 @@
 | **Phase 32** | Standard Library: `solix.io.filesystem` (Unified Path & File System Operations) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
 | **Phase 32.1** | Emergency Refactor: Purge `Any.slx`, Modernize `solix.math.Math` with Generics (`abs<T>`, `min<T>`, `max<T>`, `clamp<T>`, `sign<T>`) & `Optional<T>` | `P0 Blocker` | `solixlib/core`, `solixlib/math`, `tests` | - [x] Complete |
 | **Phase 32.2** | Emergency Refactor: Generic Collections Sequences (`List<T>`, `LinkedList<T>`, `Collections.slx`, `Algorithms.slx`) with `for_each` & Lambdas | `P0 Blocker` | `solixlib/collections`, `tests` | - [x] Complete |
-| **Phase 32.3** | Emergency Refactor: Generic Linear Containers (`Stack<T>`, `Queue<T>`, `Deque<T>`, `PriorityQueue<T>`, `CircularBuffer<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [ ] Planned |
+| **Phase 32.3** | Emergency Refactor: Generic Linear Containers (`Stack<T>`, `Queue<T>`, `Deque<T>`, `PriorityQueue<T>`, `CircularBuffer<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [x] Complete |
 | **Phase 32.4** | Emergency Refactor: Generic Associative Containers (`KeyValuePair<K, V>`, `HashMap<K, V>`, `TreeMap<K, V>`, `HashSet<T>`, `TreeSet<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [ ] Planned |
 | **Phase 32.5** | Emergency Refactor: Align Filesystem (`File.slx`, `Directory.slx`) with `List<String>`, Update `test_filesystem.cpp`, Specs & Regression | `P0 Blocker` | `solixlib/io`, `docs`, `tests` | - [ ] Planned |
 | **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, Readers/Writers) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
@@ -1677,19 +1677,19 @@ Convert `List` and `LinkedList` to full generic classes `List<T>` and `LinkedLis
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `solixlib/project/src/solix/collections/Stack.slx`, `Queue.slx`, `Deque.slx`, `PriorityQueue.slx`, `CircularBuffer.slx`, `tests/solixlib/test_linear_collections.cpp`, `docs/spec/solixlib/linear_collections.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Complete
 
 ### Objective
 Convert all linear collections and streaming buffers to compile-time generic classes. Implement `for_each(void(*)(T) action)` across all linear structures, enable comparator lambdas (`int32(*)(T, T)`) in `PriorityQueue<T>`, and eliminate all remaining references to `Any`.
 
 ### Action Items
-- [ ] Refactor `Stack.slx` to `Stack<T>` with `for_each`.
-- [ ] Refactor `Queue.slx` to `Queue<T>` with `for_each`.
-- [ ] Refactor `Deque.slx` to `Deque<T>` with `for_each`.
-- [ ] Refactor `PriorityQueue.slx` to `PriorityQueue<T>` with comparator lambda constructor and `for_each`.
-- [ ] Refactor `CircularBuffer.slx` to `CircularBuffer<T>` backed by `T[]` with `for_each`.
-- [ ] Update `tests/solixlib/test_linear_collections.cpp`.
-- [ ] Update `tests/solixlib/TESTS.md` and documentation in `docs/spec/solixlib/linear_collections.md`.
+- [x] Refactor `Stack.slx` to `Stack<T>` with `for_each`.
+- [x] Refactor `Queue.slx` to `Queue<T>` with `for_each`.
+- [x] Refactor `Deque.slx` to `Deque<T>` with `for_each`.
+- [x] Refactor `PriorityQueue.slx` to `PriorityQueue<T>` with comparator lambda constructor and `for_each`.
+- [x] Refactor `CircularBuffer.slx` to `CircularBuffer<T>` backed by `T[]` with `for_each`.
+- [x] Update `tests/solixlib/test_linear_collections.cpp`.
+- [x] Update `tests/solixlib/TESTS.md` and documentation in `docs/spec/solixlib/linear_collections.md`.
 
 ---
 
