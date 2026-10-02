@@ -11,6 +11,10 @@
     },
     {
       "type": "source",
+      "path": "src/solix/system/Console.slx"
+    },
+    {
+      "type": "source",
       "path": "src/solix/exceptions/Exception.slx"
     },
     {

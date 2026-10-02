@@ -29,7 +29,7 @@ list(APPEND TEST_SOURCES ${TEST_SOURCES_RUNTIME})
 add_executable(solix_tests
     ${TEST_SOURCES}
 )
-add_dependencies(solix_tests solix_test_plugin solix_test_plugin_b)
+add_dependencies(solix_tests solix_test_plugin solix_test_plugin_b solixlib_native)
 
 target_link_libraries(solix_tests PRIVATE Catch2::Catch2WithMain solix_core solix_cli_core
     $<IF:$<TARGET_EXISTS:spdlog::spdlog>,spdlog::spdlog,spdlog>

@@ -32,16 +32,17 @@ Each test scenario is assigned a permanent identifier and status tag:
 
 ## 2. Console (`solix.system.Console`)
 
-- [ ] **Case 2.1 [NOT IMPLEMENTED]**: `Console.print()` and `Console.println()` with primitive integers, booleans, doubles, and characters.
-- [ ] **Case 2.2 [NOT IMPLEMENTED]**: `Console.print()` and `Console.println()` with primitive character arrays (`char[]`).
-- [ ] **Case 2.3 [NOT IMPLEMENTED]**: `Console.error()` outputting in ANSI red (`\033[31m`) to standard error stream.
-- [ ] **Case 2.4 [NOT IMPLEMENTED]**: `Console.warning()` outputting in ANSI yellow (`\033[33m`) to standard stream.
-- [ ] **Case 2.5 [NOT IMPLEMENTED]**: `Console.input_int()` parsing valid integer from stdin.
-- [ ] **Case 2.6 [NOT IMPLEMENTED]**: `Console.input_double()` parsing valid double from stdin.
-- [ ] **Case 2.7 [NOT IMPLEMENTED]**: `Console.input_bool()` parsing boolean (`true`/`false`) from stdin.
-- [ ] **Case 2.8 [NOT IMPLEMENTED]**: `Console.input_char()` reading single character from stdin.
-- [ ] **Case 2.9 [NOT IMPLEMENTED]**: `Console.input_chars()` reading line into `char[]` buffer.
-- [ ] **Case 2.10 [NOT IMPLEMENTED]**: Negative: `Console.input_int()` with non-numeric input throws `FormatException`.
-- [ ] **Case 2.11 [NOT IMPLEMENTED]**: Negative: `Console.input_double()` with invalid text throws `FormatException`.
-- [ ] **Case 2.12 [NOT IMPLEMENTED]**: Post-String upgrade: `Console.print()` and `Console.println()` with `String` and `IStringable` instances.
-- [ ] **Case 2.13 [NOT IMPLEMENTED]**: Post-String upgrade: `Console.input() -> String` reading complete line.
+- [x] **Case 2.1 [IMPLEMENTED]**: `Console.print()` and `Console.println()` with primitive integers, booleans, doubles, and characters (`tests/solixlib/test_console.cpp`).
+- [x] **Case 2.2 [IMPLEMENTED]**: `Console.print()` and `Console.println()` with primitive character arrays (`char[]`) (`tests/solixlib/test_console.cpp`).
+- [x] **Case 2.3 [IMPLEMENTED]**: `Console.error()` outputting in ANSI red (`\033[31m`) to standard error stream (`tests/solixlib/test_console.cpp`).
+- [x] **Case 2.4 [IMPLEMENTED]**: `Console.warning()`, `Console.info()`, `Console.success()` outputting appropriate ANSI colors (`tests/solixlib/test_console.cpp`).
+- [x] **Case 2.5 [IMPLEMENTED]**: `Console.input_int()` parsing valid integer from stdin (`tests/solixlib/test_console.cpp`).
+- [x] **Case 2.6 [IMPLEMENTED]**: `Console.input_double()` parsing valid double from stdin (`tests/solixlib/test_console.cpp`).
+- [x] **Case 2.7 [IMPLEMENTED]**: `Console.input_bool()` parsing boolean (`true`/`false`) from stdin (`tests/solixlib/test_console.cpp`).
+- [x] **Case 2.8 [IMPLEMENTED]**: `Console.input_char()` reading single character from stdin (`tests/solixlib/test_console.cpp`).
+- [x] **Case 2.9 [IMPLEMENTED]**: `Console.input_chars()` reading line into `char[]` buffer (`tests/solixlib/test_console.cpp`).
+- [x] **Case 2.10 [IMPLEMENTED]**: Negative: `Console.input_int()` with non-numeric input throws `FormatException` (`tests/solixlib/test_console.cpp`).
+- [x] **Case 2.11 [IMPLEMENTED]**: Negative: `Console.input_double()` with invalid text throws `FormatException` (`tests/solixlib/test_console.cpp`).
+- [x] **Case 2.12 [IMPLEMENTED]**: Terminal control operations (`clear()`, `flush()`, `set_color()`, `reset_color()`, `set_cursor_position()`, `set_title()`) (`tests/solixlib/test_console.cpp`).
+- [ ] **Case 2.13 [NOT IMPLEMENTED]**: Post-String upgrade: `Console.print()` and `Console.println()` with `String` and `IStringable` instances.
+- [ ] **Case 2.14 [NOT IMPLEMENTED]**: Post-String upgrade: `Console.input() -> String` reading complete line.
