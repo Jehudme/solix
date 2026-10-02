@@ -11,6 +11,28 @@
 
 namespace solix::cli {
 
+namespace {
+
+inline bool is_shared_library(const std::filesystem::path &p) {
+  std::string ext = p.extension().string();
+  std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return std::tolower(c); });
+  return ext == ".so" || ext == ".dll" || ext == ".dylib";
+}
+
+inline void scan_directory_for_native_libs(const std::filesystem::path &dir, std::vector<std::filesystem::path> &out) {
+  std::error_code ec;
+  if (!std::filesystem::exists(dir, ec) || !std::filesystem::is_directory(dir, ec)) {
+    return;
+  }
+  for (const auto &entry : std::filesystem::directory_iterator(dir, ec)) {
+    if (entry.is_regular_file(ec) && is_shared_library(entry.path())) {
+      out.push_back(entry.path().lexically_normal());
+    }
+  }
+}
+
+} // namespace
+
 void setup_execute_command(CLI::App &app) {
   auto *execute_cmd = app.add_subcommand("run", "Run compiled bytecode or Solix project");
 
@@ -20,6 +42,7 @@ void setup_execute_command(CLI::App &app) {
   auto package_name = std::make_shared<std::string>();
   auto version_str = std::make_shared<std::string>();
   auto project_path_str = std::make_shared<std::string>();
+  auto native_libs_cli = std::make_shared<std::vector<std::string>>();
 
   execute_cmd->add_option("target", *input_target, "Solix bytecode file (.slxbin), project directory, or package@version");
 
@@ -27,6 +50,7 @@ void setup_execute_command(CLI::App &app) {
   execute_cmd->add_option("-n,--package", *package_name, "Installed package name in $SOLIX_HOME");
   execute_cmd->add_option("-v,--version", *version_str, "Installed package version");
   execute_cmd->add_option("--project", *project_path_str, "Path to project directory or solix.json");
+  execute_cmd->add_option("-L,--native-lib", *native_libs_cli, "Path to native shared library (.dll, .so, .dylib)");
 
   auto *stack_opt = execute_cmd->add_option("-s,--stack", opts->stack_capacity,
                                             "Stack capacity in words (default: 1048576)");
@@ -37,7 +61,7 @@ void setup_execute_command(CLI::App &app) {
   execute_cmd->add_option("args", opts->program_args,
                           "Arguments passed to the Solix program");
 
-  execute_cmd->callback([opts, input_target, profile_str, package_name, version_str, project_path_str, stack_opt, heap_opt]() {
+  execute_cmd->callback([opts, input_target, profile_str, package_name, version_str, project_path_str, native_libs_cli, stack_opt, heap_opt]() {
     std::filesystem::path bytecode_path;
     std::filesystem::path project_dir;
     bool is_project = false;
@@ -102,6 +126,17 @@ void setup_execute_command(CLI::App &app) {
       }
       bytecode_path = build_res.output_binary;
 
+      // Ingest root native_libraries from manifest
+      if (build_res.manifest.contains("native_libraries") && build_res.manifest["native_libraries"].is_array()) {
+        for (const auto& item : build_res.manifest["native_libraries"]) {
+          if (item.is_string()) {
+            std::filesystem::path p = item.get<std::string>();
+            if (p.is_relative()) p = build_res.project_root / p;
+            opts->native_libraries.push_back(p.lexically_normal());
+          }
+        }
+      }
+
       // Ingest runtime settings from manifest profile
       if (build_res.manifest.contains("profiles") &&
           build_res.manifest["profiles"].contains(*profile_str) &&
@@ -122,7 +157,42 @@ void setup_execute_command(CLI::App &app) {
             }
           }
         }
+        if (rt.contains("native_libraries") && rt["native_libraries"].is_array()) {
+          for (const auto& item : rt["native_libraries"]) {
+            if (item.is_string()) {
+              std::filesystem::path p = item.get<std::string>();
+              if (p.is_relative()) p = build_res.project_root / p;
+              opts->native_libraries.push_back(p.lexically_normal());
+            }
+          }
+        }
       }
+
+      // Auto-discover in project lib/ and output directory
+      scan_directory_for_native_libs(build_res.project_root / "lib", opts->native_libraries);
+      scan_directory_for_native_libs(bytecode_path.parent_path(), opts->native_libraries);
+    } else {
+      // Standalone bytecode file mode: scan parent directory and parent/lib
+      scan_directory_for_native_libs(bytecode_path.parent_path(), opts->native_libraries);
+      scan_directory_for_native_libs(bytecode_path.parent_path() / "lib", opts->native_libraries);
+    }
+
+    // Ingest CLI flags: -L, --native-lib
+    for (const auto& lib_str : *native_libs_cli) {
+      std::filesystem::path p(lib_str);
+      if (p.is_relative()) p = std::filesystem::current_path() / p;
+      opts->native_libraries.push_back(p.lexically_normal());
+    }
+
+    // De-duplicate native libraries list
+    {
+      std::vector<std::filesystem::path> unique_libs;
+      for (const auto& p : opts->native_libraries) {
+        if (std::find(unique_libs.begin(), unique_libs.end(), p) == unique_libs.end()) {
+          unique_libs.push_back(p);
+        }
+      }
+      opts->native_libraries = std::move(unique_libs);
     }
 
     // 3. Validate bytecode file

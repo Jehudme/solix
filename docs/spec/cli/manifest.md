@@ -165,3 +165,27 @@ A dictionary mapping profile names (`debug`, `release`, `test`, or user-defined 
 | `logs.sink` | String | `"STDOUT"` | Destination sink (`STDOUT`, `STDERR`, `BASIC_FILE`, `CONSOLE_AND_FILE`). |
 | `logs.filename` | String | `""` | Log file path if a file sink is chosen. |
 | `logs.pattern` | String | standard | Spdlog format pattern. |
+
+#### Runtime Block (`profiles.<name>.runtime`)
+
+| Subfield | Type | Default | Description |
+|---|---|---|---|
+| `heap_size` | Integer | `16777216` | Initial/maximum heap capacity in machine words. |
+| `stack_size` | Integer | `1048576` | Stack capacity in machine words. |
+| `arguments` | Array of Strings | `[]` | Default arguments supplied to VM execution. |
+| `native_libraries` | Array of Strings | `[]` | Profile-specific shared libraries (`.dll`, `.so`, `.dylib`) to load before VM execution. |
+
+### 4. Native Shared Libraries (`native_libraries`)
+
+Root-level array of filesystem paths pointing to compiled C/C++ shared libraries (`.dll`, `.so`, `.dylib`). These libraries are automatically loaded and registered by `solix run` across all build profiles:
+
+```json
+{
+  "native_libraries": [
+    "lib/math_plugin.so",
+    "lib/graphics.dll"
+  ]
+}
+```
+Relative paths are resolved relative to the directory containing `solix.json`. Additionally, any shared libraries placed in the project's `./lib/` directory or alongside the generated `.slxbin` are automatically discovered without requiring explicit manifest entries.
+

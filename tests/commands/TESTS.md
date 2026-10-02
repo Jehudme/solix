@@ -192,6 +192,31 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Project containing syntax/type error in source code.
 - **Expected**: Exits non-zero; compilation error reported before VM execution.
 
+#### Case 2.22: Run Project with Native Auto-Discovery from lib/ Directory [IMPLEMENTED]
+- **Command**: `solix run ./project_with_lib`
+- **Setup**: Project directory containing native shared library (`.so`/`.dll`/`.dylib`) inside `./lib/`.
+- **Expected**: Exits 0; automatically discovers and loads library from `./lib/`; native methods execute successfully.
+
+#### Case 2.23: Run Bytecode Binary with Co-located Native Library Auto-Discovery [IMPLEMENTED]
+- **Command**: `solix run path/to/app.slxbin`
+- **Setup**: Standalone bytecode binary with a shared library in the same directory.
+- **Expected**: Exits 0; automatically discovers and loads co-located shared library; executes native methods.
+
+#### Case 2.24: Run Project with Explicit native_libraries in Manifest [IMPLEMENTED]
+- **Command**: `solix run ./project_manifest_native`
+- **Setup**: Project where `solix.json` defines `"native_libraries": ["path/to/plugin.so"]`.
+- **Expected**: Exits 0; manifest paths are loaded and bound before execution; native methods succeed.
+
+#### Case 2.25: Run Bytecode with Explicit CLI --native-lib / -L Flag [IMPLEMENTED]
+- **Command**: `solix run app.slxbin -L path/to/plugin.so`
+- **Setup**: Standalone bytecode execution with shared library provided via CLI flag.
+- **Expected**: Exits 0; library specified on CLI loaded into VM; native methods succeed.
+
+#### Case 2.26: Negative: Run Binary Requiring Native Library Without Providing It [IMPLEMENTED]
+- **Command**: `solix run app_requiring_native.slxbin`
+- **Setup**: Bytecode file invoking a native function without co-located library or CLI flag.
+- **Expected**: Exits non-zero (exit code 1); reports missing native function diagnostic.
+
 ---
 
 ## BuildCommand
