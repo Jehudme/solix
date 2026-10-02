@@ -1,15 +1,13 @@
 package solix.collections;
 
-import solix.core.Any;
+public class TreeMapNode<K, V> {
+    public K key;
+    public V value;
+    public TreeMapNode<K, V> left;
+    public TreeMapNode<K, V> right;
+    public TreeMapNode<K, V> parent;
 
-public class TreeMapNode {
-    public Any key;
-    public Any value;
-    public TreeMapNode left;
-    public TreeMapNode right;
-    public TreeMapNode parent;
-
-    public TreeMapNode(Any k, Any v, TreeMapNode p) {
+    public TreeMapNode(K k, V v, TreeMapNode<K, V> p) {
         this.key = k;
         this.value = v;
         this.parent = p;

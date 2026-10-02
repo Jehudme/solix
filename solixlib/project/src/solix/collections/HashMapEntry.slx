@@ -1,14 +1,12 @@
 package solix.collections;
 
-import solix.core.Any;
-
-public class HashMapEntry {
-    public Any key;
-    public Any value;
+public class HashMapEntry<K, V> {
+    public K key;
+    public V value;
     public int32 hash;
-    public HashMapEntry next;
+    public HashMapEntry<K, V> next;
 
-    public HashMapEntry(Any k, Any v, int32 h, HashMapEntry n) {
+    public HashMapEntry(K k, V v, int32 h, HashMapEntry<K, V> n) {
         this.key = k;
         this.value = v;
         this.hash = h;

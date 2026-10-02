@@ -1,38 +1,33 @@
 package solix.collections;
 
-import solix.core.Any;
+import solix.core.IStringable;
 import solix.core.String;
-import solix.core.StringBuilder;
 import solix.exceptions.KeyNotFoundException;
 import solix.exceptions.NoSuchElementException;
 
-public class TreeMap implements IMap {
-    private TreeMapNode _root;
+public class TreeMap<K, V> implements IStringable {
+    private TreeMapNode<K, V> _root;
     private int32 _size;
+    private int32(*)(K, K) _comparator;
 
     public TreeMap() {
         this._root = null;
         this._size = 0;
+        this._comparator = null;
     }
 
-    private int32 compare(Any a, Any b) {
-        if (a == null && b == null) return 0;
-        if (a == null) return -1;
-        if (b == null) return 1;
-        if (a.is_int() && b.is_int()) {
-            int32 ia = a.as_int32();
-            int32 ib = b.as_int32();
-            if (ia < ib) return -1;
-            if (ia > ib) return 1;
-            return 0;
+    public TreeMap(int32(*)(K, K) comparator) {
+        this._root = null;
+        this._size = 0;
+        this._comparator = comparator;
+    }
+
+    private int32 compare(K a, K b) {
+        if (this._comparator != null) {
+            return this._comparator(a, b);
         }
-        if (a.is_string() && b.is_string()) {
-            return a.as_string().compare_to(b.as_string());
-        }
-        int32 ha = a.hash_code();
-        int32 hb = b.hash_code();
-        if (ha < hb) return -1;
-        if (ha > hb) return 1;
+        if (a < b) return -1;
+        if (a > b) return 1;
         return 0;
     }
 
@@ -49,8 +44,8 @@ public class TreeMap implements IMap {
         this._size = 0;
     }
 
-    private TreeMapNode find_node(Any key) {
-        TreeMapNode cur = this._root;
+    private TreeMapNode<K, V> find_node(K key) {
+        TreeMapNode<K, V> cur = this._root;
         while (cur != null) {
             int32 cmp = this.compare(key, cur.key);
             if (cmp < 0) {
@@ -64,39 +59,39 @@ public class TreeMap implements IMap {
         return null;
     }
 
-    public bool contains_key(Any key) {
+    public bool contains_key(K key) {
         return this.find_node(key) != null;
     }
 
-    public bool contains_value(Any value) {
-        List<Any> vList = this.values();
+    public bool contains_value(V value) {
+        List<V> vList = this.values();
         return vList.contains(value);
     }
 
-    public Any get(Any key) {
-        TreeMapNode node = this.find_node(key);
+    public V get(K key) {
+        TreeMapNode<K, V> node = this.find_node(key);
         if (node == null) {
             throw new KeyNotFoundException("Key not found in TreeMap");
         }
         return node.value;
     }
 
-    public Any get_or_default(Any key, Any default_val) {
-        TreeMapNode node = this.find_node(key);
+    public V get_or_default(K key, V default_val) {
+        TreeMapNode<K, V> node = this.find_node(key);
         if (node == null) {
             return default_val;
         }
         return node.value;
     }
 
-    public void put(Any key, Any value) {
+    public void put(K key, V value) {
         if (this._root == null) {
-            this._root = new TreeMapNode(key, value, null);
+            this._root = new TreeMapNode<K, V>(key, value, null);
             this._size = 1;
             return;
         }
-        TreeMapNode cur = this._root;
-        TreeMapNode parent = null;
+        TreeMapNode<K, V> cur = this._root;
+        TreeMapNode<K, V> parent = null;
         int32 cmp = 0;
         while (cur != null) {
             parent = cur;
@@ -110,7 +105,7 @@ public class TreeMap implements IMap {
                 return;
             }
         }
-        TreeMapNode node = new TreeMapNode(key, value, parent);
+        TreeMapNode<K, V> node = new TreeMapNode<K, V>(key, value, parent);
         if (cmp < 0) {
             parent.left = node;
         } else {
@@ -119,7 +114,7 @@ public class TreeMap implements IMap {
         this._size = this._size + 1;
     }
 
-    private void replace_node_in_parent(TreeMapNode node, TreeMapNode new_child) {
+    private void replace_node_in_parent(TreeMapNode<K, V> node, TreeMapNode<K, V> new_child) {
         if (node.parent == null) {
             this._root = new_child;
         } else if (node == node.parent.left) {
@@ -132,22 +127,22 @@ public class TreeMap implements IMap {
         }
     }
 
-    private TreeMapNode min_node(TreeMapNode node) {
-        TreeMapNode cur = node;
+    private TreeMapNode<K, V> min_node(TreeMapNode<K, V> node) {
+        TreeMapNode<K, V> cur = node;
         while (cur.left != null) {
             cur = cur.left;
         }
         return cur;
     }
 
-    public Any remove(Any key) {
-        TreeMapNode node = this.find_node(key);
+    public V remove(K key) {
+        TreeMapNode<K, V> node = this.find_node(key);
         if (node == null) {
-            return null;
+            return default(V);
         }
-        Any old = node.value;
+        V old = node.value;
         if (node.left != null && node.right != null) {
-            TreeMapNode succ = this.min_node(node.right);
+            TreeMapNode<K, V> succ = this.min_node(node.right);
             node.key = succ.key;
             node.value = succ.value;
             this.replace_node_in_parent(succ, succ.right);
@@ -162,96 +157,77 @@ public class TreeMap implements IMap {
         return old;
     }
 
-    public Any first_key() {
+    public K first_key() {
         if (this._root == null) {
             throw new NoSuchElementException("TreeMap is empty");
         }
         return this.min_node(this._root).key;
     }
 
-    public Any last_key() {
+    public K last_key() {
         if (this._root == null) {
             throw new NoSuchElementException("TreeMap is empty");
         }
-        TreeMapNode cur = this._root;
+        TreeMapNode<K, V> cur = this._root;
         while (cur.right != null) {
             cur = cur.right;
         }
         return cur.key;
     }
 
-    private void inorder_keys(TreeMapNode node, List<Any> out) {
+    private void inorder_keys(TreeMapNode<K, V> node, List<K> out) {
         if (node == null) return;
         this.inorder_keys(node.left, out);
         out.add(node.key);
         this.inorder_keys(node.right, out);
     }
 
-    private void inorder_values(TreeMapNode node, List<Any> out) {
+    private void inorder_values(TreeMapNode<K, V> node, List<V> out) {
         if (node == null) return;
         this.inorder_values(node.left, out);
         out.add(node.value);
         this.inorder_values(node.right, out);
     }
 
-    private void inorder_entries(TreeMapNode node, List<Any> out) {
+    private void inorder_entries(TreeMapNode<K, V> node, List<KeyValuePair<K, V>> out) {
         if (node == null) return;
         this.inorder_entries(node.left, out);
-        KeyValuePair kvp = new KeyValuePair(node.key, node.value);
-        out.add(new Any(kvp));
+        KeyValuePair<K, V> kvp = new KeyValuePair<K, V>(node.key, node.value);
+        out.add(kvp);
         this.inorder_entries(node.right, out);
     }
 
-    public List<Any> keys() {
-        List<Any> list = new List<Any>(this._size);
+    public List<K> keys() {
+        List<K> list = new List<K>(this._size);
         this.inorder_keys(this._root, list);
         return list;
     }
 
-    public List<Any> values() {
-        List<Any> list = new List<Any>(this._size);
+    public List<V> values() {
+        List<V> list = new List<V>(this._size);
         this.inorder_values(this._root, list);
         return list;
     }
 
-    public List<Any> entries() {
-        List<Any> list = new List<Any>(this._size);
+    public List<KeyValuePair<K, V>> entries() {
+        List<KeyValuePair<K, V>> list = new List<KeyValuePair<K, V>>(this._size);
         this.inorder_entries(this._root, list);
         return list;
     }
 
+    private void inorder_for_each(TreeMapNode<K, V> node, void(*)(K, V) action) {
+        if (node == null) return;
+        this.inorder_for_each(node.left, action);
+        action(node.key, node.value);
+        this.inorder_for_each(node.right, action);
+    }
+
+    public void for_each(void(*)(K, V) action) {
+        if (action == null) return;
+        this.inorder_for_each(this._root, action);
+    }
+
     public String to_string() {
-        List<Any> kList = this.keys();
-        List<Any> vList = this.values();
-        StringBuilder sb = new StringBuilder();
-        sb.append_char('{');
-        for (int32 i = 0; i < kList.size(); i = i + 1) {
-            if (i > 0) {
-                sb.append_char(',');
-                sb.append_char(' ');
-            }
-            Any k = kList.get(i);
-            Any v = vList.get(i);
-            if (k == null) {
-                sb.append_char('n');
-                sb.append_char('u');
-                sb.append_char('l');
-                sb.append_char('l');
-            } else {
-                sb.append(k.to_string());
-            }
-            sb.append_char(':');
-            sb.append_char(' ');
-            if (v == null) {
-                sb.append_char('n');
-                sb.append_char('u');
-                sb.append_char('l');
-                sb.append_char('l');
-            } else {
-                sb.append(v.to_string());
-            }
-        }
-        sb.append_char('}');
-        return sb.to_string();
+        return "[TreeMap]";
     }
 }
