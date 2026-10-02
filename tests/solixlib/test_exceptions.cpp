@@ -19,7 +19,7 @@ TEST_CASE("Standard Library - solix.exceptions", "[solixlib][exceptions]") {
             }
         )";
         assert_compile_sources_success(sources);
-        REQUIRE(run_sources(sources) == 0);
+        REQUIRE(run_solixlib_sources(sources) == 0);
     }
 
     SECTION("Case 1.2: Catching IllegalArgumentException via RuntimeException and Exception polymorphism") {
@@ -42,7 +42,7 @@ TEST_CASE("Standard Library - solix.exceptions", "[solixlib][exceptions]") {
             }
         )";
         assert_compile_sources_success(sources);
-        REQUIRE(run_sources(sources) == 0);
+        REQUIRE(run_solixlib_sources(sources) == 0);
     }
 
     SECTION("Case 1.3: IndexOutOfBoundsException with bounds metadata") {
@@ -66,7 +66,7 @@ TEST_CASE("Standard Library - solix.exceptions", "[solixlib][exceptions]") {
             }
         )";
         assert_compile_sources_success(sources);
-        REQUIRE(run_sources(sources) == 0);
+        REQUIRE(run_solixlib_sources(sources) == 0);
     }
 
     SECTION("Case 1.4: DivideByZeroException caught as ArithmeticException") {
@@ -89,7 +89,7 @@ TEST_CASE("Standard Library - solix.exceptions", "[solixlib][exceptions]") {
             }
         )";
         assert_compile_sources_success(sources);
-        REQUIRE(run_sources(sources) == 0);
+        REQUIRE(run_solixlib_sources(sources) == 0);
     }
 
     SECTION("Case 1.5: NullReferenceException instantiation and throwing") {
@@ -110,7 +110,7 @@ TEST_CASE("Standard Library - solix.exceptions", "[solixlib][exceptions]") {
             }
         )";
         assert_compile_sources_success(sources);
-        REQUIRE(run_sources(sources) == 0);
+        REQUIRE(run_solixlib_sources(sources) == 0);
     }
 
     SECTION("Case 1.6: InvalidOperationException on invalid state transitions") {
@@ -131,7 +131,7 @@ TEST_CASE("Standard Library - solix.exceptions", "[solixlib][exceptions]") {
             }
         )";
         assert_compile_sources_success(sources);
-        REQUIRE(run_sources(sources) == 0);
+        REQUIRE(run_solixlib_sources(sources) == 0);
     }
 
     SECTION("Case 1.7: FormatException on failed string conversion") {
@@ -152,7 +152,7 @@ TEST_CASE("Standard Library - solix.exceptions", "[solixlib][exceptions]") {
             }
         )";
         assert_compile_sources_success(sources);
-        REQUIRE(run_sources(sources) == 0);
+        REQUIRE(run_solixlib_sources(sources) == 0);
     }
 
     SECTION("Case 1.8: FileNotFoundException as specialization of IOException") {
@@ -173,7 +173,7 @@ TEST_CASE("Standard Library - solix.exceptions", "[solixlib][exceptions]") {
             }
         )";
         assert_compile_sources_success(sources);
-        REQUIRE(run_sources(sources) == 0);
+        REQUIRE(run_solixlib_sources(sources) == 0);
     }
 
     SECTION("Case 1.9: Exception Chaining via get_cause()") {
@@ -197,7 +197,7 @@ TEST_CASE("Standard Library - solix.exceptions", "[solixlib][exceptions]") {
             }
         )";
         assert_compile_sources_success(sources);
-        REQUIRE(run_sources(sources) == 0);
+        REQUIRE(run_solixlib_sources(sources) == 0);
     }
 
     SECTION("Case 1.10: ArgumentOutOfRangeException & ArgumentNullException parameter metadata") {
@@ -224,7 +224,7 @@ TEST_CASE("Standard Library - solix.exceptions", "[solixlib][exceptions]") {
             }
         )";
         assert_compile_sources_success(sources);
-        REQUIRE(run_sources(sources) == 0);
+        REQUIRE(run_solixlib_sources(sources) == 0);
     }
 
     SECTION("Case 1.11: SocketException with error code") {
@@ -246,7 +246,7 @@ TEST_CASE("Standard Library - solix.exceptions", "[solixlib][exceptions]") {
             }
         )";
         assert_compile_sources_success(sources);
-        REQUIRE(run_sources(sources) == 0);
+        REQUIRE(run_solixlib_sources(sources) == 0);
     }
 
     SECTION("Case 1.12: AssertionError instantiation and polymorphism") {
@@ -267,7 +267,7 @@ TEST_CASE("Standard Library - solix.exceptions", "[solixlib][exceptions]") {
             }
         )";
         assert_compile_sources_success(sources);
-        REQUIRE(run_sources(sources) == 0);
+        REQUIRE(run_solixlib_sources(sources) == 0);
     }
 
     SECTION("Case 1.13: Nested Try-Catch-Finally Unwinding Execution") {
@@ -302,6 +302,6 @@ TEST_CASE("Standard Library - solix.exceptions", "[solixlib][exceptions]") {
             }
         )";
         assert_compile_sources_success(sources);
-        REQUIRE(run_sources(sources) == 0);
+        REQUIRE(run_solixlib_sources(sources) == 0);
     }
 }

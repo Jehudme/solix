@@ -1,0 +1,13 @@
+package solix.collections;
+
+import solix.core.Any;
+
+public interface ISet extends ICollection {
+    bool add(Any item);
+    bool remove(Any item);
+    void union_with(ICollection other);
+    void intersect_with(ICollection other);
+    void difference_with(ICollection other);
+    bool is_subset_of(ICollection other);
+    bool is_superset_of(ICollection other);
+}
