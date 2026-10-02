@@ -28,7 +28,7 @@
 | **Phase 11** | CLI Commands Test Suite & Master Specification (`tests/commands/`) | `P1 High` | `tests`, `launcher`, `build` | - [x] Completed |
 | **Phase 12** | CLI Commands & Toolchain Documentation (`docs/spec/cli/`) | `P1 High` | `docs`, `launcher`, `guide` | - [x] Completed |
 | **Phase 13** | Project-Type Dependencies & Transitive SemVer Resolution | `P1 High` | `launcher`, `build`, `tests`, `docs` | - [x] Completed |
-| **Phase 14** | Direct Project Execution (`solix run` for Projects) | `P1 High` | `launcher`, `build`, `tests`, `docs` | - [ ] In Progress |
+| **Phase 14** | Direct Project Execution (`solix run` for Projects) | `P1 High` | `launcher`, `build`, `tests`, `docs` | - [x] Completed |
 
 ---
 
@@ -495,7 +495,7 @@ Enhance `solix build` to support project-type dependencies (`"type": "project"`)
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `launcher`, `build`, `tests`, `docs`
-- **Status**: - [ ] In Progress
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Extend `solix run` to directly run Solix projects (both uninstalled via directory paths and installed via package name and version from `$SOLIX_HOME`) while allowing user selection of the build profile (`--profile`), automatically building the target profile prior to execution and applying profile-specific runtime configurations (`heap_size`, `stack_size`, default arguments) unless overridden by CLI flags.
@@ -522,21 +522,21 @@ Extend `solix run` to directly run Solix projects (both uninstalled via director
   - `docs/guide/01_getting_started.md`: Update "Running Your Application (`solix run`)" section to demonstrate running local and installed projects directly by profile.
 
 ### Action Items
-- [ ] **1. Expose Reusable Project Builder Helper (`launcher/src/commands/build.hpp` & `build.cpp`)**:
+- [x] **1. Expose Reusable Project Builder Helper (`launcher/src/commands/build.hpp` & `build.cpp`)**:
   - Extract and expose `build_project(manifest_path, profile_name, out_binary_path)` returning status and the resulting executable artifact path.
-- [ ] **2. Upgrade `solix run` Subcommand (`launcher/src/commands/execute.cpp`)**:
+- [x] **2. Upgrade `solix run` Subcommand (`launcher/src/commands/execute.cpp`)**:
   - Add `--profile` (`-P`), `--package` (`-n`), `--version` (`-v`), and optional project path.
   - Distinguish between bytecode files, uninstalled project paths, and installed project packages.
   - Ingest `profiles.<profile>.runtime` settings from `solix.json` (`heap_size`, `stack_size`, `arguments`) with CLI flag overrides.
   - Build project before VM invocation and run compiled binary.
-- [ ] **3. Update Master Test Specification (`tests/commands/TESTS.md`)**:
+- [x] **3. Update Master Test Specification (`tests/commands/TESTS.md`)**:
   - Add Cases 2.9 through 2.21 tagged with `[NOT IMPLEMENTED]`.
-- [ ] **4. Implement Catch2 Unit Tests (`tests/commands/test_run_command.cpp`)**:
+- [x] **4. Implement Catch2 Unit Tests (`tests/commands/test_run_command.cpp`)**:
   - Implement positive and negative test cases.
   - Update tags in `tests/commands/TESTS.md` from `[NOT IMPLEMENTED]` to `[IMPLEMENTED]`.
-- [ ] **5. Update Documentation (`docs/spec/cli/run.md`, `docs/guide/01_getting_started.md`)**:
+- [x] **5. Update Documentation (`docs/spec/cli/run.md`, `docs/guide/01_getting_started.md`)**:
   - Document direct project execution and options.
-- [ ] **6. Full Regression Testing & Merge**:
+- [x] **6. Full Regression Testing & Merge**:
   - Run `ctest --test-dir build --output-on-failure`.
   - Non-fast-forward merge into `master`.
 
