@@ -1,5 +1,6 @@
 #include <catch2/catch_all.hpp>
 #include "cli_test_helper.hpp"
+#include "solix/native_registry.hpp"
 #include <nlohmann/json.hpp>
 
 using namespace solix::test;
@@ -244,5 +245,137 @@ static int32 main() {
 
         CHECK(res.exit_code != 0);
     }
+
+    SECTION("Case 2.22: Run Project with Native Auto-Discovery from lib/ Directory") {
+        const std::string native_code = R"(
+            public class NativeMath {
+                public static native int32 add(int32 a, int32 b);
+            }
+            static int32 main() {
+                return NativeMath.add(10, 20) == 30 ? 0 : 1;
+            }
+        )";
+        auto proj = create_runnable_project(sandbox, "proj_autodiscover_lib", "proj_autodiscover_lib",
+                                            "1.0.0", native_code);
+        auto lib_dir = proj / "lib";
+        std::filesystem::create_directories(lib_dir);
+
+        std::filesystem::path plugin_src(SOLIX_TEST_PLUGIN_PATH);
+        REQUIRE(std::filesystem::exists(plugin_src));
+        std::filesystem::copy_file(plugin_src, lib_dir / plugin_src.filename(),
+                                   std::filesystem::copy_options::overwrite_existing);
+
+        auto res = run_cli({"run", proj.string()});
+        CHECK(res.exit_code == 0);
+    }
+
+    SECTION("Case 2.23: Run Bytecode Binary with Co-located Native Library Auto-Discovery") {
+        const std::string native_code = R"(
+            public class NativeMath {
+                public static native int32 add(int32 a, int32 b);
+            }
+            static int32 main() {
+                return NativeMath.add(15, 27) == 42 ? 0 : 1;
+            }
+        )";
+        auto sub_dir = sandbox.path() / "colocated_test";
+        std::filesystem::create_directories(sub_dir);
+        auto src = sub_dir / "app.slx";
+        {
+            std::ofstream sf(src);
+            sf << native_code;
+        }
+        auto bc = sub_dir / "app.slxbin";
+        auto comp_res = run_cli({"compile", src.string(), "-o", bc.string()});
+        REQUIRE(comp_res.exit_code == 0);
+
+        std::filesystem::path plugin_src(SOLIX_TEST_PLUGIN_PATH);
+        REQUIRE(std::filesystem::exists(plugin_src));
+        std::filesystem::copy_file(plugin_src, sub_dir / plugin_src.filename(),
+                                   std::filesystem::copy_options::overwrite_existing);
+
+        auto res = run_cli({"run", bc.string()});
+        CHECK(res.exit_code == 0);
+    }
+
+    SECTION("Case 2.24: Run Project with Explicit native_libraries in Manifest") {
+        const std::string native_code = R"(
+            public class NativeMath {
+                public static native int32 add(int32 a, int32 b);
+            }
+            static int32 main() {
+                return NativeMath.add(100, 200) == 300 ? 0 : 1;
+            }
+        )";
+        auto proj = create_runnable_project(sandbox, "proj_manifest_native", "proj_manifest_native",
+                                            "1.0.0", native_code);
+        // Update manifest to add root native_libraries
+        auto mf_path = proj / "solix.json";
+        nlohmann::json manifest;
+        {
+            std::ifstream in(mf_path);
+            in >> manifest;
+        }
+        manifest["native_libraries"] = nlohmann::json::array({SOLIX_TEST_PLUGIN_PATH});
+        {
+            std::ofstream out(mf_path);
+            out << manifest.dump(2);
+        }
+
+        auto res = run_cli({"run", proj.string()});
+        CHECK(res.exit_code == 0);
+    }
+
+    SECTION("Case 2.25: Run Bytecode with Explicit CLI --native-lib / -L Flag") {
+        const std::string native_code = R"(
+            public class NativeMath {
+                public static native int32 add(int32 a, int32 b);
+            }
+            static int32 main() {
+                return NativeMath.add(7, 8) == 15 ? 0 : 1;
+            }
+        )";
+        auto isolated_dir = sandbox.path() / "isolated_bin";
+        std::filesystem::create_directories(isolated_dir);
+        auto src = isolated_dir / "app.slx";
+        {
+            std::ofstream sf(src);
+            sf << native_code;
+        }
+        auto bc = isolated_dir / "app.slxbin";
+        auto comp_res = run_cli({"compile", src.string(), "-o", bc.string()});
+        REQUIRE(comp_res.exit_code == 0);
+
+        auto res = run_cli({"run", bc.string(), "-L", SOLIX_TEST_PLUGIN_PATH});
+        CHECK(res.exit_code == 0);
+    }
+
+    SECTION("Negative - Case 2.26: Run Binary Requiring Native Library Without Providing It") {
+        solix::NativeRegistry::global().clear();
+        const std::string native_code = R"(
+            public class MissingNative {
+                public static native int32 non_existent(int32 a, int32 b);
+            }
+            static int32 main() {
+                return MissingNative.non_existent(1, 2);
+            }
+        )";
+        auto isolated_dir = sandbox.path() / "isolated_no_native";
+        std::filesystem::create_directories(isolated_dir);
+        auto src = isolated_dir / "app.slx";
+        {
+            std::ofstream sf(src);
+            sf << native_code;
+        }
+        auto bc = isolated_dir / "app.slxbin";
+        auto comp_res = run_cli({"compile", src.string(), "-o", bc.string()});
+        REQUIRE(comp_res.exit_code == 0);
+
+        // Run without -L and without co-located library
+        auto res = run_cli({"run", bc.string()});
+        CHECK(res.exit_code != 0);
+        CHECK(res.err.find("Call to unknown native function") != std::string::npos);
+    }
 }
+
 
