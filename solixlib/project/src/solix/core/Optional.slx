@@ -38,6 +38,21 @@ public class Optional<T> implements IStringable {
         return fallback;
     }
 
+    public void if_present(void(*)(T) consumer) {
+        if (this._has_value) {
+            consumer(this._value);
+        }
+    }
+
+    public Optional<T> filter(bool(*)(T) predicate) {
+        if (this._has_value) {
+            if (predicate(this._value)) {
+                return this;
+            }
+        }
+        return new Optional<T>();
+    }
+
     public String to_string() {
         if (!this._has_value) {
             return new String("Optional.empty");
