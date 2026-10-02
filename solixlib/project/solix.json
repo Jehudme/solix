@@ -216,6 +216,30 @@
     {
       "type": "source",
       "path": "src/solix/collections/Algorithms.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/KeyValuePair.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/IMap.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/HashMapEntry.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/HashMap.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/TreeMapNode.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/TreeMap.slx"
     }
   ],
   "profiles": {

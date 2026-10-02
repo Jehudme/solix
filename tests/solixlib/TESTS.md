@@ -118,4 +118,17 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 8.6 [IMPLEMENTED]**: Negative: `List` invalid negative capacity and out-of-bounds index access throw `IllegalArgumentException` and `IndexOutOfBoundsException` (`tests/solixlib/test_list.cpp`).
 - [x] **Case 8.7 [IMPLEMENTED]**: Negative: `LinkedList` empty deque operations throw `NoSuchElementException` and out-of-bounds indexing throws `IndexOutOfBoundsException` (`tests/solixlib/test_list.cpp`).
 
+---
+
+## 9. Maps & Associative Dictionaries (`solix.collections.Map`, `HashMap`, `TreeMap`, `KeyValuePair`)
+
+- [x] **Case 9.1 [IMPLEMENTED]**: `HashMap` insertion, retrieval (`get`, `get_or_default`), updating existing keys, key and value membership (`contains_key`, `contains_value`), and removal (`tests/solixlib/test_map.cpp`).
+- [x] **Case 9.2 [IMPLEMENTED]**: `HashMap` automatic load-factor rehashing across multi-key insertions verifying data preservation (`tests/solixlib/test_map.cpp`).
+- [x] **Case 9.3 [IMPLEMENTED]**: `HashMap` view collections (`keys()`, `values()`, `entries()`) and formatted dictionary string conversion (`{k: v}`) (`tests/solixlib/test_map.cpp`).
+- [x] **Case 9.4 [IMPLEMENTED]**: `TreeMap` ordered insertion, boundary lookups (`first_key()`, `last_key()`), and in-order sorted key traversal (`tests/solixlib/test_map.cpp`).
+- [x] **Case 9.5 [IMPLEMENTED]**: `TreeMap` node removal (leaf, internal, root), dictionary clearing, and membership queries (`tests/solixlib/test_map.cpp`).
+- [x] **Case 9.6 [IMPLEMENTED]**: Negative: `HashMap.get()` with missing key throws `KeyNotFoundException` (`tests/solixlib/test_map.cpp`).
+- [x] **Case 9.7 [IMPLEMENTED]**: Negative: `TreeMap.get()` with missing key throws `KeyNotFoundException` and `first_key()` on empty map throws `NoSuchElementException` (`tests/solixlib/test_map.cpp`).
+
+
 
