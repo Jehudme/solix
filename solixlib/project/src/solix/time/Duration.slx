@@ -1,0 +1,87 @@
+package solix.time;
+
+import solix.core.IStringable;
+import solix.core.String;
+
+public class Duration implements IStringable {
+    private int64 _nanoseconds;
+
+    public Duration(int64 nanos) {
+        this._nanoseconds = nanos;
+    }
+
+    public int64 to_nanoseconds() {
+        return this._nanoseconds;
+    }
+
+    public int64 to_milliseconds() {
+        return this._nanoseconds / 1000000L;
+    }
+
+    public int64 to_seconds() {
+        return this._nanoseconds / 1000000000L;
+    }
+
+    public int64 to_minutes() {
+        return this.to_seconds() / 60L;
+    }
+
+    public int64 to_hours() {
+        return this.to_minutes() / 60L;
+    }
+
+    public int64 to_days() {
+        return this.to_hours() / 24L;
+    }
+
+    public Duration add(Duration other) {
+        if (other == null) return this;
+        return new Duration(this._nanoseconds + other._nanoseconds);
+    }
+
+    public Duration subtract(Duration other) {
+        if (other == null) return this;
+        return new Duration(this._nanoseconds - other._nanoseconds);
+    }
+
+    public bool equals(Duration other) {
+        if (other == null) return false;
+        return this._nanoseconds == other._nanoseconds;
+    }
+
+    public int32 compare_to(Duration other) {
+        if (other == null) return 1;
+        if (this._nanoseconds < other._nanoseconds) return -1;
+        if (this._nanoseconds > other._nanoseconds) return 1;
+        return 0;
+    }
+
+    public String to_string() {
+        int64 ms = this.to_milliseconds();
+        return String.from_int(ms).concat(new String("ms"));
+    }
+
+    public static Duration from_nanoseconds(int64 ns) {
+        return new Duration(ns);
+    }
+
+    public static Duration from_milliseconds(int64 ms) {
+        return new Duration(ms * 1000000L);
+    }
+
+    public static Duration from_seconds(int64 s) {
+        return new Duration(s * 1000000000L);
+    }
+
+    public static Duration from_minutes(int64 m) {
+        return from_seconds(m * 60L);
+    }
+
+    public static Duration from_hours(int64 h) {
+        return from_minutes(h * 60L);
+    }
+
+    public static Duration from_days(int64 d) {
+        return from_hours(d * 24L);
+    }
+}

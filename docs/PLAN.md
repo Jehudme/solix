@@ -41,7 +41,7 @@
 | **Phase 23** | Standard Library: `solix.core.String` & `StringBuilder` (`IStringable` Contract) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
 | **Phase 24** | Standard Library: `solix.core.Primitives` & Types (`Optional<T>`, `Any`, Contracts) | `P1 High` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 25** | Standard Library: `solix.math.Math` & Numeric Algorithms (`Random`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
-| **Phase 26** | Standard Library: `solix.time.Chrono` (`Duration`, `Instant`, `DateTime`, `Stopwatch`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
+| **Phase 26** | Standard Library: `solix.time.Chrono` (`Duration`, `Instant`, `DateTime`, `Stopwatch`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
 | **Phase 27** | Standard Library: `solix.collections.Core` (Interfaces, `IIterable`, `ICollection`, `to_string`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
 | **Phase 28** | Standard Library: `solix.collections.List` (`List<T>` Array & `LinkedList<T>`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
 | **Phase 29** | Standard Library: `solix.collections.Map` (`HashMap<K, V>` & `TreeMap<K, V>`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
@@ -1270,7 +1270,7 @@ Provide comprehensive mathematical constants, transcendental functions, geometri
 
 - **Priority**: `P2 Medium`
 - **Affected Modules**: `solixlib/project/src/solix/time/Duration.slx`, `Instant.slx`, `DateTime.slx`, `Stopwatch.slx`, `solixlib/native/src/time.cpp`, `tests/solixlib/test_time.cpp`, `docs/spec/solixlib/time.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Complete
 
 ### Objective
 Provide high-resolution time measurements, date-time representations with timezone/UTC support, elapsed durations, and benchmarking timers using standard C++20 `<chrono>`.
@@ -1305,11 +1305,11 @@ Provide high-resolution time measurements, date-time representations with timezo
   - `docs/spec/solixlib/time.md`: Monotonic guarantees, epoch definitions, and ISO 8601 syntax.
 
 ### Action Items
-- [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Implement `solixlib/native/src/time.cpp` wrapping C++20 `<chrono>`.
-- [ ] Author `Duration.slx`, `Instant.slx`, `DateTime.slx`, `Stopwatch.slx`.
-- [ ] Implement Catch2 test suite `tests/solixlib/test_time.cpp`.
-- [ ] Author `docs/spec/solixlib/time.md`.
+- [x] Define test specification in `tests/solixlib/TESTS.md`.
+- [x] Implement `solixlib/native/src/time.cpp` wrapping C++20 `<chrono>`.
+- [x] Author `Duration.slx`, `Instant.slx`, `DateTime.slx`, `Stopwatch.slx`.
+- [x] Implement Catch2 test suite `tests/solixlib/test_time.cpp`.
+- [x] Author `docs/spec/solixlib/time.md`.
 
 ---
 

@@ -84,5 +84,13 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 5.4 [IMPLEMENTED]**: PRNG determinism with seed and distribution across integer ranges, floats, and booleans (`tests/solixlib/test_math.cpp`).
 - [x] **Case 5.5 [IMPLEMENTED]**: Negative: Random bounds validation throws `IllegalArgumentException` on invalid/negative bounds or inverted ranges (`tests/solixlib/test_math.cpp`).
 
+---
 
+## 6. Chrono & Time (`solix.time.Duration`, `Instant`, `DateTime`, `Stopwatch`)
 
+- [x] **Case 6.1 [IMPLEMENTED]**: `Duration` creation (`nanos`, `micros`, `millis`, `seconds`, `minutes`, `hours`, `days`), conversions, arithmetic (`plus`, `minus`), comparisons, and formatting (`tests/solixlib/test_time.cpp`).
+- [x] **Case 6.2 [IMPLEMENTED]**: `Instant` monotonic timestamps, ordering (`is_before`, `is_after`), duration differences (`duration_until`), and offset adjustments (`tests/solixlib/test_time.cpp`).
+- [x] **Case 6.3 [IMPLEMENTED]**: `DateTime` UTC & Local component decomposition (year, month, day, hour, minute, second, day-of-week, day-of-year), leap year validation, and ISO 8601 formatting (`tests/solixlib/test_time.cpp`).
+- [x] **Case 6.4 [IMPLEMENTED]**: `Stopwatch` lifecycle (start, stop, reset, restart, elapsed duration querying) (`tests/solixlib/test_time.cpp`).
+- [x] **Case 6.5 [IMPLEMENTED]**: Sleep duration validation via native sleep binding (`tests/solixlib/test_time.cpp`).
+- [x] **Case 6.6 [IMPLEMENTED]**: Negative: invalid `DateTime` date bounds validation throws `IllegalArgumentException` (`tests/solixlib/test_time.cpp`).

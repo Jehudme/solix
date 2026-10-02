@@ -4,7 +4,9 @@ add_library(solixlib_native SHARED
     src/string.cpp
     src/primitives.cpp
     src/math.cpp
+    src/time.cpp
 )
+
 
 
 

@@ -1,0 +1,92 @@
+package solix.time;
+
+import solix.core.IStringable;
+import solix.core.String;
+
+public class DateTime implements IStringable {
+    private int64 _epoch_millis;
+    private int32 _year;
+    private int32 _month;
+    private int32 _day;
+    private int32 _hour;
+    private int32 _minute;
+    private int32 _second;
+    private int32 _millisecond;
+    private bool _is_utc;
+
+    public DateTime(int64 epoch_ms, bool is_utc) {
+        this._epoch_millis = epoch_ms;
+        this._is_utc = is_utc;
+
+        int64[] parts = new int64[7];
+        if (is_utc) {
+            native_utc_parts(epoch_ms, parts);
+        } else {
+            native_local_parts(epoch_ms, parts);
+        }
+
+        this._year = (int32)parts[0];
+        this._month = (int32)parts[1];
+        this._day = (int32)parts[2];
+        this._hour = (int32)parts[3];
+        this._minute = (int32)parts[4];
+        this._second = (int32)parts[5];
+        this._millisecond = (int32)parts[6];
+    }
+
+    public static DateTime now() {
+        int64 ms = native_system_millis();
+        return new DateTime(ms, false);
+    }
+
+    public static DateTime utc_now() {
+        int64 ms = native_system_millis();
+        return new DateTime(ms, true);
+    }
+
+    public static DateTime from_epoch_millis(int64 ms, bool is_utc) {
+        return new DateTime(ms, is_utc);
+    }
+
+    public int32 year() { return this._year; }
+    public int32 month() { return this._month; }
+    public int32 day() { return this._day; }
+    public int32 hour() { return this._hour; }
+    public int32 minute() { return this._minute; }
+    public int32 second() { return this._second; }
+    public int32 millisecond() { return this._millisecond; }
+    public int64 to_epoch_millis() { return this._epoch_millis; }
+    public bool is_utc() { return this._is_utc; }
+
+    public static bool is_leap_year(int32 yr) {
+        if ((yr % 4 == 0 && yr % 100 != 0) || (yr % 400 == 0)) {
+            return true;
+        }
+        return false;
+    }
+
+    public String to_iso8601() {
+        return new String(native_iso8601(this._epoch_millis));
+    }
+
+    public String to_string() {
+        return this.to_iso8601();
+    }
+
+    public bool equals(DateTime other) {
+        if (other == null) return false;
+        return this._epoch_millis == other._epoch_millis;
+    }
+
+    public int32 compare_to(DateTime other) {
+        if (other == null) return 1;
+        if (this._epoch_millis < other._epoch_millis) return -1;
+        if (this._epoch_millis > other._epoch_millis) return 1;
+        return 0;
+    }
+
+    private static native int64 native_system_millis();
+    private static native int32 native_utc_parts(int64 epoch_ms, int64[] out_parts);
+    private static native int32 native_local_parts(int64 epoch_ms, int64[] out_parts);
+    private static native char[] native_iso8601(int64 epoch_ms);
+}
