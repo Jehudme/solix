@@ -5,8 +5,58 @@
 #include <fstream>
 #include <sstream>
 #include <filesystem>
+#include <algorithm>
 
 namespace solix::cli {
+
+    CompilationOptions::LogLevel map_log_level(const std::string& s) {
+        std::string upper = s;
+        for (auto& c : upper) c = std::toupper(static_cast<unsigned char>(c));
+        if (upper == "TRACE") return CompilationOptions::LogLevel::TRACE;
+        if (upper == "DEBUG") return CompilationOptions::LogLevel::DEBUG;
+        if (upper == "INFO") return CompilationOptions::LogLevel::INFO;
+        if (upper == "WARN" || upper == "WARNING") return CompilationOptions::LogLevel::WARN;
+        if (upper == "ERR" || upper == "ERROR") return CompilationOptions::LogLevel::ERR;
+        if (upper == "CRITICAL") return CompilationOptions::LogLevel::CRITICAL;
+        return CompilationOptions::LogLevel::OFF;
+    }
+
+    CompilationOptions::LogSinkType map_log_sink_type(const std::string& s) {
+        std::string upper = s;
+        for (auto& c : upper) c = std::toupper(static_cast<unsigned char>(c));
+        if (upper == "STDOUT") return CompilationOptions::LogSinkType::STDOUT;
+        if (upper == "STDERR") return CompilationOptions::LogSinkType::STDERR;
+        if (upper == "BASIC_FILE") return CompilationOptions::LogSinkType::BASIC_FILE;
+        if (upper == "CONSOLE_AND_FILE") return CompilationOptions::LogSinkType::CONSOLE_AND_FILE;
+        return CompilationOptions::LogSinkType::STDOUT;
+    }
+
+    int execute_compilation_and_write(CompilationOptions& opts, const std::filesystem::path& out_path) {
+        try {
+            std::vector<uint8_t> bytecode = solix::run(opts);
+            
+            std::filesystem::path parent = out_path.parent_path();
+            if (!parent.empty() && !std::filesystem::exists(parent)) {
+                std::filesystem::create_directories(parent);
+            }
+
+            std::ofstream out_file(out_path, std::ios::binary);
+            if (!out_file) {
+                std::cerr << "Error: Could not open output file " << out_path.string() << std::endl;
+                return 1;
+            }
+            out_file.write(reinterpret_cast<const char*>(bytecode.data()), bytecode.size());
+            std::cout << "Successfully compiled to " << out_path.string() << std::endl;
+            return 0;
+            
+        } catch (const std::exception& e) {
+            std::error_code ec;
+            std::filesystem::remove(out_path, ec);
+            std::cerr << "Compilation failed: " << e.what() << std::endl;
+            return 1;
+        }
+    }
+
     void setup_compile_command(CLI::App& app) {
         auto* compile_cmd = app.add_subcommand("compile", "Compile Solix source code to bytecode");
         
@@ -37,24 +87,9 @@ namespace solix::cli {
         compile_cmd->add_option("--flush-every", *flush_every, "Flush logs every N seconds");
 
         compile_cmd->callback([opts, files, output, asm_output, log_level_str, flush_level_str, sink_type_str, log_file_path, flush_every]() {
-            // Map log levels
-            auto map_level = [](const std::string& s) {
-                if (s == "TRACE") return CompilationOptions::LogLevel::TRACE;
-                if (s == "DEBUG") return CompilationOptions::LogLevel::DEBUG;
-                if (s == "INFO") return CompilationOptions::LogLevel::INFO;
-                if (s == "WARN") return CompilationOptions::LogLevel::WARN;
-                if (s == "ERR") return CompilationOptions::LogLevel::ERR;
-                if (s == "CRITICAL") return CompilationOptions::LogLevel::CRITICAL;
-                return CompilationOptions::LogLevel::OFF;
-            };
-            
-            opts->log_level = map_level(*log_level_str);
-            opts->flush_level = map_level(*flush_level_str);
-            
-            if (*sink_type_str == "STDOUT") opts->sink_type = CompilationOptions::LogSinkType::STDOUT;
-            else if (*sink_type_str == "STDERR") opts->sink_type = CompilationOptions::LogSinkType::STDERR;
-            else if (*sink_type_str == "BASIC_FILE") opts->sink_type = CompilationOptions::LogSinkType::BASIC_FILE;
-            else if (*sink_type_str == "CONSOLE_AND_FILE") opts->sink_type = CompilationOptions::LogSinkType::CONSOLE_AND_FILE;
+            opts->log_level = map_log_level(*log_level_str);
+            opts->flush_level = map_log_level(*flush_level_str);
+            opts->sink_type = map_log_sink_type(*sink_type_str);
             
             if (!log_file_path->empty()) opts->log_file_path = std::filesystem::path(*log_file_path).lexically_normal();
             if (!asm_output->empty()) opts->assembly_output_path = std::filesystem::path(*asm_output).lexically_normal();
@@ -78,22 +113,9 @@ namespace solix::cli {
                 opts->sources[file_path.string()] = buffer.str();
             }
             
-            try {
-                std::vector<uint8_t> bytecode = solix::run(*opts);
-                
-                std::ofstream out_file(out_path, std::ios::binary);
-                if (!out_file) {
-                    std::cerr << "Error: Could not open output file " << out_path << std::endl;
-                    exit(1);
-                }
-                out_file.write(reinterpret_cast<const char*>(bytecode.data()), bytecode.size());
-                std::cout << "Successfully compiled to " << out_path.string() << std::endl;
-                
-            } catch (const std::exception& e) {
-                std::error_code ec;
-                std::filesystem::remove(out_path, ec);
-                std::cerr << "Compilation failed: " << e.what() << std::endl;
-                exit(1);
+            int exit_code = execute_compilation_and_write(*opts, out_path);
+            if (exit_code != 0) {
+                std::exit(exit_code);
             }
         });
     }

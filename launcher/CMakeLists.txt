@@ -6,14 +6,27 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(CLI11)
 
+# Fetch nlohmann_json
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG        v3.11.3
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
 add_executable(solix
     src/main.cpp
     src/commands/compile.cpp
     src/commands/execute.cpp
-    src/commands/install.cpp
+    src/commands/build.cpp
 )
 
-target_link_libraries(solix PRIVATE solix_language CLI11::CLI11)
+target_link_libraries(solix PRIVATE solix_language CLI11::CLI11 nlohmann_json::nlohmann_json)
+
+target_include_directories(solix PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/commands
+)
 
 
 # Provide backward-compatible binary link/alias for solix_launcher
