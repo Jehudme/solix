@@ -112,6 +112,81 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
         CHECK(res2.err.find("--force") != std::string::npos);
     }
 
+    SECTION("Positive - Case 5.7 & 5.8: Install Solix Standard Library Project (stdlib) with Native Companion") {
+        std::filesystem::path stdlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "stdlib";
+        REQUIRE(std::filesystem::exists(stdlib_path / "solix.json"));
+
+        std::string expected_id = PackageManager::compute_project_id("solix.stdlib", "0.1.0");
+
+        auto res = run_cli({"install", stdlib_path.string()}, solix_home.path());
+        CHECK(res.exit_code == 0);
+        CHECK(res.out.find("Successfully installed project") != std::string::npos);
+        CHECK(res.out.find(expected_id) != std::string::npos);
+
+        // Verify installed directory and native companion lib/
+        auto installed_dir = solix_home.path() / "installed" / expected_id;
+        CHECK(std::filesystem::exists(installed_dir / "solix.json"));
+        CHECK(std::filesystem::exists(installed_dir / "lib"));
+
+        // Verify list shows solix.stdlib
+        auto list_res = run_cli({"list"}, solix_home.path());
+        CHECK(list_res.exit_code == 0);
+        CHECK(list_res.out.find("solix.stdlib") != std::string::npos);
+        CHECK(list_res.out.find("0.1.0") != std::string::npos);
+    }
+
+    SECTION("Positive - Case 5.9: Consumer Project Builds and Runs with Installed Standard Library") {
+        std::filesystem::path stdlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "stdlib";
+        REQUIRE(std::filesystem::exists(stdlib_path / "solix.json"));
+
+        // Install stdlib
+        auto inst_res = run_cli({"install", stdlib_path.string()}, solix_home.path());
+        REQUIRE(inst_res.exit_code == 0);
+
+        // Create consumer project referencing solix.stdlib
+        auto consumer_dir = proj_workspace.path() / "consumer_app";
+        std::filesystem::create_directories(consumer_dir / "src");
+
+        nlohmann::json manifest;
+        manifest["project"] = "consumer_app";
+        manifest["version"] = "1.0.0";
+        manifest["dependencies"] = nlohmann::json::array({
+            {{"type", "source"}, {"path", "src/main.slx"}},
+            {{"type", "project"}, {"name", "solix.stdlib"}, {"version", "0.1.0"}}
+        });
+        manifest["profiles"]["debug"]["output_directory"] = "build/debug";
+        manifest["profiles"]["debug"]["exe_filename"] = "out.slxbin";
+        manifest["profiles"]["debug"]["compilation"]["entry_point"] = "main";
+        manifest["profiles"]["debug"]["compilation"]["multithreaded"] = false;
+
+        std::ofstream mf(consumer_dir / "solix.json");
+        mf << manifest.dump(2);
+        mf.close();
+
+        std::ofstream sf(consumer_dir / "src/main.slx");
+        sf << "import solix.core.Internal;\n"
+           << "static int32 main() {\n"
+           << "    return Internal.version() == 1 ? 0 : 1;\n"
+           << "}\n";
+        sf.close();
+
+        auto run_res = run_cli({"run", consumer_dir.string()}, solix_home.path());
+        CHECK(run_res.exit_code == 0);
+    }
+
+    SECTION("Negative - Case 5.10: Reinstall Standard Library Without Force Flag Fails") {
+        std::filesystem::path stdlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "stdlib";
+        REQUIRE(std::filesystem::exists(stdlib_path / "solix.json"));
+
+        auto res1 = run_cli({"install", stdlib_path.string()}, solix_home.path());
+        REQUIRE(res1.exit_code == 0);
+
+        auto res2 = run_cli({"install", stdlib_path.string()}, solix_home.path());
+        CHECK(res2.exit_code != 0);
+        CHECK(res2.err.find("already installed") != std::string::npos);
+        CHECK(res2.err.find("--force") != std::string::npos);
+    }
+
     SECTION("Positive - Case 6.1: Uninstall Successfully Removes Project and Directory") {
         auto proj = create_test_project(proj_workspace, "pkg_uninst", "del_pkg", "1.0.0");
         std::string id = PackageManager::compute_project_id("del_pkg", "1.0.0");

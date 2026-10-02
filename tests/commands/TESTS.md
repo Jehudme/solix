@@ -393,18 +393,18 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Project already installed.
 - **Expected**: Exits 0; updates existing installation and timestamp in registry.
 
-#### Case 5.7: Install Solix Standard Library Project (stdlib) [NOT IMPLEMENTED]
+#### Case 5.7: Install Solix Standard Library Project (stdlib) [IMPLEMENTED]
 - **Command**: `solix install stdlib`
 - **Setup**: `stdlib` project directory containing valid `solix.json` (`solix.stdlib` v0.1.0) and compiled native shared library `solix_stdlib_native` in `lib/`.
 - **Expected**: Exits 0; installs into `$SOLIX_HOME/installed/<hash_id>/`; lists project as `solix.stdlib` version 0.1.0 in registry.
 
-#### Case 5.8: Verify Installed Standard Library Contains Native lib Directory [NOT IMPLEMENTED]
+#### Case 5.8: Verify Installed Standard Library Contains Native lib Directory [IMPLEMENTED]
 - **Setup**: `solix.stdlib` installed via `solix install stdlib`.
 - **Expected**: The target folder `$SOLIX_HOME/installed/<hash_id>/lib/` exists and contains `solix_stdlib_native` shared library.
 
-#### Case 5.9: Consumer Project Builds and Runs with Installed Standard Library [NOT IMPLEMENTED]
+#### Case 5.9: Consumer Project Builds and Runs with Installed Standard Library [IMPLEMENTED]
 - **Command**: `solix run my_consumer_proj`
-- **Setup**: Consumer project with dependency `[{"name": "solix.stdlib", "version": "0.1.0"}]` in `solix.json`.
+- **Setup**: Consumer project with dependency `[{"type": "project", "name": "solix.stdlib", "version": "0.1.0"}]` in `solix.json`.
 - **Expected**: Exits 0; resolves `solix.stdlib` from `$SOLIX_HOME`, builds and runs successfully.
 
 ### Negative Test Scenarios
@@ -423,7 +423,7 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Project already installed.
 - **Expected**: Exits non-zero; error message stating project is already installed and recommending `--force`.
 
-#### Case 5.10: Reinstall Standard Library Without Force Flag Fails [NOT IMPLEMENTED]
+#### Case 5.10: Reinstall Standard Library Without Force Flag Fails [IMPLEMENTED]
 - **Command**: `solix install stdlib`
 - **Setup**: `solix.stdlib` already installed in `$SOLIX_HOME`.
 - **Expected**: Exits non-zero (exit code 1); error message indicating `solix.stdlib` version 0.1.0 is already installed and recommending `--force`.
