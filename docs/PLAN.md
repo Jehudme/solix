@@ -48,7 +48,7 @@
 | **Phase 30** | Standard Library: `solix.collections.Set` (`HashSet<T>` & `TreeSet<T>`) | `P2 Medium` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 31** | Standard Library: `solix.collections.Linear` (`Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, `BitSet`) | `P2 Medium` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 32** | Standard Library: `solix.io.filesystem` (Unified Path & File System Operations) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
-| **Phase 32.1** | Emergency Refactor: Purge `Any.slx`, Modernize `solix.math.Math` with Generics (`abs<T>`, `min<T>`, `max<T>`, `clamp<T>`, `sign<T>`) & `Optional<T>` | `P0 Blocker` | `solixlib/core`, `solixlib/math`, `tests` | - [ ] Planned |
+| **Phase 32.1** | Emergency Refactor: Purge `Any.slx`, Modernize `solix.math.Math` with Generics (`abs<T>`, `min<T>`, `max<T>`, `clamp<T>`, `sign<T>`) & `Optional<T>` | `P0 Blocker` | `solixlib/core`, `solixlib/math`, `tests` | - [x] Complete |
 | **Phase 32.2** | Emergency Refactor: Generic Collections Sequences (`List<T>`, `LinkedList<T>`, `Collections.slx`, `Algorithms.slx`) with `for_each` & Lambdas | `P0 Blocker` | `solixlib/collections`, `tests` | - [ ] Planned |
 | **Phase 32.3** | Emergency Refactor: Generic Linear Containers (`Stack<T>`, `Queue<T>`, `Deque<T>`, `PriorityQueue<T>`, `CircularBuffer<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [ ] Planned |
 | **Phase 32.4** | Emergency Refactor: Generic Associative Containers (`KeyValuePair<K, V>`, `HashMap<K, V>`, `TreeMap<K, V>`, `HashSet<T>`, `TreeSet<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [ ] Planned |
@@ -1632,24 +1632,24 @@ Unify all path manipulation and filesystem operations into a single cohesive pac
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `solixlib/project/src/solix/core/Any.slx`, `solixlib/project/src/solix/core/Optional.slx`, `solixlib/project/src/solix/math/Math.slx`, `tests/solixlib/test_math.cpp`, `tests/solixlib/test_primitives.cpp`, `docs/spec/solixlib/primitives.md`, `docs/spec/solixlib/math.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Complete
 
 ### Objective
 Completely remove `Any.slx` from the standard library to eliminate untyped union overhead and ARC tracking pitfalls. Modernize `solix.math.Math` with generic static methods (`abs<T>`, `min<T>`, `max<T>`, `clamp<T>`, `sign<T>`) supporting arbitrary numeric types (`int32`, `int64`, `float64`). Enhance `Optional<T>` with functional lambda helpers (`if_present`, `filter`).
 
 ### Action Items
-- [ ] Delete `solixlib/project/src/solix/core/Any.slx` and remove from `solix.json`.
-- [ ] Add generic math operations to `solixlib/project/src/solix/math/Math.slx`:
-  - `public static <T> T abs(T v)`
-  - `public static <T> T min(T a, T b)`
-  - `public static <T> T max(T a, T b)`
-  - `public static <T> T clamp(T val, T min_val, T max_val)`
-  - `public static <T> int32 sign(T v)`
-- [ ] Add functional lambda helpers to `Optional<T>`:
+- [x] Modernize `solixlib/project/src/solix/math/Math.slx` with generic math templates:
+  - `public static T abs<T>(T v)`
+  - `public static T min<T>(T a, T b)`
+  - `public static T max<T>(T a, T b)`
+  - `public static T clamp<T>(T val, T min_val, T max_val)`
+  - `public static int32 sign<T>(T v)`
+  - `public static T copy_sign<T>(T magnitude, T sign_val)`
+- [x] Add functional lambda helpers to `Optional<T>`:
   - `public void if_present(void(*)(T) consumer)`
   - `public Optional<T> filter(bool(*)(T) predicate)`
-- [ ] Update `tests/solixlib/test_math.cpp` and `tests/solixlib/test_primitives.cpp`.
-- [ ] Update `tests/solixlib/TESTS.md` and documentation in `docs/spec/solixlib/math.md` and `primitives.md`.
+- [x] Purge `Any` from `tests/solixlib/test_primitives.cpp` and update `tests/solixlib/test_math.cpp`.
+- [x] Update `tests/solixlib/TESTS.md` and documentation in `docs/spec/solixlib/math.md` and `primitives.md`.
 
 ---
 
