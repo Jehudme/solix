@@ -29,7 +29,11 @@
 | **Phase 12** | CLI Commands & Toolchain Documentation (`docs/spec/cli/`) | `P1 High` | `docs`, `launcher`, `guide` | - [x] Completed |
 | **Phase 13** | Project-Type Dependencies & Transitive SemVer Resolution | `P1 High` | `launcher`, `build`, `tests`, `docs` | - [x] Completed |
 | **Phase 14** | Direct Project Execution (`solix run` for Projects) | `P1 High` | `launcher`, `build`, `tests`, `docs` | - [x] Completed |
-| **Phase 15** | Functions, Lambdas & Generics Documentation and Test Hardening | `P1 High` | `docs`, `tests`, `language` | - [ ] In Progress |
+| **Phase 15** | Functions, Lambdas & Generics Documentation and Test Hardening | `P1 High` | `docs`, `tests`, `language` | - [x] Completed |
+| **Phase 16** | Windows CI and Cross-Platform Test Stabilization | `P0 Blocker` | `runtime`, `build`, `ci` | - [x] Completed |
+| **Phase 17** | Runtime Core & Dynamic Shared Library Loader | `P1 High` | `language`, `tests`, `docs` | - [x] Completed |
+| **Phase 18** | CLI Auto-Discovery, Manifest Integration & Developer Guide | `P1 High` | `launcher`, `tests`, `docs` | - [x] Completed |
+| **Phase 19** | GitHub Actions CI Verification & Multi-Platform Validation | `P0 Blocker` | `ci`, `runtime` | - [ ] In Progress |
 
 ---
 
@@ -710,8 +714,8 @@ Implement the low-level C-ABI native interface and dynamic library loader in the
 ## Phase 18: CLI Auto-Discovery, Manifest Integration & Developer Guide
 
 - **Priority**: `P1 High`
-- **Affected Modules**: `launcher` (`execute.cpp`, `build.hpp/cpp`), `tests` (`tests/commands/test_run_command.cpp`, `tests/commands/TESTS.md`), `docs` (`docs/spec/cli/run.md`, `docs/spec/manifest/configuration.md`, `docs/guide/09_native_plugins.md`)
-- **Status**: - [ ] Planned
+- **Affected Modules**: `launcher` (`execute.cpp`, `build.hpp/cpp`), `tests` (`tests/commands/test_run_command.cpp`, `tests/commands/TESTS.md`), `docs` (`docs/spec/cli/run.md`, `docs/spec/cli/manifest.md`, `docs/guide/09_native_plugins.md`)
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Integrate native library loading into the Solix CLI toolchain and manifest system. Enable zero-config auto-discovery of `.dll`, `.so`, and `.dylib` files placed in project `./lib/` directories and alongside compiled `.slxbin` bytecode binaries. Add CLI flag `-L, --native-lib` to `solix run`. Ingest `"native_libraries"` array in `solix.json` root and profile runtime configurations. Author formal specifications and comprehensive developer guides.
@@ -726,25 +730,25 @@ Integrate native library loading into the Solix CLI toolchain and manifest syste
     - **Case 2.26**: Negative: Run binary requiring native methods without providing library (exit code 1).
 - **2. Identified Documentation Deliverables**:
   - `docs/spec/cli/run.md`: Document `--native-lib` / `-L` and auto-discovery rules.
-  - `docs/spec/manifest/configuration.md`: Document `native_libraries` configuration.
+  - `docs/spec/cli/manifest.md`: Document `native_libraries` configuration.
   - `docs/guide/09_native_plugins.md`: Complete developer guide on writing C/C++ plugins and deploying them in Solix.
   - Update `docs/guide/README.md` and `README.md`.
 
 ### Action Items
-- [ ] **1. Define Test Specification in `tests/commands/TESTS.md`**:
+- [x] **1. Define Test Specification in `tests/commands/TESTS.md`**:
   - Add Cases 2.22 to 2.26 tagged with `[NOT IMPLEMENTED]`.
-- [ ] **2. Upgrade `solix run` Subcommand (`launcher/src/commands/execute.cpp`)**:
+- [x] **2. Upgrade `solix run` Subcommand (`launcher/src/commands/execute.cpp`)**:
   - Add `-L, --native-lib` option.
   - Implement auto-discovery search in `./lib/` and bytecode directory.
   - Ingest `native_libraries` from `solix.json`.
-- [ ] **3. Implement CLI Unit Tests (`tests/commands/test_run_command.cpp`)**:
+- [x] **3. Implement CLI Unit Tests (`tests/commands/test_run_command.cpp`)**:
   - Implement Cases 2.22 to 2.26.
   - Update `tests/commands/TESTS.md` tags to `[IMPLEMENTED]`.
-- [ ] **4. Author Specifications and Developer Guide**:
-  - Update `docs/spec/cli/run.md` and `docs/spec/manifest/configuration.md`.
+- [x] **4. Author Specifications and Developer Guide**:
+  - Update `docs/spec/cli/run.md` and `docs/spec/cli/manifest.md`.
   - Create `docs/guide/09_native_plugins.md`.
   - Update `docs/guide/README.md` and `README.md`.
-- [ ] **5. Full Regression Testing & Merge**:
+- [x] **5. Full Regression Testing & Merge**:
   - Run `ctest --test-dir build --output-on-failure`.
   - Non-fast-forward merge into `master`.
 
