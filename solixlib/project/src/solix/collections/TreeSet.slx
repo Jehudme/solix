@@ -1,0 +1,165 @@
+package solix.collections;
+
+import solix.core.Any;
+import solix.core.String;
+import solix.core.StringBuilder;
+import solix.exceptions.NoSuchElementException;
+
+public class TreeSet implements ISet {
+    private TreeMap _map;
+
+    public TreeSet() {
+        this._map = new TreeMap();
+    }
+
+    public int32 size() {
+        return this._map.size();
+    }
+
+    public bool is_empty() {
+        return this._map.is_empty();
+    }
+
+    public bool contains(Any item) {
+        return this._map.contains_key(item);
+    }
+
+    public bool add(Any item) {
+        if (this._map.contains_key(item)) {
+            return false;
+        }
+        this._map.put(item, item);
+        return true;
+    }
+
+    public bool remove(Any item) {
+        if (!this._map.contains_key(item)) {
+            return false;
+        }
+        this._map.remove(item);
+        return true;
+    }
+
+    public void clear() {
+        this._map.clear();
+    }
+
+    public Any first() {
+        if (this.is_empty()) {
+            throw new NoSuchElementException("TreeSet is empty");
+        }
+        return this._map.first_key();
+    }
+
+    public Any last() {
+        if (this.is_empty()) {
+            throw new NoSuchElementException("TreeSet is empty");
+        }
+        return this._map.last_key();
+    }
+
+    public Any[] to_array() {
+        List keys = this._map.keys();
+        return keys.to_array();
+    }
+
+    public IIterator iterator() {
+        List keys = this._map.keys();
+        return keys.iterator();
+    }
+
+    public void union_with(ICollection other) {
+        if (other == null) {
+            return;
+        }
+        IIterator it = other.iterator();
+        while (it.has_next()) {
+            this.add(it.next());
+        }
+    }
+
+    public void intersect_with(ICollection other) {
+        if (other == null) {
+            this.clear();
+            return;
+        }
+        List keys = this._map.keys();
+        int32 i = 0;
+        while (i < keys.size()) {
+            Any item = keys.get(i);
+            if (!other.contains(item)) {
+                this.remove(item);
+            }
+            i = i + 1;
+        }
+    }
+
+    public void difference_with(ICollection other) {
+        if (other == null) {
+            return;
+        }
+        IIterator it = other.iterator();
+        while (it.has_next()) {
+            this.remove(it.next());
+        }
+    }
+
+    public bool is_subset_of(ICollection other) {
+        if (other == null) {
+            return this.is_empty();
+        }
+        if (this.size() > other.size()) {
+            return false;
+        }
+        List keys = this._map.keys();
+        int32 i = 0;
+        while (i < keys.size()) {
+            Any item = keys.get(i);
+            if (!other.contains(item)) {
+                return false;
+            }
+            i = i + 1;
+        }
+        return true;
+    }
+
+    public bool is_superset_of(ICollection other) {
+        if (other == null) {
+            return true;
+        }
+        if (other.size() > this.size()) {
+            return false;
+        }
+        IIterator it = other.iterator();
+        while (it.has_next()) {
+            Any item = it.next();
+            if (!this.contains(item)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public String to_string() {
+        List keys = this._map.keys();
+        StringBuilder sb = new StringBuilder();
+        sb.append_char('{');
+        for (int32 i = 0; i < keys.size(); i = i + 1) {
+            if (i > 0) {
+                sb.append_char(',');
+                sb.append_char(' ');
+            }
+            Any item = keys.get(i);
+            if (item == null) {
+                sb.append_char('n');
+                sb.append_char('u');
+                sb.append_char('l');
+                sb.append_char('l');
+            } else {
+                sb.append(item.to_string());
+            }
+        }
+        sb.append_char('}');
+        return sb.to_string();
+    }
+}

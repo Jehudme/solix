@@ -240,6 +240,18 @@
     {
       "type": "source",
       "path": "src/solix/collections/TreeMap.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/ISet.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/HashSet.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/TreeSet.slx"
     }
   ],
   "profiles": {
