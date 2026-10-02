@@ -31,6 +31,8 @@ private:
     std::vector<std::vector<uint32_t>> exception_cleanup_patches;
     
     uint32_t native_id_counter = 1;
+    ClassDeclaration* current_compiling_class = nullptr;
+    Node* current_compiling_function = nullptr;
 
     void emit_byte(uint8_t byte);
     void emit_int32(uint32_t value);

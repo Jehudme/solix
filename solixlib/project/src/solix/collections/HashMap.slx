@@ -228,6 +228,6 @@ public class HashMap<K, V> implements IStringable {
     }
 
     public String to_string() {
-        return "[HashMap]";
+        return new String("[HashMap]");
     }
 }

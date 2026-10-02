@@ -84,6 +84,7 @@ public:
     SymbolTable global_scope;
   std::unordered_map<std::string, Node*> template_registry;
   std::unordered_set<std::string> instantiated_templates;
+  std::unordered_set<std::string> bound_templates; // templates that have had bind_tree called
     SymbolTable* current_scope = &global_scope;
     
     // Builtin primitives

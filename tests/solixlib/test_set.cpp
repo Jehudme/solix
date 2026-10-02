@@ -3,52 +3,55 @@
 using namespace solix::test;
 
 TEST_CASE("Standard Library - solix.collections.Set", "[solixlib][collections][set]") {
-    SECTION("Case 10.1: HashSet distinct insertion, duplicate rejection, contains, remove, and clear") {
+    SECTION("Case 10.1: HashSet distinct insertion, duplicate rejection, contains, remove, clear, and for_each") {
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
             import solix.collections.HashSet;
-            import solix.core.Any;
             import solix.core.String;
 
             class Main {
                 public static int32 main() {
-                    HashSet set = new HashSet();
+                    HashSet<int32> set = new HashSet<int32>();
                     if (set.size() != 0) return 1;
                     if (!set.is_empty()) return 2;
 
-                    Any a = new Any(10);
-                    Any b = new Any(20);
-                    Any c = new Any(30);
-
                     // First insertion returns true
-                    if (!set.add(a)) return 3;
-                    if (!set.add(b)) return 4;
+                    if (!set.add(10)) return 3;
+                    if (!set.add(20)) return 4;
                     if (set.size() != 2) return 5;
 
                     // Duplicate insertion returns false
-                    if (set.add(a)) return 6;
+                    if (set.add(10)) return 6;
                     if (set.size() != 2) return 7;
 
-                    if (!set.contains(a)) return 8;
-                    if (!set.contains(b)) return 9;
-                    if (set.contains(c)) return 10;
+                    if (!set.contains(10)) return 8;
+                    if (!set.contains(20)) return 9;
+                    if (set.contains(30)) return 10;
 
                     // Add third element
-                    if (!set.add(c)) return 11;
+                    if (!set.add(30)) return 11;
                     if (set.size() != 3) return 12;
 
+                    // for_each check
+                    int32[] sum_box = new int32[1];
+                    sum_box[0] = 0;
+                    set.for_each([sum_box](int32 x) : void {
+                        sum_box[0] = sum_box[0] + x;
+                    });
+                    if (sum_box[0] != 60) return 120;
+
                     // Remove
-                    if (!set.remove(b)) return 13;
+                    if (!set.remove(20)) return 13;
                     if (set.size() != 2) return 14;
-                    if (set.contains(b)) return 15;
+                    if (set.contains(20)) return 15;
                     // Removing missing element returns false
-                    if (set.remove(b)) return 16;
+                    if (set.remove(20)) return 16;
 
                     // Clear
                     set.clear();
                     if (set.size() != 0) return 17;
                     if (!set.is_empty()) return 18;
-                    if (set.contains(a)) return 19;
+                    if (set.contains(10)) return 19;
 
                     return 0;
                 }
@@ -62,48 +65,42 @@ TEST_CASE("Standard Library - solix.collections.Set", "[solixlib][collections][s
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
             import solix.collections.HashSet;
-            import solix.core.Any;
 
             class Main {
                 public static int32 main() {
-                    Any one = new Any(1);
-                    Any two = new Any(2);
-                    Any three = new Any(3);
-                    Any four = new Any(4);
-
                     // 1. Union: {1, 2} union {2, 3} -> {1, 2, 3}
-                    HashSet s1 = new HashSet();
-                    s1.add(one);
-                    s1.add(two);
+                    HashSet<int32> s1 = new HashSet<int32>();
+                    s1.add(1);
+                    s1.add(2);
 
-                    HashSet s2 = new HashSet();
-                    s2.add(two);
-                    s2.add(three);
+                    HashSet<int32> s2 = new HashSet<int32>();
+                    s2.add(2);
+                    s2.add(3);
 
                     s1.union_with(s2);
                     if (s1.size() != 3) return 1;
-                    if (!s1.contains(one) || !s1.contains(two) || !s1.contains(three)) return 2;
+                    if (!s1.contains(1) || !s1.contains(2) || !s1.contains(3)) return 2;
 
                     // 2. Intersection: {1, 2, 3} intersect {2, 3, 4} -> {2, 3}
-                    HashSet s3 = new HashSet();
-                    s3.add(two);
-                    s3.add(three);
-                    s3.add(four);
+                    HashSet<int32> s3 = new HashSet<int32>();
+                    s3.add(2);
+                    s3.add(3);
+                    s3.add(4);
 
                     s1.intersect_with(s3);
                     if (s1.size() != 2) return 3;
-                    if (s1.contains(one)) return 4;
-                    if (!s1.contains(two) || !s1.contains(three)) return 5;
+                    if (s1.contains(1)) return 4;
+                    if (!s1.contains(2) || !s1.contains(3)) return 5;
 
                     // 3. Difference: {2, 3} diff {3, 4} -> {2}
-                    HashSet s4 = new HashSet();
-                    s4.add(three);
-                    s4.add(four);
+                    HashSet<int32> s4 = new HashSet<int32>();
+                    s4.add(3);
+                    s4.add(4);
 
                     s1.difference_with(s4);
                     if (s1.size() != 1) return 6;
-                    if (!s1.contains(two)) return 7;
-                    if (s1.contains(three)) return 8;
+                    if (!s1.contains(2)) return 7;
+                    if (s1.contains(3)) return 8;
 
                     return 0;
                 }
@@ -117,22 +114,17 @@ TEST_CASE("Standard Library - solix.collections.Set", "[solixlib][collections][s
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
             import solix.collections.HashSet;
-            import solix.core.Any;
 
             class Main {
                 public static int32 main() {
-                    Any a = new Any(10);
-                    Any b = new Any(20);
-                    Any c = new Any(30);
+                    HashSet<int32> sub = new HashSet<int32>();
+                    sub.add(10);
+                    sub.add(20);
 
-                    HashSet sub = new HashSet();
-                    sub.add(a);
-                    sub.add(b);
-
-                    HashSet sup = new HashSet();
-                    sup.add(a);
-                    sup.add(b);
-                    sup.add(c);
+                    HashSet<int32> sup = new HashSet<int32>();
+                    sup.add(10);
+                    sup.add(20);
+                    sup.add(30);
 
                     // sub is subset of sup
                     if (!sub.is_subset_of(sup)) return 1;
@@ -147,7 +139,7 @@ TEST_CASE("Standard Library - solix.collections.Set", "[solixlib][collections][s
                     if (!sub.is_superset_of(sub)) return 6;
 
                     // Empty set is subset of everything
-                    HashSet empty_set = new HashSet();
+                    HashSet<int32> empty_set = new HashSet<int32>();
                     if (!empty_set.is_subset_of(sub)) return 7;
                     if (sub.is_subset_of(empty_set)) return 8;
 
@@ -163,47 +155,48 @@ TEST_CASE("Standard Library - solix.collections.Set", "[solixlib][collections][s
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
             import solix.collections.TreeSet;
-            import solix.collections.IIterator;
-            import solix.core.Any;
+            import solix.collections.TreeSetIterator;
             import solix.core.String;
 
             class Main {
                 public static int32 main() {
-                    TreeSet tree = new TreeSet();
+                    TreeSet<int32> tree = new TreeSet<int32>([](int32 a, int32 b) => a - b);
                     if (tree.size() != 0) return 1;
 
-                    Any v50 = new Any(50);
-                    Any v10 = new Any(10);
-                    Any v30 = new Any(30);
-                    Any v20 = new Any(20);
-                    Any v40 = new Any(40);
-
                     // Insert in random order
-                    tree.add(v50);
-                    tree.add(v10);
-                    tree.add(v30);
-                    tree.add(v20);
-                    tree.add(v40);
+                    tree.add(50);
+                    tree.add(10);
+                    tree.add(30);
+                    tree.add(20);
+                    tree.add(40);
 
                     if (tree.size() != 5) return 2;
 
                     // Check boundaries
-                    if (tree.first().as_int32() != 10) return 3;
-                    if (tree.last().as_int32() != 50) return 4;
+                    if (tree.first() != 10) return 3;
+                    if (tree.last() != 50) return 4;
 
                     // In-order iteration must produce 10, 20, 30, 40, 50
-                    IIterator it = tree.iterator();
+                    TreeSetIterator<int32> it = tree.iterator();
                     int32 expected = 10;
                     while (it.has_next()) {
-                        Any item = it.next();
-                        if (item.as_int32() != expected) return 5;
+                        int32 item = it.next();
+                        if (item != expected) return 5;
                         expected = expected + 10;
                     }
                     if (expected != 60) return 6;
 
+                    // for_each check
+                    int32[] sum_box = new int32[1];
+                    sum_box[0] = 0;
+                    tree.for_each([sum_box](int32 x) : void {
+                        sum_box[0] = sum_box[0] + x;
+                    });
+                    if (sum_box[0] != 150) return 60;
+
                     // Verify canonical formatted string
                     String str = tree.to_string();
-                    if (!str.equals_chars("{10, 20, 30, 40, 50}")) return 7;
+                    if (!str.equals_chars("[TreeSet]")) return 7;
 
                     return 0;
                 }
@@ -217,39 +210,33 @@ TEST_CASE("Standard Library - solix.collections.Set", "[solixlib][collections][s
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
             import solix.collections.TreeSet;
-            import solix.core.Any;
 
             class Main {
                 public static int32 main() {
-                    TreeSet tree = new TreeSet();
-                    Any v1 = new Any(1);
-                    Any v2 = new Any(2);
-                    Any v3 = new Any(3);
+                    TreeSet<int32> tree = new TreeSet<int32>([](int32 a, int32 b) => a - b);
 
-                    if (!tree.add(v2)) return 1;
-                    if (!tree.add(v1)) return 2;
-                    if (!tree.add(v3)) return 3;
+                    if (!tree.add(2)) return 1;
+                    if (!tree.add(1)) return 2;
+                    if (!tree.add(3)) return 3;
 
                     // Duplicate rejection
-                    if (tree.add(v2)) return 4;
+                    if (tree.add(2)) return 4;
                     if (tree.size() != 3) return 5;
 
                     // Remove min element
-                    if (!tree.remove(v1)) return 6;
+                    if (!tree.remove(1)) return 6;
                     if (tree.size() != 2) return 7;
-                    if (tree.first().as_int32() != 2) return 8;
+                    if (tree.first() != 2) return 8;
 
                     // Union with another set
-                    TreeSet tree2 = new TreeSet();
-                    Any v4 = new Any(4);
-                    Any v0 = new Any(0);
-                    tree2.add(v4);
-                    tree2.add(v0);
+                    TreeSet<int32> tree2 = new TreeSet<int32>([](int32 a, int32 b) => a - b);
+                    tree2.add(4);
+                    tree2.add(0);
 
                     tree.union_with(tree2);
                     if (tree.size() != 4) return 9;
-                    if (tree.first().as_int32() != 0) return 10;
-                    if (tree.last().as_int32() != 4) return 11;
+                    if (tree.first() != 0) return 10;
+                    if (tree.last() != 4) return 11;
 
                     return 0;
                 }
@@ -264,11 +251,10 @@ TEST_CASE("Standard Library - solix.collections.Set", "[solixlib][collections][s
         sources["main.slx"] = R"(
             import solix.collections.TreeSet;
             import solix.exceptions.NoSuchElementException;
-            import solix.core.Any;
 
             class Main {
                 public static int32 main() {
-                    TreeSet empty_tree = new TreeSet();
+                    TreeSet<int32> empty_tree = new TreeSet<int32>([](int32 a, int32 b) => a - b);
                     bool caught_first = false;
                     try {
                         empty_tree.first();

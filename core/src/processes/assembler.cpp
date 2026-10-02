@@ -591,6 +591,9 @@ void Assembler::compile_class(ClassDeclaration *class_node) {
   if (!class_node->template_parameters.empty())
     return; // SHIELD: Skip compiling class blueprints
 
+  auto *prev_class = current_compiling_class;
+  current_compiling_class = class_node;
+
   for (const auto &child : class_node->children) {
     if (child->node_type == NodeType::CLASS_DECL) {
       compile_class(static_cast<ClassDeclaration *>(child.get()));
@@ -600,6 +603,8 @@ void Assembler::compile_class(ClassDeclaration *class_node) {
       compile_node(child.get());
     }
   }
+
+  current_compiling_class = prev_class;
 }
 
 void Assembler::compile_function(Node *function_node) {
@@ -625,6 +630,9 @@ void Assembler::compile_function(Node *function_node) {
   if (is_native || is_abstract)
     return;
 
+  auto *prev_func = current_compiling_function;
+  current_compiling_function = function_node;
+
   function_ips[function_node] = bytecode().size();
 
   emit_byte(static_cast<uint8_t>(OpCode::ALLOC_FRAME));
@@ -637,6 +645,8 @@ void Assembler::compile_function(Node *function_node) {
   emit_byte(static_cast<uint8_t>(OpCode::PUSH_NULL));
   emit_cleanup_for_function(function_node);
   emit_byte(static_cast<uint8_t>(OpCode::RETURN));
+
+  current_compiling_function = prev_func;
 }
 
 void Assembler::emit_cleanup_for_node(Node *node) {
@@ -751,6 +761,9 @@ void Assembler::visit(ConstructorDeclaration &node) {
   if (!c->template_parameters.empty())
     return;
 
+  auto *prev_func = current_compiling_function;
+  current_compiling_function = c;
+
   function_ips[c] = bytecode().size();
 
   emit_byte(static_cast<uint8_t>(OpCode::ALLOC_FRAME));
@@ -783,6 +796,8 @@ void Assembler::visit(ConstructorDeclaration &node) {
   emit_byte(static_cast<uint8_t>(OpCode::PUSH_NULL));
   emit_cleanup_for_function(c);
   emit_byte(static_cast<uint8_t>(OpCode::RETURN));
+
+  current_compiling_function = prev_func;
 }
 
 void Assembler::visit(BlockStatement &node) {
@@ -1268,7 +1283,17 @@ void Assembler::visit(IdentifierNode &node) {
     return;
   }
   if (!ident->resolved_declaration) {
-    throw_error(ident, "Unresolved identifier in assembler: " + ident->name);
+    std::string cls_name = current_compiling_class ? current_compiling_class->class_name : "<none>";
+    std::string func_name = "<none>";
+    if (current_compiling_function) {
+      if (current_compiling_function->node_type == NodeType::METHOD_DECL) {
+        func_name = "method " + static_cast<MethodDeclaration *>(current_compiling_function)->method_name;
+      } else if (current_compiling_function->node_type == NodeType::CONSTRUCTOR_DECL) {
+        func_name = "constructor " + static_cast<ConstructorDeclaration *>(current_compiling_function)->class_name;
+      }
+    }
+    throw_error(ident, fmt::format("Unresolved identifier in assembler: '{}' at line {} col {} in class '{}', func '{}'",
+                                 ident->name, ident->line, ident->column, cls_name, func_name));
   }
   if (ident->resolved_declaration->node_type == NodeType::FIELD_DECL) {
     auto *field = static_cast<FieldDeclaration *>(ident->resolved_declaration);
