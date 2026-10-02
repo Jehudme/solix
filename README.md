@@ -5,7 +5,7 @@
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](./docs/PLAN.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license--contributing)
 [![C++20](https://img.shields.io/badge/runtime-C%2B%2B20-orange)](./language/)
-[![Tests](https://img.shields.io/badge/tests-48%20suites-blueviolet)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-49%20suites-blueviolet)](./tests/)
 
 ---
 
@@ -139,7 +139,7 @@ Artifacts produced:
 ./build/tests/solix_tests
 ```
 
-The test suite covers 42 test suites spanning statement parsing, expression evaluation, declarations, control flow, modules, and VM execution. All suites must pass on a clean build.
+The test suite covers 49 test suites spanning statement parsing, expression evaluation, declarations, control flow, modules, VM execution, and native shared library loading. All suites must pass on a clean build.
 
 ---
 
@@ -403,7 +403,7 @@ class Main {
 solix/
 ├── language/          # Core compiler and runtime
 ├── launcher/          # CLI executable
-├── tests/             # Catch2 test suite (48 suites)
+├── tests/             # Catch2 test suite (49 suites)
 ├── docs/
 │   ├── spec/          # Formal language & VM specification
 │   ├── wiki/          # Developer reference
@@ -416,10 +416,10 @@ solix/
 |---|---|
 | [`language/`](./language/) | Core compiler and runtime: lexer, recursive descent parser, multi-pass binder, assembler, and stack/register hybrid bytecode VM — all implemented in C++20. |
 | [`launcher/`](./launcher/) | The `solix` CLI binary (`compile`, `run`, `inspect` subcommands). |
-| [`tests/`](./tests/) | Catch2 test suite with 48 self-contained test suites covering statement parsing, expression evaluation, type binding, assembler output, and VM execution correctness. |
-| [`docs/spec/`](./docs/spec/) | Formal language specification and VM specification documents detailing grammar, type rules, bytecode encoding, and ARC semantics. |
+| [`tests/`](./tests/) | Catch2 test suite with 49 self-contained test suites covering statement parsing, expression evaluation, type binding, assembler output, VM execution correctness, and native shared library plugins. |
+| [`docs/spec/`](./docs/spec/) | Formal language specification and VM specification documents detailing grammar, type rules, bytecode encoding, native interop, and ARC semantics. |
 | [`docs/wiki/`](./docs/wiki/) | Developer reference: complete keyword glossary, built-in type reference, and standard library API documentation. |
-| [`docs/guide/`](./docs/guide/) | Progressive developer guides, from getting started through advanced topics like generics, exception handling, and ARC patterns. |
+| [`docs/guide/`](./docs/guide/) | Progressive developer guides, from getting started through advanced topics like generics, exception handling, ARC patterns, and native C/C++ plugins. |
 | [`docs/PLAN.md`](./docs/PLAN.md) | Master development roadmap: completed milestones, in-progress work, and upcoming feature targets. |
 
 ---
@@ -431,7 +431,7 @@ Solix is open-source software released under the **MIT License**. See [`LICENSE`
 Contributions are warmly welcome — whether that is bug reports, documentation improvements, new standard library modules, or compiler features. To contribute:
 
 1. Fork the repository and create a feature branch.
-2. Ensure all 48 test suites pass (`ctest --test-dir build` or `./build/tests/solix_tests`).
+2. Ensure all 49 test suites pass (`ctest --test-dir build` or `./build/tests/solix_tests`).
 3. Add tests for any new language behaviour or compiler stage changes.
 4. Open a pull request with a clear description of the change and its motivation.
 

@@ -36,8 +36,24 @@ solix run <package>@<version> [-P <profile>] [options] [args...]
 | `--package` | `-n` | String | `""` | Name of installed package in `$SOLIX_HOME`. |
 | `--version` | `-v` | String | `""` | Version of installed package (required when `--package` is used). |
 | `--project` | | Path | `""` | Explicit path to project directory or `solix.json`. |
+| `--native-lib` | `-L` | Path | `[]` | Path to native shared library (`.dll`, `.so`, `.dylib`). Can be specified multiple times. |
 | `--stack` | `-s` | Integer | `1048576` (1 MWord) | Call stack capacity in 64-bit machine words. |
 | `--heap` | `-p` | Integer | `16777216` (16 MWords) | Flat object heap capacity in 64-bit machine words. |
+
+---
+
+## Native Shared Library Loading & Auto-Discovery
+
+When running standalone bytecode or a Solix project, the runtime automatically discovers and binds native C/C++ shared libraries (`.dll` on Windows, `.so` on Linux, `.dylib` on macOS):
+
+1. **Zero-Config Auto-Discovery**:
+   - For projects: automatically scans and loads any shared library found in the project's `./lib/` directory or in the output directory containing the generated `.slxbin`.
+   - For standalone bytecode: automatically scans and loads any shared library located in the same directory as the `.slxbin` or in a co-located `./lib/` subdirectory.
+2. **Manifest Configuration**:
+   - Ingests `"native_libraries": [...]` declared at the root of `solix.json` or within `profiles.<name>.runtime.native_libraries`.
+3. **CLI Overrides (`-L, --native-lib`)**:
+   - Additional shared libraries can be explicitly passed at runtime via `-L <path>` or `--native-lib <path>`. All specified libraries are loaded into memory and registered before program execution begins.
+
 
 ---
 
