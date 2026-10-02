@@ -31,6 +31,22 @@
     },
     {
       "type": "source",
+      "path": "src/solix/time/Duration.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/time/Instant.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/time/DateTime.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/time/Stopwatch.slx"
+    },
+    {
+      "type": "source",
       "path": "src/solix/core/IEquatable.slx"
     },
     {

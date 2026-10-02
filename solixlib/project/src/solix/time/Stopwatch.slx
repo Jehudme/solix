@@ -1,0 +1,67 @@
+package solix.time;
+
+public class Stopwatch {
+    private int64 _start_nanos;
+    private int64 _accumulated_nanos;
+    private bool _running;
+
+    public Stopwatch() {
+        this._start_nanos = 0L;
+        this._accumulated_nanos = 0L;
+        this._running = false;
+    }
+
+    public static Stopwatch start_new() {
+        Stopwatch sw = new Stopwatch();
+        sw.start();
+        return sw;
+    }
+
+    public void start() {
+        if (!this._running) {
+            this._start_nanos = native_steady_nanos();
+            this._running = true;
+        }
+    }
+
+    public void stop() {
+        if (this._running) {
+            int64 now = native_steady_nanos();
+            this._accumulated_nanos = this._accumulated_nanos + (now - this._start_nanos);
+            this._running = false;
+        }
+    }
+
+    public void reset() {
+        this._accumulated_nanos = 0L;
+        this._running = false;
+    }
+
+    public void restart() {
+        this.reset();
+        this.start();
+    }
+
+    public bool is_running() {
+        return this._running;
+    }
+
+    public Duration elapsed() {
+        int64 total = this._accumulated_nanos;
+        if (this._running) {
+            total = total + (native_steady_nanos() - this._start_nanos);
+        }
+        return new Duration(total);
+    }
+
+    public int64 elapsed_milliseconds() {
+        return this.elapsed().to_milliseconds();
+    }
+
+    public static void sleep(int64 millis) {
+        native_sleep_millis(millis);
+    }
+
+    private static native int64 native_steady_nanos();
+    private static native int32 native_sleep_millis(int64 ms);
+}

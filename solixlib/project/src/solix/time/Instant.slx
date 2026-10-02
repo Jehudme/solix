@@ -1,0 +1,41 @@
+package solix.time;
+
+public class Instant {
+    private int64 _nanoseconds;
+
+    public Instant(int64 nanos) {
+        this._nanoseconds = nanos;
+    }
+
+    public static Instant now() {
+        return new Instant(native_steady_nanos());
+    }
+
+    public Duration elapsed() {
+        int64 current = native_steady_nanos();
+        return new Duration(current - this._nanoseconds);
+    }
+
+    public Duration duration_since(Instant earlier) {
+        if (earlier == null) return new Duration(this._nanoseconds);
+        return new Duration(this._nanoseconds - earlier._nanoseconds);
+    }
+
+    public int64 to_nanoseconds() {
+        return this._nanoseconds;
+    }
+
+    public bool equals(Instant other) {
+        if (other == null) return false;
+        return this._nanoseconds == other._nanoseconds;
+    }
+
+    public int32 compare_to(Instant other) {
+        if (other == null) return 1;
+        if (this._nanoseconds < other._nanoseconds) return -1;
+        if (this._nanoseconds > other._nanoseconds) return 1;
+        return 0;
+    }
+
+    private static native int64 native_steady_nanos();
+}
