@@ -105,6 +105,41 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Valid bytecode.
 - **Expected**: Exits 0; VM initializes with customized resource limits.
 
+#### Case 2.9: Run Uninstalled Project from Directory (Default Profile) [IMPLEMENTED]
+- **Command**: `solix run ./my_project`
+- **Setup**: Directory with `solix.json` defining `debug` profile and valid source files.
+- **Expected**: Exits 0; automatically builds `debug` profile and executes binary on VM.
+
+#### Case 2.10: Run Uninstalled Project with Specific Profile [IMPLEMENTED]
+- **Command**: `solix run ./my_project -P release`
+- **Setup**: Project with distinct `release` profile configuration.
+- **Expected**: Exits 0; compiles and executes release binary.
+
+#### Case 2.11: Run Uninstalled Project with Manifest Runtime Configuration [IMPLEMENTED]
+- **Command**: `solix run ./my_project`
+- **Setup**: `solix.json` profile with `runtime.heap_size`, `runtime.stack_size`, and default `runtime.arguments`.
+- **Expected**: Exits 0; VM receives configured stack/heap limits and program receives default arguments.
+
+#### Case 2.12: Run Uninstalled Project with CLI Arguments Overriding Runtime Config [IMPLEMENTED]
+- **Command**: `solix run ./my_project custom_arg1 custom_arg2`
+- **Setup**: `solix.json` specifying default arguments.
+- **Expected**: Exits 0; CLI arguments override default manifest arguments.
+
+#### Case 2.13: Run Installed Project by Name and Version [IMPLEMENTED]
+- **Command**: `solix run -n installed_pkg -v 1.0.0`
+- **Setup**: Project installed in `$SOLIX_HOME`.
+- **Expected**: Exits 0; resolves installed directory from registry, builds if needed, and executes.
+
+#### Case 2.14: Run Installed Project by Positional Specifier [IMPLEMENTED]
+- **Command**: `solix run installed_pkg@1.0.0`
+- **Setup**: Project installed in `$SOLIX_HOME`.
+- **Expected**: Exits 0; parses `name@version`, resolves project, and executes.
+
+#### Case 2.15: Run Installed Project with Specific Profile [IMPLEMENTED]
+- **Command**: `solix run installed_pkg@1.0.0 -P release`
+- **Setup**: Installed project with `release` profile.
+- **Expected**: Exits 0; executes requested profile for installed package.
+
 ### Negative Test Scenarios
 
 #### Case 2.4: Missing Bytecode File Argument [IMPLEMENTED]
@@ -129,6 +164,33 @@ This document is the master test specification for the Solix CLI command suite (
 - **Command**: `solix run app_exit7.slxb`
 - **Setup**: Bytecode returning 7 from `main`.
 - **Expected**: Exits with exit code 7.
+
+#### Case 2.16: Run Project with Non-Existent Directory Path [IMPLEMENTED]
+- **Command**: `solix run ./non_existent_folder`
+- **Expected**: Exits non-zero; error message indicating path does not exist.
+
+#### Case 2.17: Run Project in Directory Lacking solix.json [IMPLEMENTED]
+- **Command**: `solix run ./empty_folder`
+- **Setup**: Existing directory without `solix.json`.
+- **Expected**: Exits non-zero; error message indicating manifest does not exist.
+
+#### Case 2.18: Run Project Requesting Non-Existent Profile [IMPLEMENTED]
+- **Command**: `solix run ./my_project -P missing_profile`
+- **Setup**: Project with only `debug` profile.
+- **Expected**: Exits non-zero; error message indicating profile is not defined.
+
+#### Case 2.19: Run Installed Project Not Found in Registry [IMPLEMENTED]
+- **Command**: `solix run -n missing_pkg -v 1.0.0`
+- **Expected**: Exits non-zero; error message indicating installed project was not found.
+
+#### Case 2.20: Run Installed Project with --package but Missing --version [IMPLEMENTED]
+- **Command**: `solix run -n my_pkg`
+- **Expected**: Exits non-zero; error message indicating `--version is required`.
+
+#### Case 2.21: Run Project with Compilation Error [IMPLEMENTED]
+- **Command**: `solix run ./broken_project`
+- **Setup**: Project containing syntax/type error in source code.
+- **Expected**: Exits non-zero; compilation error reported before VM execution.
 
 ---
 

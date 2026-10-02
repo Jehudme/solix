@@ -28,6 +28,7 @@
 | **Phase 11** | CLI Commands Test Suite & Master Specification (`tests/commands/`) | `P1 High` | `tests`, `launcher`, `build` | - [x] Completed |
 | **Phase 12** | CLI Commands & Toolchain Documentation (`docs/spec/cli/`) | `P1 High` | `docs`, `launcher`, `guide` | - [x] Completed |
 | **Phase 13** | Project-Type Dependencies & Transitive SemVer Resolution | `P1 High` | `launcher`, `build`, `tests`, `docs` | - [x] Completed |
+| **Phase 14** | Direct Project Execution (`solix run` for Projects) | `P1 High` | `launcher`, `build`, `tests`, `docs` | - [ ] In Progress |
 
 ---
 
@@ -487,6 +488,64 @@ Enhance `solix build` to support project-type dependencies (`"type": "project"`)
 - Transitive dependencies and mutual/circular references build cleanly.
 - SemVer conflict rules strictly enforced (error on different major, warning on different minor, clean on different patch).
 - All positive and negative test cases pass 100%.
+
+---
+
+## Phase 14: Direct Project Execution (`solix run` for Projects)
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `launcher`, `build`, `tests`, `docs`
+- **Status**: - [ ] In Progress
+
+### Objective
+Extend `solix run` to directly run Solix projects (both uninstalled via directory paths and installed via package name and version from `$SOLIX_HOME`) while allowing user selection of the build profile (`--profile`), automatically building the target profile prior to execution and applying profile-specific runtime configurations (`heap_size`, `stack_size`, default arguments) unless overridden by CLI flags.
+
+### Identified Test & Documentation Deliverables
+- **1. Identified Test Deliverables (`tests/commands/TESTS.md` & `tests/commands/test_run_command.cpp`)**:
+  - **Positive Scenarios**:
+    - **Case 2.9**: Run uninstalled project from directory path (default `debug` profile).
+    - **Case 2.10**: Run uninstalled project with explicit profile (`--profile release`).
+    - **Case 2.11**: Run uninstalled project with manifest `runtime` configuration (`heap_size`, `stack_size`, default `arguments`).
+    - **Case 2.12**: Run uninstalled project with CLI arguments overriding manifest default runtime arguments.
+    - **Case 2.13**: Run installed project by name and version (`--package <name> --version <version>`).
+    - **Case 2.14**: Run installed project using positional `<name>@<version>` syntax.
+    - **Case 2.15**: Run installed project with explicit profile (`--profile release`).
+  - **Negative Scenarios**:
+    - **Case 2.16**: Run project with non-existent directory path.
+    - **Case 2.17**: Run project in directory lacking `solix.json`.
+    - **Case 2.18**: Run project requesting non-existent profile.
+    - **Case 2.19**: Run installed project not found in `$SOLIX_HOME` registry.
+    - **Case 2.20**: Run installed project with `--package` but missing `--version`.
+    - **Case 2.21**: Run project where source has compilation errors (build fails before VM runs).
+- **2. Identified Documentation Deliverables**:
+  - `docs/spec/cli/run.md`: Document new options (`--profile`, `--package`, `--version`, `--project`), project execution modes, runtime config resolution, and example commands.
+  - `docs/guide/01_getting_started.md`: Update "Running Your Application (`solix run`)" section to demonstrate running local and installed projects directly by profile.
+
+### Action Items
+- [ ] **1. Expose Reusable Project Builder Helper (`launcher/src/commands/build.hpp` & `build.cpp`)**:
+  - Extract and expose `build_project(manifest_path, profile_name, out_binary_path)` returning status and the resulting executable artifact path.
+- [ ] **2. Upgrade `solix run` Subcommand (`launcher/src/commands/execute.cpp`)**:
+  - Add `--profile` (`-P`), `--package` (`-n`), `--version` (`-v`), and optional project path.
+  - Distinguish between bytecode files, uninstalled project paths, and installed project packages.
+  - Ingest `profiles.<profile>.runtime` settings from `solix.json` (`heap_size`, `stack_size`, `arguments`) with CLI flag overrides.
+  - Build project before VM invocation and run compiled binary.
+- [ ] **3. Update Master Test Specification (`tests/commands/TESTS.md`)**:
+  - Add Cases 2.9 through 2.21 tagged with `[NOT IMPLEMENTED]`.
+- [ ] **4. Implement Catch2 Unit Tests (`tests/commands/test_run_command.cpp`)**:
+  - Implement positive and negative test cases.
+  - Update tags in `tests/commands/TESTS.md` from `[NOT IMPLEMENTED]` to `[IMPLEMENTED]`.
+- [ ] **5. Update Documentation (`docs/spec/cli/run.md`, `docs/guide/01_getting_started.md`)**:
+  - Document direct project execution and options.
+- [ ] **6. Full Regression Testing & Merge**:
+  - Run `ctest --test-dir build --output-on-failure`.
+  - Non-fast-forward merge into `master`.
+
+### Acceptance Criteria
+- Uninstalled projects run from directory path or manifest path using requested profile.
+- Installed projects run by name and version (`--package`/`--version` or `<name>@<version>`).
+- Manifest runtime settings apply properly and are overridable by CLI arguments.
+- Existing bytecode file execution (`solix run file.slxbin`) remains 100% backward-compatible.
+- All positive and negative test cases pass.
 
 
 

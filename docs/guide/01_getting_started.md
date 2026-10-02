@@ -143,15 +143,32 @@ When building:
 
 ## Running Your Application (`solix run`)
 
-Execute the compiled bytecode on the Solix Virtual Machine:
+You can execute compiled bytecode directly or run a project (both local and installed) with automatic profile compilation:
 
+### 1. Run a Local Project Directly
 ```bash
-solix run build/debug/out.slxbin
+# Run default 'debug' profile
+solix run .
+
+# Run with an optimized 'release' profile
+solix run . -P release
+
+# Run from an external directory
+solix run ./hello_solix -P release
 ```
 
-You can pass arguments to your program after the bytecode file:
-
+### 2. Run an Installed Package
 ```bash
+# By package name and version
+solix run -n my_pkg -v 1.0.0
+
+# Positional shorthand
+solix run my_pkg@1.0.0 -P release
+```
+
+### 3. Run Standalone Bytecode Binaries
+```bash
+solix run build/debug/out.slxbin
 solix run build/debug/out.slxbin arg1 arg2 123
 ```
 
