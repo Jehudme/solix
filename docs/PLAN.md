@@ -26,7 +26,7 @@
 | **Phase 9** | Project Scaffolding & Initialization Subcommand (`solix new`) | `P1 High` | `launcher`, `templates` | - [x] Completed |
 | **Phase 10** | Package Lifecycle Management (`install`, `uninstall`, `list`, `details`) | `P1 High` | `launcher` | - [x] Completed |
 | **Phase 11** | CLI Commands Test Suite & Master Specification (`tests/commands/`) | `P1 High` | `tests`, `launcher`, `build` | - [x] Completed |
-| **Phase 12** | CLI Commands & Toolchain Documentation (`docs/spec/cli/`) | `P1 High` | `docs`, `launcher`, `guide` | - [ ] In Progress |
+| **Phase 12** | CLI Commands & Toolchain Documentation (`docs/spec/cli/`) | `P1 High` | `docs`, `launcher`, `guide` | - [x] Completed |
 
 ---
 
@@ -388,7 +388,7 @@ Establish a dedicated, comprehensive Catch2 unit test suite and master test spec
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `docs`, `launcher`, `guide`, `workflow`
-- **Status**: - [ ] In Progress
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Establish comprehensive, authoritative, and formal documentation for the entire Solix toolchain and CLI command suite (`compile`, `run`, `build`, `new`, `install`, `uninstall`, `list`, `details`, and `solix.json` manifest). Bring developer guides up to date with the modular architecture, link CLI specifications into the language specification indexes, and formalize the engineering workflow requiring explicit identification of positive/negative tests and documentation for all commands, statements, and features.
@@ -410,15 +410,15 @@ Establish comprehensive, authoritative, and formal documentation for the entire 
   - `docs/spec/README.md`: Update specification map and tables to reference the new CLI documentation suite.
 
 ### Action Items
-- [ ] **1. Workflow Hardening (`docs/WORKFLOW.md`)**:
+- [x] **1. Workflow Hardening (`docs/WORKFLOW.md`)**:
   - Formalize rule requiring that whenever any CLI command, statement, or feature is added or updated, positive and negative tests plus corresponding documentation must be updated in lockstep.
   - Enforce phase-level identification of tests and docs.
-- [ ] **2. Author CLI Command Specifications (`docs/spec/cli/`)**:
+- [x] **2. Author CLI Command Specifications (`docs/spec/cli/`)**:
   - Write `README.md`, `compile.md`, `run.md`, `build.md`, `new.md`, `package.md`, `manifest.md`.
-- [ ] **3. Update User Guides & Top-Level Indexes**:
+- [x] **3. Update User Guides & Top-Level Indexes**:
   - Modernize `docs/guide/01_getting_started.md` with accurate CLI instructions and examples.
   - Update `docs/spec/README.md` to link `docs/spec/cli/`.
-- [ ] **4. Verification & Regression Check**:
+- [x] **4. Verification & Regression Check**:
   - Ensure all documentation links resolve.
   - Run `ctest --test-dir build --output-on-failure` to verify 100% test passing.
 
