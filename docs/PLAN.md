@@ -654,7 +654,7 @@ Resolve the Windows CI test failure (`SIGSEGV - Stack overflow`) in GitHub Actio
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `language` (`runtime.hpp`, `runtime.cpp`, `shared_library.hpp/cpp`, `native_registry.hpp/cpp`), `tests` (`tests/CMakeLists.txt`, `tests/runtime/fixtures/test_plugin.cpp`, `tests/runtime/test_native_library.cpp`), `docs/spec/runtime/native_interop.md`
-- **Status**: - [ ] In Progress
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Implement the low-level C-ABI native interface and dynamic library loader in the Solix VM. Modernize native function representation from `std::function` to raw C function pointers (`NativeFunctionPtr`), implement lock-free $O(1)$ array dispatch in `RuntimeContext`, provide cross-platform `solix::SharedLibrary` for loading `.dll`, `.so`, and `.dylib` files, build thread-safe `solix::NativeRegistry`, support both registration hook (`solix_register_natives`) and direct dynamic symbol export lookup, create a CMake shared library test fixture, and build comprehensive Catch2 test suite (Suite 49) and formal specification.
@@ -677,26 +677,26 @@ Implement the low-level C-ABI native interface and dynamic library loader in the
   - Update `docs/spec/README.md`.
 
 ### Action Items
-- [ ] **1. Define Test Specification in `tests/statements/TESTS.md`**:
+- [x] **1. Define Test Specification in `tests/statements/TESTS.md`**:
   - Add Suite 49 with Cases 49.1 through 49.8 tagged with `[NOT IMPLEMENTED]`.
-- [ ] **2. Modernize Native Function Representation (`language/include/solix/runtime.hpp` & `language/src/runtime.cpp`)**:
+- [x] **2. Modernize Native Function Representation (`language/include/solix/runtime.hpp` & `language/src/runtime.cpp`)**:
   - Define `NativeFunctionPtr` typedef: `uint64_t (*)(RuntimeContext&, uint64_t self, uint64_t* args, size_t argc)`.
   - Add `std::vector<NativeFunctionPtr> native_table;` in `RuntimeContext` for $O(1)$ dispatch.
-- [ ] **3. Implement Cross-Platform `SharedLibrary` (`language/include/solix/shared_library.hpp` & `language/src/runtime/shared_library.cpp`)**:
+- [x] **3. Implement Cross-Platform `SharedLibrary` (`language/include/solix/shared_library.hpp` & `language/src/runtime/shared_library.cpp`)**:
   - Encapsulate `LoadLibraryW`/`GetProcAddress`/`FreeLibrary` on Windows and `dlopen`/`dlsym`/`dlclose` on POSIX.
   - Provide RAII lifetime management.
-- [ ] **4. Implement Central `NativeRegistry` (`language/include/solix/native_registry.hpp` & `language/src/runtime/native_registry.cpp`)**:
+- [x] **4. Implement Central `NativeRegistry` (`language/include/solix/native_registry.hpp` & `language/src/runtime/native_registry.cpp`)**:
   - Thread-safe global registry with mutex protection.
   - Automatic invocation of `solix_register_natives` hook and dynamic export fallback.
   - Wire resolution into `op_DEFINE_NATIVE` and `op_CALL_NATIVE`.
-- [ ] **5. Add CMake Shared Library Fixture & Catch2 Test Suite (`tests/CMakeLists.txt`, `tests/runtime/fixtures/test_plugin.cpp`, `tests/runtime/test_native_library.cpp`)**:
+- [x] **5. Add CMake Shared Library Fixture & Catch2 Test Suite (`tests/CMakeLists.txt`, `tests/runtime/fixtures/test_plugin.cpp`, `tests/runtime/test_native_library.cpp`)**:
   - Define `solix_test_plugin` target.
   - Implement all 8 Catch2 test cases.
   - Update `tests/statements/TESTS.md` tags to `[IMPLEMENTED]`.
-- [ ] **6. Author Formal Specification (`docs/spec/runtime/native_interop.md`)**:
+- [x] **6. Author Formal Specification (`docs/spec/runtime/native_interop.md`)**:
   - Document ABI, calling conventions, registration protocols, and lifecycle.
   - Update `docs/spec/README.md`.
-- [ ] **7. Full Regression Testing & Merge**:
+- [x] **7. Full Regression Testing & Merge**:
   - Run `ctest --test-dir build --output-on-failure`.
   - Non-fast-forward merge into `master`.
 

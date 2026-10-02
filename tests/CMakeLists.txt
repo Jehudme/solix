@@ -6,11 +6,30 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(Catch2)
 
+add_library(solix_test_plugin SHARED
+    runtime/fixtures/test_plugin.cpp
+)
+target_include_directories(solix_test_plugin PRIVATE
+    ${CMAKE_SOURCE_DIR}/language/include
+    ${CMAKE_SOURCE_DIR}/language/src
+)
+
+add_library(solix_test_plugin_b SHARED
+    runtime/fixtures/test_plugin_b.cpp
+)
+target_include_directories(solix_test_plugin_b PRIVATE
+    ${CMAKE_SOURCE_DIR}/language/include
+    ${CMAKE_SOURCE_DIR}/language/src
+)
+
 file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "statements/*.cpp" "commands/*.cpp")
+file(GLOB TEST_SOURCES_RUNTIME CONFIGURE_DEPENDS "runtime/*.cpp")
+list(APPEND TEST_SOURCES ${TEST_SOURCES_RUNTIME})
 
 add_executable(solix_tests
     ${TEST_SOURCES}
 )
+add_dependencies(solix_tests solix_test_plugin solix_test_plugin_b)
 
 target_link_libraries(solix_tests PRIVATE Catch2::Catch2WithMain solix_language solix_launcher_core
     $<IF:$<TARGET_EXISTS:spdlog::spdlog>,spdlog::spdlog,spdlog>
@@ -27,6 +46,8 @@ target_include_directories(solix_tests PRIVATE
 
 target_compile_definitions(solix_tests PRIVATE
     SOLIX_PROJECT_ROOT="${CMAKE_SOURCE_DIR}"
+    SOLIX_TEST_PLUGIN_PATH="$<TARGET_FILE:solix_test_plugin>"
+    SOLIX_TEST_PLUGIN_B_PATH="$<TARGET_FILE:solix_test_plugin_b>"
 )
 
 include(Catch)

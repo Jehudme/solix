@@ -13,6 +13,7 @@ This directory contains the formal specification of the Solix programming langua
 | [**Lexical Grammar**](lexical.md) | Character encoding, comments, whitespace, identifiers, all 39 reserved keywords, all 13 primitive type keywords, numeric/character/string literals, operators, and punctuation tokens |
 | [**Type System & Static Semantics**](types.md) | Primitive types with ranges and defaults, implicit widening conversions, explicit narrowing casts, reference types, null safety, array types, type compatibility, nominal subtyping, method override rules, templates and generics, and type name resolution order |
 | [**VM Instruction Set Architecture**](vm_isa.md) | Stack-based VM architecture, flat heap memory model, ARC object header format, all 90 opcodes with encodings and stack effects, call frame layout, object and array memory layout, ARC reference-counting semantics, and trampoline-based exception unwinding |
+| [**Native Interoperability**](runtime/native_interop.md) | Dynamic shared library loader, C-ABI `NativeFunctionPtr`, dual registry architecture, registration hooks (`solix_register_natives`), dynamic fallback symbol resolution, and heap marshaling |
 
 ### Statements, Declarations & Expressions
 

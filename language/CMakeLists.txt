@@ -10,6 +10,8 @@ add_library(solix_language
     src/processes/binder.cpp
     src/processes/assembler.cpp
     src/runtime.cpp
+    src/runtime/shared_library.cpp
+    src/runtime/native_registry.cpp
 )
 
 target_include_directories(solix_language
@@ -22,5 +24,8 @@ target_include_directories(solix_language
 target_link_libraries(solix_language PUBLIC
     $<IF:$<TARGET_EXISTS:spdlog::spdlog>,spdlog::spdlog,spdlog>
     $<IF:$<TARGET_EXISTS:fmt::fmt>,fmt::fmt,fmt>
+    ${CMAKE_DL_LIBS}
 )
+
+set_target_properties(solix_language PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
