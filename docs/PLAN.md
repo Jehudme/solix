@@ -23,6 +23,7 @@
 | **Phase 6** | Deterministic ARC Lifecycle Verification | `P1 High` | `runtime`, `tests` | - [ ] Not Started |
 | **Phase 7** | Documentation & Specification Synchronization | `P2 Polish` | `docs`, `launcher`, `tests` | - [x] Completed |
 | **Phase 8** | Project Manifest & Modular Build Subcommand (`solix build`) | `P1 High` | `launcher`, `build` | - [x] Completed |
+| **Phase 9** | Project Scaffolding & Initialization Subcommand (`solix new`) | `P1 High` | `launcher`, `templates` | - [x] Completed |
 
 ---
 
@@ -266,4 +267,39 @@ Implement the `solix build` launcher subcommand, enabling zero-configuration bui
 - All fields of `CompilationOptions` are populated identically to `compile.cpp`.
 - Dependency resolution is modular and extensible for future dependency types.
 - All 42 unit test suites compile and pass 100%.
+
+---
+
+## Phase 9: Project Scaffolding & Initialization Subcommand (`solix new`)
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `launcher`, `templates`
+- **Status**: - [x] Completed & Merged
+
+### Objective
+Implement the `solix new` project scaffolding subcommand supporting hybrid generation (in-memory generation as the zero-dependency, self-contained default, with disk-based template reference preserved in `launcher/templates/project/` and selectable via `--template <path>`). All manifest parameters (`project`, `version`, `author`, `description`, `license`, `tags`, `entry`) are configurable via CLI arguments, and destination paths are protected against accidental file collisions.
+
+### Action Items
+- [x] **1. Create Command Header & Implementation**:
+  - Create `launcher/src/commands/new.hpp` and `launcher/src/commands/new.cpp`.
+  - Register `setup_new_command(CLI::App& app)`.
+- [x] **2. Manifest & Source Scaffolding Logic**:
+  - Implement in-memory generation of `solix.json` and `src/main.slx` using `nlohmann::json`.
+  - Implement `--template <path>` option to copy from an on-disk template directory if requested.
+  - Implement path collision protection (abort if path exists and is not an empty directory, unless `--force` is specified).
+- [x] **3. Build System Integration**:
+  - Add `src/commands/new.cpp` to `launcher/CMakeLists.txt`.
+  - Register `setup_new_command(app)` in `launcher/src/main.cpp`.
+- [x] **4. End-to-End Verification & Testing**:
+  - Verify project creation with default arguments (`solix new test_default_proj`).
+  - Verify project creation with custom parameters (`solix new custom_proj --author "Alice" --license "MIT" --version "1.0.0" --tag cli --entry main`).
+  - Build both generated projects using `solix build` and run them with `solix run`.
+  - Run full test suite (`ctest`) to ensure zero regressions across all 42 suites.
+
+### Acceptance Criteria
+- `solix new <path>` creates a compilable Solix project without requiring external disk assets.
+- CLI flags override manifest fields in `solix.json`.
+- Collision protection prevents accidental overwriting of existing non-empty folders without `--force`.
+- All 42 unit test suites compile and pass 100%.
+
 
