@@ -27,7 +27,7 @@
 | **Phase 10** | Package Lifecycle Management (`install`, `uninstall`, `list`, `details`) | `P1 High` | `launcher` | - [x] Completed |
 | **Phase 11** | CLI Commands Test Suite & Master Specification (`tests/commands/`) | `P1 High` | `tests`, `launcher`, `build` | - [x] Completed |
 | **Phase 12** | CLI Commands & Toolchain Documentation (`docs/spec/cli/`) | `P1 High` | `docs`, `launcher`, `guide` | - [x] Completed |
-| **Phase 13** | Project-Type Dependencies & Transitive SemVer Resolution | `P1 High` | `launcher`, `build`, `tests`, `docs` | - [ ] In Progress |
+| **Phase 13** | Project-Type Dependencies & Transitive SemVer Resolution | `P1 High` | `launcher`, `build`, `tests`, `docs` | - [x] Completed |
 
 ---
 
@@ -435,7 +435,7 @@ Establish comprehensive, authoritative, and formal documentation for the entire 
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `launcher`, `build`, `tests`, `docs`
-- **Status**: - [ ] In Progress
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Enhance `solix build` to support project-type dependencies (`"type": "project"`) alongside source file dependencies. Enable projects to reference other projects either by relative/absolute disk path or by package name and version from `$SOLIX_HOME`. Implement full transitive dependency resolution, graceful mutual/circular dependency de-duplication, pre-compilation dependency graph verification, and strict Semantic Versioning conflict resolution rules before invoking the compiler.
@@ -459,9 +459,9 @@ Enhance `solix build` to support project-type dependencies (`"type": "project"`)
   - `docs/guide/01_getting_started.md`: Add a section on modular multi-project dependencies.
 
 ### Action Items
-- [ ] **1. Implement Semantic Versioning Parser (`launcher/src/semver.hpp`)**:
+- [x] **1. Implement Semantic Versioning Parser (`launcher/src/semver.hpp`)**:
   - Create `SemVer` struct with `major`, `minor`, `patch`, parsing logic, comparison operators (`<`, `==`, `>`), and conflict assessment.
-- [ ] **2. Implement Project Dependency Resolver & Graph Walker (`launcher/src/dependency_resolver.hpp`)**:
+- [x] **2. Implement Project Dependency Resolver & Graph Walker (`launcher/src/dependency_resolver.hpp`)**:
   - Implement `ProjectDependencyResolver` supporting `path` and `$SOLIX_HOME` package lookup.
   - Implement recursive dependency graph traversal with a visited set to support mutual/circular dependencies ($A \leftrightarrow B$) without infinite loops.
   - Enforce SemVer conflict resolution:
@@ -469,16 +469,16 @@ Enhance `solix build` to support project-type dependencies (`"type": "project"`)
     - Minor gap: emit warning and pick highest minor.
     - Patch gap: cleanly pick highest patch.
   - Collect all unique source files across the resolved project graph.
-- [ ] **3. Integrate Pre-Compilation Resolution in `solix build` (`launcher/src/commands/build.cpp`)**:
+- [x] **3. Integrate Pre-Compilation Resolution in `solix build` (`launcher/src/commands/build.cpp`)**:
   - Execute full dependency graph resolution, conflict verification, and source ingestion before invoking `execute_compilation_and_write`.
-- [ ] **4. Update Master Test Specification (`tests/commands/TESTS.md`)**:
+- [x] **4. Update Master Test Specification (`tests/commands/TESTS.md`)**:
   - Add Cases 3.10 through 3.18 tagged with `[NOT IMPLEMENTED]`.
-- [ ] **5. Implement Catch2 Unit Tests (`tests/commands/test_build_command.cpp`)**:
+- [x] **5. Implement Catch2 Unit Tests (`tests/commands/test_build_command.cpp`)**:
   - Implement all positive and negative test cases.
   - Update tags in `tests/commands/TESTS.md` from `[NOT IMPLEMENTED]` to `[IMPLEMENTED]`.
-- [ ] **6. Update Documentation (`docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, `docs/guide/01_getting_started.md`)**:
+- [x] **6. Update Documentation (`docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, `docs/guide/01_getting_started.md`)**:
   - Document project dependencies, manifest schema, and SemVer conflict resolution rules.
-- [ ] **7. Full Regression Testing & Merge**:
+- [x] **7. Full Regression Testing & Merge**:
   - Run `ctest --test-dir build --output-on-failure`.
   - Non-fast-forward merge into `master`.
 
