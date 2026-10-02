@@ -204,4 +204,56 @@ TEST_CASE("Standard Library - solix.math.Math & Random", "[solixlib][math]") {
         assert_compile_sources_success(sources);
         REQUIRE(run_solixlib_sources(sources) == 0);
     }
+
+    SECTION("Case 5.6: Generic Math operations across numeric types (int32, int64, float64)") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.math.Math;
+
+            class Main {
+                public static int32 main() {
+                    // abs<T>
+                    int32 a_i = Math.abs<int32>(-15);
+                    if (a_i != 15) return 1;
+                    int64 a_l = Math.abs<int64>(-10000000000);
+                    if (a_l != 10000000000) return 2;
+                    float64 a_f = Math.abs<float64>(-3.5);
+                    if (a_f != 3.5) return 3;
+
+                    // min<T> & max<T>
+                    int32 min_i = Math.min<int32>(25, 12);
+                    if (min_i != 12) return 4;
+                    int64 max_l = Math.max<int64>(500, 1000);
+                    if (max_l != 1000) return 5;
+                    float64 min_f = Math.min<float64>(2.71, 3.14);
+                    if (min_f != 2.71) return 6;
+
+                    // clamp<T>
+                    int32 c_i = Math.clamp<int32>(15, 0, 10);
+                    if (c_i != 10) return 7;
+                    int64 c_l = Math.clamp<int64>(50, 10, 100);
+                    if (c_l != 50) return 8;
+                    float64 c_f = Math.clamp<float64>(-0.5, 0.0, 1.0);
+                    if (c_f != 0.0) return 9;
+
+                    // sign<T>
+                    if (Math.sign<int32>(-99) != -1) return 10;
+                    if (Math.sign<int64>(9999999999) != 1) return 11;
+                    if (Math.sign<float64>(0.0) != 0) return 12;
+
+                    // copy_sign<T>
+                    int32 cs_i = Math.copy_sign<int32>(42, -1);
+                    if (cs_i != -42) return 13;
+                    int64 cs_l = Math.copy_sign<int64>(100, -5);
+                    if (cs_l != -100) return 14;
+                    float64 cs_f = Math.copy_sign<float64>(9.5, -1.0);
+                    if (cs_f != -9.5) return 15;
+
+                    return 0;
+                }
+            }
+        )";
+        assert_compile_sources_success(sources);
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
 }
