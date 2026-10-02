@@ -155,3 +155,17 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 11.8 [IMPLEMENTED]**: Negative: `Queue.dequeue()` and `Queue.peek()` on empty queue throw `InvalidOperationException` (`tests/solixlib/test_linear_collections.cpp`).
 - [x] **Case 11.9 [IMPLEMENTED]**: Negative: `CircularBuffer.read()` on empty buffer and `enqueue()` on full non-overwrite buffer throw `InvalidOperationException` (`tests/solixlib/test_linear_collections.cpp`).
 - [x] **Case 11.10 [IMPLEMENTED]**: Negative: `BitSet` negative bit index throws `IndexOutOfBoundsException` and null operand throws `IllegalArgumentException` (`tests/solixlib/test_linear_collections.cpp`).
+
+---
+
+## 12. Filesystem (`solix.io.filesystem`: `Path`, `File`, `Directory`)
+
+- [ ] **Case 12.1 [NOT IMPLEMENTED]**: `Path` manipulation: `combine`, `get_directory_name`, `get_file_name`, `get_extension`, `get_file_name_without_extension`, `is_absolute`, `get_temp_path`, and `normalize` (`tests/solixlib/test_filesystem.cpp`).
+- [ ] **Case 12.2 [NOT IMPLEMENTED]**: `File` text I/O: writing, existence check, reading all text, appending text, and size retrieval (`tests/solixlib/test_filesystem.cpp`).
+- [ ] **Case 12.3 [NOT IMPLEMENTED]**: `File` line reading: `read_all_lines` splitting text by line separators into a `List` (`tests/solixlib/test_filesystem.cpp`).
+- [ ] **Case 12.4 [NOT IMPLEMENTED]**: `File` operations: copying, moving, and deleting files (`tests/solixlib/test_filesystem.cpp`).
+- [ ] **Case 12.5 [NOT IMPLEMENTED]**: `Directory` operations: creation, existence, listing files, listing directories, and recursive/non-recursive deletion (`tests/solixlib/test_filesystem.cpp`).
+- [ ] **Case 12.6 [NOT IMPLEMENTED]**: Negative: `File.read_all_text()` on non-existent file throws `FileNotFoundException` (`tests/solixlib/test_filesystem.cpp`).
+- [ ] **Case 12.7 [NOT IMPLEMENTED]**: Negative: `File.delete()` on non-existent file throws `FileNotFoundException` (`tests/solixlib/test_filesystem.cpp`).
+- [ ] **Case 12.8 [NOT IMPLEMENTED]**: Negative: `Directory.delete()` on non-empty directory without recursive flag throws `IOException` (`tests/solixlib/test_filesystem.cpp`).
+- [ ] **Case 12.9 [NOT IMPLEMENTED]**: Negative: `Directory.list_files()` on non-existent directory throws `DirectoryNotFoundException` (`tests/solixlib/test_filesystem.cpp`).
