@@ -138,48 +138,48 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 3.1: Build Default (Debug) Profile from Working Directory [NOT IMPLEMENTED]
+#### Case 3.1: Build Default (Debug) Profile from Working Directory [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Project with valid `solix.json` containing `debug` profile and source files.
 - **Expected**: Exits 0; compiles target sources to specified output path.
 
-#### Case 3.2: Build Specific (Release) Profile [NOT IMPLEMENTED]
+#### Case 3.2: Build Specific (Release) Profile [IMPLEMENTED]
 - **Command**: `solix build -p release`
 - **Setup**: `solix.json` with `release` profile specifying different output and optimization settings.
 - **Expected**: Exits 0; outputs release artifact.
 
-#### Case 3.3: Custom Manifest Path via Flag [NOT IMPLEMENTED]
+#### Case 3.3: Custom Manifest Path via Flag [IMPLEMENTED]
 - **Command**: `solix build -m path/to/project/solix.json`
 - **Setup**: Manifest in custom subdirectory.
 - **Expected**: Exits 0; resolves project paths relative to manifest's parent directory.
 
-#### Case 3.4: Multi-File Project with Dependency Resolution [NOT IMPLEMENTED]
+#### Case 3.4: Multi-File Project with Dependency Resolution [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Project with entry file and auxiliary source files linked via manifest.
 - **Expected**: Exits 0; all source files compiled into output artifact.
 
 ### Negative Test Scenarios
 
-#### Case 3.5: Missing Manifest File [NOT IMPLEMENTED]
+#### Case 3.5: Missing Manifest File [IMPLEMENTED]
 - **Command**: `solix build -m non_existent_solix.json`
 - **Expected**: Exits non-zero; error message "Manifest file does not exist".
 
-#### Case 3.6: Malformed Manifest JSON [NOT IMPLEMENTED]
+#### Case 3.6: Malformed Manifest JSON [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: `solix.json` containing syntax error (unclosed brace).
 - **Expected**: Exits non-zero; error message "Failed to parse solix.json".
 
-#### Case 3.7: Manifest Missing Profiles Section [NOT IMPLEMENTED]
+#### Case 3.7: Manifest Missing Profiles Section [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: `solix.json` with only `name` and `version` fields.
 - **Expected**: Exits non-zero; error message indicating 'profiles' section is missing or invalid.
 
-#### Case 3.8: Requested Profile Does Not Exist [NOT IMPLEMENTED]
+#### Case 3.8: Requested Profile Does Not Exist [IMPLEMENTED]
 - **Command**: `solix build -p non_existent_profile`
 - **Setup**: Valid `solix.json` containing only `debug` profile.
 - **Expected**: Exits non-zero; error message indicating profile was not found.
 
-#### Case 3.9: Missing Source File Specified in Profile [NOT IMPLEMENTED]
+#### Case 3.9: Missing Source File Specified in Profile [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: `solix.json` pointing to non-existent source file.
 - **Expected**: Exits non-zero; error reported indicating file does not exist.
