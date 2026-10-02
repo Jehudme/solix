@@ -65,10 +65,13 @@ public class Directory {
             return entries;
         }
         String combined = new String(raw);
-        String[] parts = combined.split(new String("\n"));
+        String nl = new String("\n");
+        String[] parts = combined.split(nl);
         for (int32 i = 0; i < parts.length; i = i + 1) {
-            if (parts[i].length() > 0) {
-                entries.add(new Any(parts[i]));
+            String p = parts[i];
+            if (p.length() > 0) {
+                Any item = new Any(p);
+                entries.add(item);
             }
         }
         return entries;
