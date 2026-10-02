@@ -19,6 +19,7 @@ add_executable(solix
     src/commands/compile.cpp
     src/commands/execute.cpp
     src/commands/build.cpp
+    src/commands/new.cpp
 )
 
 target_link_libraries(solix PRIVATE solix_language CLI11::CLI11 nlohmann_json::nlohmann_json)
