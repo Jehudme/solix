@@ -94,7 +94,10 @@ A complete `solix.json` manifest structure:
 
 ### 2. Dependencies (`dependencies`)
 
-An array of dependency objects required for building the project:
+An array of dependency objects required for building the project. Solix supports two dependency resolver types:
+
+#### Source Dependency (`type: "source"`)
+Direct source file dependency.
 
 ```json
 {
@@ -103,10 +106,39 @@ An array of dependency objects required for building the project:
 }
 ```
 
-| Subfield | Type | Description |
-|---|---|---|
-| `type` | String | Dependency resolver type (`source` for local source files). |
-| `path` | String | Relative or absolute path to the dependent source file. |
+| Subfield | Type | Required | Description |
+|---|---|---|---|
+| `type` | String | **Yes** | Must be `"source"`. |
+| `path` | String | **Yes** | Relative or absolute path to the dependent `.slx` source file. |
+
+#### Project Dependency (`type: "project"`)
+A complete external or local Solix project dependency.
+
+```json
+{
+  "type": "project",
+  "name": "math_lib",
+  "version": "1.2.0",
+  "path": "../math_lib"
+}
+```
+
+| Subfield | Type | Required | Description |
+|---|---|---|---|
+| `type` | String | **Yes** | Must be `"project"`. |
+| `name` | String | **Yes** | Unique project/package name matching the target `solix.json`. |
+| `version` | String | **Yes** | Semantic version requirement string (e.g. `1.2.0`). |
+| `path` | String | No | Relative or absolute filesystem path to the project directory (or its `solix.json`). If omitted, Solix automatically looks up the package in `$SOLIX_HOME` via `PackageManager`. |
+
+#### Dependency Resolution & SemVer Rules
+Before any compilation begins, Solix performs graph walking and semantic version resolution across all direct and transitive project dependencies:
+- **Transitive Discovery**: If project A depends on project B, and project B depends on project C, all three projects and their source trees are discovered and linked.
+- **Circular / Mutual Dependencies**: Circular project dependencies (e.g. A depends on B and B depends on A) are recognized and de-duplicated gracefully without error or infinite recursion.
+- **SemVer Conflict Resolution**:
+  - **Different Major Versions**: Halts immediately with a pre-compilation **Error**. Breaking API changes across major versions cannot be resolved automatically.
+  - **Same Major, Different Minor Versions**: Outputs a **Warning** and automatically selects the candidate with the highest minor version.
+  - **Same Major and Minor, Different Patch Versions**: Silently and cleanly selects the candidate with the highest patch version.
+- **Pre-Compilation Verification**: If any required manifest path or source file cannot be found anywhere in the dependency graph, `solix build` aborts with an informative error before invoking the compiler.
 
 ### 3. Build Profiles (`profiles`)
 

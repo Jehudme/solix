@@ -124,28 +124,10 @@ void setup_build_command(CLI::App &app) {
             }
         }
 
-        // 3. Modular Dependency Resolution
+        // 3. Pre-Compilation Modular Dependency & Transitive Project Resolution
         DependencyManager dep_mgr;
-
-        // Resolve root dependencies
-        if (root.contains("dependencies") && root["dependencies"].is_array()) {
-            for (const auto& dep : root["dependencies"]) {
-                if (!dep_mgr.resolve_dependency(dep, project_root, *opts)) {
-                    cli_exit(1);
-                }
-            }
-        }
-
-        // Resolve profile-specific additional_dependencies
-        if (profile.contains("compilation") && profile["compilation"].is_object()) {
-            const auto& comp = profile["compilation"];
-            if (comp.contains("additional_dependencies") && comp["additional_dependencies"].is_array()) {
-                for (const auto& dep : comp["additional_dependencies"]) {
-                    if (!dep_mgr.resolve_dependency(dep, project_root, *opts)) {
-                        cli_exit(1);
-                    }
-                }
-            }
+        if (!dep_mgr.resolve_all(root, project_root, profile, *opts)) {
+            cli_exit(1);
         }
 
         if (opts->sources.empty()) {

@@ -118,6 +118,27 @@ solix build -p release
 
 Output: `build/release/out.slxbin`.
 
+### Multi-Project & Library Dependencies
+
+Solix makes modular development seamless by allowing you to depend directly on other Solix projects in `solix.json`:
+
+```json
+{
+  "project": "my_app",
+  "version": "1.0.0",
+  "dependencies": [
+    { "type": "source", "path": "src/main.slx" },
+    { "type": "project", "name": "math_lib", "version": "1.2.0", "path": "../math_lib" }
+  ]
+}
+```
+
+When building:
+- **Transitive Dependencies**: If `math_lib` depends on `core_lib`, `core_lib` will also be discovered and compiled automatically.
+- **Mutual/Circular Dependencies**: Projects referencing each other compile together cleanly without infinite recursion.
+- **SemVer Rules**: Same major with different minor versions issues a warning and selects the highest minor version; patch differences resolve silently; major version mismatches fail with an error before compilation.
+- **Local Registry Resolution**: If `path` is omitted, Solix automatically locates installed packages from `$SOLIX_HOME`.
+
 ---
 
 ## Running Your Application (`solix run`)
