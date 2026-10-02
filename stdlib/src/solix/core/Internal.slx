@@ -1,7 +1,0 @@
-package solix.core;
-
-public class Internal {
-    public static int32 version() {
-        return 1;
-    }
-}
