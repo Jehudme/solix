@@ -34,6 +34,7 @@
 | **Phase 17** | Runtime Core & Dynamic Shared Library Loader | `P1 High` | `language`, `tests`, `docs` | - [x] Completed |
 | **Phase 18** | CLI Auto-Discovery, Manifest Integration & Developer Guide | `P1 High` | `launcher`, `tests`, `docs` | - [x] Completed |
 | **Phase 19** | GitHub Actions CI Verification & Multi-Platform Validation | `P0 Blocker` | `ci`, `runtime` | - [x] Completed |
+| **Phase 20** | Standard Library Project Scaffolding & Native Library Setup | `P1 High` | `stdlib`, `build`, `tests`, `docs` | - [ ] In Progress |
 
 ---
 
@@ -784,6 +785,55 @@ Verify that the complete native dynamic library loading system, CLI auto-discove
 ### Acceptance Criteria
 - All 4 matrix jobs in `.github/workflows/integration.yml` pass with 100% success.
 - Native dynamic library loading verified functional on Windows (`.dll`), Linux (`.so`), and macOS (`.dylib`).
+
+---
+
+## Phase 20: Standard Library Project Scaffolding & Native Library Setup
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `stdlib/` (`solix.json`, `CMakeLists.txt`, `src/`, `native/`), `CMakeLists.txt` (root), `tests/commands/` (`test_package_commands.cpp`, `TESTS.md`), `docs/spec/stdlib/`
+- **Status**: - [ ] In Progress
+
+### Objective
+Establish the foundational standard library project structure in `stdlib/` with full package manager installability (`solix install`) and companion native C/C++ shared library (`solix_stdlib_native`) compilation. Maintain zero coupling to the launcher binary, enabling SemVer-based stdlib versioning and modular dependency resolution. Provide an empty native registration skeleton without implementing specific native functions yet, ensuring that CMake automatically outputs the shared library into `stdlib/lib/` and that the complete project can be installed into `$SOLIX_HOME` and consumed by user projects.
+
+### Identified Test & Documentation Deliverables
+- **1. Identified Test Deliverables (`tests/commands/TESTS.md` & `tests/commands/test_package_commands.cpp`)**:
+  - Add Cases 4.10 to 4.14 to Suite 4:
+    - **Case 4.10**: Install `stdlib` project from local path via `solix install stdlib`.
+    - **Case 4.11**: Verify `solix package list` reports `solix.stdlib` v0.1.0 as installed with valid ID.
+    - **Case 4.12**: Verify native library `solix_stdlib_native` is present in installed directory (`installed/<id>/lib/`).
+    - **Case 4.13**: Verify a consumer project referencing installed `solix.stdlib` compiles and runs.
+    - **Case 4.14**: Negative: Re-installing `solix.stdlib` without `--force` fails with exit code 1.
+- **2. Identified Documentation Deliverables**:
+  - `docs/spec/stdlib/scaffolding.md`: Formal specification of standard library project layout, CMake companion target, and packaging lifecycle.
+  - Update `docs/spec/README.md`.
+
+### Action Items
+- [ ] **1. Define Test Specification in `tests/commands/TESTS.md`**:
+  - Add Cases 4.10 to 4.14 tagged with `[NOT IMPLEMENTED]`.
+- [ ] **2. Scaffold `stdlib/` Project and Native Companion**:
+  - Author `stdlib/solix.json` defining `solix.stdlib` v0.1.0.
+  - Create minimal `stdlib/src/solix/core/Internal.slx` placeholder.
+  - Create `stdlib/native/src/register.cpp` with empty `solix_register_natives` hook.
+  - Author `stdlib/CMakeLists.txt` configuring target `solix_stdlib_native` and outputting directly into `stdlib/lib/`.
+  - Wire `add_subdirectory(stdlib)` into root `CMakeLists.txt`.
+- [ ] **3. Implement Integration Tests (`tests/commands/test_package_commands.cpp`)**:
+  - Implement Cases 4.10 to 4.14.
+  - Update `tests/commands/TESTS.md` tags to `[IMPLEMENTED]`.
+- [ ] **4. Author Specifications**:
+  - Create `docs/spec/stdlib/scaffolding.md`.
+  - Update `docs/spec/README.md`.
+- [ ] **5. Full Regression Testing & Merge**:
+  - Run `ctest --test-dir build --output-on-failure`.
+  - Non-fast-forward merge into `master`.
+
+### Acceptance Criteria
+- `stdlib` is a valid Solix project with a valid `solix.json` manifest.
+- CMake builds `solix_stdlib_native` and deposits the binary in `stdlib/lib/`.
+- `solix install stdlib` successfully copies the project and native library into `$SOLIX_HOME`.
+- All 49 existing test suites and new package installation tests pass 100%.
+
 
 
 
