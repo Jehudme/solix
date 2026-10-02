@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `solix.core` primitives module provides language-level contracts, boxed primitive wrappers, IEEE 754 floating-point utilities, the generic `Optional<T>` container for safe absent values, and `Any` for dynamic value encapsulation.
+The `solix.core` primitives module provides language-level contracts, boxed primitive wrappers, IEEE 754 floating-point utilities, and the generic `Optional<T>` container for safe absent values.
 
 ---
 
@@ -111,39 +111,11 @@ Generic container representing optional or absent values without null-pointer vu
 - `new Optional<T>()`: Constructs empty optional (`has_value() == false`).
 - `new Optional<T>(T val)`: Constructs present optional (`has_value() == true`).
 
-### Query & Value Access
+### Query, Value Access & Functional Operations
 - `has_value() -> bool`: Returns `true` if a value is contained.
 - `is_empty() -> bool`: Returns `true` if no value is present.
 - `value() -> T`: Retrieves contained value. Throws `InvalidOperationException` if empty.
 - `value_or(T fallback) -> T`: Returns contained value if present, or `fallback` if empty.
+- `if_present(void(*)(T) consumer) -> void`: Executes `consumer` callback with the contained value if present.
+- `filter(bool(*)(T) predicate) -> Optional<T>`: Returns `this` if present and `predicate(value)` is true, or empty Optional otherwise.
 - `to_string() -> String`: Returns `"Optional.of(...)"` or `"Optional.empty"`.
-
----
-
-## 4. Container: `Any`
-
-Universal dynamic value encapsulation supporting primitive boxing, object wrapping, and type inspection.
-
-### Constructors & Factories
-- `new Any(int32 val)` / `Any.from_int(val)`
-- `new Any(float64 val)` / `Any.from_double(val)`
-- `new Any(bool val)` / `Any.from_bool(val)`
-- `new Any(char val)` / `Any.from_char(val)`
-- `new Any(String val)` / `Any.from_string(val)`
-- `new Any(IStringable val)` / `Any.from_object(val)`
-
-### Inspection & Unwrapping
-- `is_null() -> bool`
-- `is_int() -> bool`
-- `is_double() -> bool`
-- `is_bool() -> bool`
-- `is_char() -> bool`
-- `is_string() -> bool`
-- `is_object() -> bool`
-- `type_name() -> String`: Returns `"int32"`, `"float64"`, `"bool"`, `"char"`, `"String"`, `"Object"`, or `"null"`.
-- `as_int() -> int32`: Unwraps int32. Throws `InvalidOperationException` if kind mismatch.
-- `as_double() -> float64`: Unwraps float64. Throws `InvalidOperationException` if kind mismatch.
-- `as_bool() -> bool`: Unwraps bool. Throws `InvalidOperationException` if kind mismatch.
-- `as_char() -> char`: Unwraps char. Throws `InvalidOperationException` if kind mismatch.
-- `as_string() -> String`: Unwraps String. Throws `InvalidOperationException` if kind mismatch.
-- `as_object() -> IStringable`: Unwraps object reference. Throws `InvalidOperationException` if kind mismatch.

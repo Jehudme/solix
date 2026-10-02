@@ -16,12 +16,13 @@ A static utility class providing mathematical constants and functions.
 - `TAU`: Ratio of circumference to radius ($2\pi \approx 6.283185307179586$).
 - `EPSILON`: Minimal non-zero floating-point comparison threshold ($10^{-15}$).
 
-### Basic Arithmetic & Bounds
-- `abs(int32 v) -> int32`, `abs(int64 v) -> int64`, `abs(float64 v) -> float64`: Returns absolute value.
-- `min(a, b)`, `max(a, b)`: Overloaded for `int32`, `int64`, and `float64`.
-- `clamp(val, min_val, max_val)`: Constrains `val` within `[min_val, max_val]`.
-- `sign(v)`: Returns `-1`, `0`, or `1` depending on value sign.
-- `copy_sign(magnitude, sign_val)`: Composes magnitude of first with sign of second.
+### Basic Arithmetic & Bounds (Generic)
+- `abs<T>(T v) -> T`: Generic template returning absolute value for any numeric type `T`.
+- `min<T>(T a, T b) -> T`: Generic template returning the lesser of two values.
+- `max<T>(T a, T b) -> T`: Generic template returning the greater of two values.
+- `clamp<T>(T val, T min_val, T max_val) -> T`: Generic template constraining `val` within `[min_val, max_val]`.
+- `sign<T>(T v) -> int32`: Returns `-1`, `0`, or `1` depending on value sign.
+- `copy_sign<T>(T magnitude, T sign_val) -> T`: Composes magnitude of first with sign of second for type `T`.
 
 ### Exponential & Logarithmic
 - `sqrt(float64 v) -> float64`: Square root.

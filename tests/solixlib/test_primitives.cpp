@@ -177,40 +177,46 @@ TEST_CASE("Standard Library - solix.core.Primitives & Types", "[solixlib][primit
         REQUIRE(run_solixlib_sources(sources) == 0);
     }
 
-    SECTION("Case 4.6: Any dynamic container boxing and unwrapping") {
+    SECTION("Case 4.6: Optional<T> functional operations (if_present, filter)") {
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
-            import solix.core.Any;
+            import solix.core.Optional;
             import solix.core.String;
+
+            class Cell {
+                public int32 value;
+                public Cell(int32 v) { this.value = v; }
+            }
 
             class Main {
                 public static int32 main() {
-                    Any any_int = Any.from_int(42);
-                    if (!any_int.is_int()) return 1;
-                    if (any_int.as_int() != 42) return 2;
-                    if (!any_int.type_name().equals(new String("int32"))) return 3;
+                    Cell c = new Cell(0);
+                    Optional<int32> some = new Optional<int32>(42);
+                    some.if_present([c](int32 v) => {
+                        c.value = v;
+                    });
+                    if (c.value != 42) return 1;
 
-                    Any any_str = Any.from_string(new String("Hello"));
-                    if (!any_str.is_string()) return 4;
-                    if (!any_str.as_string().equals(new String("Hello"))) return 5;
-                    if (!any_str.type_name().equals(new String("String"))) return 6;
+                    // if_present on empty should not execute callback
+                    Optional<int32> empty = new Optional<int32>();
+                    empty.if_present([c](int32 v) => {
+                        c.value = 999;
+                    });
+                    if (c.value != 42) return 2;
 
-                    Any any_bool = Any.from_bool(true);
-                    if (!any_bool.is_bool()) return 7;
-                    if (!any_bool.as_bool()) return 8;
+                    // filter matching
+                    Optional<int32> filtered_pass = some.filter([](int32 v) => v > 10);
+                    if (!filtered_pass.has_value()) return 3;
+                    if (filtered_pass.value() != 42) return 4;
 
-                    Any any_dbl = Any.from_double(1.5);
-                    if (!any_dbl.is_double()) return 9;
-                    if (any_dbl.as_double() < 1.4 || any_dbl.as_double() > 1.6) return 10;
+                    // filter discarding
+                    Optional<int32> filtered_fail = some.filter([](int32 v) => v > 100);
+                    if (filtered_fail.has_value()) return 5;
+                    if (!filtered_fail.is_empty()) return 6;
 
-                    Any any_ch = Any.from_char('Z');
-                    if (!any_ch.is_char()) return 11;
-                    if (any_ch.as_char() != 'Z') return 12;
-
-                    // Equality
-                    Any same_int = Any.from_int(42);
-                    if (!any_int.equals(same_int)) return 13;
-                    if (any_int.equals(any_str)) return 14;
+                    // filter on already empty
+                    Optional<int32> empty_filtered = empty.filter([](int32 v) => true);
+                    if (empty_filtered.has_value()) return 7;
 
                     return 0;
                 }
@@ -220,30 +226,7 @@ TEST_CASE("Standard Library - solix.core.Primitives & Types", "[solixlib][primit
         REQUIRE(run_solixlib_sources(sources) == 0);
     }
 
-    SECTION("Case 4.7: Negative: Any invalid unwrapping throws InvalidOperationException") {
-        auto sources = load_solixlib_sources();
-        sources["main.slx"] = R"(
-            import solix.core.Any;
-            import solix.exceptions.InvalidOperationException;
-
-            class Main {
-                public static int32 main() {
-                    Any any_int = Any.from_int(99);
-                    try {
-                        String s = any_int.as_string();
-                        return 1; // Should not reach here
-                    } catch (InvalidOperationException e) {
-                        return 0; // Success
-                    }
-                    return 2;
-                }
-            }
-        )";
-        assert_compile_sources_success(sources);
-        REQUIRE(run_solixlib_sources(sources) == 0);
-    }
-
-    SECTION("Case 4.8: Negative: Int.parse and Double.parse throw FormatException") {
+    SECTION("Case 4.7: Negative: Int.parse and Double.parse throw FormatException") {
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
             import solix.core.Int;

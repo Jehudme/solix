@@ -70,7 +70,7 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 4.3 [IMPLEMENTED]**: Boxed `Bool` and `Char` operations, character classification (`is_digit`, `is_letter`, `is_whitespace`, `is_upper_case`, `is_lower_case`), and casing transformations (`tests/solixlib/test_primitives.cpp`).
 - [x] **Case 4.4 [IMPLEMENTED]**: `Optional<T>` value presence, unwrapping, and fallback (`has_value`, `is_empty`, `value`, `value_or`) (`tests/solixlib/test_primitives.cpp`).
 - [x] **Case 4.5 [IMPLEMENTED]**: Negative: accessing `Optional.empty().value()` throws `InvalidOperationException` (`tests/solixlib/test_primitives.cpp`).
-- [ ] **Case 4.6 [NOT IMPLEMENTED]**: `Optional<T>` functional operations: `if_present(consumer)` callback execution and `filter(predicate)` matching/discarding (`tests/solixlib/test_primitives.cpp`).
+- [x] **Case 4.6 [IMPLEMENTED]**: `Optional<T>` functional operations: `if_present(consumer)` callback execution and `filter(predicate)` matching/discarding (`tests/solixlib/test_primitives.cpp`).
 - [x] **Case 4.7 [IMPLEMENTED]**: Negative: `Int.parse()` and `Double.parse()` with non-numeric inputs throw `FormatException` (`tests/solixlib/test_primitives.cpp`).
 
 ---
@@ -82,7 +82,7 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 5.3 [IMPLEMENTED]**: Trigonometric, degree/radian conversions, and rounding (`sin`, `cos`, `to_radians`, `to_degrees`, `floor`, `ceil`, `round`, `trunc`) (`tests/solixlib/test_math.cpp`).
 - [x] **Case 5.4 [IMPLEMENTED]**: PRNG determinism with seed and distribution across integer ranges, floats, and booleans (`tests/solixlib/test_math.cpp`).
 - [x] **Case 5.5 [IMPLEMENTED]**: Negative: Random bounds validation throws `IllegalArgumentException` on invalid/negative bounds or inverted ranges (`tests/solixlib/test_math.cpp`).
-- [ ] **Case 5.6 [NOT IMPLEMENTED]**: Generic `Math` operations across numeric types (`int32`, `int64`, `float64`) using explicit and inferred templates for `abs<T>`, `min<T>`, `max<T>`, `clamp<T>`, `sign<T>`, and `copy_sign<T>` (`tests/solixlib/test_math.cpp`).
+- [x] **Case 5.6 [IMPLEMENTED]**: Generic `Math` operations across numeric types (`int32`, `int64`, `float64`) using explicit and inferred templates for `abs<T>`, `min<T>`, `max<T>`, `clamp<T>`, `sign<T>`, and `copy_sign<T>` (`tests/solixlib/test_math.cpp`).
 
 ---
 
