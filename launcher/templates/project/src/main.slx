@@ -1,0 +1,3 @@
+static int32 main() {
+    return 0;
+}

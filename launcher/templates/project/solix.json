@@ -1,0 +1,85 @@
+{
+  "project": "unknown",
+  "version": "0.1.0",
+  "description": null,
+  "tags": [],
+  "author": null,
+  "license": null,
+  "dependencies": [
+    {
+      "type": "source",
+      "path": "src/main.slx"
+    }
+  ],
+  "profiles": {
+    "release": {
+      "output_directory": "build/release",
+      "relative_paths": true,
+      "exe_filename": "out.slxbin",
+      "asm_filename": "out.slxasm",
+      "compilation": {
+        "entry_point": "main",
+        "multithreaded": true,
+        "additional_dependencies": [],
+        "logs": {
+          "level": "warning",
+          "flush_level": "warning",
+          "filename": "logs/release.log",
+          "sink": "STDOUT",
+          "pattern": "[%^%-8l%$] [%-12n] %v"
+        }
+      },
+      "runtime": {
+        "heap_size": null,
+        "stack_size": null,
+        "arguments": []
+      }
+    },
+    "debug": {
+      "output_directory": "build/debug",
+      "relative_paths": true,
+      "exe_filename": "out.slxbin",
+      "asm_filename": "out.slxasm",
+      "compilation": {
+        "entry_point": "main",
+        "multithreaded": false,
+        "additional_dependencies": [],
+        "logs": {
+          "level": "debug",
+          "flush_level": "debug",
+          "filename": "logs/debug.log",
+          "sink": "STDOUT",
+          "pattern": "[%^%-8l%$] [%-12n] %v"
+        }
+      },
+      "runtime": {
+        "heap_size": null,
+        "stack_size": null,
+        "arguments": []
+      }
+    },
+    "test": {
+      "output_directory": "build/test",
+      "relative_paths": true,
+      "exe_filename": "out.slxbin",
+      "asm_filename": "out.slxasm",
+      "compilation": {
+        "entry_point": "main",
+        "multithreaded": false,
+        "additional_dependencies": [],
+        "logs": {
+          "level": "debug",
+          "flush_level": "debug",
+          "filename": "logs/test.log",
+          "sink": "STDOUT",
+          "pattern": "[%^%-8l%$] [%-12n] %v"
+        }
+      },
+      "runtime": {
+        "heap_size": null,
+        "stack_size": null,
+        "arguments": []
+      }
+    }
+  }
+}
