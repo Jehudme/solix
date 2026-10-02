@@ -1,0 +1,257 @@
+package solix.collections;
+
+import solix.core.Any;
+import solix.core.String;
+import solix.core.StringBuilder;
+import solix.exceptions.KeyNotFoundException;
+import solix.exceptions.NoSuchElementException;
+
+public class TreeMap implements IMap {
+    private TreeMapNode _root;
+    private int32 _size;
+
+    public TreeMap() {
+        this._root = null;
+        this._size = 0;
+    }
+
+    private int32 compare(Any a, Any b) {
+        if (a == null && b == null) return 0;
+        if (a == null) return -1;
+        if (b == null) return 1;
+        if (a.is_int() && b.is_int()) {
+            int32 ia = a.as_int32();
+            int32 ib = b.as_int32();
+            if (ia < ib) return -1;
+            if (ia > ib) return 1;
+            return 0;
+        }
+        if (a.is_string() && b.is_string()) {
+            return a.as_string().compare_to(b.as_string());
+        }
+        int32 ha = a.hash_code();
+        int32 hb = b.hash_code();
+        if (ha < hb) return -1;
+        if (ha > hb) return 1;
+        return 0;
+    }
+
+    public int32 size() {
+        return this._size;
+    }
+
+    public bool is_empty() {
+        return this._size == 0;
+    }
+
+    public void clear() {
+        this._root = null;
+        this._size = 0;
+    }
+
+    private TreeMapNode find_node(Any key) {
+        TreeMapNode cur = this._root;
+        while (cur != null) {
+            int32 cmp = this.compare(key, cur.key);
+            if (cmp < 0) {
+                cur = cur.left;
+            } else if (cmp > 0) {
+                cur = cur.right;
+            } else {
+                return cur;
+            }
+        }
+        return null;
+    }
+
+    public bool contains_key(Any key) {
+        return this.find_node(key) != null;
+    }
+
+    public bool contains_value(Any value) {
+        List vList = this.values();
+        return vList.contains(value);
+    }
+
+    public Any get(Any key) {
+        TreeMapNode node = this.find_node(key);
+        if (node == null) {
+            throw new KeyNotFoundException("Key not found in TreeMap");
+        }
+        return node.value;
+    }
+
+    public Any get_or_default(Any key, Any default_val) {
+        TreeMapNode node = this.find_node(key);
+        if (node == null) {
+            return default_val;
+        }
+        return node.value;
+    }
+
+    public void put(Any key, Any value) {
+        if (this._root == null) {
+            this._root = new TreeMapNode(key, value, null);
+            this._size = 1;
+            return;
+        }
+        TreeMapNode cur = this._root;
+        TreeMapNode parent = null;
+        int32 cmp = 0;
+        while (cur != null) {
+            parent = cur;
+            cmp = this.compare(key, cur.key);
+            if (cmp < 0) {
+                cur = cur.left;
+            } else if (cmp > 0) {
+                cur = cur.right;
+            } else {
+                cur.value = value;
+                return;
+            }
+        }
+        TreeMapNode node = new TreeMapNode(key, value, parent);
+        if (cmp < 0) {
+            parent.left = node;
+        } else {
+            parent.right = node;
+        }
+        this._size = this._size + 1;
+    }
+
+    private void replace_node_in_parent(TreeMapNode node, TreeMapNode new_child) {
+        if (node.parent == null) {
+            this._root = new_child;
+        } else if (node == node.parent.left) {
+            node.parent.left = new_child;
+        } else {
+            node.parent.right = new_child;
+        }
+        if (new_child != null) {
+            new_child.parent = node.parent;
+        }
+    }
+
+    private TreeMapNode min_node(TreeMapNode node) {
+        TreeMapNode cur = node;
+        while (cur.left != null) {
+            cur = cur.left;
+        }
+        return cur;
+    }
+
+    public Any remove(Any key) {
+        TreeMapNode node = this.find_node(key);
+        if (node == null) {
+            return null;
+        }
+        Any old = node.value;
+        if (node.left != null && node.right != null) {
+            TreeMapNode succ = this.min_node(node.right);
+            node.key = succ.key;
+            node.value = succ.value;
+            this.replace_node_in_parent(succ, succ.right);
+        } else if (node.left != null) {
+            this.replace_node_in_parent(node, node.left);
+        } else if (node.right != null) {
+            this.replace_node_in_parent(node, node.right);
+        } else {
+            this.replace_node_in_parent(node, null);
+        }
+        this._size = this._size - 1;
+        return old;
+    }
+
+    public Any first_key() {
+        if (this._root == null) {
+            throw new NoSuchElementException("TreeMap is empty");
+        }
+        return this.min_node(this._root).key;
+    }
+
+    public Any last_key() {
+        if (this._root == null) {
+            throw new NoSuchElementException("TreeMap is empty");
+        }
+        TreeMapNode cur = this._root;
+        while (cur.right != null) {
+            cur = cur.right;
+        }
+        return cur.key;
+    }
+
+    private void inorder_keys(TreeMapNode node, List out) {
+        if (node == null) return;
+        this.inorder_keys(node.left, out);
+        out.add(node.key);
+        this.inorder_keys(node.right, out);
+    }
+
+    private void inorder_values(TreeMapNode node, List out) {
+        if (node == null) return;
+        this.inorder_values(node.left, out);
+        out.add(node.value);
+        this.inorder_values(node.right, out);
+    }
+
+    private void inorder_entries(TreeMapNode node, List out) {
+        if (node == null) return;
+        this.inorder_entries(node.left, out);
+        KeyValuePair kvp = new KeyValuePair(node.key, node.value);
+        out.add(new Any(kvp));
+        this.inorder_entries(node.right, out);
+    }
+
+    public List keys() {
+        List list = new List(this._size);
+        this.inorder_keys(this._root, list);
+        return list;
+    }
+
+    public List values() {
+        List list = new List(this._size);
+        this.inorder_values(this._root, list);
+        return list;
+    }
+
+    public List entries() {
+        List list = new List(this._size);
+        this.inorder_entries(this._root, list);
+        return list;
+    }
+
+    public String to_string() {
+        List kList = this.keys();
+        List vList = this.values();
+        StringBuilder sb = new StringBuilder();
+        sb.append_char('{');
+        for (int32 i = 0; i < kList.size(); i = i + 1) {
+            if (i > 0) {
+                sb.append_char(',');
+                sb.append_char(' ');
+            }
+            Any k = kList.get(i);
+            Any v = vList.get(i);
+            if (k == null) {
+                sb.append_char('n');
+                sb.append_char('u');
+                sb.append_char('l');
+                sb.append_char('l');
+            } else {
+                sb.append(k.to_string());
+            }
+            sb.append_char(':');
+            sb.append_char(' ');
+            if (v == null) {
+                sb.append_char('n');
+                sb.append_char('u');
+                sb.append_char('l');
+                sb.append_char('l');
+            } else {
+                sb.append(v.to_string());
+            }
+        }
+        sb.append_char('}');
+        return sb.to_string();
+    }
+}

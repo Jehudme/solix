@@ -1,0 +1,19 @@
+package solix.collections;
+
+import solix.core.Any;
+
+public class TreeMapNode {
+    public Any key;
+    public Any value;
+    public TreeMapNode left;
+    public TreeMapNode right;
+    public TreeMapNode parent;
+
+    public TreeMapNode(Any k, Any v, TreeMapNode p) {
+        this.key = k;
+        this.value = v;
+        this.parent = p;
+        this.left = null;
+        this.right = null;
+    }
+}

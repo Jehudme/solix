@@ -1,0 +1,47 @@
+package solix.collections;
+
+import solix.core.Any;
+import solix.core.IStringable;
+import solix.core.String;
+import solix.core.StringBuilder;
+
+public class KeyValuePair implements IStringable {
+    public Any key;
+    public Any value;
+
+    public KeyValuePair(Any k, Any v) {
+        this.key = k;
+        this.value = v;
+    }
+
+    public Any get_key() {
+        return this.key;
+    }
+
+    public Any get_value() {
+        return this.value;
+    }
+
+    public String to_string() {
+        StringBuilder sb = new StringBuilder();
+        if (this.key == null) {
+            sb.append_char('n');
+            sb.append_char('u');
+            sb.append_char('l');
+            sb.append_char('l');
+        } else {
+            sb.append(this.key.to_string());
+        }
+        sb.append_char(':');
+        sb.append_char(' ');
+        if (this.value == null) {
+            sb.append_char('n');
+            sb.append_char('u');
+            sb.append_char('l');
+            sb.append_char('l');
+        } else {
+            sb.append(this.value.to_string());
+        }
+        return sb.to_string();
+    }
+}

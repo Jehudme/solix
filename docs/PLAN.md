@@ -44,7 +44,7 @@
 | **Phase 26** | Standard Library: `solix.time.Chrono` (`Duration`, `Instant`, `DateTime`, `Stopwatch`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
 | **Phase 27** | Standard Library: `solix.collections.Core` (Interfaces, `IIterable`, `ICollection`, `to_string`) | `P1 High` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 28** | Standard Library: `solix.collections.List` (`List<T>` Array & `LinkedList<T>`) | `P1 High` | `solixlib`, `tests` | - [x] Complete |
-| **Phase 29** | Standard Library: `solix.collections.Map` (`HashMap<K, V>` & `TreeMap<K, V>`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
+| **Phase 29** | Standard Library: `solix.collections.Map` (`HashMap<K, V>` & `TreeMap<K, V>`) | `P1 High` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 30** | Standard Library: `solix.collections.Set` (`HashSet<T>` & `TreeSet<T>`) | `P2 Medium` | `solixlib`, `tests` | - [ ] Planned |
 | **Phase 31** | Standard Library: `solix.collections.Linear` (`Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, `BitSet`) | `P2 Medium` | `solixlib`, `tests` | - [ ] Planned |
 | **Phase 32** | Standard Library: `solix.io.filesystem` (Unified Path & File System Operations) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
@@ -1422,7 +1422,7 @@ Implement two complementary sequential collection types:
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `solixlib/project/src/solix/collections/IMap.slx`, `HashMap.slx`, `TreeMap.slx`, `KeyValuePair.slx`, `tests/solixlib/test_map.cpp`, `docs/spec/solixlib/map.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Complete
 
 ### Objective
 Implement both unordered and ordered associative key-value dictionaries:
@@ -1459,10 +1459,10 @@ Implement both unordered and ordered associative key-value dictionaries:
   - `docs/spec/solixlib/map.md`: Hash distribution vs Red-Black tree complexity, load factors, and API specifications.
 
 ### Action Items
-- [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Author `IMap.slx`, `KeyValuePair.slx`, `HashMap.slx`, and `TreeMap.slx`.
-- [ ] Implement Catch2 test suite `tests/solixlib/test_map.cpp`.
-- [ ] Author `docs/spec/solixlib/map.md`.
+- [x] Define test specification in `tests/solixlib/TESTS.md`.
+- [x] Author `IMap.slx`, `KeyValuePair.slx`, `HashMap.slx`, and `TreeMap.slx`.
+- [x] Implement Catch2 test suite `tests/solixlib/test_map.cpp`.
+- [x] Author `docs/spec/solixlib/map.md`.
 
 ---
 

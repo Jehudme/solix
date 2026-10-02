@@ -1,0 +1,246 @@
+package solix.collections;
+
+import solix.core.Any;
+import solix.core.String;
+import solix.core.StringBuilder;
+import solix.exceptions.KeyNotFoundException;
+
+public class HashMap implements IMap {
+    private HashMapEntry[] _table;
+    private int32 _size;
+    private int32 _threshold;
+
+    public HashMap() {
+        this._table = new HashMapEntry[16];
+        this._size = 0;
+        this._threshold = 12;
+    }
+
+    public HashMap(int32 initial_capacity) {
+        if (initial_capacity < 4) {
+            initial_capacity = 4;
+        }
+        this._table = new HashMapEntry[initial_capacity];
+        this._size = 0;
+        this._threshold = initial_capacity * 3 / 4;
+    }
+
+    private int32 hash(Any key) {
+        if (key == null) return 0;
+        int32 h = key.hash_code();
+        if (h < 0) h = 0 - h;
+        return h;
+    }
+
+    private int32 index_for(int32 h, int32 length) {
+        return h % length;
+    }
+
+    private bool keys_equal(Any k1, Any k2) {
+        if (k1 == null && k2 == null) return true;
+        if (k1 == null || k2 == null) return false;
+        return k1.equals(k2);
+    }
+
+    private bool values_equal(Any v1, Any v2) {
+        if (v1 == null && v2 == null) return true;
+        if (v1 == null || v2 == null) return false;
+        return v1.equals(v2);
+    }
+
+    public int32 size() {
+        return this._size;
+    }
+
+    public bool is_empty() {
+        return this._size == 0;
+    }
+
+    public void clear() {
+        for (int32 i = 0; i < this._table.length; i = i + 1) {
+            this._table[i] = null;
+        }
+        this._size = 0;
+    }
+
+    public bool contains_key(Any key) {
+        int32 h = this.hash(key);
+        int32 idx = this.index_for(h, this._table.length);
+        HashMapEntry e = this._table[idx];
+        while (e != null) {
+            if (e.hash == h && this.keys_equal(e.key, key)) {
+                return true;
+            }
+            e = e.next;
+        }
+        return false;
+    }
+
+    public bool contains_value(Any value) {
+        for (int32 i = 0; i < this._table.length; i = i + 1) {
+            HashMapEntry e = this._table[i];
+            while (e != null) {
+                if (this.values_equal(e.value, value)) {
+                    return true;
+                }
+                e = e.next;
+            }
+        }
+        return false;
+    }
+
+    public Any get(Any key) {
+        int32 h = this.hash(key);
+        int32 idx = this.index_for(h, this._table.length);
+        HashMapEntry e = this._table[idx];
+        while (e != null) {
+            if (e.hash == h && this.keys_equal(e.key, key)) {
+                return e.value;
+            }
+            e = e.next;
+        }
+        throw new KeyNotFoundException("Key not found in HashMap");
+    }
+
+    public Any get_or_default(Any key, Any default_val) {
+        int32 h = this.hash(key);
+        int32 idx = this.index_for(h, this._table.length);
+        HashMapEntry e = this._table[idx];
+        while (e != null) {
+            if (e.hash == h && this.keys_equal(e.key, key)) {
+                return e.value;
+            }
+            e = e.next;
+        }
+        return default_val;
+    }
+
+    public void put(Any key, Any value) {
+        int32 h = this.hash(key);
+        int32 idx = this.index_for(h, this._table.length);
+        HashMapEntry e = this._table[idx];
+        while (e != null) {
+            if (e.hash == h && this.keys_equal(e.key, key)) {
+                e.value = value;
+                return;
+            }
+            e = e.next;
+        }
+        this._table[idx] = new HashMapEntry(key, value, h, this._table[idx]);
+        this._size = this._size + 1;
+        if (this._size >= this._threshold) {
+            this.resize(this._table.length * 2);
+        }
+    }
+
+    private void resize(int32 new_cap) {
+        HashMapEntry[] new_table = new HashMapEntry[new_cap];
+        for (int32 i = 0; i < this._table.length; i = i + 1) {
+            HashMapEntry e = this._table[i];
+            while (e != null) {
+                HashMapEntry nxt = e.next;
+                int32 idx = this.index_for(e.hash, new_cap);
+                e.next = new_table[idx];
+                new_table[idx] = e;
+                e = nxt;
+            }
+        }
+        this._table = new_table;
+        this._threshold = new_cap * 3 / 4;
+    }
+
+    public Any remove(Any key) {
+        int32 h = this.hash(key);
+        int32 idx = this.index_for(h, this._table.length);
+        HashMapEntry prev = null;
+        HashMapEntry e = this._table[idx];
+        while (e != null) {
+            if (e.hash == h && this.keys_equal(e.key, key)) {
+                if (prev == null) {
+                    this._table[idx] = e.next;
+                } else {
+                    prev.next = e.next;
+                }
+                this._size = this._size - 1;
+                return e.value;
+            }
+            prev = e;
+            e = e.next;
+        }
+        return null;
+    }
+
+    public List keys() {
+        List list = new List(this._size);
+        for (int32 i = 0; i < this._table.length; i = i + 1) {
+            HashMapEntry e = this._table[i];
+            while (e != null) {
+                list.add(e.key);
+                e = e.next;
+            }
+        }
+        return list;
+    }
+
+    public List values() {
+        List list = new List(this._size);
+        for (int32 i = 0; i < this._table.length; i = i + 1) {
+            HashMapEntry e = this._table[i];
+            while (e != null) {
+                list.add(e.value);
+                e = e.next;
+            }
+        }
+        return list;
+    }
+
+    public List entries() {
+        List list = new List(this._size);
+        for (int32 i = 0; i < this._table.length; i = i + 1) {
+            HashMapEntry e = this._table[i];
+            while (e != null) {
+                KeyValuePair kvp = new KeyValuePair(e.key, e.value);
+                list.add(new Any(kvp));
+                e = e.next;
+            }
+        }
+        return list;
+    }
+
+    public String to_string() {
+        StringBuilder sb = new StringBuilder();
+        sb.append_char('{');
+        bool first = true;
+        for (int32 i = 0; i < this._table.length; i = i + 1) {
+            HashMapEntry e = this._table[i];
+            while (e != null) {
+                if (!first) {
+                    sb.append_char(',');
+                    sb.append_char(' ');
+                }
+                if (e.key == null) {
+                    sb.append_char('n');
+                    sb.append_char('u');
+                    sb.append_char('l');
+                    sb.append_char('l');
+                } else {
+                    sb.append(e.key.to_string());
+                }
+                sb.append_char(':');
+                sb.append_char(' ');
+                if (e.value == null) {
+                    sb.append_char('n');
+                    sb.append_char('u');
+                    sb.append_char('l');
+                    sb.append_char('l');
+                } else {
+                    sb.append(e.value.to_string());
+                }
+                first = false;
+                e = e.next;
+            }
+        }
+        sb.append_char('}');
+        return sb.to_string();
+    }
+}
