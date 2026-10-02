@@ -34,7 +34,7 @@
 | **Phase 17** | Runtime Core & Dynamic Shared Library Loader | `P1 High` | `language`, `tests`, `docs` | - [x] Completed |
 | **Phase 18** | CLI Auto-Discovery, Manifest Integration & Developer Guide | `P1 High` | `launcher`, `tests`, `docs` | - [x] Completed |
 | **Phase 19** | GitHub Actions CI Verification & Multi-Platform Validation | `P0 Blocker` | `ci`, `runtime` | - [x] Completed |
-| **Phase 20** | Standard Library Project Scaffolding & Native Library Setup | `P1 High` | `stdlib`, `build`, `tests`, `docs` | - [x] Completed |
+| **Phase 20** | Standard Library (`solixlib`) Project Scaffolding & Native Setup | `P1 High` | `solixlib`, `build`, `tests`, `docs` | - [x] Completed |
 
 ---
 
@@ -788,49 +788,49 @@ Verify that the complete native dynamic library loading system, CLI auto-discove
 
 ---
 
-## Phase 20: Standard Library Project Scaffolding & Native Library Setup
+## Phase 20: Standard Library (`solixlib`) Project Scaffolding & Native Setup
 
 - **Priority**: `P1 High`
-- **Affected Modules**: `stdlib/` (`solix.json`, `CMakeLists.txt`, `src/`, `native/`), `CMakeLists.txt` (root), `tests/commands/` (`test_package_commands.cpp`, `TESTS.md`), `docs/spec/stdlib/`
+- **Affected Modules**: `solixlib/` (`project/solix.json`, `native/CMakeLists.txt`, `project/src/`, `native/src/`), `CMakeLists.txt` (root), `tests/commands/` (`test_package_commands.cpp`, `TESTS.md`), `docs/spec/solixlib/`
 - **Status**: - [x] Completed & Merged
 
 ### Objective
-Establish the foundational standard library project structure in `stdlib/` with full package manager installability (`solix install`) and companion native C/C++ shared library (`solix_stdlib_native`) compilation. Maintain zero coupling to the launcher binary, enabling SemVer-based stdlib versioning and modular dependency resolution. Provide an empty native registration skeleton without implementing specific native functions yet, ensuring that CMake automatically outputs the shared library into `stdlib/lib/` and that the complete project can be installed into `$SOLIX_HOME` and consumed by user projects.
+Establish the standard library (`solixlib`) architecture using strict sub-project separation (`solixlib/project/` for pure Solix and `solixlib/native/` for C/C++ native companions) with full package manager installability (`solix install`) and companion native shared library (`solixlib_native`) compilation. Maintain zero coupling to the launcher binary, enabling SemVer-based stdlib versioning and modular dependency resolution. Provide an empty native registration skeleton without implementing specific native functions yet, ensuring that CMake automatically outputs the shared library into `solixlib/project/lib/` and that the complete project can be installed into `$SOLIX_HOME` and consumed by user projects.
 
 ### Identified Test & Documentation Deliverables
 - **1. Identified Test Deliverables (`tests/commands/TESTS.md` & `tests/commands/test_package_commands.cpp`)**:
   - Add Cases 5.7 to 5.10 under package management:
-    - **Case 5.7**: Install `stdlib` project from local path via `solix install stdlib`.
-    - **Case 5.8**: Verify `solix package list` reports `solix.stdlib` v0.1.0 as installed with valid ID and contains native `lib/`.
-    - **Case 5.9**: Verify a consumer project referencing installed `solix.stdlib` compiles and runs.
-    - **Case 5.10**: Negative: Re-installing `solix.stdlib` without `--force` fails with exit code 1.
+    - **Case 5.7**: Install `solixlib` project from local path via `solix install solixlib/project`.
+    - **Case 5.8**: Verify `solix package list` reports `solixlib` v0.1.0 as installed with valid ID and contains native `lib/`.
+    - **Case 5.9**: Verify a consumer project referencing installed `solixlib` compiles and runs.
+    - **Case 5.10**: Negative: Re-installing `solixlib` without `--force` fails with exit code 1.
 - **2. Identified Documentation Deliverables**:
-  - `docs/spec/stdlib/scaffolding.md`: Formal specification of standard library project layout, CMake companion target, and packaging lifecycle.
+  - `docs/spec/solixlib/scaffolding.md`: Formal specification of `solixlib` sub-project layout, CMake companion target, and packaging lifecycle.
   - Update `docs/spec/README.md`.
 
 ### Action Items
 - [x] **1. Define Test Specification in `tests/commands/TESTS.md`**:
   - Add Cases 5.7 to 5.10 tagged with `[NOT IMPLEMENTED]`.
-- [x] **2. Scaffold `stdlib/` Project and Native Companion**:
-  - Author `stdlib/solix.json` defining `solix.stdlib` v0.1.0.
-  - Create minimal `stdlib/src/solix/core/Internal.slx` placeholder.
-  - Create `stdlib/native/src/register.cpp` with empty `solix_register_natives` hook.
-  - Author `stdlib/CMakeLists.txt` configuring target `solix_stdlib_native` and outputting directly into `stdlib/lib/`.
-  - Wire `add_subdirectory(stdlib)` into root `CMakeLists.txt`.
+- [x] **2. Scaffold `solixlib/` Project and Native Companion**:
+  - Author `solixlib/project/solix.json` defining `solixlib` v0.1.0.
+  - Create minimal `solixlib/project/src/solix/core/Internal.slx` placeholder.
+  - Create `solixlib/native/src/register.cpp` with empty `solix_register_natives` hook.
+  - Author `solixlib/native/CMakeLists.txt` configuring target `solixlib_native` and outputting directly into `solixlib/project/lib/`.
+  - Wire `add_subdirectory(solixlib/native)` into root `CMakeLists.txt`.
 - [x] **3. Implement Integration Tests (`tests/commands/test_package_commands.cpp`)**:
   - Implement Cases 5.7 to 5.10.
   - Update `tests/commands/TESTS.md` tags to `[IMPLEMENTED]`.
 - [x] **4. Author Specifications**:
-  - Create `docs/spec/stdlib/scaffolding.md`.
+  - Create `docs/spec/solixlib/scaffolding.md`.
   - Update `docs/spec/README.md`.
 - [x] **5. Full Regression Testing & Merge**:
   - Run `ctest --test-dir build --output-on-failure`.
   - Non-fast-forward merge into `master`.
 
 ### Acceptance Criteria
-- `stdlib` is a valid Solix project with a valid `solix.json` manifest.
-- CMake builds `solix_stdlib_native` and deposits the binary in `stdlib/lib/`.
-- `solix install stdlib` successfully copies the project and native library into `$SOLIX_HOME`.
+- `solixlib/project` is a valid Solix project with a valid `solix.json` manifest.
+- CMake builds `solixlib_native` and deposits the binary in `solixlib/project/lib/`.
+- `solix install solixlib/project` successfully copies the project and native library into `$SOLIX_HOME`.
 - All 49 existing test suites and new package installation tests pass 100%.
 
 
