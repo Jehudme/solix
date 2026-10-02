@@ -1,0 +1,31 @@
+{
+  "project": "solixlib",
+  "version": "0.1.0",
+  "author": "Solix Engine Team",
+  "description": "Standard Library for the Solix Programming Language",
+  "license": "MIT",
+  "dependencies": [
+    {
+      "type": "source",
+      "path": "src/solix/core/Internal.slx"
+    }
+  ],
+  "profiles": {
+    "debug": {
+      "output_directory": "build/debug",
+      "exe_filename": "solixlib.slxbin",
+      "compilation": {
+        "entry_point": "main",
+        "multithreaded": false
+      }
+    },
+    "release": {
+      "output_directory": "build/release",
+      "exe_filename": "solixlib.slxbin",
+      "compilation": {
+        "entry_point": "main",
+        "multithreaded": false
+      }
+    }
+  }
+}
