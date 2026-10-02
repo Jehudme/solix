@@ -39,7 +39,7 @@
 | **Phase 21** | Standard Library: `solix.exceptions` (Foundational Exception Hierarchy) | `P0 Blocker` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 22** | Standard Library: `solix.system.Console` (Foundational Terminal I/O) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
 | **Phase 23** | Standard Library: `solix.core.String` & `StringBuilder` (`IStringable` Contract) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
-| **Phase 24** | Standard Library: `solix.core.Primitives` & Types (`Optional<T>`, `Any`, Contracts) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
+| **Phase 24** | Standard Library: `solix.core.Primitives` & Types (`Optional<T>`, `Any`, Contracts) | `P1 High` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 25** | Standard Library: `solix.math.Math` & Numeric Algorithms (`Random`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 26** | Standard Library: `solix.time.Chrono` (`Duration`, `Instant`, `DateTime`, `Stopwatch`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 27** | Standard Library: `solix.collections.Core` (Interfaces, `IIterable`, `ICollection`, `to_string`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
@@ -1206,12 +1206,13 @@ Define universal language contracts (`IComparable<T>`, `IEquatable<T>`, `IClonea
   - `docs/spec/solixlib/primitives.md`: Universal contracts, parsing rules, and `Optional` semantics.
 
 ### Action Items
-- [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Author contract interfaces (`IComparable`, `IEquatable`, `ICloneable`, `IHashable`).
-- [ ] Author boxed primitive helper classes (`Int`, `Double`, `Bool`, `Char`, `Optional`, `Any`).
-- [ ] Implement fast string-to-number parsing in `solixlib/native/src/primitives.cpp` (using `<charconv>`).
-- [ ] Update `solix.core.String` to implement `IComparable<String>`, `IEquatable<String>`, and `IHashable`.
-- [ ] Author `docs/spec/solixlib/primitives.md`.
+- [x] Define test specification in `tests/solixlib/TESTS.md`.
+- [x] Author contract interfaces (`IComparable`, `IEquatable`, `ICloneable`, `IHashable`).
+- [x] Author boxed primitive helper classes (`Int`, `Double`, `Bool`, `Char`, `Optional`, `Any`).
+- [x] Implement fast string-to-number parsing in `solixlib/native/src/primitives.cpp` (using `<charconv>`).
+- [x] Update `solix.core.String` to implement `IComparable<String>`, `IEquatable<String>`, and `IHashable`.
+- [x] Author `docs/spec/solixlib/primitives.md`.
+
 
 ---
 

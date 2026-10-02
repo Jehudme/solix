@@ -101,8 +101,10 @@ public:
     bool resolve_all(const nlohmann::json& root_manifest,
                      const std::filesystem::path& root_project_root,
                      const nlohmann::json& active_profile,
-                     CompilationOptions& opts) {
+                     CompilationOptions& opts,
+                     std::vector<std::filesystem::path>* out_dependency_roots = nullptr) {
         std::set<std::string> visited_manifests;
+
         std::vector<ProjectCandidate> discovered_projects;
 
         // Register root project
@@ -212,8 +214,17 @@ public:
             }
         }
 
+        if (out_dependency_roots) {
+            for (const auto& proj : final_selected_projects) {
+                if (proj.project_root != root_project_root) {
+                    out_dependency_roots->push_back(proj.project_root);
+                }
+            }
+        }
+
         return true;
     }
+
 
 private:
     bool resolve_source_dependency(const nlohmann::json& dep_node,

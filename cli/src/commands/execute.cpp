@@ -168,10 +168,14 @@ void setup_execute_command(CLI::App &app) {
         }
       }
 
-      // Auto-discover in project lib/ and output directory
+      // Auto-discover in project lib/, dependency projects lib/, and output directory
       scan_directory_for_native_libs(build_res.project_root / "lib", opts->native_libraries);
+      for (const auto& dep_root : build_res.dependency_roots) {
+        scan_directory_for_native_libs(dep_root / "lib", opts->native_libraries);
+      }
       scan_directory_for_native_libs(bytecode_path.parent_path(), opts->native_libraries);
     } else {
+
       // Standalone bytecode file mode: scan parent directory and parent/lib
       scan_directory_for_native_libs(bytecode_path.parent_path(), opts->native_libraries);
       scan_directory_for_native_libs(bytecode_path.parent_path() / "lib", opts->native_libraries);

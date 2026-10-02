@@ -2,7 +2,7 @@ package solix.core;
 
 import solix.exceptions.*;
 
-public class String implements IStringable {
+public class String implements IStringable, IHashable {
     public char[] data;
 
     // Native helpers
@@ -70,6 +70,39 @@ public class String implements IStringable {
     public static String from_chars(char[] chars, int32 offset, int32 count) {
         return new String(chars, offset, count);
     }
+
+    public static String value_of(int32 value) {
+        return from_int(value);
+    }
+
+    public static String value_of(int64 value) {
+        return from_int(value);
+    }
+
+    public static String value_of(float64 value) {
+        return from_double(value);
+    }
+
+    public static String value_of(bool value) {
+        return from_bool(value);
+    }
+
+    public static String value_of(char value) {
+        return from_char(value);
+    }
+
+    public static int32 parse_int(String s) {
+        return to_int(s);
+    }
+
+    public static float64 parse_double(String s) {
+        return to_double(s);
+    }
+
+    public static bool parse_bool(String s) {
+        return to_bool(s);
+    }
+
 
     public static bool is_null_or_empty(String s) {
         return s == null || s.data == null || s.data.length == 0;
@@ -368,7 +401,17 @@ public class String implements IStringable {
         return true;
     }
 
+    public int32 hash_code() {
+        int32 h = 0;
+        int32 len = this.length();
+        for (int32 i = 0; i < len; i = i + 1) {
+            h = 31 * h + this.data[i];
+        }
+        return h;
+    }
+
     public String to_string() {
         return this;
     }
 }
+

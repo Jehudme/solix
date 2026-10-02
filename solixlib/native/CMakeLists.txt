@@ -2,7 +2,9 @@ add_library(solixlib_native SHARED
     src/register.cpp
     src/console.cpp
     src/string.cpp
+    src/primitives.cpp
 )
+
 
 target_include_directories(solixlib_native PRIVATE
     ${CMAKE_SOURCE_DIR}/core/include
