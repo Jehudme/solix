@@ -46,7 +46,7 @@
 | **Phase 28** | Standard Library: `solix.collections.List` (`List<T>` Array & `LinkedList<T>`) | `P1 High` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 29** | Standard Library: `solix.collections.Map` (`HashMap<K, V>` & `TreeMap<K, V>`) | `P1 High` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 30** | Standard Library: `solix.collections.Set` (`HashSet<T>` & `TreeSet<T>`) | `P2 Medium` | `solixlib`, `tests` | - [x] Complete |
-| **Phase 31** | Standard Library: `solix.collections.Linear` (`Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, `BitSet`) | `P2 Medium` | `solixlib`, `tests` | - [ ] Planned |
+| **Phase 31** | Standard Library: `solix.collections.Linear` (`Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, `BitSet`) | `P2 Medium` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 32** | Standard Library: `solix.io.filesystem` (Unified Path & File System Operations) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, Readers/Writers) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 34** | Standard Library: `solix.system.Environment` (OS, Env, Subprocesses) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
@@ -1513,7 +1513,7 @@ Implement distinct element containers:
 
 - **Priority**: `P2 Medium`
 - **Affected Modules**: `solixlib/project/src/solix/collections/Stack.slx`, `Queue.slx`, `Deque.slx`, `PriorityQueue.slx`, `CircularBuffer.slx`, `BitSet.slx`, `tests/solixlib/test_linear_collections.cpp`, `docs/spec/solixlib/linear_collections.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Implement comprehensive specialized linear data structures and buffers:
@@ -1553,10 +1553,10 @@ Implement comprehensive specialized linear data structures and buffers:
   - `docs/spec/solixlib/linear_collections.md`: Performance complexity and buffer behaviors.
 
 ### Action Items
-- [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Author `Stack.slx`, `Queue.slx`, `Deque.slx`, `PriorityQueue.slx`, `CircularBuffer.slx`, `BitSet.slx`.
-- [ ] Implement Catch2 test suite `tests/solixlib/test_linear_collections.cpp`.
-- [ ] Author `docs/spec/solixlib/linear_collections.md`.
+- [x] Define test specification in `tests/solixlib/TESTS.md`.
+- [x] Author `Stack.slx`, `Queue.slx`, `Deque.slx`, `PriorityQueue.slx`, `CircularBuffer.slx`, `BitSet.slx`.
+- [x] Implement Catch2 test suite `tests/solixlib/test_linear_collections.cpp`.
+- [x] Author `docs/spec/solixlib/linear_collections.md`.
 
 ---
 
