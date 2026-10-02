@@ -27,6 +27,7 @@
 | **Phase 10** | Package Lifecycle Management (`install`, `uninstall`, `list`, `details`) | `P1 High` | `launcher` | - [x] Completed |
 | **Phase 11** | CLI Commands Test Suite & Master Specification (`tests/commands/`) | `P1 High` | `tests`, `launcher`, `build` | - [x] Completed |
 | **Phase 12** | CLI Commands & Toolchain Documentation (`docs/spec/cli/`) | `P1 High` | `docs`, `launcher`, `guide` | - [x] Completed |
+| **Phase 13** | Project-Type Dependencies & Transitive SemVer Resolution | `P1 High` | `launcher`, `build`, `tests`, `docs` | - [ ] In Progress |
 
 ---
 
@@ -427,6 +428,66 @@ Establish comprehensive, authoritative, and formal documentation for the entire 
 - `docs/WORKFLOW.md` explicitly mandates positive/negative test coverage and documentation updates for all statements, features, and CLI commands.
 - `docs/guide/01_getting_started.md` and `docs/spec/README.md` are synchronized.
 - All 47 test suites pass 100%.
+
+---
+
+## Phase 13: Project-Type Dependencies & Transitive SemVer Resolution
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `launcher`, `build`, `tests`, `docs`
+- **Status**: - [ ] In Progress
+
+### Objective
+Enhance `solix build` to support project-type dependencies (`"type": "project"`) alongside source file dependencies. Enable projects to reference other projects either by relative/absolute disk path or by package name and version from `$SOLIX_HOME`. Implement full transitive dependency resolution, graceful mutual/circular dependency de-duplication, pre-compilation dependency graph verification, and strict Semantic Versioning conflict resolution rules before invoking the compiler.
+
+### Identified Test & Documentation Deliverables
+- **1. Identified Test Deliverables (`tests/commands/TESTS.md` & `tests/commands/test_build_command.cpp`)**:
+  - **Positive Scenarios**:
+    - **Case 3.10**: Direct project dependency via local relative `path`.
+    - **Case 3.11**: Transitive project dependency chain ($A \to B \to C$).
+    - **Case 3.12**: Mutual / circular project dependencies ($A \leftrightarrow B$ and $A \to B \to C \to A$) gracefully terminate traversal, de-duplicate sources, and build successfully.
+    - **Case 3.13**: Same major & minor version, different patch ($1.0.1$ vs $1.0.4$) $\to$ silently selects highest patch version $1.0.4$ and builds.
+    - **Case 3.14**: Same major version, different minor version ($1.1.0$ vs $1.3.0$) $\to$ outputs warning, selects highest minor version $1.3.0$, and builds.
+    - **Case 3.15**: Project dependency resolved from local `$SOLIX_HOME` installed packages.
+  - **Negative Scenarios**:
+    - **Case 3.16**: Incompatible major versions ($1.0.0$ vs $2.0.0$) $\to$ halts with error before compilation.
+    - **Case 3.17**: Project dependency path does not exist or lacks `solix.json` $\to$ halts with descriptive error.
+    - **Case 3.18**: Missing source file declared in a dependent project's manifest $\to$ halts with descriptive error.
+- **2. Identified Documentation Deliverables**:
+  - `docs/spec/cli/manifest.md`: Update schema for `"type": "project"` (supporting `path` and `name`/`version`).
+  - `docs/spec/cli/build.md`: Document pre-compilation dependency graph traversal, transitive inheritance, circular reference support, and SemVer conflict resolution matrix.
+  - `docs/guide/01_getting_started.md`: Add a section on modular multi-project dependencies.
+
+### Action Items
+- [ ] **1. Implement Semantic Versioning Parser (`launcher/src/semver.hpp`)**:
+  - Create `SemVer` struct with `major`, `minor`, `patch`, parsing logic, comparison operators (`<`, `==`, `>`), and conflict assessment.
+- [ ] **2. Implement Project Dependency Resolver & Graph Walker (`launcher/src/dependency_resolver.hpp`)**:
+  - Implement `ProjectDependencyResolver` supporting `path` and `$SOLIX_HOME` package lookup.
+  - Implement recursive dependency graph traversal with a visited set to support mutual/circular dependencies ($A \leftrightarrow B$) without infinite loops.
+  - Enforce SemVer conflict resolution:
+    - Major gap: halt build with error.
+    - Minor gap: emit warning and pick highest minor.
+    - Patch gap: cleanly pick highest patch.
+  - Collect all unique source files across the resolved project graph.
+- [ ] **3. Integrate Pre-Compilation Resolution in `solix build` (`launcher/src/commands/build.cpp`)**:
+  - Execute full dependency graph resolution, conflict verification, and source ingestion before invoking `execute_compilation_and_write`.
+- [ ] **4. Update Master Test Specification (`tests/commands/TESTS.md`)**:
+  - Add Cases 3.10 through 3.18 tagged with `[NOT IMPLEMENTED]`.
+- [ ] **5. Implement Catch2 Unit Tests (`tests/commands/test_build_command.cpp`)**:
+  - Implement all positive and negative test cases.
+  - Update tags in `tests/commands/TESTS.md` from `[NOT IMPLEMENTED]` to `[IMPLEMENTED]`.
+- [ ] **6. Update Documentation (`docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, `docs/guide/01_getting_started.md`)**:
+  - Document project dependencies, manifest schema, and SemVer conflict resolution rules.
+- [ ] **7. Full Regression Testing & Merge**:
+  - Run `ctest --test-dir build --output-on-failure`.
+  - Non-fast-forward merge into `master`.
+
+### Acceptance Criteria
+- `"type": "project"` dependencies resolve both via relative `path` and via `$SOLIX_HOME` installed packages.
+- Transitive dependencies and mutual/circular references build cleanly.
+- SemVer conflict rules strictly enforced (error on different major, warning on different minor, clean on different patch).
+- All positive and negative test cases pass 100%.
+
 
 
 
