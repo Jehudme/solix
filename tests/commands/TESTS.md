@@ -90,35 +90,45 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 2.1: Execute Valid Compiled Bytecode [NOT IMPLEMENTED]
+#### Case 2.1: Execute Valid Compiled Bytecode [IMPLEMENTED]
 - **Command**: `solix run app.slxb`
 - **Setup**: Bytecode file returning exit code 0.
 - **Expected**: Exits 0; VM executes cleanly.
 
-#### Case 2.2: Pass Program Arguments to Executing Bytecode [NOT IMPLEMENTED]
+#### Case 2.2: Pass Program Arguments to Executing Bytecode [IMPLEMENTED]
 - **Command**: `solix run app.slxb -- arg1 arg2 123`
 - **Setup**: Bytecode file reading arguments.
 - **Expected**: Exits 0; program receives arguments correctly.
 
-#### Case 2.3: Custom Stack and Heap Capacities [NOT IMPLEMENTED]
+#### Case 2.3: Custom Stack and Heap Capacities [IMPLEMENTED]
 - **Command**: `solix run app.slxb -s 2048 -p 4096`
 - **Setup**: Valid bytecode.
 - **Expected**: Exits 0; VM initializes with customized resource limits.
 
 ### Negative Test Scenarios
 
-#### Case 2.4: Missing Bytecode File Argument [NOT IMPLEMENTED]
+#### Case 2.4: Missing Bytecode File Argument [IMPLEMENTED]
 - **Command**: `solix run`
 - **Expected**: Exits non-zero; error message indicating missing `file`.
 
-#### Case 2.5: Non-Existent Bytecode File [NOT IMPLEMENTED]
+#### Case 2.5: Non-Existent Bytecode File [IMPLEMENTED]
 - **Command**: `solix run non_existent.slxb`
 - **Expected**: Exits non-zero; error message indicating file does not exist.
 
-#### Case 2.6: Corrupted or Invalid Bytecode Format [NOT IMPLEMENTED]
-- **Command**: `solix run corrupted.slxb`
-- **Setup**: File containing random text bytes instead of Solix magic header.
-- **Expected**: Exits non-zero; runtime error caught and reported.
+#### Case 2.6: Empty Bytecode File [IMPLEMENTED]
+- **Command**: `solix run empty.slxb`
+- **Setup**: Empty (0-byte) file.
+- **Expected**: Exits non-zero; error message indicating bytecode file is empty.
+
+#### Case 2.7: Runtime Fault / Unhandled Exception [IMPLEMENTED]
+- **Command**: `solix run app_fault.slxb`
+- **Setup**: Bytecode triggering an unhandled exception at runtime.
+- **Expected**: Exits non-zero; "Runtime error" reported.
+
+#### Case 2.8: Non-Zero Exit Code Propagation [IMPLEMENTED]
+- **Command**: `solix run app_exit7.slxb`
+- **Setup**: Bytecode returning 7 from `main`.
+- **Expected**: Exits with exit code 7.
 
 ---
 

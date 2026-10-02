@@ -35,16 +35,23 @@ void setup_execute_command(CLI::App &app) {
       cli_exit(1);
     }
 
+    if (std::filesystem::file_size(path) == 0) {
+      std::cerr << "Error: Bytecode file is empty: " << path << std::endl;
+      cli_exit(1);
+    }
+
     opts->bytecode_source = path;
 
+    int32_t exit_code = 0;
     try {
-      int32_t exit_code = run(*opts);
-      if (exit_code != 0) {
-        cli_exit(exit_code);
-      }
+      exit_code = run(*opts);
     } catch (const std::exception &e) {
       std::cerr << "Runtime error: " << e.what() << std::endl;
       cli_exit(1);
+    }
+
+    if (exit_code != 0) {
+      cli_exit(exit_code);
     }
   });
 }
