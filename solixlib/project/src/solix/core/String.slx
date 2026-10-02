@@ -1,0 +1,374 @@
+package solix.core;
+
+import solix.exceptions.*;
+
+public class String implements IStringable {
+    public char[] data;
+
+    // Native helpers
+    private static native char[] native_from_int(int64 val);
+    private static native char[] native_from_double(float64 val, int32 precision);
+    private static native char[] native_from_bool(bool val);
+    private static native int32 native_try_parse_int(char[] str, int64[] out_box);
+    private static native int32 native_try_parse_double(char[] str, float64[] out_box);
+    private static native char[] native_to_lower(char[] str);
+    private static native char[] native_to_upper(char[] str);
+    private static native char[] native_replace(char[] str, char[] old_t, char[] new_t);
+    private static native int64 native_index_of(char[] haystack, char[] needle, int32 start);
+    private static native int64 native_last_index_of(char[] haystack, char[] needle);
+
+    // Constructors
+    public String() {
+        this.data = "";
+    }
+
+    public String(char[] chars) {
+        if (chars == null) {
+            this.data = "";
+        } else {
+            this.data = chars;
+        }
+    }
+
+    public String(char[] chars, int32 offset, int32 count) {
+        if (chars == null) {
+            throw new ArgumentNullException("chars", "Character array cannot be null");
+        }
+        if (offset < 0 || count < 0 || offset + count > chars.length) {
+            throw new IndexOutOfBoundsException("Sub-array range is out of bounds", offset, 0, chars.length);
+        }
+        char[] buf = new char[count];
+        for (int32 i = 0; i < count; i = i + 1) {
+            buf[i] = chars[offset + i];
+        }
+        this.data = buf;
+    }
+
+    // Static conversions & factories
+    public static String from_int(int64 value) {
+        return new String(native_from_int(value));
+    }
+
+    public static String from_double(float64 value, int32 precision) {
+        return new String(native_from_double(value, precision));
+    }
+
+    public static String from_double(float64 value) {
+        return new String(native_from_double(value, 6));
+    }
+
+    public static String from_bool(bool value) {
+        return new String(native_from_bool(value));
+    }
+
+    public static String from_char(char value) {
+        char[] buf = new char[1];
+        buf[0] = value;
+        return new String(buf);
+    }
+
+    public static String from_chars(char[] chars, int32 offset, int32 count) {
+        return new String(chars, offset, count);
+    }
+
+    public static bool is_null_or_empty(String s) {
+        return s == null || s.data == null || s.data.length == 0;
+    }
+
+    public static bool is_null_or_whitespace(String s) {
+        if (is_null_or_empty(s)) return true;
+        for (int32 i = 0; i < s.data.length; i = i + 1) {
+            char c = s.data[i];
+            if (c != ' ' && c != '\t' && c != '\r' && c != '\n') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static String join(String delimiter, String[] items) {
+        if (items == null || items.length == 0) return new String("");
+        if (items.length == 1) return items[0];
+        StringBuilder sb = new StringBuilder();
+        for (int32 i = 0; i < items.length; i = i + 1) {
+            if (items[i] != null) {
+                sb.append(items[i]);
+            }
+            if (i < items.length - 1 && delimiter != null) {
+                sb.append(delimiter);
+            }
+        }
+        return sb.to_string();
+    }
+
+    public static String format(String template_str, String[] args) {
+        if (template_str == null || template_str.data == null) return new String("");
+        if (args == null || args.length == 0) return template_str;
+        String res = template_str;
+        for (int32 i = 0; i < args.length; i = i + 1) {
+            char[] token = new char[3];
+            token[0] = '{';
+            token[1] = (char)((int32)'0' + i);
+            token[2] = '}';
+            String placeholder = new String(token);
+            String replacement = args[i] != null ? args[i] : new String("");
+            res = res.replace(placeholder, replacement);
+        }
+        return res;
+    }
+
+    // Static parsing
+    public static int32 to_int(String s) {
+        if (is_null_or_empty(s)) {
+            throw new FormatException("Cannot parse integer from null or empty string");
+        }
+        int64[] box = new int64[1];
+        if (native_try_parse_int(s.data, box) == 0) {
+            throw new FormatException("Input string was not in a valid integer format");
+        }
+        return (int32)box[0];
+    }
+
+    public static int64 to_long(String s) {
+        if (is_null_or_empty(s)) {
+            throw new FormatException("Cannot parse long from null or empty string");
+        }
+        int64[] box = new int64[1];
+        if (native_try_parse_int(s.data, box) == 0) {
+            throw new FormatException("Input string was not in a valid integer format");
+        }
+        return box[0];
+    }
+
+    public static float64 to_double(String s) {
+        if (is_null_or_empty(s)) {
+            throw new FormatException("Cannot parse double from null or empty string");
+        }
+        float64[] box = new float64[1];
+        if (native_try_parse_double(s.data, box) == 0) {
+            throw new FormatException("Input string was not in a valid floating-point format");
+        }
+        return box[0];
+    }
+
+    public static bool to_bool(String s) {
+        if (is_null_or_empty(s)) {
+            throw new FormatException("Cannot parse boolean from null or empty string");
+        }
+        if (s.equals(new String("true")) || s.equals(new String("1"))) return true;
+        if (s.equals(new String("false")) || s.equals(new String("0"))) return false;
+        throw new FormatException("Input string was not in a recognized boolean format");
+    }
+
+    public static bool try_to_int(String s, int32[] out_val) {
+        if (is_null_or_empty(s) || out_val == null || out_val.length == 0) return false;
+        int64[] box = new int64[1];
+        if (native_try_parse_int(s.data, box) == 0) return false;
+        out_val[0] = (int32)box[0];
+        return true;
+    }
+
+    public static bool try_to_double(String s, float64[] out_val) {
+        if (is_null_or_empty(s) || out_val == null || out_val.length == 0) return false;
+        return native_try_parse_double(s.data, out_val) != 0;
+    }
+
+    // Instance methods
+    public int32 length() {
+        return this.data != null ? this.data.length : 0;
+    }
+
+    public bool is_empty() {
+        return this.length() == 0;
+    }
+
+    public char char_at(int32 index) {
+        if (index < 0 || index >= this.length()) {
+            throw new IndexOutOfBoundsException("Index out of bounds in String.char_at", index, 0, this.length());
+        }
+        return this.data[index];
+    }
+
+    public String substring(int32 start, int32 count) {
+        if (start < 0 || count < 0 || start + count > this.length()) {
+            throw new IndexOutOfBoundsException("Substring range is out of bounds", start, 0, this.length());
+        }
+        return new String(this.data, start, count);
+    }
+
+    public int32 index_of(String needle) {
+        return this.index_of(needle, 0);
+    }
+
+    public int32 index_of(String needle, int32 start) {
+        if (needle == null || needle.data == null) return -1;
+        int64 res = native_index_of(this.data, needle.data, start);
+        return (int32)res;
+    }
+
+    public int32 last_index_of(String needle) {
+        if (needle == null || needle.data == null) return -1;
+        int64 res = native_last_index_of(this.data, needle.data);
+        return (int32)res;
+    }
+
+    public bool contains(String needle) {
+        return this.index_of(needle) >= 0;
+    }
+
+    public bool starts_with(String prefix) {
+        if (prefix == null || prefix.data == null) return false;
+        if (prefix.length() > this.length()) return false;
+        for (int32 i = 0; i < prefix.length(); i = i + 1) {
+            if (this.data[i] != prefix.data[i]) return false;
+        }
+        return true;
+    }
+
+    public bool ends_with(String suffix) {
+        if (suffix == null || suffix.data == null) return false;
+        if (suffix.length() > this.length()) return false;
+        int32 offset = this.length() - suffix.length();
+        for (int32 i = 0; i < suffix.length(); i = i + 1) {
+            if (this.data[offset + i] != suffix.data[i]) return false;
+        }
+        return true;
+    }
+
+    public String to_lower() {
+        return new String(native_to_lower(this.data));
+    }
+
+    public String to_upper() {
+        return new String(native_to_upper(this.data));
+    }
+
+    public String trim_start() {
+        int32 len = this.length();
+        int32 start = 0;
+        while (start < len) {
+            char c = this.data[start];
+            if (c != ' ' && c != '\t' && c != '\r' && c != '\n') break;
+            start = start + 1;
+        }
+        return this.substring(start, len - start);
+    }
+
+    public String trim_end() {
+        int32 end = this.length();
+        while (end > 0) {
+            char c = this.data[end - 1];
+            if (c != ' ' && c != '\t' && c != '\r' && c != '\n') break;
+            end = end - 1;
+        }
+        return this.substring(0, end);
+    }
+
+    public String trim() {
+        return this.trim_start().trim_end();
+    }
+
+    public String pad_left(int32 total_width, char pad_char) {
+        int32 current_len = this.length();
+        if (current_len >= total_width) return this;
+        int32 diff = total_width - current_len;
+        char[] buf = new char[total_width];
+        for (int32 i = 0; i < diff; i = i + 1) {
+            buf[i] = pad_char;
+        }
+        for (int32 i = 0; i < current_len; i = i + 1) {
+            buf[diff + i] = this.data[i];
+        }
+        return new String(buf);
+    }
+
+    public String pad_right(int32 total_width, char pad_char) {
+        int32 current_len = this.length();
+        if (current_len >= total_width) return this;
+        char[] buf = new char[total_width];
+        for (int32 i = 0; i < current_len; i = i + 1) {
+            buf[i] = this.data[i];
+        }
+        for (int32 i = current_len; i < total_width; i = i + 1) {
+            buf[i] = pad_char;
+        }
+        return new String(buf);
+    }
+
+    public String repeat(int32 count) {
+        if (count <= 0) return new String("");
+        if (count == 1) return this;
+        int32 len = this.length();
+        char[] buf = new char[len * count];
+        int32 idx = 0;
+        for (int32 c = 0; c < count; c = c + 1) {
+            for (int32 i = 0; i < len; i = i + 1) {
+                buf[idx] = this.data[i];
+                idx = idx + 1;
+            }
+        }
+        return new String(buf);
+    }
+
+    public String reverse() {
+        int32 len = this.length();
+        char[] buf = new char[len];
+        for (int32 i = 0; i < len; i = i + 1) {
+            buf[i] = this.data[len - 1 - i];
+        }
+        return new String(buf);
+    }
+
+    public String replace(String old_token, String new_token) {
+        if (old_token == null || old_token.data == null) return this;
+        char[] new_d = (new_token != null && new_token.data != null) ? new_token.data : "";
+        return new String(native_replace(this.data, old_token.data, new_d));
+    }
+
+    public String[] split(String delimiter) {
+        if (delimiter == null || delimiter.length() == 0) {
+            String[] single = new String[1];
+            single[0] = this;
+            return single;
+        }
+        // Count occurrences
+        int32 count = 1;
+        int32 pos = 0;
+        while ((pos = this.index_of(delimiter, pos)) != -1) {
+            count = count + 1;
+            pos = pos + delimiter.length();
+        }
+        String[] parts = new String[count];
+        int32 start = 0;
+        int32 part_idx = 0;
+        while ((pos = this.index_of(delimiter, start)) != -1) {
+            parts[part_idx] = this.substring(start, pos - start);
+            part_idx = part_idx + 1;
+            start = pos + delimiter.length();
+        }
+        parts[part_idx] = this.substring(start, this.length() - start);
+        return parts;
+    }
+
+    public char[] to_char_array() {
+        if (this.data == null) return "";
+        char[] copy = new char[this.data.length];
+        for (int32 i = 0; i < this.data.length; i = i + 1) {
+            copy[i] = this.data[i];
+        }
+        return copy;
+    }
+
+    public bool equals(String other) {
+        if (other == null) return false;
+        if (this.length() != other.length()) return false;
+        for (int32 i = 0; i < this.length(); i = i + 1) {
+            if (this.data[i] != other.data[i]) return false;
+        }
+        return true;
+    }
+
+    public String to_string() {
+        return this;
+    }
+}

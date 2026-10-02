@@ -1,0 +1,131 @@
+package solix.core;
+
+public class StringBuilder implements IStringable {
+    private char[] buffer;
+    private int32 count;
+
+    public StringBuilder() {
+        this.buffer = new char[16];
+        this.count = 0;
+    }
+
+    public StringBuilder(int32 initial_capacity) {
+        if (initial_capacity < 16) initial_capacity = 16;
+        this.buffer = new char[initial_capacity];
+        this.count = 0;
+    }
+
+    public StringBuilder(String initial_str) {
+        int32 init_len = initial_str != null ? initial_str.length() : 0;
+        int32 cap = init_len > 16 ? init_len * 2 : 16;
+        this.buffer = new char[cap];
+        this.count = 0;
+        if (initial_str != null) {
+            this.append(initial_str);
+        }
+    }
+
+    private void ensure_capacity(int32 additional) {
+        if (this.count + additional > this.buffer.length) {
+            int32 new_cap = (this.buffer.length + additional) * 2;
+            char[] new_buf = new char[new_cap];
+            for (int32 i = 0; i < this.count; i = i + 1) {
+                new_buf[i] = this.buffer[i];
+            }
+            this.buffer = new_buf;
+        }
+    }
+
+    public StringBuilder append(String s) {
+        if (s == null || s.data == null) return this;
+        return this.append_chars(s.data);
+    }
+
+    public StringBuilder append_chars(char[] s) {
+        if (s == null || s.length == 0) return this;
+        this.ensure_capacity(s.length);
+        for (int32 i = 0; i < s.length; i = i + 1) {
+            this.buffer[this.count + i] = s[i];
+        }
+        this.count = this.count + s.length;
+        return this;
+    }
+
+    public StringBuilder append_char(char c) {
+        this.ensure_capacity(1);
+        this.buffer[this.count] = c;
+        this.count = this.count + 1;
+        return this;
+    }
+
+    public StringBuilder append_int(int64 val) {
+        return this.append(String.from_int(val));
+    }
+
+    public StringBuilder append_double(float64 val) {
+        return this.append(String.from_double(val, 6));
+    }
+
+    public StringBuilder append_bool(bool val) {
+        return this.append(String.from_bool(val));
+    }
+
+    public StringBuilder append_line(String s) {
+        this.append(s);
+        return this.append_char('\n');
+    }
+
+    public StringBuilder append_line() {
+        return this.append_char('\n');
+    }
+
+    public StringBuilder insert(int32 index, String s) {
+        if (index < 0 || index > this.count) index = this.count;
+        if (s == null || s.length() == 0) return this;
+        int32 s_len = s.length();
+        this.ensure_capacity(s_len);
+        for (int32 i = this.count - 1; i >= index; i = i - 1) {
+            this.buffer[i + s_len] = this.buffer[i];
+        }
+        for (int32 i = 0; i < s_len; i = i + 1) {
+            this.buffer[index + i] = s.data[i];
+        }
+        this.count = this.count + s_len;
+        return this;
+    }
+
+    public StringBuilder remove(int32 start, int32 length) {
+        if (start < 0 || length <= 0 || start >= this.count) return this;
+        if (start + length > this.count) length = this.count - start;
+        for (int32 i = start; i < this.count - length; i = i + 1) {
+            this.buffer[i] = this.buffer[i + length];
+        }
+        this.count = this.count - length;
+        return this;
+    }
+
+    public StringBuilder reverse() {
+        for (int32 i = 0; i < this.count / 2; i = i + 1) {
+            char temp = this.buffer[i];
+            this.buffer[i] = this.buffer[this.count - 1 - i];
+            this.buffer[this.count - 1 - i] = temp;
+        }
+        return this;
+    }
+
+    public int32 length() {
+        return this.count;
+    }
+
+    public void clear() {
+        this.count = 0;
+    }
+
+    public String to_string() {
+        char[] res = new char[this.count];
+        for (int32 i = 0; i < this.count; i = i + 1) {
+            res[i] = this.buffer[i];
+        }
+        return new String(res);
+    }
+}

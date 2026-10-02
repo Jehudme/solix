@@ -38,7 +38,7 @@
 | **Phase 20.1** | Architecture Refactor: Rename Language & Launcher to Core & CLI | `P1 High` | `core`, `cli`, `build`, `tests`, `docs` | - [x] Completed |
 | **Phase 21** | Standard Library: `solix.exceptions` (Foundational Exception Hierarchy) | `P0 Blocker` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 22** | Standard Library: `solix.system.Console` (Foundational Terminal I/O) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
-| **Phase 23** | Standard Library: `solix.core.String` & `StringBuilder` (`IStringable` Contract) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
+| **Phase 23** | Standard Library: `solix.core.String` & `StringBuilder` (`IStringable` Contract) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
 | **Phase 24** | Standard Library: `solix.core.Primitives` & Types (`Optional<T>`, `Any`, Contracts) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
 | **Phase 25** | Standard Library: `solix.math.Math` & Numeric Algorithms (`Random`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 26** | Standard Library: `solix.time.Chrono` (`Duration`, `Instant`, `DateTime`, `Stopwatch`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
@@ -1148,12 +1148,12 @@ Implement the comprehensive, feature-rich immutable text processing abstraction 
   - `docs/spec/solixlib/string.md`: Text encoding, UTF-8 invariants, bidirectional conversions, and `IStringable` protocol.
 
 ### Action Items
-- [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Author `IStringable.slx`, `String.slx`, `StringBuilder.slx`.
-- [ ] Implement native string primitives and fast `<charconv>` conversions in `solixlib/native/src/string.cpp`.
-- [ ] Revisit `Console.slx` and `console.cpp` to add string and `IStringable` overloads.
-- [ ] Implement Catch2 test suite `tests/solixlib/test_string.cpp`.
-- [ ] Author `docs/spec/solixlib/string.md`.
+- [x] Define test specification in `tests/solixlib/TESTS.md`.
+- [x] Author `IStringable.slx`, `String.slx`, `StringBuilder.slx`.
+- [x] Implement native string primitives and fast `<charconv>` conversions in `solixlib/native/src/string.cpp`.
+- [x] Revisit `Console.slx` and `console.cpp` to add string and `IStringable` overloads.
+- [x] Implement Catch2 test suite `tests/solixlib/test_string.cpp`.
+- [x] Author `docs/spec/solixlib/string.md`.
 
 ---
 

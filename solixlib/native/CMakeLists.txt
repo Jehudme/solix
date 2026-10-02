@@ -1,6 +1,7 @@
 add_library(solixlib_native SHARED
     src/register.cpp
     src/console.cpp
+    src/string.cpp
 )
 
 target_include_directories(solixlib_native PRIVATE

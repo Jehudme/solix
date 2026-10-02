@@ -1,0 +1,5 @@
+package solix.core;
+
+public interface IStringable {
+    String to_string();
+}

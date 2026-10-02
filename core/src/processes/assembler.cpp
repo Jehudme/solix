@@ -1321,7 +1321,7 @@ void Assembler::visit(AssignmentExpression &node) {
     compile_expression(arr_acc->index.get());
     compile_expression(assign->value.get());
     bool is_ref = is_reference_type(assign->value->expression_type);
-    if (is_ref && !produces_retained_reference(assign->value.get())) {
+    if (is_ref) {
       emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
     } else if (assign->value->expression_type.is_function_pointer) {
       if (assign->value->node_type != NodeType::LAMBDA_EXPR) {
