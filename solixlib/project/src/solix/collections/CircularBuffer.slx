@@ -1,20 +1,19 @@
 package solix.collections;
 
-import solix.core.Any;
+import solix.core.IStringable;
 import solix.core.String;
-import solix.core.StringBuilder;
 import solix.exceptions.IllegalArgumentException;
 import solix.exceptions.InvalidOperationException;
 import solix.exceptions.NoSuchElementException;
 
-public class CircularBufferIterator implements IIterator {
-    private Any[] _data;
+public class CircularBufferIterator<T> {
+    private T[] _data;
     private int32 _head;
     private int32 _capacity;
     private int32 _size;
     private int32 _idx;
 
-    public CircularBufferIterator(Any[] buf, int32 head, int32 cap, int32 sz) {
+    public CircularBufferIterator(T[] buf, int32 head, int32 cap, int32 sz) {
         this._data = buf;
         this._head = head;
         this._capacity = cap;
@@ -26,7 +25,7 @@ public class CircularBufferIterator implements IIterator {
         return this._idx < this._size;
     }
 
-    public Any next() {
+    public T next() {
         if (this._idx >= this._size) {
             throw new NoSuchElementException("Iterator exhausted");
         }
@@ -36,8 +35,8 @@ public class CircularBufferIterator implements IIterator {
     }
 }
 
-public class CircularBuffer implements ICollection {
-    private Any[] _buffer;
+public class CircularBuffer<T> implements IStringable {
+    private T[] _buffer;
     private int32 _capacity;
     private int32 _head;
     private int32 _tail;
@@ -49,7 +48,7 @@ public class CircularBuffer implements ICollection {
             throw new IllegalArgumentException("capacity", "Capacity must be positive");
         }
         this._capacity = capacity;
-        this._buffer = new Any[capacity];
+        this._buffer = new T[capacity];
         this._head = 0;
         this._tail = 0;
         this._size = 0;
@@ -61,7 +60,7 @@ public class CircularBuffer implements ICollection {
             throw new IllegalArgumentException("capacity", "Capacity must be positive");
         }
         this._capacity = capacity;
-        this._buffer = new Any[capacity];
+        this._buffer = new T[capacity];
         this._head = 0;
         this._tail = 0;
         this._size = 0;
@@ -88,7 +87,7 @@ public class CircularBuffer implements ICollection {
         return this._overwrite;
     }
 
-    public bool write(Any item) {
+    public bool write(T item) {
         if (this.is_full()) {
             if (!this._overwrite) {
                 return false;
@@ -100,84 +99,63 @@ public class CircularBuffer implements ICollection {
         }
         this._buffer[this._tail] = item;
         this._tail = (this._tail + 1) % this._capacity;
-        this._size += 1;
+        this._size = this._size + 1;
         return true;
     }
 
-    public void enqueue(Any item) {
-        if (this.is_full() && !this._overwrite) {
-            throw new InvalidOperationException("CircularBuffer is full");
-        }
-        this.write(item);
-    }
-
-    public Any read() {
+    public T read() {
         if (this.is_empty()) {
             throw new InvalidOperationException("CircularBuffer is empty");
         }
-        Any item = this._buffer[this._head];
-        this._buffer[this._head] = null;
+        T item = this._buffer[this._head];
         this._head = (this._head + 1) % this._capacity;
-        this._size -= 1;
+        this._size = this._size - 1;
         return item;
     }
 
-    public Any dequeue() {
-        return this.read();
-    }
-
-    public Any peek() {
+    public T peek() {
         if (this.is_empty()) {
             throw new InvalidOperationException("CircularBuffer is empty");
         }
         return this._buffer[this._head];
     }
 
-    public void clear() {
-        for (int32 i = 0; i < this._capacity; i++) {
-            this._buffer[i] = null;
+    public T get(int32 index) {
+        if (index < 0 || index >= this._size) {
+            throw new InvalidOperationException("Index out of bounds");
         }
+        int32 pos = (this._head + index) % this._capacity;
+        return this._buffer[pos];
+    }
+
+    public void clear() {
         this._head = 0;
         this._tail = 0;
         this._size = 0;
     }
 
-    public bool contains(Any item) {
-        for (int32 i = 0; i < this._size; i++) {
-            int32 idx = (this._head + i) % this._capacity;
-            Any cur = this._buffer[idx];
-            if (cur == null && item == null) return true;
-            if (cur != null && cur.equals(item)) return true;
-        }
-        return false;
-    }
-
-    public Any[] to_array() {
-        Any[] arr = new Any[this._size];
-        for (int32 i = 0; i < this._size; i++) {
-            int32 idx = (this._head + i) % this._capacity;
-            arr[i] = this._buffer[idx];
+    public T[] to_array() {
+        T[] arr = new T[this._size];
+        for (int32 i = 0; i < this._size; i = i + 1) {
+            int32 pos = (this._head + i) % this._capacity;
+            arr[i] = this._buffer[pos];
         }
         return arr;
     }
 
-    public IIterator iterator() {
-        return new CircularBufferIterator(this._buffer, this._head, this._capacity, this._size);
+    public void for_each(void(*)(T) action) {
+        if (action == null) return;
+        for (int32 i = 0; i < this._size; i = i + 1) {
+            int32 pos = (this._head + i) % this._capacity;
+            action(this._buffer[pos]);
+        }
+    }
+
+    public CircularBufferIterator<T> iterator() {
+        return new CircularBufferIterator<T>(this._buffer, this._head, this._capacity, this._size);
     }
 
     public String to_string() {
-        StringBuilder sb = new StringBuilder("[");
-        for (int32 i = 0; i < this._size; i++) {
-            if (i > 0) sb.append(", ");
-            int32 idx = (this._head + i) % this._capacity;
-            Any cur = this._buffer[idx];
-            if (cur == null) {
-                sb.append("null");
-            } else {
-                sb.append(cur.to_string());
-            }
-        }
-        sb.append("]");
-        return sb.to_string();
+        return new String("[CircularBuffer]");
     }
 }

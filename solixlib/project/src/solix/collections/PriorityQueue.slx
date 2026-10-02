@@ -1,16 +1,15 @@
 package solix.collections;
 
-import solix.core.Any;
+import solix.core.IStringable;
 import solix.core.String;
-import solix.core.StringBuilder;
 import solix.exceptions.InvalidOperationException;
 import solix.exceptions.NoSuchElementException;
 
-public class PriorityQueueIterator implements IIterator {
-    private List<Any> _heap;
+public class PriorityQueueIterator<T> {
+    private List<T> _heap;
     private int32 _idx;
 
-    public PriorityQueueIterator(List<Any> heap) {
+    public PriorityQueueIterator(List<T> heap) {
         this._heap = heap;
         this._idx = 0;
     }
@@ -19,62 +18,33 @@ public class PriorityQueueIterator implements IIterator {
         return this._idx < this._heap.size();
     }
 
-    public Any next() {
+    public T next() {
         if (this._idx >= this._heap.size()) {
             throw new NoSuchElementException("Iterator exhausted");
         }
-        Any val = this._heap.get(this._idx);
+        T val = this._heap.get(this._idx);
         this._idx = this._idx + 1;
         return val;
     }
 }
 
-public class PriorityQueue implements ICollection {
-    private List<Any> _heap;
-    private bool _is_max_heap;
+public class PriorityQueue<T> implements IStringable {
+    private List<T> _heap;
+    private int32(*)(T, T) _comparator;
 
-    public PriorityQueue() {
-        this._heap = new List<Any>();
-        this._is_max_heap = false;
+    public PriorityQueue(int32(*)(T, T) comparator) {
+        this._heap = new List<T>();
+        this._comparator = comparator;
     }
 
-    public PriorityQueue(bool is_max_heap) {
-        this._heap = new List<Any>();
-        this._is_max_heap = is_max_heap;
-    }
-
-    private int32 compare(Any a, Any b) {
-        if (a == null && b == null) return 0;
-        if (a == null) return -1;
-        if (b == null) return 1;
-        if (a.is_int() && b.is_int()) {
-            int32 ia = a.as_int32();
-            int32 ib = b.as_int32();
-            if (ia < ib) return -1;
-            if (ia > ib) return 1;
-            return 0;
-        }
-        if (a.is_string() && b.is_string()) {
-            return a.as_string().compare_to(b.as_string());
-        }
-        int32 ha = a.hash_code();
-        int32 hb = b.hash_code();
-        if (ha < hb) return -1;
-        if (ha > hb) return 1;
-        return 0;
-    }
-
-    private bool higher_priority(Any a, Any b) {
-        int32 cmp = this.compare(a, b);
-        if (this._is_max_heap) {
-            return cmp > 0;
-        } else {
-            return cmp < 0;
-        }
+    private bool higher_priority(T a, T b) {
+        if (this._comparator == null) return false;
+        int32 cmp = this._comparator(a, b);
+        return cmp < 0;
     }
 
     private void swap(int32 i, int32 j) {
-        Any tmp = this._heap.get(i);
+        T tmp = this._heap.get(i);
         this._heap.set(i, this._heap.get(j));
         this._heap.set(j, tmp);
     }
@@ -82,8 +52,8 @@ public class PriorityQueue implements ICollection {
     private void sift_up(int32 idx) {
         while (idx > 0) {
             int32 parent = (idx - 1) / 2;
-            Any cur_item = this._heap.get(idx);
-            Any parent_item = this._heap.get(parent);
+            T cur_item = this._heap.get(idx);
+            T parent_item = this._heap.get(parent);
             if (this.higher_priority(cur_item, parent_item)) {
                 this.swap(idx, parent);
                 idx = parent;
@@ -101,15 +71,15 @@ public class PriorityQueue implements ICollection {
             int32 right = 2 * idx + 2;
 
             if (left < count) {
-                Any left_item = this._heap.get(left);
-                Any best_item = this._heap.get(best);
+                T left_item = this._heap.get(left);
+                T best_item = this._heap.get(best);
                 if (this.higher_priority(left_item, best_item)) {
                     best = left;
                 }
             }
             if (right < count) {
-                Any right_item = this._heap.get(right);
-                Any best_item = this._heap.get(best);
+                T right_item = this._heap.get(right);
+                T best_item = this._heap.get(best);
                 if (this.higher_priority(right_item, best_item)) {
                     best = right;
                 }
@@ -124,19 +94,19 @@ public class PriorityQueue implements ICollection {
         }
     }
 
-    public void enqueue(Any item) {
+    public void enqueue(T item) {
         this._heap.add(item);
         int32 last_idx = this._heap.size() - 1;
         this.sift_up(last_idx);
     }
 
-    public Any dequeue() {
+    public T dequeue() {
         if (this._heap.is_empty()) {
             throw new InvalidOperationException("PriorityQueue is empty");
         }
-        Any root = this._heap.get(0);
+        T root = this._heap.get(0);
         int32 last_idx = this._heap.size() - 1;
-        Any last_item = this._heap.remove_at(last_idx);
+        T last_item = this._heap.remove_at(last_idx);
         if (this._heap.size() > 0) {
             this._heap.set(0, last_item);
             this.sift_down(0);
@@ -144,7 +114,7 @@ public class PriorityQueue implements ICollection {
         return root;
     }
 
-    public Any peek() {
+    public T peek() {
         if (this._heap.is_empty()) {
             throw new InvalidOperationException("PriorityQueue is empty");
         }
@@ -159,23 +129,24 @@ public class PriorityQueue implements ICollection {
         return this._heap.is_empty();
     }
 
-    public bool contains(Any item) {
-        return this._heap.contains(item);
-    }
-
     public void clear() {
         this._heap.clear();
     }
 
-    public Any[] to_array() {
+    public T[] to_array() {
         return this._heap.to_array();
     }
 
-    public IIterator iterator() {
-        return new PriorityQueueIterator(this._heap);
+    public void for_each(void(*)(T) action) {
+        if (action == null) return;
+        this._heap.for_each(action);
+    }
+
+    public PriorityQueueIterator<T> iterator() {
+        return new PriorityQueueIterator<T>(this._heap);
     }
 
     public String to_string() {
-        return this._heap.to_string();
+        return new String("[PriorityQueue]");
     }
 }

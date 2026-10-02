@@ -1,16 +1,15 @@
 package solix.collections;
 
-import solix.core.Any;
+import solix.core.IStringable;
 import solix.core.String;
-import solix.core.StringBuilder;
 import solix.exceptions.InvalidOperationException;
 import solix.exceptions.NoSuchElementException;
 
-public class DequeItemsIterator implements IIterator {
-    private LinkedList<Any> _items;
+public class DequeIterator<T> {
+    private LinkedList<T> _items;
     private int32 _idx;
 
-    public DequeItemsIterator(LinkedList<Any> items) {
+    public DequeIterator(LinkedList<T> items) {
         this._items = items;
         this._idx = 0;
     }
@@ -19,80 +18,80 @@ public class DequeItemsIterator implements IIterator {
         return this._idx < this._items.size();
     }
 
-    public Any next() {
+    public T next() {
         if (this._idx >= this._items.size()) {
             throw new NoSuchElementException("Iterator exhausted");
         }
-        Any val = this._items.get(this._idx);
+        T val = this._items.get(this._idx);
         this._idx = this._idx + 1;
         return val;
     }
 }
 
-public class Deque implements IDeque {
-    private LinkedList<Any> _items;
+public class Deque<T> implements IStringable {
+    private LinkedList<T> _items;
 
     public Deque() {
-        this._items = new LinkedList<Any>();
+        this._items = new LinkedList<T>();
     }
 
-    public void add_first(Any item) {
+    public void add_first(T item) {
         this._items.add_first(item);
     }
 
-    public void push_front(Any item) {
+    public void push_front(T item) {
         this._items.add_first(item);
     }
 
-    public void add_last(Any item) {
+    public void add_last(T item) {
         this._items.add_last(item);
     }
 
-    public void push_back(Any item) {
+    public void push_back(T item) {
         this._items.add_last(item);
     }
 
-    public Any remove_first() {
+    public T remove_first() {
         if (this._items.is_empty()) {
             throw new InvalidOperationException("Deque is empty");
         }
         return this._items.remove_first();
     }
 
-    public Any pop_front() {
+    public T pop_front() {
         return this.remove_first();
     }
 
-    public Any remove_last() {
+    public T remove_last() {
         if (this._items.is_empty()) {
             throw new InvalidOperationException("Deque is empty");
         }
         return this._items.remove_last();
     }
 
-    public Any pop_back() {
+    public T pop_back() {
         return this.remove_last();
     }
 
-    public Any peek_first() {
+    public T peek_first() {
         if (this._items.is_empty()) {
             throw new InvalidOperationException("Deque is empty");
         }
         return this._items.peek_first();
     }
 
-    public Any peek_front() {
+    public T peek_front() {
         return this.peek_first();
     }
 
-    public Any peek_last() {
+    public T peek_last() {
         if (this._items.is_empty()) {
             throw new InvalidOperationException("Deque is empty");
         }
         return this._items.peek_last();
     }
 
-    public Any peek_back() {
+    public T peek_back() {
         return this.peek_last();
     }
 
@@ -104,7 +103,7 @@ public class Deque implements IDeque {
         return this._items.is_empty();
     }
 
-    public bool contains(Any item) {
+    public bool contains(T item) {
         return this._items.contains(item);
     }
 
@@ -112,15 +111,20 @@ public class Deque implements IDeque {
         this._items.clear();
     }
 
-    public Any[] to_array() {
+    public T[] to_array() {
         return this._items.to_array();
     }
 
-    public IIterator iterator() {
-        return new DequeItemsIterator(this._items);
+    public void for_each(void(*)(T) action) {
+        if (action == null) return;
+        this._items.for_each(action);
+    }
+
+    public DequeIterator<T> iterator() {
+        return new DequeIterator<T>(this._items);
     }
 
     public String to_string() {
-        return this._items.to_string();
+        return new String("[Deque]");
     }
 }
