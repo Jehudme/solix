@@ -276,6 +276,18 @@
     {
       "type": "source",
       "path": "src/solix/collections/BitSet.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/io/filesystem/Path.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/io/filesystem/File.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/io/filesystem/Directory.slx"
     }
   ],
   "profiles": {
