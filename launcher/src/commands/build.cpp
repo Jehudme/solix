@@ -1,5 +1,6 @@
 #include "build.hpp"
 #include "compile.hpp"
+#include "../cli_utils.hpp"
 #include "../dependency_resolver.hpp"
 #include "solix/compilation.hpp"
 #include "solix/path_utils.hpp"
@@ -30,7 +31,7 @@ void setup_build_command(CLI::App &app) {
 
         if (!std::filesystem::exists(manifest_path)) {
             std::cerr << "Error: Manifest file does not exist: " << manifest_path.string() << std::endl;
-            std::exit(1);
+            cli_exit(1);
         }
 
         std::filesystem::path project_root = manifest_path.parent_path();
@@ -43,7 +44,7 @@ void setup_build_command(CLI::App &app) {
         std::ifstream manifest_file(manifest_path);
         if (!manifest_file.is_open()) {
             std::cerr << "Error: Could not open manifest file: " << manifest_path.string() << std::endl;
-            std::exit(1);
+            cli_exit(1);
         }
 
         nlohmann::json root;
@@ -51,24 +52,24 @@ void setup_build_command(CLI::App &app) {
             manifest_file >> root;
         } catch (const nlohmann::json::parse_error& e) {
             std::cerr << "Error: Failed to parse solix.json: " << e.what() << std::endl;
-            std::exit(1);
+            cli_exit(1);
         }
 
         // Validate profiles section
         if (!root.contains("profiles") || !root["profiles"].is_object()) {
             std::cerr << "Error: 'profiles' section missing or invalid in solix.json" << std::endl;
-            std::exit(1);
+            cli_exit(1);
         }
 
         if (!root["profiles"].contains(*profile_str)) {
             std::cerr << "Error: Profile '" << *profile_str << "' not defined in solix.json" << std::endl;
-            std::exit(1);
+            cli_exit(1);
         }
 
         const auto& profile = root["profiles"][*profile_str];
         if (!profile.is_object()) {
             std::cerr << "Error: Profile '" << *profile_str << "' must be an object." << std::endl;
-            std::exit(1);
+            cli_exit(1);
         }
 
         auto opts = std::make_shared<CompilationOptions>();
@@ -130,7 +131,7 @@ void setup_build_command(CLI::App &app) {
         if (root.contains("dependencies") && root["dependencies"].is_array()) {
             for (const auto& dep : root["dependencies"]) {
                 if (!dep_mgr.resolve_dependency(dep, project_root, *opts)) {
-                    std::exit(1);
+                    cli_exit(1);
                 }
             }
         }
@@ -141,7 +142,7 @@ void setup_build_command(CLI::App &app) {
             if (comp.contains("additional_dependencies") && comp["additional_dependencies"].is_array()) {
                 for (const auto& dep : comp["additional_dependencies"]) {
                     if (!dep_mgr.resolve_dependency(dep, project_root, *opts)) {
-                        std::exit(1);
+                        cli_exit(1);
                     }
                 }
             }
@@ -149,13 +150,13 @@ void setup_build_command(CLI::App &app) {
 
         if (opts->sources.empty()) {
             std::cerr << "Error: No source files found to compile in profile '" << *profile_str << "'." << std::endl;
-            std::exit(1);
+            cli_exit(1);
         }
 
         // 4. Execute compilation and write binary
         int exit_code = execute_compilation_and_write(*opts, out_exe);
         if (exit_code != 0) {
-            std::exit(exit_code);
+            cli_exit(exit_code);
         }
     });
 }

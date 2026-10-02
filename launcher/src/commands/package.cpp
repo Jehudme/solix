@@ -1,4 +1,5 @@
 #include "package.hpp"
+#include "../cli_utils.hpp"
 #include "../package_manager.hpp"
 #include <iostream>
 #include <iomanip>
@@ -31,7 +32,7 @@ void setup_package_commands(CLI::App &app) {
         PackageManager pm;
         std::string id;
         if (!pm.install_project(std::filesystem::path(*install_path), *force_flag, id)) {
-            std::exit(1);
+            cli_exit(1);
         }
         auto installed_dir = PackageManager::get_installed_dir() / id;
         std::cout << "Successfully installed project (ID: " << id << ")" << std::endl;
@@ -49,7 +50,7 @@ void setup_package_commands(CLI::App &app) {
     uninstall_cmd->callback([uninstall_name, uninstall_version]() {
         PackageManager pm;
         if (!pm.uninstall_project(*uninstall_name, *uninstall_version)) {
-            std::exit(1);
+            cli_exit(1);
         }
         std::cout << "Successfully uninstalled '" << *uninstall_name 
                   << "' version '" << *uninstall_version << "'." << std::endl;
@@ -100,13 +101,13 @@ void setup_package_commands(CLI::App &app) {
             if (!target) {
                 std::cerr << "Error: No installed project found for '" << *details_name 
                           << "' version '" << *details_version << "'." << std::endl;
-                std::exit(1);
+                cli_exit(1);
             }
         } else {
             auto matches = pm.get_projects_by_name(*details_name);
             if (matches.empty()) {
                 std::cerr << "Error: No installed project found with name '" << *details_name << "'." << std::endl;
-                std::exit(1);
+                cli_exit(1);
             }
             if (matches.size() > 1) {
                 std::cout << "Multiple versions installed for '" << *details_name << "'. Please specify a version:\n";

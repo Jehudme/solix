@@ -14,8 +14,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
-add_executable(solix
-    src/main.cpp
+add_library(solix_launcher_core STATIC
     src/package_manager.cpp
     src/commands/compile.cpp
     src/commands/execute.cpp
@@ -24,12 +23,18 @@ add_executable(solix
     src/commands/package.cpp
 )
 
-target_link_libraries(solix PRIVATE solix_language CLI11::CLI11 nlohmann_json::nlohmann_json)
+target_link_libraries(solix_launcher_core PUBLIC solix_language CLI11::CLI11 nlohmann_json::nlohmann_json)
 
-target_include_directories(solix PRIVATE
+target_include_directories(solix_launcher_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/commands
 )
+
+add_executable(solix
+    src/main.cpp
+)
+
+target_link_libraries(solix PRIVATE solix_launcher_core)
 
 
 # Provide backward-compatible binary link/alias for solix_launcher
