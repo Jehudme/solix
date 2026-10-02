@@ -1,0 +1,9 @@
+package solix.exceptions;
+
+public class FormatException extends RuntimeException {
+    public FormatException() : super("") {}
+
+    public FormatException(char[] message) : super(message) {}
+
+    public FormatException(char[] message, Exception cause) : super(message, cause) {}
+}

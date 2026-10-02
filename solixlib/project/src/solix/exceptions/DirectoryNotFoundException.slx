@@ -1,0 +1,21 @@
+package solix.exceptions;
+
+public class DirectoryNotFoundException extends IOException {
+    public char[] dir_path;
+
+    public DirectoryNotFoundException() : super("") {
+        this.dir_path = "";
+    }
+
+    public DirectoryNotFoundException(char[] message) : super(message) {
+        this.dir_path = "";
+    }
+
+    public DirectoryNotFoundException(char[] dir_path, char[] message) : super(message) {
+        this.dir_path = dir_path;
+    }
+
+    public char[] get_dir_path() {
+        return this.dir_path;
+    }
+}

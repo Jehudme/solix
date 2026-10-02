@@ -1,0 +1,9 @@
+package solix.exceptions;
+
+public class InvalidOperationException extends RuntimeException {
+    public InvalidOperationException() : super("") {}
+
+    public InvalidOperationException(char[] message) : super(message) {}
+
+    public InvalidOperationException(char[] message, Exception cause) : super(message, cause) {}
+}

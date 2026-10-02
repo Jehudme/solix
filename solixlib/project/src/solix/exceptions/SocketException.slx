@@ -1,0 +1,21 @@
+package solix.exceptions;
+
+public class SocketException extends IOException {
+    public int32 error_code;
+
+    public SocketException() : super("") {
+        this.error_code = 0;
+    }
+
+    public SocketException(char[] message) : super(message) {
+        this.error_code = 0;
+    }
+
+    public SocketException(char[] message, int32 error_code) : super(message) {
+        this.error_code = error_code;
+    }
+
+    public int32 get_error_code() {
+        return this.error_code;
+    }
+}

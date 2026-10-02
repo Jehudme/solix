@@ -1,0 +1,9 @@
+package solix.exceptions;
+
+public class RuntimeException extends Exception {
+    public RuntimeException() : super("") {}
+
+    public RuntimeException(char[] message) : super(message) {}
+
+    public RuntimeException(char[] message, Exception cause) : super(message, cause) {}
+}

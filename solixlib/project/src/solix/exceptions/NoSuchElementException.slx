@@ -1,0 +1,9 @@
+package solix.exceptions;
+
+public class NoSuchElementException extends RuntimeException {
+    public NoSuchElementException() : super("") {}
+
+    public NoSuchElementException(char[] message) : super(message) {}
+
+    public NoSuchElementException(char[] message, Exception cause) : super(message, cause) {}
+}

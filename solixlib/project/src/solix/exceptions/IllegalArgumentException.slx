@@ -1,0 +1,9 @@
+package solix.exceptions;
+
+public class IllegalArgumentException extends RuntimeException {
+    public IllegalArgumentException() : super("") {}
+
+    public IllegalArgumentException(char[] message) : super(message) {}
+
+    public IllegalArgumentException(char[] message, Exception cause) : super(message, cause) {}
+}

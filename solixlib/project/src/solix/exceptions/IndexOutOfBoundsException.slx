@@ -1,0 +1,43 @@
+package solix.exceptions;
+
+public class IndexOutOfBoundsException extends RuntimeException {
+    public int32 index;
+    public int32 lower_bound;
+    public int32 upper_bound;
+
+    public IndexOutOfBoundsException() : super("") {
+        this.index = 0;
+        this.lower_bound = 0;
+        this.upper_bound = 0;
+    }
+
+    public IndexOutOfBoundsException(char[] message) : super(message) {
+        this.index = 0;
+        this.lower_bound = 0;
+        this.upper_bound = 0;
+    }
+
+    public IndexOutOfBoundsException(int32 index, int32 lower_bound, int32 upper_bound) : super("") {
+        this.index = index;
+        this.lower_bound = lower_bound;
+        this.upper_bound = upper_bound;
+    }
+
+    public IndexOutOfBoundsException(char[] message, int32 index, int32 lower_bound, int32 upper_bound) : super(message) {
+        this.index = index;
+        this.lower_bound = lower_bound;
+        this.upper_bound = upper_bound;
+    }
+
+    public int32 get_index() {
+        return this.index;
+    }
+
+    public int32 get_lower_bound() {
+        return this.lower_bound;
+    }
+
+    public int32 get_upper_bound() {
+        return this.upper_bound;
+    }
+}

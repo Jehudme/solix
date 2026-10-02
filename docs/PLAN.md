@@ -36,7 +36,7 @@
 | **Phase 19** | GitHub Actions CI Verification & Multi-Platform Validation | `P0 Blocker` | `ci`, `core` | - [x] Completed |
 | **Phase 20** | Standard Library (`solixlib`) Project Scaffolding & Native Setup | `P1 High` | `solixlib`, `build`, `tests`, `docs` | - [x] Completed |
 | **Phase 20.1** | Architecture Refactor: Rename Language & Launcher to Core & CLI | `P1 High` | `core`, `cli`, `build`, `tests`, `docs` | - [x] Completed |
-| **Phase 21** | Standard Library: `solix.exceptions` (Foundational Exception Hierarchy) | `P0 Blocker` | `solixlib`, `tests` | - [ ] Planned |
+| **Phase 21** | Standard Library: `solix.exceptions` (Foundational Exception Hierarchy) | `P0 Blocker` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 22** | Standard Library: `solix.system.Console` (Foundational Terminal I/O) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 23** | Standard Library: `solix.core.String` & `StringBuilder` (`IStringable` Contract) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 24** | Standard Library: `solix.core.Primitives` & Types (`Optional<T>`, `Any`, Contracts) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
@@ -910,7 +910,7 @@ All standard library (`solixlib`) submodules adhere to these non-negotiable arch
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `solixlib/project/src/solix/exceptions/`, `tests/solixlib/TESTS.md`, `tests/solixlib/test_exceptions.cpp`, `docs/spec/solixlib/exceptions.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Verified
 
 ### Objective
 Establish the foundational standard library exception hierarchy `solix.exceptions`. Provide a rich, object-oriented inheritance tree rooted at `Exception` with specialized general-purpose exceptions used consistently across all standard library submodules, compiler runtimes, and user code.
@@ -986,11 +986,11 @@ Establish the foundational standard library exception hierarchy `solix.exception
   - `docs/spec/solixlib/exceptions.md`: Formal specification of the exception inheritance hierarchy, catching semantics, and recommended usage.
 
 ### Action Items
-- [ ] Define test specification in `tests/solixlib/TESTS.md` (Cases 1.1 to 1.8).
-- [ ] Author `solix.exceptions` classes under `solixlib/project/src/solix/exceptions/`.
-- [ ] Implement Catch2 test suite `tests/solixlib/test_exceptions.cpp`.
-- [ ] Author `docs/spec/solixlib/exceptions.md`.
-- [ ] Verify 100% test pass rate across all platforms.
+- [x] Define test specification in `tests/solixlib/TESTS.md` (Cases 1.1 to 1.8).
+- [x] Author `solix.exceptions` classes under `solixlib/project/src/solix/exceptions/`.
+- [x] Implement Catch2 test suite `tests/solixlib/test_exceptions.cpp`.
+- [x] Author `docs/spec/solixlib/exceptions.md`.
+- [x] Verify 100% test pass rate across all platforms.
 
 ---
 
