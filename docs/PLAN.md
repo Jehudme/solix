@@ -21,7 +21,8 @@
 | **Phase 4** | Cross-Platform Path & Toolchain Portability | `P1 High` | `launcher`, `runtime` | - [x] Completed |
 | **Phase 5** | Two's-Complement & Arithmetic Invariant Hardening | `P1 High` | `runtime`, `compiler`, `tests` | - [ ] Not Started |
 | **Phase 6** | Deterministic ARC Lifecycle Verification | `P1 High` | `runtime`, `tests` | - [ ] Not Started |
-| **Phase 7** | Documentation & Specification Synchronization | `P2 Polish` | `docs`, `launcher`, `tests` | - [ ] Not Started |
+| **Phase 7** | Documentation & Specification Synchronization | `P2 Polish` | `docs`, `launcher`, `tests` | - [x] Completed |
+| **Phase 8** | Project Manifest & Modular Build Subcommand (`solix build`) | `P1 High` | `launcher`, `build` | - [x] Completed |
 
 ---
 
@@ -221,3 +222,48 @@ Synchronize user-facing documentation, README badges, and code examples with the
 - `README.md` and `docs/` contain zero references to `launcher/rsc/lib/`.
 - Code snippets in documentation compile without syntax errors.
 - Test documentation accurately matches all test suites.
+
+---
+
+## Phase 8: Project Manifest & Modular Build Subcommand (`solix build`)
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `launcher`, `build`
+- **Status**: - [x] Completed & Merged
+
+### Objective
+Implement the `solix build` launcher subcommand, enabling zero-configuration builds via `solix.json`. The implementation mirrors the option-mapping logic of `compile.cpp` to populate all fields of `solix::CompilationOptions`, shares the core compilation runner to avoid duplicate code, and adopts an extensible, modular architecture for resolving dependencies (`source`, and future `library` or physical/external files).
+
+### Action Items
+- [x] **1. Build System Integration**:
+  - Add `nlohmann_json` via `FetchContent` in `launcher/CMakeLists.txt`.
+  - Replace deleted `launcher/src/commands/install.cpp` with `launcher/src/commands/build.cpp` in `launcher/CMakeLists.txt`.
+- [x] **2. Shared Compilation Execution**:
+  - In `launcher/src/commands/compile.hpp` / `compile.cpp`, extract the common compilation execution pipeline (`solix::run(opts)`, output file writing, directory creation, error handling) into a reusable runner function.
+  - Refactor `compile.cpp` to utilize the shared runner.
+- [x] **3. Modular Dependency Resolution**:
+  - Design an extensible `IDependencyResolver` interface and manager for dependency resolution.
+  - Implement `SourceDependencyResolver` to handle `"type": "source"` dependencies by loading `.slx` files relative to project root.
+  - Support both root `dependencies` and profile-specific `compilation.additional_dependencies`.
+- [x] **4. Manifest Parsing & `build.cpp` Subcommand**:
+  - Register `solix build` subcommand in `launcher/src/commands/build.cpp`.
+  - Add CLI flags `-p, --profile <name>` (default: `"debug"`) and `-m, --manifest <path>` (default: `"./solix.json"`).
+  - Map all `CompilationOptions` fields from the active profile:
+    - `entry_point`
+    - `use_multithreading`
+    - `log_level`, `flush_level`, `sink_type`, `log_pattern`, `log_file_path`, `flush_every_seconds`
+    - `assembly_output_path`
+  - Support `relative_paths` to resolve or display paths relative to project root.
+  - Ensure parent directory of output bytecode exists and write compiled artifact.
+- [x] **5. Verification & Testing**:
+  - Build `launcher/templates/project/` using `solix build`.
+  - Verify `build/debug/out.slxbin` and `build/debug/out.slxasm` are produced.
+  - Verify profile selection (`--profile release`, `--profile test`).
+  - Run full test suite (`ctest`) to ensure zero regressions across the codebase.
+
+### Acceptance Criteria
+- `solix build` executes successfully on any project containing a valid `solix.json`.
+- All fields of `CompilationOptions` are populated identically to `compile.cpp`.
+- Dependency resolution is modular and extensible for future dependency types.
+- All 42 unit test suites compile and pass 100%.
+
