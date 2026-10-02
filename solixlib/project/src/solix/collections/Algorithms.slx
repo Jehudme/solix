@@ -1,14 +1,12 @@
 package solix.collections;
 
-import solix.core.Any;
-
 public class Algorithms {
-    public static void reverse(IList list) {
+    public static void reverse<T>(List<T> list) {
         if (list == null) return;
         int32 i = 0;
         int32 j = list.size() - 1;
         while (i < j) {
-            Any temp = list.get(i);
+            T temp = list.get(i);
             list.set(i, list.get(j));
             list.set(j, temp);
             i = i + 1;
@@ -16,46 +14,79 @@ public class Algorithms {
         }
     }
 
-    public static void swap(IList list, int32 i, int32 j) {
+    public static void swap<T>(List<T> list, int32 i, int32 j) {
         if (list == null) return;
-        Any temp = list.get(i);
+        T temp = list.get(i);
         list.set(i, list.get(j));
         list.set(j, temp);
     }
 
-    public static void fill(IList list, Any val) {
+    public static void fill<T>(List<T> list, T val) {
         if (list == null) return;
         for (int32 i = 0; i < list.size(); i = i + 1) {
             list.set(i, val);
         }
     }
 
-    public static void sort_int32(List list) {
+    public static void sort_int32(List<int32> list) {
         if (list == null) return;
         int32 n = list.size();
         for (int32 i = 1; i < n; i = i + 1) {
-            Any key_any = list.get(i);
-            int32 key = key_any.as_int32();
+            int32 key = list.get(i);
             int32 j = i - 1;
-            while (j >= 0 && list.get(j).as_int32() > key) {
+            while (j >= 0 && list.get(j) > key) {
                 list.set(j + 1, list.get(j));
                 j = j - 1;
             }
-            list.set(j + 1, key_any);
+            list.set(j + 1, key);
         }
     }
 
-    public static int32 binary_search_int32(List list, int32 target) {
+    public static int32 binary_search_int32(List<int32> list, int32 target) {
         if (list == null) return -1;
         int32 low = 0;
         int32 high = list.size() - 1;
         while (low <= high) {
             int32 mid = low + (high - low) / 2;
-            int32 mid_val = list.get(mid).as_int32();
+            int32 mid_val = list.get(mid);
             if (mid_val == target) {
                 return mid;
             }
             if (mid_val < target) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+        return -1;
+    }
+
+    public static void sort<T>(List<T> list, int32(*)(T, T) comparator) {
+        if (list == null) return;
+        int32 n = list.size();
+        for (int32 i = 1; i < n; i = i + 1) {
+            T key = list.get(i);
+            int32 j = i - 1;
+            while (j >= 0 && comparator(list.get(j), key) > 0) {
+                list.set(j + 1, list.get(j));
+                j = j - 1;
+            }
+            list.set(j + 1, key);
+        }
+    }
+
+    public static int32 binary_search<T>(List<T> list, T target, int32(*)(T, T) comparator) {
+        if (list == null) return -1;
+        int32 low = 0;
+        int32 high = list.size() - 1;
+        while (low <= high) {
+            int32 mid = low + (high - low) / 2;
+            T mid_val = list.get(mid);
+            int32 cmp = comparator(mid_val, target);
+            if (cmp == 0) {
+                return mid;
+            }
+            if (cmp < 0) {
                 low = mid + 1;
             } else {
                 high = mid - 1;

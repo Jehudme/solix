@@ -170,8 +170,8 @@ public class HashMap implements IMap {
         return null;
     }
 
-    public List keys() {
-        List list = new List(this._size);
+    public List<Any> keys() {
+        List<Any> list = new List<Any>(this._size);
         for (int32 i = 0; i < this._table.length; i = i + 1) {
             HashMapEntry e = this._table[i];
             while (e != null) {
@@ -182,8 +182,8 @@ public class HashMap implements IMap {
         return list;
     }
 
-    public List values() {
-        List list = new List(this._size);
+    public List<Any> values() {
+        List<Any> list = new List<Any>(this._size);
         for (int32 i = 0; i < this._table.length; i = i + 1) {
             HashMapEntry e = this._table[i];
             while (e != null) {
@@ -194,8 +194,8 @@ public class HashMap implements IMap {
         return list;
     }
 
-    public List entries() {
-        List list = new List(this._size);
+    public List<Any> entries() {
+        List<Any> list = new List<Any>(this._size);
         for (int32 i = 0; i < this._table.length; i = i + 1) {
             HashMapEntry e = this._table[i];
             while (e != null) {

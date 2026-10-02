@@ -5,6 +5,36 @@ import solix.core.String;
 import solix.core.StringBuilder;
 import solix.exceptions.IllegalArgumentException;
 import solix.exceptions.InvalidOperationException;
+import solix.exceptions.NoSuchElementException;
+
+public class CircularBufferIterator implements IIterator {
+    private Any[] _data;
+    private int32 _head;
+    private int32 _capacity;
+    private int32 _size;
+    private int32 _idx;
+
+    public CircularBufferIterator(Any[] buf, int32 head, int32 cap, int32 sz) {
+        this._data = buf;
+        this._head = head;
+        this._capacity = cap;
+        this._size = sz;
+        this._idx = 0;
+    }
+
+    public bool has_next() {
+        return this._idx < this._size;
+    }
+
+    public Any next() {
+        if (this._idx >= this._size) {
+            throw new NoSuchElementException("Iterator exhausted");
+        }
+        int32 pos = (this._head + this._idx) % this._capacity;
+        this._idx = this._idx + 1;
+        return this._data[pos];
+    }
+}
 
 public class CircularBuffer implements ICollection {
     private Any[] _buffer;
@@ -132,12 +162,7 @@ public class CircularBuffer implements ICollection {
     }
 
     public IIterator iterator() {
-        List list = new List(this._size);
-        for (int32 i = 0; i < this._size; i++) {
-            int32 idx = (this._head + i) % this._capacity;
-            list.add(this._buffer[idx]);
-        }
-        return list.iterator();
+        return new CircularBufferIterator(this._buffer, this._head, this._capacity, this._size);
     }
 
     public String to_string() {

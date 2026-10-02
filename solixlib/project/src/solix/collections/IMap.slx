@@ -13,7 +13,7 @@ public interface IMap extends IStringable {
     Any get_or_default(Any key, Any default_val);
     void put(Any key, Any value);
     Any remove(Any key);
-    List keys();
-    List values();
-    List entries();
+    List<Any> keys();
+    List<Any> values();
+    List<Any> entries();
 }

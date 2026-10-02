@@ -4,18 +4,42 @@ import solix.core.Any;
 import solix.core.String;
 import solix.core.StringBuilder;
 import solix.exceptions.InvalidOperationException;
+import solix.exceptions.NoSuchElementException;
+
+public class PriorityQueueIterator implements IIterator {
+    private List<Any> _heap;
+    private int32 _idx;
+
+    public PriorityQueueIterator(List<Any> heap) {
+        this._heap = heap;
+        this._idx = 0;
+    }
+
+    public bool has_next() {
+        return this._idx < this._heap.size();
+    }
+
+    public Any next() {
+        if (this._idx >= this._heap.size()) {
+            throw new NoSuchElementException("Iterator exhausted");
+        }
+        Any val = this._heap.get(this._idx);
+        this._idx = this._idx + 1;
+        return val;
+    }
+}
 
 public class PriorityQueue implements ICollection {
-    private List _heap;
+    private List<Any> _heap;
     private bool _is_max_heap;
 
     public PriorityQueue() {
-        this._heap = new List();
+        this._heap = new List<Any>();
         this._is_max_heap = false;
     }
 
     public PriorityQueue(bool is_max_heap) {
-        this._heap = new List();
+        this._heap = new List<Any>();
         this._is_max_heap = is_max_heap;
     }
 
@@ -148,7 +172,7 @@ public class PriorityQueue implements ICollection {
     }
 
     public IIterator iterator() {
-        return this._heap.iterator();
+        return new PriorityQueueIterator(this._heap);
     }
 
     public String to_string() {

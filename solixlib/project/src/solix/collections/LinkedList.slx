@@ -1,14 +1,14 @@
 package solix.collections;
 
-import solix.core.Any;
+import solix.core.IStringable;
 import solix.core.String;
 import solix.exceptions.IndexOutOfBoundsException;
 import solix.exceptions.NoSuchElementException;
 
-public class LinkedListIterator implements IIterator {
-    private LinkedListNode _current;
+public class LinkedListIterator<T> {
+    private LinkedListNode<T> _current;
 
-    public LinkedListIterator(LinkedListNode head) {
+    public LinkedListIterator(LinkedListNode<T> head) {
         this._current = head;
     }
 
@@ -16,19 +16,19 @@ public class LinkedListIterator implements IIterator {
         return this._current != null;
     }
 
-    public Any next() {
+    public T next() {
         if (this._current == null) {
             throw new NoSuchElementException("Iterator exhausted");
         }
-        Any val = this._current.value;
+        T val = this._current.value;
         this._current = this._current.next;
         return val;
     }
 }
 
-public class LinkedList implements IList, IDeque {
-    private LinkedListNode _head;
-    private LinkedListNode _tail;
+public class LinkedList<T> implements IStringable {
+    private LinkedListNode<T> _head;
+    private LinkedListNode<T> _tail;
     private int32 _count;
 
     public LinkedList() {
@@ -46,9 +46,9 @@ public class LinkedList implements IList, IDeque {
     }
 
     public void clear() {
-        LinkedListNode cur = this._head;
+        LinkedListNode<T> cur = this._head;
         while (cur != null) {
-            LinkedListNode nxt = cur.next;
+            LinkedListNode<T> nxt = cur.next;
             cur.prev = null;
             cur.next = null;
             cur = nxt;
@@ -58,20 +58,8 @@ public class LinkedList implements IList, IDeque {
         this._count = 0;
     }
 
-    public Any[] to_array() {
-        Any[] arr = new Any[this._count];
-        LinkedListNode cur = this._head;
-        int32 idx = 0;
-        while (cur != null) {
-            arr[idx] = cur.value;
-            cur = cur.next;
-            idx = idx + 1;
-        }
-        return arr;
-    }
-
-    public void add_first(Any item) {
-        LinkedListNode node = new LinkedListNode(item);
+    public void add_first(T item) {
+        LinkedListNode<T> node = new LinkedListNode<T>(item);
         if (this._head == null) {
             this._head = node;
             this._tail = node;
@@ -83,8 +71,12 @@ public class LinkedList implements IList, IDeque {
         this._count = this._count + 1;
     }
 
-    public void add_last(Any item) {
-        LinkedListNode node = new LinkedListNode(item);
+    public void push_front(T item) {
+        this.add_first(item);
+    }
+
+    public void add_last(T item) {
+        LinkedListNode<T> node = new LinkedListNode<T>(item);
         if (this._tail == null) {
             this._head = node;
             this._tail = node;
@@ -96,66 +88,86 @@ public class LinkedList implements IList, IDeque {
         this._count = this._count + 1;
     }
 
-    public Any remove_first() {
+    public void push_back(T item) {
+        this.add_last(item);
+    }
+
+    public void add(T item) {
+        this.add_last(item);
+    }
+
+    public T remove_first() {
         if (this._head == null) {
             throw new NoSuchElementException("LinkedList is empty");
         }
-        Any val = this._head.value;
+        T val = this._head.value;
         this._head = this._head.next;
-        if (this._head == null) {
-            this._tail = null;
-        } else {
+        if (this._head != null) {
             this._head.prev = null;
+        } else {
+            this._tail = null;
         }
         this._count = this._count - 1;
         return val;
     }
 
-    public Any remove_last() {
+    public T pop_front() {
+        return this.remove_first();
+    }
+
+    public T remove_last() {
         if (this._tail == null) {
             throw new NoSuchElementException("LinkedList is empty");
         }
-        Any val = this._tail.value;
+        T val = this._tail.value;
         this._tail = this._tail.prev;
-        if (this._tail == null) {
-            this._head = null;
-        } else {
+        if (this._tail != null) {
             this._tail.next = null;
+        } else {
+            this._head = null;
         }
         this._count = this._count - 1;
         return val;
     }
 
-    public Any peek_first() {
+    public T pop_back() {
+        return this.remove_last();
+    }
+
+    public T peek_first() {
         if (this._head == null) {
             throw new NoSuchElementException("LinkedList is empty");
         }
         return this._head.value;
     }
 
-    public Any peek_last() {
+    public T peek_front() {
+        return this.peek_first();
+    }
+
+    public T peek_last() {
         if (this._tail == null) {
             throw new NoSuchElementException("LinkedList is empty");
         }
         return this._tail.value;
     }
 
-    public void add(Any item) {
-        this.add_last(item);
+    public T peek_back() {
+        return this.peek_last();
     }
 
-    private LinkedListNode node_at(int32 index) {
+    private LinkedListNode<T> node_at(int32 index) {
         if (index < 0 || index >= this._count) {
             throw new IndexOutOfBoundsException("LinkedList index out of bounds", index, 0, this._count);
         }
         if (index < this._count / 2) {
-            LinkedListNode cur = this._head;
+            LinkedListNode<T> cur = this._head;
             for (int32 i = 0; i < index; i = i + 1) {
                 cur = cur.next;
             }
             return cur;
         } else {
-            LinkedListNode cur = this._tail;
+            LinkedListNode<T> cur = this._tail;
             for (int32 i = this._count - 1; i > index; i = i - 1) {
                 cur = cur.prev;
             }
@@ -163,38 +175,40 @@ public class LinkedList implements IList, IDeque {
         }
     }
 
-    public Any get(int32 index) {
-        LinkedListNode node = this.node_at(index);
+    public T get(int32 index) {
+        LinkedListNode<T> node = this.node_at(index);
         return node.value;
     }
 
-    public Any set(int32 index, Any item) {
-        LinkedListNode node = this.node_at(index);
-        Any old = node.value;
+    public T set(int32 index, T item) {
+        LinkedListNode<T> node = this.node_at(index);
+        T old = node.value;
         node.value = item;
         return old;
     }
 
-    public void insert(int32 index, Any item) {
+    public void insert(int32 index, T item) {
         if (index < 0 || index > this._count) {
             throw new IndexOutOfBoundsException("LinkedList insert index out of bounds", index, 0, this._count);
         }
         if (index == 0) {
             this.add_first(item);
-        } else if (index == this._count) {
-            this.add_last(item);
-        } else {
-            LinkedListNode target = this.node_at(index);
-            LinkedListNode node = new LinkedListNode(item);
-            node.prev = target.prev;
-            node.next = target;
-            target.prev.next = node;
-            target.prev = node;
-            this._count = this._count + 1;
+            return;
         }
+        if (index == this._count) {
+            this.add_last(item);
+            return;
+        }
+        LinkedListNode<T> target = this.node_at(index);
+        LinkedListNode<T> node = new LinkedListNode<T>(item);
+        node.prev = target.prev;
+        node.next = target;
+        target.prev.next = node;
+        target.prev = node;
+        this._count = this._count + 1;
     }
 
-    public Any remove_at(int32 index) {
+    public T remove_at(int32 index) {
         if (index < 0 || index >= this._count) {
             throw new IndexOutOfBoundsException("LinkedList remove_at index out of bounds", index, 0, this._count);
         }
@@ -204,8 +218,8 @@ public class LinkedList implements IList, IDeque {
         if (index == this._count - 1) {
             return this.remove_last();
         }
-        LinkedListNode node = this.node_at(index);
-        Any val = node.value;
+        LinkedListNode<T> node = this.node_at(index);
+        T val = node.value;
         node.prev.next = node.next;
         node.next.prev = node.prev;
         node.prev = null;
@@ -214,31 +228,24 @@ public class LinkedList implements IList, IDeque {
         return val;
     }
 
-    public bool remove(Any item) {
-        LinkedListNode cur = this._head;
+    public bool remove(T item) {
+        LinkedListNode<T> cur = this._head;
+        int32 idx = 0;
         while (cur != null) {
-            bool match = false;
-            if (item == null) {
-                if (cur.value == null) {
-                    match = true;
-                }
-            } else {
-                if (cur.value != null && cur.value.equals(item)) {
-                    match = true;
-                }
+            if (cur.value == item) {
+                this.remove_at(idx);
+                return true;
             }
-            if (match) {
-                if (cur == this._head) {
-                    this.remove_first();
-                } else if (cur == this._tail) {
-                    this.remove_last();
-                } else {
-                    cur.prev.next = cur.next;
-                    cur.next.prev = cur.prev;
-                    cur.prev = null;
-                    cur.next = null;
-                    this._count = this._count - 1;
-                }
+            cur = cur.next;
+            idx = idx + 1;
+        }
+        return false;
+    }
+
+    public bool contains(T item) {
+        LinkedListNode<T> cur = this._head;
+        while (cur != null) {
+            if (cur.value == item) {
                 return true;
             }
             cur = cur.next;
@@ -246,18 +253,12 @@ public class LinkedList implements IList, IDeque {
         return false;
     }
 
-    public int32 index_of(Any item) {
-        LinkedListNode cur = this._head;
+    public int32 index_of(T item) {
+        LinkedListNode<T> cur = this._head;
         int32 idx = 0;
         while (cur != null) {
-            if (item == null) {
-                if (cur.value == null) {
-                    return idx;
-                }
-            } else {
-                if (cur.value != null && cur.value.equals(item)) {
-                    return idx;
-                }
+            if (cur.value == item) {
+                return idx;
             }
             cur = cur.next;
             idx = idx + 1;
@@ -265,15 +266,57 @@ public class LinkedList implements IList, IDeque {
         return -1;
     }
 
-    public bool contains(Any item) {
-        return this.index_of(item) != -1;
+    public T[] to_array() {
+        T[] arr = new T[this._count];
+        LinkedListNode<T> cur = this._head;
+        int32 idx = 0;
+        while (cur != null) {
+            arr[idx] = cur.value;
+            cur = cur.next;
+            idx = idx + 1;
+        }
+        return arr;
     }
 
-    public IIterator iterator() {
-        return new LinkedListIterator(this._head);
+    public void reverse() {
+        LinkedListNode<T> cur = this._head;
+        LinkedListNode<T> temp = null;
+        while (cur != null) {
+            temp = cur.prev;
+            cur.prev = cur.next;
+            cur.next = temp;
+            cur = cur.prev;
+        }
+        temp = this._head;
+        this._head = this._tail;
+        this._tail = temp;
+    }
+
+    public void for_each(void(*)(T) action) {
+        LinkedListNode<T> cur = this._head;
+        while (cur != null) {
+            action(cur.value);
+            cur = cur.next;
+        }
+    }
+
+    public LinkedList<T> filter(bool(*)(T) predicate) {
+        LinkedList<T> result = new LinkedList<T>();
+        LinkedListNode<T> cur = this._head;
+        while (cur != null) {
+            if (predicate(cur.value)) {
+                result.add_last(cur.value);
+            }
+            cur = cur.next;
+        }
+        return result;
+    }
+
+    public LinkedListIterator<T> iterator() {
+        return new LinkedListIterator<T>(this._head);
     }
 
     public String to_string() {
-        return Collections.to_string(this);
+        return new String("[LinkedList]");
     }
 }

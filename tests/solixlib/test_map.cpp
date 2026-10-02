@@ -112,15 +112,15 @@ TEST_CASE("Standard Library - solix.collections.Map", "[solixlib][collections][m
                     Any v1 = new Any(100);
                     map.put(k1, v1);
 
-                    List kList = map.keys();
+                    List<Any> kList = map.keys();
                     if (kList.size() != 1) return 1;
                     if (kList.get(0).as_int32() != 10) return 2;
 
-                    List vList = map.values();
+                    List<Any> vList = map.values();
                     if (vList.size() != 1) return 3;
                     if (vList.get(0).as_int32() != 100) return 4;
 
-                    List entries = map.entries();
+                    List<Any> entries = map.entries();
                     if (entries.size() != 1) return 5;
 
                     String repr = map.to_string();
@@ -166,7 +166,7 @@ TEST_CASE("Standard Library - solix.collections.Map", "[solixlib][collections][m
                     if (tree.last_key().as_int32() != 80) return 5;
 
                     // In-order keys must be strictly sorted: 10, 20, 30, 50, 80
-                    List keys = tree.keys();
+                    List<Any> keys = tree.keys();
                     if (keys.size() != 5) return 6;
                     if (keys.get(0).as_int32() != 10) return 7;
                     if (keys.get(1).as_int32() != 20) return 8;
