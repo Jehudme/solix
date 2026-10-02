@@ -130,5 +130,16 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 9.6 [IMPLEMENTED]**: Negative: `HashMap.get()` with missing key throws `KeyNotFoundException` (`tests/solixlib/test_map.cpp`).
 - [x] **Case 9.7 [IMPLEMENTED]**: Negative: `TreeMap.get()` with missing key throws `KeyNotFoundException` and `first_key()` on empty map throws `NoSuchElementException` (`tests/solixlib/test_map.cpp`).
 
+---
+
+## 10. Sets (`solix.collections.Set`, `HashSet`, `TreeSet`)
+
+- [x] **Case 10.1 [IMPLEMENTED]**: `HashSet` distinct insertion, duplicate rejection, contains, remove, and clear (`tests/solixlib/test_set.cpp`).
+- [x] **Case 10.2 [IMPLEMENTED]**: `HashSet` set algebra: `union_with`, `intersect_with`, `difference_with` (`tests/solixlib/test_set.cpp`).
+- [x] **Case 10.3 [IMPLEMENTED]**: `HashSet` subset and superset relationships (`is_subset_of`, `is_superset_of`) (`tests/solixlib/test_set.cpp`).
+- [x] **Case 10.4 [IMPLEMENTED]**: `TreeSet` ordered uniqueness, boundary lookups (`first()`, `last()`), in-order iterator traversal, and formatted string rendering (`tests/solixlib/test_set.cpp`).
+- [x] **Case 10.5 [IMPLEMENTED]**: `TreeSet` node removal, duplicate rejections, and `union_with` (`tests/solixlib/test_set.cpp`).
+- [x] **Case 10.6 [IMPLEMENTED]**: Negative: `TreeSet` `first()` and `last()` on empty set throw `NoSuchElementException` (`tests/solixlib/test_set.cpp`).
+
 
 
