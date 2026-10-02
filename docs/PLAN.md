@@ -42,7 +42,7 @@
 | **Phase 24** | Standard Library: `solix.core.Primitives` & Types (`Optional<T>`, `Any`, Contracts) | `P1 High` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 25** | Standard Library: `solix.math.Math` & Numeric Algorithms (`Random`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
 | **Phase 26** | Standard Library: `solix.time.Chrono` (`Duration`, `Instant`, `DateTime`, `Stopwatch`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
-| **Phase 27** | Standard Library: `solix.collections.Core` (Interfaces, `IIterable`, `ICollection`, `to_string`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
+| **Phase 27** | Standard Library: `solix.collections.Core` (Interfaces, `IIterable`, `ICollection`, `to_string`) | `P1 High` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 28** | Standard Library: `solix.collections.List` (`List<T>` Array & `LinkedList<T>`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
 | **Phase 29** | Standard Library: `solix.collections.Map` (`HashMap<K, V>` & `TreeMap<K, V>`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
 | **Phase 30** | Standard Library: `solix.collections.Set` (`HashSet<T>` & `TreeSet<T>`) | `P2 Medium` | `solixlib`, `tests` | - [ ] Planned |
@@ -1317,10 +1317,10 @@ Provide high-resolution time measurements, date-time representations with timezo
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `solixlib/project/src/solix/collections/IIterable.slx`, `IIterator.slx`, `ICollection.slx`, `IList.slx`, `IReadOnlyCollection.slx`, `IDeque.slx`, `tests/solixlib/test_collections_core.cpp`, `docs/spec/solixlib/collections_core.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
-Define the foundational collection architecture in Solix. Establish iterator protocols (`IIterable<T>`, `IIterator<T>`), general collection properties (`ICollection<T>`), linear indexing contracts (`IList<T>`), and double-ended queue contracts (`IDeque<T>`). Standardize the `to_string()` contract across all collection implementations so that any collection is inherently `IStringable` and printable via `Console.println()`.
+Define the foundational collection architecture in Solix. Establish iterator protocols (`IIterable`, `IIterator`), general collection properties (`ICollection`), linear indexing contracts (`IList`), and double-ended queue contracts (`IDeque`). Standardize the `to_string()` contract across all collection implementations so that any collection is inherently `IStringable` and printable via `Console.println()`.
 
 ### Interconnection & Layering
 - **Inherits From**: `solix.core.IStringable` (Phase 23). Every collection implements `to_string()`.
@@ -1330,33 +1330,33 @@ Define the foundational collection architecture in Solix. Establish iterator pro
 
 ### Submodule Architecture & Types
 - **Solix Surface**:
-  - `interface IIterator<T>`: `bool has_next()`, `T next()` (throws `NoSuchElementException` when exhausted)
-  - `interface IIterable<T>`: `IIterator<T> iterator()`
-  - `interface ICollection<T> extends IIterable<T>, IStringable`:
-    - `int size()`, `bool is_empty()`, `bool contains(T item)`, `void clear()`, `T[] to_array()`
+  - `interface IIterator`: `bool has_next()`, `Any next()` (throws `NoSuchElementException` when exhausted)
+  - `interface IIterable`: `IIterator iterator()`
+  - `interface ICollection extends IIterable, IStringable`:
+    - `int32 size()`, `bool is_empty()`, `bool contains(Any item)`, `void clear()`, `Any[] to_array()`
     - Default `to_string()` formats elements as `"[e1, e2, e3]"`.
-  - `interface IList<T> extends ICollection<T>`:
-    - `T get(int index)` (throws `IndexOutOfBoundsException`)
-    - `void set(int index, T item)` (throws `IndexOutOfBoundsException`)
-    - `void add(T item)`, `void insert(int index, T item)`, `bool remove(T item)`, `T remove_at(int index)` (throws `IndexOutOfBoundsException`), `int index_of(T item)`
-  - `interface IDeque<T> extends ICollection<T>`:
-    - `void add_first(T item)`, `void add_last(T item)`
-    - `T remove_first()`, `T remove_last()` (throws `NoSuchElementException`)
-    - `T peek_first()`, `T peek_last()` (throws `NoSuchElementException`)
+  - `interface IList extends ICollection`:
+    - `Any get(int32 index)` (throws `IndexOutOfBoundsException`)
+    - `Any set(int32 index, Any item)` (throws `IndexOutOfBoundsException`)
+    - `void add(Any item)`, `void insert(int32 index, Any item)`, `bool remove(Any item)`, `Any remove_at(int32 index)` (throws `IndexOutOfBoundsException`), `int32 index_of(Any item)`
+  - `interface IDeque extends ICollection`:
+    - `void add_first(Any item)`, `void add_last(Any item)`
+    - `Any remove_first()`, `Any remove_last()` (throws `NoSuchElementException`)
+    - `Any peek_first()`, `Any peek_last()` (throws `NoSuchElementException`)
 
 ### Identified Test & Documentation Deliverables
 - **1. Identified Test Deliverables (`tests/solixlib/TESTS.md` & `tests/solixlib/test_collections_core.cpp`)**:
-  - **Positive Tests**: Custom class implementing `ICollection<T>` iterated cleanly with `while (it.has_next())`; default `to_string()` output verified across empty (`"[]"`) and multi-item collections; passing collection directly to `Console.println()`.
+  - **Positive Tests**: Custom class implementing `ICollection` iterated cleanly with `while (it.has_next())`; default `to_string()` output verified across empty (`"[]"`) and multi-item collections; passing collection directly to `Console.println()`.
   - **Negative Tests**: Calling `next()` on an exhausted iterator throws `NoSuchElementException`.
 - **2. Identified Documentation Deliverables**:
   - `docs/spec/solixlib/collections_core.md`: Interface contracts, iterator state machine, and string conversion invariants.
 
 ### Action Items
-- [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Author `IIterable.slx`, `IIterator.slx`, `ICollection.slx`, `IList.slx`, `IReadOnlyCollection.slx`, `IDeque.slx`.
-- [ ] Provide default `to_string()` algorithm for collections.
-- [ ] Implement Catch2 test suite `tests/solixlib/test_collections_core.cpp`.
-- [ ] Author `docs/spec/solixlib/collections_core.md`.
+- [x] Define test specification in `tests/solixlib/TESTS.md`.
+- [x] Author `IIterable.slx`, `IIterator.slx`, `ICollection.slx`, `IList.slx`, `IReadOnlyCollection.slx`, `IDeque.slx`.
+- [x] Provide default `to_string()` algorithm for collections in `Collections.slx`.
+- [x] Implement Catch2 test suite `tests/solixlib/test_collections_core.cpp`.
+- [x] Author `docs/spec/solixlib/collections_core.md`.
 
 ---
 

@@ -84,6 +84,10 @@ public class Any implements IStringable, IHashable, IEquatable {
         return this._int_val;
     }
 
+    public int32 as_int32() {
+        return this.as_int();
+    }
+
     public float64 as_double() {
         if (this._kind != 2) {
             throw new InvalidOperationException("Any does not contain a float64 value.");

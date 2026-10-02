@@ -1,0 +1,13 @@
+package solix.collections;
+
+import solix.core.Any;
+
+public interface IList extends ICollection {
+    Any get(int32 index);
+    void set(int32 index, Any item);
+    void add(Any item);
+    void insert(int32 index, Any item);
+    bool remove(Any item);
+    Any remove_at(int32 index);
+    int32 index_of(Any item);
+}

@@ -1078,6 +1078,27 @@ void Binder::calculate_interface_vtable(ClassDeclaration *iface) {
     }
   }
 
+  for (const auto &iface_name : iface->implemented_interfaces) {
+    if (iface_name == iface->base_class_name) continue;
+    Node *other_node = unwrap_alias(resolve_symbol(iface_name, iface, false));
+    if (other_node && other_node->node_type == NodeType::CLASS_DECL) {
+      auto *other_iface = static_cast<ClassDeclaration *>(other_node);
+      calculate_interface_vtable(other_iface);
+      for (auto *m : vtables[other_iface->mangled_name]) {
+        bool found = false;
+        for (auto *existing : vtable) {
+          if (get_method_sig(existing->mangled_name) == get_method_sig(m->mangled_name)) {
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          vtable.push_back(m);
+        }
+      }
+    }
+  }
+
   for (const auto &child : iface->children) {
     if (child->node_type == NodeType::METHOD_DECL) {
       auto *method = static_cast<MethodDeclaration *>(child.get());

@@ -1,0 +1,8 @@
+package solix.collections;
+
+import solix.core.Any;
+
+public interface IIterator {
+    bool has_next();
+    Any next();
+}

@@ -172,6 +172,34 @@
     {
       "type": "source",
       "path": "src/solix/exceptions/AssertionError.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/IIterator.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/IIterable.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/IReadOnlyCollection.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/ICollection.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/IList.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/IDeque.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/Collections.slx"
     }
   ],
   "profiles": {
