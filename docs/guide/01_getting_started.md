@@ -40,7 +40,7 @@ cmake --build . --parallel
 ```
 
 After building, the unified CLI executable is located at:
-- **`build/launcher/solix`** (with symlink/alias **`build/launcher/solix_launcher`**)
+- **`build/cli/solix`** (with symlink/alias **`build/cli/solix_cli`** or **`build/cli/solix_launcher`**)
 
 You can optionally install it system-wide:
 ```bash
