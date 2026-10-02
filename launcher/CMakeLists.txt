@@ -36,14 +36,6 @@ add_executable(solix
 
 target_link_libraries(solix PRIVATE solix_launcher_core)
 
-if(WIN32)
-    if(MSVC)
-        target_link_options(solix PRIVATE "/STACK:16777216")
-    else()
-        target_link_options(solix PRIVATE "-Wl,--stack,16777216")
-    endif()
-endif()
-
 
 # Provide backward-compatible binary link/alias for solix_launcher
 if(WIN32)
