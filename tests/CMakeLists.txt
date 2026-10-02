@@ -46,8 +46,8 @@ target_include_directories(solix_tests PRIVATE
 
 target_compile_definitions(solix_tests PRIVATE
     SOLIX_PROJECT_ROOT="${CMAKE_SOURCE_DIR}"
-    SOLIX_TEST_PLUGIN_PATH="$<TARGET_FILE:solix_test_plugin>"
-    SOLIX_TEST_PLUGIN_B_PATH="$<TARGET_FILE:solix_test_plugin_b>"
+    SOLIX_TEST_PLUGIN_PATH="${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}solix_test_plugin${CMAKE_SHARED_LIBRARY_SUFFIX}"
+    SOLIX_TEST_PLUGIN_B_PATH="${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}solix_test_plugin_b${CMAKE_SHARED_LIBRARY_SUFFIX}"
 )
 
 include(Catch)

@@ -64,7 +64,13 @@ bool SharedLibrary::load(const std::filesystem::path &path) {
   path_ = path;
 
 #ifdef _WIN32
-  handle_ = LoadLibraryW(path.wstring().c_str());
+  // Suppress Windows system error dialogs (bad image format, missing files, media errors)
+  UINT old_mode = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
+  handle_ = LoadLibraryExW(path.wstring().c_str(), NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+  if (!handle_) {
+    handle_ = LoadLibraryW(path.wstring().c_str());
+  }
+  SetErrorMode(old_mode);
 #else
   handle_ = dlopen(path.string().c_str(), RTLD_NOW | RTLD_LOCAL);
 #endif

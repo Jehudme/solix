@@ -22,6 +22,22 @@
 #define SOLIX_PROJECT_ROOT "."
 #endif
 
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+namespace {
+struct WindowsTestErrorModeGuard {
+    WindowsTestErrorModeGuard() {
+        SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
+        _set_abort_behavior(0, _WRITE_ABORT_MSG);
+    }
+};
+static WindowsTestErrorModeGuard s_windows_test_error_mode_guard;
+} // namespace
+#endif
+
 namespace solix::test {
 
 struct CompilationResult {
