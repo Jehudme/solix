@@ -648,6 +648,138 @@ Resolve the Windows CI test failure (`SIGSEGV - Stack overflow`) in GitHub Actio
 - All 48 test suites execute without stack overflow or segmentation faults on Windows, Linux, and macOS.
 - GitHub Actions CI workflow concludes with green status across all matrix jobs.
 
+---
+
+## Phase 17: Runtime Core & Dynamic Shared Library Loader
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `language` (`runtime.hpp`, `runtime.cpp`, `shared_library.hpp/cpp`, `native_registry.hpp/cpp`), `tests` (`tests/CMakeLists.txt`, `tests/runtime/fixtures/test_plugin.cpp`, `tests/runtime/test_native_library.cpp`), `docs/spec/runtime/native_interop.md`
+- **Status**: - [ ] In Progress
+
+### Objective
+Implement the low-level C-ABI native interface and dynamic library loader in the Solix VM. Modernize native function representation from `std::function` to raw C function pointers (`NativeFunctionPtr`), implement lock-free $O(1)$ array dispatch in `RuntimeContext`, provide cross-platform `solix::SharedLibrary` for loading `.dll`, `.so`, and `.dylib` files, build thread-safe `solix::NativeRegistry`, support both registration hook (`solix_register_natives`) and direct dynamic symbol export lookup, create a CMake shared library test fixture, and build comprehensive Catch2 test suite (Suite 49) and formal specification.
+
+### Identified Test & Documentation Deliverables
+- **1. Identified Test Deliverables (`tests/statements/TESTS.md` & `tests/runtime/test_native_library.cpp`)**:
+  - Add **Suite 49: Native Library & Function Pointer Interop**
+    - **Positive Scenarios**:
+      - **Case 49.1**: Static Native Function Call (`NativeMath.add(int32, int32)`).
+      - **Case 49.2**: Instance Native Function Call (`Counter.increment()`, validating `self_address` `this` pointer).
+      - **Case 49.3**: Batch Registration Hook (`solix_register_natives(NativeRegistry&)`).
+      - **Case 49.4**: Direct Dynamic Symbol Resolution Fallback (exported C symbol conforming to `NativeFunctionPtr`).
+      - **Case 49.5**: Multiple Shared Libraries Loaded Concurrently in Same Program.
+    - **Negative Scenarios**:
+      - **Case 49.6**: Missing / Non-Existent Shared Library Path (`LibraryNotFoundException`).
+      - **Case 49.7**: Corrupted / Invalid Binary File as Library.
+      - **Case 49.8**: Unresolved Native Method Symbol (`Call to unknown native function: <id>`).
+- **2. Identified Documentation Deliverables**:
+  - `docs/spec/runtime/native_interop.md`: Formal specification of `NativeFunctionPtr`, calling conventions, argument/return value protocol, `SharedLibrary` lifecycle, `NativeRegistry`, and hook protocols.
+  - Update `docs/spec/README.md`.
+
+### Action Items
+- [ ] **1. Define Test Specification in `tests/statements/TESTS.md`**:
+  - Add Suite 49 with Cases 49.1 through 49.8 tagged with `[NOT IMPLEMENTED]`.
+- [ ] **2. Modernize Native Function Representation (`language/include/solix/runtime.hpp` & `language/src/runtime.cpp`)**:
+  - Define `NativeFunctionPtr` typedef: `uint64_t (*)(RuntimeContext&, uint64_t self, uint64_t* args, size_t argc)`.
+  - Add `std::vector<NativeFunctionPtr> native_table;` in `RuntimeContext` for $O(1)$ dispatch.
+- [ ] **3. Implement Cross-Platform `SharedLibrary` (`language/include/solix/shared_library.hpp` & `language/src/runtime/shared_library.cpp`)**:
+  - Encapsulate `LoadLibraryW`/`GetProcAddress`/`FreeLibrary` on Windows and `dlopen`/`dlsym`/`dlclose` on POSIX.
+  - Provide RAII lifetime management.
+- [ ] **4. Implement Central `NativeRegistry` (`language/include/solix/native_registry.hpp` & `language/src/runtime/native_registry.cpp`)**:
+  - Thread-safe global registry with mutex protection.
+  - Automatic invocation of `solix_register_natives` hook and dynamic export fallback.
+  - Wire resolution into `op_DEFINE_NATIVE` and `op_CALL_NATIVE`.
+- [ ] **5. Add CMake Shared Library Fixture & Catch2 Test Suite (`tests/CMakeLists.txt`, `tests/runtime/fixtures/test_plugin.cpp`, `tests/runtime/test_native_library.cpp`)**:
+  - Define `solix_test_plugin` target.
+  - Implement all 8 Catch2 test cases.
+  - Update `tests/statements/TESTS.md` tags to `[IMPLEMENTED]`.
+- [ ] **6. Author Formal Specification (`docs/spec/runtime/native_interop.md`)**:
+  - Document ABI, calling conventions, registration protocols, and lifecycle.
+  - Update `docs/spec/README.md`.
+- [ ] **7. Full Regression Testing & Merge**:
+  - Run `ctest --test-dir build --output-on-failure`.
+  - Non-fast-forward merge into `master`.
+
+### Acceptance Criteria
+- All 8 Suite 49 test cases pass 100% on Windows, Linux, and macOS.
+- Dynamic shared library loading works across all supported platforms without resource leaks.
+- Zero regressions across existing 48 test suites.
+
+---
+
+## Phase 18: CLI Auto-Discovery, Manifest Integration & Developer Guide
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `launcher` (`execute.cpp`, `build.hpp/cpp`), `tests` (`tests/commands/test_run_command.cpp`, `tests/commands/TESTS.md`), `docs` (`docs/spec/cli/run.md`, `docs/spec/manifest/configuration.md`, `docs/guide/09_native_plugins.md`)
+- **Status**: - [ ] Planned
+
+### Objective
+Integrate native library loading into the Solix CLI toolchain and manifest system. Enable zero-config auto-discovery of `.dll`, `.so`, and `.dylib` files placed in project `./lib/` directories and alongside compiled `.slxbin` bytecode binaries. Add CLI flag `-L, --native-lib` to `solix run`. Ingest `"native_libraries"` array in `solix.json` root and profile runtime configurations. Author formal specifications and comprehensive developer guides.
+
+### Identified Test & Documentation Deliverables
+- **1. Identified Test Deliverables (`tests/commands/TESTS.md` & `tests/commands/test_run_command.cpp`)**:
+  - Add Cases 2.22 to 2.26 to Suite 2:
+    - **Case 2.22**: Run project with auto-discovery from project `lib/` directory.
+    - **Case 2.23**: Run bytecode binary with auto-discovery from sibling directory.
+    - **Case 2.24**: Run project with explicit `native_libraries` in `solix.json`.
+    - **Case 2.25**: Run bytecode with explicit CLI `-L` / `--native-lib` flag.
+    - **Case 2.26**: Negative: Run binary requiring native methods without providing library (exit code 1).
+- **2. Identified Documentation Deliverables**:
+  - `docs/spec/cli/run.md`: Document `--native-lib` / `-L` and auto-discovery rules.
+  - `docs/spec/manifest/configuration.md`: Document `native_libraries` configuration.
+  - `docs/guide/09_native_plugins.md`: Complete developer guide on writing C/C++ plugins and deploying them in Solix.
+  - Update `docs/guide/README.md` and `README.md`.
+
+### Action Items
+- [ ] **1. Define Test Specification in `tests/commands/TESTS.md`**:
+  - Add Cases 2.22 to 2.26 tagged with `[NOT IMPLEMENTED]`.
+- [ ] **2. Upgrade `solix run` Subcommand (`launcher/src/commands/execute.cpp`)**:
+  - Add `-L, --native-lib` option.
+  - Implement auto-discovery search in `./lib/` and bytecode directory.
+  - Ingest `native_libraries` from `solix.json`.
+- [ ] **3. Implement CLI Unit Tests (`tests/commands/test_run_command.cpp`)**:
+  - Implement Cases 2.22 to 2.26.
+  - Update `tests/commands/TESTS.md` tags to `[IMPLEMENTED]`.
+- [ ] **4. Author Specifications and Developer Guide**:
+  - Update `docs/spec/cli/run.md` and `docs/spec/manifest/configuration.md`.
+  - Create `docs/guide/09_native_plugins.md`.
+  - Update `docs/guide/README.md` and `README.md`.
+- [ ] **5. Full Regression Testing & Merge**:
+  - Run `ctest --test-dir build --output-on-failure`.
+  - Non-fast-forward merge into `master`.
+
+### Acceptance Criteria
+- Projects automatically discover and load shared libraries from `./lib/` and `.slxbin` directory.
+- CLI flag `--native-lib` / `-L` and `solix.json` `native_libraries` configurations load properly.
+- All positive and negative CLI test cases pass 100%.
+
+---
+
+## Phase 19: GitHub Actions CI Verification & Multi-Platform Validation
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `.github/workflows/integration.yml`, CI matrix
+- **Status**: - [ ] Planned
+
+### Objective
+Verify that the complete native dynamic library loading system, CLI auto-discovery, and all unit tests build and pass 100% across all target operating systems and compilers on GitHub Actions (`windows-latest clang`, `ubuntu-latest gcc`, `ubuntu-latest clang`, `macos-latest apple-clang`).
+
+### Action Items
+- [ ] **1. Push Master to Origin**:
+  - Trigger GitHub Actions CI workflow on `master`.
+- [ ] **2. Monitor CI Run Across Matrix Jobs**:
+  - Monitor `gh run watch` across all matrix targets.
+  - Verify `windows-latest (clang)`, `ubuntu-latest (gcc)`, `ubuntu-latest (clang)`, and `macos-latest (apple-clang)` all complete with green status.
+- [ ] **3. Multi-Platform Hardening (if needed)**:
+  - If any platform-specific shared library loading or path resolution issue arises on Windows, Linux, or macOS runners, resolve immediately on a patch branch.
+- [ ] **4. Record Completion in PLAN.md**:
+  - Mark Phase 19 as completed.
+
+### Acceptance Criteria
+- All 4 matrix jobs in `.github/workflows/integration.yml` pass with 100% success.
+- Native dynamic library loading verified functional on Windows (`.dll`), Linux (`.so`), and macOS (`.dylib`).
+
+
 
 
 
