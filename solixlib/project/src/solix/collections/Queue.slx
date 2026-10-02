@@ -1,16 +1,15 @@
 package solix.collections;
 
-import solix.core.Any;
+import solix.core.IStringable;
 import solix.core.String;
-import solix.core.StringBuilder;
 import solix.exceptions.InvalidOperationException;
 import solix.exceptions.NoSuchElementException;
 
-public class QueueIterator implements IIterator {
-    private LinkedList<Any> _items;
+public class QueueIterator<T> {
+    private LinkedList<T> _items;
     private int32 _idx;
 
-    public QueueIterator(LinkedList<Any> items) {
+    public QueueIterator(LinkedList<T> items) {
         this._items = items;
         this._idx = 0;
     }
@@ -19,35 +18,35 @@ public class QueueIterator implements IIterator {
         return this._idx < this._items.size();
     }
 
-    public Any next() {
+    public T next() {
         if (this._idx >= this._items.size()) {
             throw new NoSuchElementException("Iterator exhausted");
         }
-        Any val = this._items.get(this._idx);
+        T val = this._items.get(this._idx);
         this._idx = this._idx + 1;
         return val;
     }
 }
 
-public class Queue implements ICollection {
-    private LinkedList<Any> _items;
+public class Queue<T> implements IStringable {
+    private LinkedList<T> _items;
 
     public Queue() {
-        this._items = new LinkedList<Any>();
+        this._items = new LinkedList<T>();
     }
 
-    public void enqueue(Any item) {
+    public void enqueue(T item) {
         this._items.add_last(item);
     }
 
-    public Any dequeue() {
+    public T dequeue() {
         if (this._items.is_empty()) {
             throw new InvalidOperationException("Queue is empty");
         }
         return this._items.remove_first();
     }
 
-    public Any peek() {
+    public T peek() {
         if (this._items.is_empty()) {
             throw new InvalidOperationException("Queue is empty");
         }
@@ -62,7 +61,7 @@ public class Queue implements ICollection {
         return this._items.is_empty();
     }
 
-    public bool contains(Any item) {
+    public bool contains(T item) {
         return this._items.contains(item);
     }
 
@@ -70,15 +69,20 @@ public class Queue implements ICollection {
         this._items.clear();
     }
 
-    public Any[] to_array() {
+    public T[] to_array() {
         return this._items.to_array();
     }
 
-    public IIterator iterator() {
-        return new QueueIterator(this._items);
+    public void for_each(void(*)(T) action) {
+        if (action == null) return;
+        this._items.for_each(action);
+    }
+
+    public QueueIterator<T> iterator() {
+        return new QueueIterator<T>(this._items);
     }
 
     public String to_string() {
-        return this._items.to_string();
+        return new String("[Queue]");
     }
 }

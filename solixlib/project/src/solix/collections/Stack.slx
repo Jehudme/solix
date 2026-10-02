@@ -1,16 +1,15 @@
 package solix.collections;
 
-import solix.core.Any;
+import solix.core.IStringable;
 import solix.core.String;
-import solix.core.StringBuilder;
 import solix.exceptions.InvalidOperationException;
 import solix.exceptions.NoSuchElementException;
 
-public class StackIterator implements IIterator {
-    private List<Any> _items;
+public class StackIterator<T> {
+    private List<T> _items;
     private int32 _idx;
 
-    public StackIterator(List<Any> items) {
+    public StackIterator(List<T> items) {
         this._items = items;
         this._idx = 0;
     }
@@ -19,32 +18,32 @@ public class StackIterator implements IIterator {
         return this._idx < this._items.size();
     }
 
-    public Any next() {
+    public T next() {
         if (this._idx >= this._items.size()) {
             throw new NoSuchElementException("Iterator exhausted");
         }
-        Any val = this._items.get(this._idx);
+        T val = this._items.get(this._idx);
         this._idx = this._idx + 1;
         return val;
     }
 }
 
-public class Stack implements ICollection {
-    private List<Any> _items;
+public class Stack<T> implements IStringable {
+    private List<T> _items;
 
     public Stack() {
-        this._items = new List<Any>();
+        this._items = new List<T>();
     }
 
     public Stack(int32 initial_capacity) {
-        this._items = new List<Any>(initial_capacity);
+        this._items = new List<T>(initial_capacity);
     }
 
-    public void push(Any item) {
+    public void push(T item) {
         this._items.add(item);
     }
 
-    public Any pop() {
+    public T pop() {
         if (this._items.is_empty()) {
             throw new InvalidOperationException("Stack is empty");
         }
@@ -52,7 +51,7 @@ public class Stack implements ICollection {
         return this._items.remove_at(last_idx);
     }
 
-    public Any peek() {
+    public T peek() {
         if (this._items.is_empty()) {
             throw new InvalidOperationException("Stack is empty");
         }
@@ -68,7 +67,7 @@ public class Stack implements ICollection {
         return this._items.is_empty();
     }
 
-    public bool contains(Any item) {
+    public bool contains(T item) {
         return this._items.contains(item);
     }
 
@@ -76,15 +75,20 @@ public class Stack implements ICollection {
         this._items.clear();
     }
 
-    public Any[] to_array() {
+    public T[] to_array() {
         return this._items.to_array();
     }
 
-    public IIterator iterator() {
-        return new StackIterator(this._items);
+    public void for_each(void(*)(T) action) {
+        if (action == null) return;
+        this._items.for_each(action);
+    }
+
+    public StackIterator<T> iterator() {
+        return new StackIterator<T>(this._items);
     }
 
     public String to_string() {
-        return this._items.to_string();
+        return new String("[Stack]");
     }
 }
