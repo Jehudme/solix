@@ -58,7 +58,9 @@ public class PriorityQueue implements ICollection {
     private void sift_up(int32 idx) {
         while (idx > 0) {
             int32 parent = (idx - 1) / 2;
-            if (this.higher_priority(this._heap.get(idx), this._heap.get(parent))) {
+            Any cur_item = this._heap.get(idx);
+            Any parent_item = this._heap.get(parent);
+            if (this.higher_priority(cur_item, parent_item)) {
                 this.swap(idx, parent);
                 idx = parent;
             } else {
@@ -74,11 +76,19 @@ public class PriorityQueue implements ICollection {
             int32 left = 2 * idx + 1;
             int32 right = 2 * idx + 2;
 
-            if (left < count && this.higher_priority(this._heap.get(left), this._heap.get(best))) {
-                best = left;
+            if (left < count) {
+                Any left_item = this._heap.get(left);
+                Any best_item = this._heap.get(best);
+                if (this.higher_priority(left_item, best_item)) {
+                    best = left;
+                }
             }
-            if (right < count && this.higher_priority(this._heap.get(right), this._heap.get(best))) {
-                best = right;
+            if (right < count) {
+                Any right_item = this._heap.get(right);
+                Any best_item = this._heap.get(best);
+                if (this.higher_priority(right_item, best_item)) {
+                    best = right;
+                }
             }
 
             if (best != idx) {
@@ -92,7 +102,8 @@ public class PriorityQueue implements ICollection {
 
     public void enqueue(Any item) {
         this._heap.add(item);
-        this.sift_up(this._heap.size() - 1);
+        int32 last_idx = this._heap.size() - 1;
+        this.sift_up(last_idx);
     }
 
     public Any dequeue() {

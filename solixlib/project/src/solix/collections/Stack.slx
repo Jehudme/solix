@@ -24,14 +24,16 @@ public class Stack implements ICollection {
         if (this._items.is_empty()) {
             throw new InvalidOperationException("Stack is empty");
         }
-        return this._items.remove_at(this._items.size() - 1);
+        int32 last_idx = this._items.size() - 1;
+        return this._items.remove_at(last_idx);
     }
 
     public Any peek() {
         if (this._items.is_empty()) {
             throw new InvalidOperationException("Stack is empty");
         }
-        return this._items.get(this._items.size() - 1);
+        int32 last_idx = this._items.size() - 1;
+        return this._items.get(last_idx);
     }
 
     public int32 size() {
