@@ -43,10 +43,10 @@
 | **Phase 25** | Standard Library: `solix.math.Math` & Numeric Algorithms (`Random`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 26** | Standard Library: `solix.time.Chrono` (`Duration`, `Instant`, `DateTime`, `Stopwatch`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 27** | Standard Library: `solix.collections.Core` (Interfaces, `IIterable`, `ICollection`, `to_string`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
-| **Phase 28** | Standard Library: `solix.collections.List` (Dynamic Array / ArrayList) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
-| **Phase 29** | Standard Library: `solix.collections.Map` & `HashMap` (Associative Key-Value Store) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
-| **Phase 30** | Standard Library: `solix.collections.Set` & `HashSet` (Distinct Element Container) | `P2 Medium` | `solixlib`, `tests` | - [ ] Planned |
-| **Phase 31** | Standard Library: `solix.collections.Linear` (`Stack`, `Queue`, `Deque`, `PriorityQueue`) | `P2 Medium` | `solixlib`, `tests` | - [ ] Planned |
+| **Phase 28** | Standard Library: `solix.collections.List` (`List<T>` Array & `LinkedList<T>`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
+| **Phase 29** | Standard Library: `solix.collections.Map` (`HashMap<K, V>` & `TreeMap<K, V>`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
+| **Phase 30** | Standard Library: `solix.collections.Set` (`HashSet<T>` & `TreeSet<T>`) | `P2 Medium` | `solixlib`, `tests` | - [ ] Planned |
+| **Phase 31** | Standard Library: `solix.collections.Linear` (`Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, `BitSet`) | `P2 Medium` | `solixlib`, `tests` | - [ ] Planned |
 | **Phase 32** | Standard Library: `solix.io.filesystem` (Unified Path & File System Operations) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, Readers/Writers) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 34** | Standard Library: `solix.system.Environment` (OS, Env, Subprocesses) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
@@ -880,6 +880,32 @@ Cleanly decouple and modernize repository architecture by renaming the compiler 
 
 ---
 
+## Standard Library Architecture Principles & Cross-Platform Library Strategy
+
+All standard library (`solixlib`) submodules adhere to these non-negotiable architectural mandates:
+
+1. **Feature-Rich & Comprehensive APIs**:
+   - Every submodule must be expressive, fully fledged, and complete. No barebones or skeletal APIs.
+   - For example, `String` must provide full static primitive converters (`String.from_int`, `String.from_double`, etc.), static string-to-primitive parsers (`String.to_int`, `String.to_double`), string interpolation/formatting (`String.format`), token joining, padding, casing, and search helpers.
+   - `Console` provides colorized output channels (`error`, `warning`, `info`, `success`), typed inputs (`input_int`, `input_double`, `input_bool`, `input_char`, `input_chars`, `input_string`), and terminal control (`set_cursor_position`, `set_title`, `clear`).
+2. **Native Performance & Zero-Allocation Conversions**:
+   - Bidirectional string &lt;&mdash;&gt; number conversions are implemented in native companion C++ using modern `<charconv>` (`std::to_chars`, `std::from_chars`) for hardware-speed, locale-independent, and zero-allocation execution.
+3. **Use Vetted Cross-Platform C Libraries (No Handwriting Complex Math, Crypto, or OS Logic)**:
+   - **Cryptography & Hashing (Phase 36)**: Do **NOT** handwrite complex cryptographic algorithms like SHA-256, SHA-1, or MD5. Use well-vetted, battle-tested, lightweight public-domain C libraries (e.g. Brad Conte's standard `crypto-algorithms` / `monocypher`).
+   - **Process & Environment (Phase 34)**: Use established lightweight cross-platform C/C++ subprocess libraries (e.g. `subprocess.h` or `reproc`) ensuring robust pipes, timeouts, and error handling across POSIX and Windows.
+   - **Networking (Phase 37)**: Use established BSD / Winsock cross-platform socket abstractions and fast HTTP parsing (e.g. `picohttpparser`).
+   - **Math (Phase 25)**: Leverage standard IEEE 754 math functions in C/C++ `<cmath>` and `<random>` (Mersenne Twister `std::mt19937_64`).
+4. **Expanded, Industrial-Grade Collections**:
+   - Multiple collection variants tailored for distinct access patterns:
+     - Sequential: `List<T>` (dynamic array) and `LinkedList<T>` (doubly linked list with O(1) head/tail insertions).
+     - Associative: `HashMap<K, V>` (hash table) and `TreeMap<K, V>` (red-black tree sorted map).
+     - Sets: `HashSet<T>` (hash set) and `TreeSet<T>` (balanced binary search tree sorted set).
+     - Linear & Buffers: `Stack<T>`, `Queue<T>`, `Deque<T>`, `PriorityQueue<T>` (binary heap), `CircularBuffer<T>` (ring buffer), and `BitSet` (compact bit array).
+5. **Universal Exception Integration**:
+   - Every single function across all submodules consistently throws strongly-typed exceptions from `solix.exceptions` on invalid arguments, out-of-bounds access, or runtime failures.
+
+---
+
 ## Phase 21: Standard Library — `solix.exceptions` (Foundational Exception Hierarchy)
 
 - **Priority**: `P0 Blocker`
@@ -896,15 +922,22 @@ Establish the foundational standard library exception hierarchy `solix.exception
   Exception
   ├── RuntimeException
   │   ├── IllegalArgumentException
+  │   ├── ArgumentNullException
+  │   ├── ArgumentOutOfRangeException
   │   ├── IndexOutOfBoundsException
   │   ├── NullReferenceException
-  │   ├── DivideByZeroException
+  │   ├── ArithmeticException
+  │   │   ├── DivideByZeroException
+  │   │   └── OverflowException
   │   ├── InvalidOperationException
   │   ├── FormatException
+  │   ├── NotSupportedException
+  │   ├── TimeoutException
   │   ├── NoSuchElementException
   │   └── KeyNotFoundException
   ├── IOException
   │   ├── FileNotFoundException
+  │   ├── DirectoryNotFoundException
   │   └── SocketException
   └── AssertionError
   ```
@@ -916,29 +949,34 @@ Establish the foundational standard library exception hierarchy `solix.exception
     - `Exception cause`
     - `Exception(String message = "")`
     - `Exception(String message, Exception cause)`
-    - `String get_message()`
-    - `Exception get_cause()`
-    - `String to_string()`
+    - `String get_message()`, `Exception get_cause()`, `String to_string()`
   - `class RuntimeException extends Exception`
-  - `class IllegalArgumentException extends RuntimeException`: thrown when arguments violate invariants.
-  - `class IndexOutOfBoundsException extends RuntimeException`: thrown when indexing beyond array/list bounds.
-  - `class NullReferenceException extends RuntimeException`: thrown when attempting to dereference an uninitialized reference.
-  - `class DivideByZeroException extends RuntimeException`: thrown when dividing numbers by zero.
-  - `class InvalidOperationException extends RuntimeException`: thrown on invalid state transitions.
-  - `class FormatException extends RuntimeException`: thrown when string-to-type parsing fails.
-  - `class NoSuchElementException extends RuntimeException`: thrown when iterating beyond collection bounds.
-  - `class KeyNotFoundException extends RuntimeException`: thrown when a map key does not exist.
-  - `class IOException extends Exception`: base for input/output errors.
-  - `class FileNotFoundException extends IOException`: thrown when a target file path does not exist.
-  - `class SocketException extends IOException`: thrown when network socket connections fail.
-  - `class AssertionError extends Exception`: thrown when language assertion fails.
+  - `class IllegalArgumentException extends RuntimeException`
+  - `class ArgumentNullException extends IllegalArgumentException`
+  - `class ArgumentOutOfRangeException extends IllegalArgumentException`
+  - `class IndexOutOfBoundsException extends RuntimeException`
+  - `class NullReferenceException extends RuntimeException`
+  - `class ArithmeticException extends RuntimeException`
+  - `class DivideByZeroException extends ArithmeticException`
+  - `class OverflowException extends ArithmeticException`
+  - `class InvalidOperationException extends RuntimeException`
+  - `class FormatException extends RuntimeException`
+  - `class NotSupportedException extends RuntimeException`
+  - `class TimeoutException extends RuntimeException`
+  - `class NoSuchElementException extends RuntimeException`
+  - `class KeyNotFoundException extends RuntimeException`
+  - `class IOException extends Exception`
+  - `class FileNotFoundException extends IOException`
+  - `class DirectoryNotFoundException extends IOException`
+  - `class SocketException extends IOException`
+  - `class AssertionError extends Exception`
 
 ### Identified Test & Documentation Deliverables
 - **1. Identified Test Deliverables (`tests/solixlib/TESTS.md` & `tests/solixlib/test_exceptions.cpp`)**:
   - Add and implement Cases 1.1 to 1.8:
     - **Case 1.1 [Positive]**: Instantiate base `Exception` and retrieve message and `to_string()`.
     - **Case 1.2 [Positive]**: Catch `IllegalArgumentException` using base `RuntimeException` catch block (polymorphism verification).
-    - **Case 1.3 [Positive]**: Catch `IllegalArgumentException` using base `Exception` catch block.
+    - **Case 1.3 [Positive]**: Catch `ArgumentOutOfRangeException` using `IllegalArgumentException` and `Exception`.
     - **Case 1.4 [Positive]**: Exception chaining: verify `get_cause()` returns inner exception.
     - **Case 1.5 [Positive]**: `IndexOutOfBoundsException` carrying upper/lower index metadata.
     - **Case 1.6 [Positive]**: `FileNotFoundException` caught as `IOException`.
@@ -963,39 +1001,27 @@ Establish the foundational standard library exception hierarchy `solix.exception
 - **Status**: - [ ] Planned
 
 ### Objective
-Implement the foundational terminal I/O module `solix.system.Console` with clean, idiomatic naming (`print`, `println`, `error`, `warning`, `input_*`). Deliver colored error and warning outputs, typed console input for all primitive types, and character array input buffers, with comprehensive positive and negative error testing.
+Implement the foundational terminal I/O module `solix.system.Console` with rich, idiomatic naming (`print`, `println`, `error`, `warning`, `info`, `success`, `input_*`). Deliver colorized diagnostics, multi-type console input for all primitive types, character array buffers, and terminal window/cursor management.
 
 ### Interconnection & Layering
 - **Immediate Capability**:
   - `print(...)` and `println(...)` for `int`, `long`, `double`, `bool`, `char`, and `char[]`.
-  - `error(...)` writes in red ANSI color (`\033[31m`) to standard error.
-  - `warning(...)` writes in yellow/amber ANSI color (`\033[33m`) to standard output or error.
-  - `input_int()`, `input_double()`, `input_bool()`, `input_char()`, `input_chars()`. Throws `FormatException` from `solix.exceptions` on invalid inputs.
-- **Future Revisit (Phase 23)**: When `solix.core.String` and `IStringable` are implemented, `Console` will be revisited to add `print(String)`, `println(String)`, `print(IStringable)`, `println(IStringable)`, `error(String)`, `warning(String)`, and `input() -> String`.
+  - Colorized diagnostics: `error` (ANSI red `\033[31m`), `warning` (ANSI yellow `\033[33m`), `info` (ANSI cyan `\033[36m`), `success` (ANSI green `\033[32m`).
+  - Typed inputs: `input_int()`, `input_double()`, `input_bool()`, `input_char()`, `input_chars()`. Throws `FormatException` from `solix.exceptions` on invalid inputs.
+- **Future Revisit (Phase 23)**: When `solix.core.String` and `IStringable` are implemented, `Console` will be revisited to add `print(String)`, `println(String)`, `print(IStringable)`, `println(IStringable)`, `error(String)`, `warning(String)`, `info(String)`, `success(String)`, and `input() -> String`.
 - **Future Revisit (Phase 27)**: When `ICollection<T>` is introduced, `Console` will print collections formatted as strings.
 
 ### Submodule Architecture & Types
 - **Solix Surface (`solixlib/project/src/solix/system/Console.slx`)**:
   - `class Console`:
     - Output:
-      - `static void print(int value)`
-      - `static void print(double value)`
-      - `static void print(bool value)`
-      - `static void print(char value)`
-      - `static void print(char[] value)`
-      - `static void println(int value)`
-      - `static void println(double value)`
-      - `static void println(bool value)`
-      - `static void println(char value)`
-      - `static void println(char[] value)`
-      - `static void println()`
+      - `static void print(int value)`, `static void print(double value)`, `static void print(bool value)`, `static void print(char value)`, `static void print(char[] value)`
+      - `static void println(int value)`, `static void println(double value)`, `static void println(bool value)`, `static void println(char value)`, `static void println(char[] value)`, `static void println()`
     - Diagnostics (Colorized):
-      - `static void error(int value)`
-      - `static void error(double value)`
-      - `static void error(char[] value)`
-      - `static void warning(int value)`
-      - `static void warning(double value)`
-      - `static void warning(char[] value)`
+      - `static void error(int value)`, `static void error(char[] value)`
+      - `static void warning(int value)`, `static void warning(char[] value)`
+      - `static void info(int value)`, `static void info(char[] value)`
+      - `static void success(int value)`, `static void success(char[] value)`
     - Input:
       - `static int input_int()` (throws `FormatException` on parse failure)
       - `static double input_double()` (throws `FormatException` on parse failure)
@@ -1003,10 +1029,10 @@ Implement the foundational terminal I/O module `solix.system.Console` with clean
       - `static char input_char()`
       - `static char[] input_chars()` (reads line into char array buffer)
     - Terminal Control:
-      - `static void clear()`
-      - `static void flush()`
-      - `static void set_color(int ansi_code)`
-      - `static void reset_color()`
+      - `static void clear()`, `static void flush()`
+      - `static void set_color(int ansi_code)`, `static void reset_color()`
+      - `static void set_cursor_position(int row, int col)`
+      - `static void set_title(char[] title)`
 - **Native Implementation (`solixlib/native/src/console.cpp`)**:
   - Cross-platform terminal streams (`std::cout`, `std::cerr`, `std::cin`).
   - Terminal color sequences enabled for POSIX and Windows (Virtual Terminal Processing enabled via `SetConsoleMode`).
@@ -1017,7 +1043,7 @@ Implement the foundational terminal I/O module `solix.system.Console` with clean
     - **Case 2.1 [Positive]**: `Console.print()` and `Console.println()` with primitive integers, booleans, doubles, and characters.
     - **Case 2.2 [Positive]**: `Console.print()` and `Console.println()` with primitive character arrays (`char[]`).
     - **Case 2.3 [Positive]**: `Console.error()` outputting in ANSI red (`\033[31m`) to standard error.
-    - **Case 2.4 [Positive]**: `Console.warning()` outputting in ANSI yellow (`\033[33m`).
+    - **Case 2.4 [Positive]**: `Console.warning()`, `Console.info()`, and `Console.success()` outputting appropriate ANSI colors.
     - **Case 2.5 [Positive]**: `Console.input_int()` parsing valid integer from redirected stdin.
     - **Case 2.6 [Positive]**: `Console.input_double()` parsing valid double from redirected stdin.
     - **Case 2.7 [Positive]**: `Console.input_bool()` parsing boolean (`true`/`false`).
@@ -1045,56 +1071,86 @@ Implement the foundational terminal I/O module `solix.system.Console` with clean
 - **Status**: - [ ] Planned
 
 ### Objective
-Implement the immutable text processing abstraction `solix.core.String`, the mutable string accumulator `solix.core.StringBuilder`, and the universal conversion contract `solix.core.IStringable`. Revisit and upgrade `solix.system.Console` to print strings and any object implementing `IStringable`, plus adding `Console.input() -> String`.
+Implement the comprehensive, feature-rich immutable text processing abstraction `solix.core.String`, the mutable string accumulator `solix.core.StringBuilder`, and the universal conversion contract `solix.core.IStringable`. Provide fast native static primitive converters (`String.from_*`) and parsers (`String.to_*`), string formatting, joining, padding, and case manipulation. Revisit `solix.system.Console` to print strings and any object implementing `IStringable`.
 
 ### Interconnection & Layering
 - **Universal Text Contract**: Any type implementing `IStringable` (`string to_string()`) can be converted to text.
+- **Fast Native Bidirectional Conversions**:
+  - `String.from_int(val)`, `String.from_double(val, precision)`, `String.from_bool(val)`, `String.from_char(val)`, `String.from_chars(arr, offset, count)` implemented in C++ using `<charconv>`.
+  - `String.to_int(s)`, `String.to_double(s)`, `String.to_bool(s)`, `String.try_to_int(s, out_val)` throwing `FormatException`.
 - **Revisiting Phase 22 (`Console`)**:
   - Add `Console.print(String s)`, `Console.println(String s)`.
   - Add `Console.print(IStringable obj)`, `Console.println(IStringable obj)`.
-  - Add `Console.error(String s)`, `Console.error(IStringable obj)`.
-  - Add `Console.warning(String s)`, `Console.warning(IStringable obj)`.
+  - Add `Console.error(String s)`, `Console.warning(String s)`, `Console.info(String s)`, `Console.success(String s)`.
   - Add `Console.input() -> String` (reads whole line as `String`).
-- **Downstream Consumer**: Primitives (Phase 24), Collections (Phase 27), Filesystem (Phase 32), and Sockets (Phase 37) all rely directly on `String` and `IStringable`.
+- **Downstream Consumer**: Primitives (Phase 24), Collections (Phases 27-31), Filesystem (Phase 32), and Sockets (Phase 37) all rely directly on `String` and `IStringable`.
 
 ### Submodule Architecture & Types
 - **Solix Surface**:
   - `interface IStringable`: `string to_string();`
   - `class String implements IStringable`:
-    - `int length()`, `bool is_empty()`
-    - `char char_at(int index)` (throws `IndexOutOfBoundsException` on out-of-bounds)
-    - `String substring(int start, int length)` (throws `IndexOutOfBoundsException`)
-    - `int index_of(String needle)`, `int last_index_of(String needle)`
-    - `bool contains(String needle)`, `bool starts_with(String prefix)`, `bool ends_with(String suffix)`
-    - `String to_lower()`, `String to_upper()`, `String trim()`
-    - `String replace(String old_token, String new_token)`
-    - `String[] split(String delimiter)`
-    - `bool equals(String other)`
-    - `string to_string()`
+    - Static Constructors & Conversions (Native `<charconv>`):
+      - `static String from_int(int value)`
+      - `static String from_double(double value, int precision = 6)`
+      - `static String from_bool(bool value)`
+      - `static String from_char(char value)`
+      - `static String from_chars(char[] chars, int offset, int count)`
+      - `static String join(String delimiter, String[] items)`
+      - `static String format(String template_str, String[] args)`
+      - `static bool is_null_or_empty(String s)`
+      - `static bool is_null_or_whitespace(String s)`
+    - Static Parsing (Native `<charconv>`):
+      - `static int to_int(String s)` (throws `FormatException`)
+      - `static double to_double(String s)` (throws `FormatException`)
+      - `static bool to_bool(String s)` (throws `FormatException`)
+      - `static bool try_to_int(String s, Int out_val)`
+      - `static bool try_to_double(String s, Double out_val)`
+    - Instance Methods:
+      - `int length()`, `bool is_empty()`
+      - `char char_at(int index)` (throws `IndexOutOfBoundsException`)
+      - `String substring(int start, int length)` (throws `IndexOutOfBoundsException`)
+      - `int index_of(String needle)`, `int last_index_of(String needle)`
+      - `bool contains(String needle)`, `bool starts_with(String prefix)`, `bool ends_with(String suffix)`
+      - `String to_lower()`, `String to_upper()`, `String trim()`, `String trim_start()`, `String trim_end()`
+      - `String pad_left(int total_width, char pad_char = ' ')`
+      - `String pad_right(int total_width, char pad_char = ' ')`
+      - `String repeat(int count)`
+      - `String reverse()`
+      - `String replace(String old_token, String new_token)`
+      - `String[] split(String delimiter)`
+      - `String[] lines()`
+      - `char[] to_char_array()`
+      - `bool equals(String other)`
+      - `string to_string()`
   - `class StringBuilder implements IStringable`:
-    - `StringBuilder append(String s)`, `StringBuilder append(int val)`, `StringBuilder append(double val)`, `StringBuilder append(char c)`
+    - `StringBuilder append(String s)`, `StringBuilder append(int val)`, `StringBuilder append(double val)`, `StringBuilder append(char c)`, `StringBuilder append(bool b)`
     - `StringBuilder append_line(String s)`, `StringBuilder append_line()`
+    - `StringBuilder insert(int index, String s)`
+    - `StringBuilder remove(int start, int length)`
+    - `StringBuilder reverse()`
     - `int length()`, `void clear()`, `String to_string()`
 - **Native Implementation (`solixlib/native/src/string.cpp`)**:
-  - UTF-8 validation, slicing, case-mapping, search, and dynamic byte buffer management.
+  - Ultra-fast UTF-8 slicing, `<charconv>` numeric conversions, memory allocation, and search algorithms.
 
 ### Identified Test & Documentation Deliverables
 - **1. Identified Test Deliverables (`tests/solixlib/TESTS.md` & `tests/solixlib/test_string.cpp`)**:
   - Add and implement String test cases:
-    - **Case 3.1 [Positive]**: String concatenation, slicing with `substring`, trimming whitespace, prefix/suffix checks.
-    - **Case 3.2 [Positive]**: `StringBuilder` chained appends and capacity expansion.
-    - **Case 3.3 [Positive]**: `Console.println("Hello, Solix!")` and `Console.println(my_stringable)`.
-    - **Case 3.4 [Positive]**: `Console.input() -> String` reading from redirected stdin.
-    - **Case 3.5 [Negative]**: Out-of-bounds `char_at(-1)` or `char_at(len)` throws `IndexOutOfBoundsException`.
-    - **Case 3.6 [Negative]**: Negative substring lengths or start indices beyond string length throw `IndexOutOfBoundsException`.
-    - **Case 3.7 [Negative]**: `split` with empty delimiter handled safely without infinite loop.
+    - **Case 3.1 [Positive]**: Native bidirectional conversions (`String.from_int(42) == "42"`, `String.to_int("42") == 42`).
+    - **Case 3.2 [Positive]**: String formatting, joining with delimiter, padding left and right.
+    - **Case 3.3 [Positive]**: String slicing with `substring`, trimming whitespace, prefix/suffix checks.
+    - **Case 3.4 [Positive]**: `StringBuilder` chained appends, inserts, removals, and capacity expansion.
+    - **Case 3.5 [Positive]**: `Console.println("Hello, Solix!")` and `Console.println(my_stringable)`.
+    - **Case 3.6 [Positive]**: `Console.input() -> String` reading from redirected stdin.
+    - **Case 3.7 [Negative]**: `String.to_int("invalid")` throws `FormatException`.
+    - **Case 3.8 [Negative]**: Out-of-bounds `char_at(-1)` or `char_at(len)` throws `IndexOutOfBoundsException`.
+    - **Case 3.9 [Negative]**: Negative substring lengths or start indices beyond string length throw `IndexOutOfBoundsException`.
 - **2. Identified Documentation Deliverables**:
-  - `docs/spec/solixlib/string.md`: Text encoding, UTF-8 invariants, and `IStringable` protocol.
+  - `docs/spec/solixlib/string.md`: Text encoding, UTF-8 invariants, bidirectional conversions, and `IStringable` protocol.
 
 ### Action Items
 - [ ] Define test specification in `tests/solixlib/TESTS.md`.
 - [ ] Author `IStringable.slx`, `String.slx`, `StringBuilder.slx`.
-- [ ] Implement native string primitives in `solixlib/native/src/string.cpp`.
+- [ ] Implement native string primitives and fast `<charconv>` conversions in `solixlib/native/src/string.cpp`.
 - [ ] Revisit `Console.slx` and `console.cpp` to add string and `IStringable` overloads.
 - [ ] Implement Catch2 test suite `tests/solixlib/test_string.cpp`.
 - [ ] Author `docs/spec/solixlib/string.md`.
@@ -1126,9 +1182,11 @@ Define universal language contracts (`IComparable<T>`, `IEquatable<T>`, `IClonea
     - `static int parse(String s)` (throws `FormatException`)
     - `static bool try_parse(String s, Int out_val)`
     - `const int MIN_VALUE = -2147483648`, `const int MAX_VALUE = 2147483647`
+    - Bitwise operations: `count_leading_zeros(int v)`, `count_trailing_zeros(int v)`, `reverse_bytes(int v)`
   - `class Double implements IStringable, IEquatable<Double>, IComparable<Double>`:
     - `static double parse(String s)` (throws `FormatException`)
     - `static bool is_nan(double d)`, `static bool is_infinite(double d)`
+    - Constants: `NaN`, `POSITIVE_INFINITY`, `NEGATIVE_INFINITY`, `MIN_VALUE`, `MAX_VALUE`
   - `class Bool implements IStringable, IEquatable<Bool>`:
     - `static bool parse(String s)` (throws `FormatException`)
   - `class Optional<T> implements IStringable`:
@@ -1142,15 +1200,8 @@ Define universal language contracts (`IComparable<T>`, `IEquatable<T>`, `IClonea
 
 ### Identified Test & Documentation Deliverables
 - **1. Identified Test Deliverables (`tests/solixlib/TESTS.md` & `tests/solixlib/test_primitives.cpp`)**:
-  - **Positive Tests**:
-    - Parsing valid numbers: `Int.parse("12345") == 12345`, `Double.parse("3.14159")`.
-    - Equality checks and compare_to ordering (-1, 0, 1).
-    - `Optional.of(value)` has value and unwraps accurately; `Optional.empty().value_or(fallback)` returns fallback.
-    - `Any` boxing and string conversion.
-  - **Negative Tests**:
-    - `Int.parse("abc")` throws `FormatException`.
-    - `Int.parse("99999999999999999999")` throws `FormatException` (overflow).
-    - Accessing `Optional.empty().value()` throws `InvalidOperationException`.
+  - **Positive Tests**: Parsing valid numbers; equality checks and compare_to ordering (-1, 0, 1); `Optional.of(value)` has value and unwraps accurately; `Optional.empty().value_or(fallback)` returns fallback; `Any` boxing and string conversion.
+  - **Negative Tests**: `Int.parse("abc")` throws `FormatException`; `Int.parse("99999999999999999999")` throws `FormatException` (overflow); accessing `Optional.empty().value()` throws `InvalidOperationException`.
 - **2. Identified Documentation Deliverables**:
   - `docs/spec/solixlib/primitives.md`: Universal contracts, parsing rules, and `Optional` semantics.
 
@@ -1171,10 +1222,11 @@ Define universal language contracts (`IComparable<T>`, `IEquatable<T>`, `IClonea
 - **Status**: - [ ] Planned
 
 ### Objective
-Provide comprehensive mathematical constants, transcendental functions, geometric computations, rounding algorithms, and a cryptographically pseudo-random number generator (`Random`).
+Provide comprehensive mathematical constants, transcendental functions, geometric computations, rounding algorithms, and a cryptographically pseudo-random number generator (`Random`). Backed directly by hardware-accelerated IEEE 754 math and standard C++ `<cmath>` / `<random>` rather than handwritten floating-point math.
 
 ### Interconnection & Layering
 - **Builds On**: Primitives and Contracts from Phase 24.
+- **Cross-Platform Native Math**: Direct bindings to standard C++ `<cmath>` and Mersenne Twister `std::mt19937_64`.
 - **Exception Integration**: Throws `IllegalArgumentException` on invalid mathematical bounds (e.g. `Random.next_int(max)` where `max <= 0`).
 - **Downstream Use**: Collections shuffling, graphics algorithms, physics computations.
 
@@ -1182,17 +1234,19 @@ Provide comprehensive mathematical constants, transcendental functions, geometri
 - **Solix Surface**:
   - `class Math`:
     - Constants: `PI = 3.141592653589793`, `E = 2.718281828459045`, `TAU = 6.283185307179586`, `EPSILON = 1e-15`
-    - Basic: `abs`, `min`, `max`, `clamp`
-    - Exponential/Log: `sqrt`, `cbrt`, `pow`, `exp`, `log`, `log10`, `log2`
+    - Basic: `abs`, `min`, `max`, `clamp`, `sign`, `copy_sign`
+    - Exponential/Log: `sqrt`, `cbrt`, `hypot`, `pow`, `exp`, `log`, `log10`, `log2`
     - Trigonometric: `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `to_radians`, `to_degrees`
+    - Hyperbolic: `sinh`, `cosh`, `tanh`
     - Rounding: `floor`, `ceil`, `round`, `trunc`
   - `class Random`:
     - `Random(long seed)` / `Random()`
     - `int next_int()`, `int next_int(int max)`, `int next_int(int min, int max)`
     - `double next_double()` (0.0 to 1.0)
     - `bool next_bool()`
+    - `byte[] next_bytes(int count)`
 - **Native Implementation (`solixlib/native/src/math.cpp`)**:
-  - Direct C++ `<cmath>` operations and `<random>` (Mersenne Twister `std::mt19937_64`).
+  - Direct C++ `<cmath>` operations and `<random>` (`std::mt19937_64`).
 
 ### Identified Test & Documentation Deliverables
 - **1. Identified Test Deliverables (`tests/solixlib/TESTS.md` & `tests/solixlib/test_math.cpp`)**:
@@ -1217,7 +1271,7 @@ Provide comprehensive mathematical constants, transcendental functions, geometri
 - **Status**: - [ ] Planned
 
 ### Objective
-Provide high-resolution time measurements, date-time representations with timezone/UTC support, elapsed durations, and benchmarking timers.
+Provide high-resolution time measurements, date-time representations with timezone/UTC support, elapsed durations, and benchmarking timers using standard C++20 `<chrono>`.
 
 ### Interconnection & Layering
 - **Builds On**: Primitives (Phase 24) and String (Phase 23).
@@ -1260,11 +1314,11 @@ Provide high-resolution time measurements, date-time representations with timezo
 ## Phase 27: Standard Library — `solix.collections.Core` (Interfaces, `IIterable`, `ICollection`, `to_string`)
 
 - **Priority**: `P1 High`
-- **Affected Modules**: `solixlib/project/src/solix/collections/IIterable.slx`, `IIterator.slx`, `ICollection.slx`, `IList.slx`, `IReadOnlyCollection.slx`, `tests/solixlib/test_collections_core.cpp`, `docs/spec/solixlib/collections_core.md`
+- **Affected Modules**: `solixlib/project/src/solix/collections/IIterable.slx`, `IIterator.slx`, `ICollection.slx`, `IList.slx`, `IReadOnlyCollection.slx`, `IDeque.slx`, `tests/solixlib/test_collections_core.cpp`, `docs/spec/solixlib/collections_core.md`
 - **Status**: - [ ] Planned
 
 ### Objective
-Define the foundational collection architecture in Solix. Establish iterator protocols (`IIterable<T>`, `IIterator<T>`), general collection properties (`ICollection<T>`), and linear indexing contracts (`IList<T>`). Standardize the `to_string()` contract across all collection implementations so that any collection is inherently `IStringable` and printable via `Console.println()`.
+Define the foundational collection architecture in Solix. Establish iterator protocols (`IIterable<T>`, `IIterator<T>`), general collection properties (`ICollection<T>`), linear indexing contracts (`IList<T>`), and double-ended queue contracts (`IDeque<T>`). Standardize the `to_string()` contract across all collection implementations so that any collection is inherently `IStringable` and printable via `Console.println()`.
 
 ### Interconnection & Layering
 - **Inherits From**: `solix.core.IStringable` (Phase 23). Every collection implements `to_string()`.
@@ -1283,6 +1337,10 @@ Define the foundational collection architecture in Solix. Establish iterator pro
     - `T get(int index)` (throws `IndexOutOfBoundsException`)
     - `void set(int index, T item)` (throws `IndexOutOfBoundsException`)
     - `void add(T item)`, `void insert(int index, T item)`, `bool remove(T item)`, `T remove_at(int index)` (throws `IndexOutOfBoundsException`), `int index_of(T item)`
+  - `interface IDeque<T> extends ICollection<T>`:
+    - `void add_first(T item)`, `void add_last(T item)`
+    - `T remove_first()`, `T remove_last()` (throws `NoSuchElementException`)
+    - `T peek_first()`, `T peek_last()` (throws `NoSuchElementException`)
 
 ### Identified Test & Documentation Deliverables
 - **1. Identified Test Deliverables (`tests/solixlib/TESTS.md` & `tests/solixlib/test_collections_core.cpp`)**:
@@ -1293,24 +1351,26 @@ Define the foundational collection architecture in Solix. Establish iterator pro
 
 ### Action Items
 - [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Author `IIterable.slx`, `IIterator.slx`, `ICollection.slx`, `IList.slx`, `IReadOnlyCollection.slx`.
+- [ ] Author `IIterable.slx`, `IIterator.slx`, `ICollection.slx`, `IList.slx`, `IReadOnlyCollection.slx`, `IDeque.slx`.
 - [ ] Provide default `to_string()` algorithm for collections.
 - [ ] Implement Catch2 test suite `tests/solixlib/test_collections_core.cpp`.
 - [ ] Author `docs/spec/solixlib/collections_core.md`.
 
 ---
 
-## Phase 28: Standard Library — `solix.collections.List` (Dynamic Array / ArrayList)
+## Phase 28: Standard Library — `solix.collections.List` (`List<T>` Array & `LinkedList<T>`)
 
 - **Priority**: `P1 High`
-- **Affected Modules**: `solixlib/project/src/solix/collections/List.slx`, `solixlib/project/src/solix/collections/Algorithms.slx`, `tests/solixlib/test_list.cpp`, `docs/spec/solixlib/list.md`
+- **Affected Modules**: `solixlib/project/src/solix/collections/List.slx`, `solixlib/project/src/solix/collections/LinkedList.slx`, `solixlib/project/src/solix/collections/Algorithms.slx`, `tests/solixlib/test_list.cpp`, `docs/spec/solixlib/list.md`
 - **Status**: - [ ] Planned
 
 ### Objective
-Implement the primary general-purpose resizable dynamic array `solix.collections.List<T>` implementing `IList<T>`. Provide amortized O(1) appending, growth factor resizing, sorting, binary search, and list transformations.
+Implement two complementary sequential collection types:
+1. `solix.collections.List<T>`: resizable dynamic array with amortized O(1) appending and random access.
+2. `solix.collections.LinkedList<T>`: doubly-linked list implementing both `IList<T>` and `IDeque<T>`, providing O(1) insertions and removals at both head and tail.
 
 ### Interconnection & Layering
-- **Builds On**: `IList<T>` & `ICollection<T>` (Phase 27), `IComparable<T>` & `IEquatable<T>` (Phase 24).
+- **Builds On**: `IList<T>`, `IDeque<T>` & `ICollection<T>` (Phase 27), `IComparable<T>` & `IEquatable<T>` (Phase 24).
 - **Printable**: Automatically formats as `"[item1, item2, ...]"` and prints via `Console.println()`.
 - **Exception Integration**: Out-of-bounds indexing throws `IndexOutOfBoundsException`; negative capacity throws `IllegalArgumentException`.
 - **Universal Data Carrier**: Returned by `String.split()`, `filesystem.list_files()`, `Environment.get_args()`.
@@ -1325,78 +1385,94 @@ Implement the primary general-purpose resizable dynamic array `solix.collections
     - Slicing: `List<T> sub_list(int start, int count)`
     - Iteration: `IIterator<T> iterator()`
     - String Conversion: `string to_string()`
-  - `class Collections`: static sorting and searching algorithms.
+  - `class LinkedList<T> implements IList<T>, IDeque<T>`:
+    - Doubly-linked node chain (`Node<T> prev, next; T value;`)
+    - Head & Tail Operations: `add_first(T item)`, `add_last(T item)`, `remove_first() -> T`, `remove_last() -> T`, `peek_first() -> T`, `peek_last() -> T`
+    - Indexed Operations: `get(index)`, `set(index, item)`, `remove_at(index)` (optimized traversal from closest end)
+    - Iteration: bidirectional iteration support.
+  - `class Collections`: static sorting, shuffling, and searching algorithms.
 
 ### Identified Test & Documentation Deliverables
 - **1. Identified Test Deliverables (`tests/solixlib/TESTS.md` & `tests/solixlib/test_list.cpp`)**:
-  - **Positive Tests**: Resizing across capacity boundaries (10,000 items); insertion and removal at head, middle, and tail; in-place sorting of integer and string lists; `Console.println(list)` bracketed output.
-  - **Negative Tests**: `get(-1)` or `get(size)` throws `IndexOutOfBoundsException`; `remove_at(0)` on empty list throws `IndexOutOfBoundsException`; negative initial capacity throws `IllegalArgumentException`.
+  - **Positive Tests**:
+    - `List<T>` dynamic capacity expansion (10,000 items) and sorting.
+    - `LinkedList<T>` O(1) head/tail insertions and removals (`add_first`, `add_last`, `remove_first`, `remove_last`).
+    - `Console.println(list)` and `Console.println(linked_list)` bracketed outputs.
+  - **Negative Tests**:
+    - `get(-1)` or `get(size)` on either list throws `IndexOutOfBoundsException`.
+    - `remove_first()` on empty `LinkedList` throws `NoSuchElementException`.
 - **2. Identified Documentation Deliverables**:
-  - `docs/spec/solixlib/list.md`: Dynamic array memory characteristics, amortized complexity, and methods.
+  - `docs/spec/solixlib/list.md`: Dynamic array vs doubly-linked list performance characteristics and API documentation.
 
 ### Action Items
 - [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Author `solix.collections.List.slx` and `Algorithms.slx`.
+- [ ] Author `List.slx`, `LinkedList.slx`, and `Algorithms.slx`.
 - [ ] Implement Catch2 test suite `tests/solixlib/test_list.cpp`.
 - [ ] Author `docs/spec/solixlib/list.md`.
 
 ---
 
-## Phase 29: Standard Library — `solix.collections.Map` & `HashMap` (Associative Key-Value Store)
+## Phase 29: Standard Library — `solix.collections.Map` (`HashMap<K, V>` & `TreeMap<K, V>`)
 
 - **Priority**: `P1 High`
-- **Affected Modules**: `solixlib/project/src/solix/collections/IMap.slx`, `HashMap.slx`, `KeyValuePair.slx`, `tests/solixlib/test_map.cpp`, `docs/spec/solixlib/map.md`
+- **Affected Modules**: `solixlib/project/src/solix/collections/IMap.slx`, `HashMap.slx`, `TreeMap.slx`, `KeyValuePair.slx`, `tests/solixlib/test_map.cpp`, `docs/spec/solixlib/map.md`
 - **Status**: - [ ] Planned
 
 ### Objective
-Implement the associative hash map `solix.collections.HashMap<K, V>` implementing `IMap<K, V>`. Support efficient key-value lookups, automatic bucket rehashing based on load factor, key and value collection views, and `{k1: v1, k2: v2}` string formatting.
+Implement both unordered and ordered associative key-value dictionaries:
+1. `solix.collections.HashMap<K, V>`: high-performance hash table with bucket chaining and automatic load-factor rehashing.
+2. `solix.collections.TreeMap<K, V>`: balanced binary search tree (Red-Black tree) sorted map ordered by `IComparable<K>`, providing guaranteed O(log N) operations and ordered key ranges.
 
 ### Interconnection & Layering
-- **Builds On**: `IHashable` and `IEquatable<K>` (Phase 24) for hash bucket indexing and collision resolution.
+- **Builds On**: `IHashable` and `IEquatable<K>` (Phase 24) for `HashMap`; `IComparable<K>` for `TreeMap`.
 - **Printable**: Formats as `"{key1: val1, key2: val2}"` and prints via `Console.println()`.
 - **Exception Integration**: Accessing non-existent key via `get(key)` throws `KeyNotFoundException` (or use `get_or_default`).
-- **Downstream Use**: Environment variables (Phase 34), HTTP headers (Phase 37).
 
 ### Submodule Architecture & Types
 - **Solix Surface**:
   - `class KeyValuePair<K, V> implements IStringable`: `K key`, `V value`, `string to_string()`
   - `interface IMap<K, V> extends IStringable`:
-    - `V get(K key)` (throws `KeyNotFoundException`)
-    - `V get_or_default(K key, V default_val)`
-    - `void put(K key, V value)`
-    - `bool contains_key(K key)`, `bool contains_value(V value)`
+    - `V get(K key)` (throws `KeyNotFoundException`), `V get_or_default(K key, V default_val)`
+    - `void put(K key, V value)`, `bool contains_key(K key)`, `bool contains_value(V value)`
     - `V remove(K key)`, `int size()`, `bool is_empty()`, `void clear()`
     - `ICollection<K> keys()`, `ICollection<V> values()`, `ICollection<KeyValuePair<K, V>> entries()`
   - `class HashMap<K, V> implements IMap<K, V>`:
-    - Automatic rehashing on load factor threshold (0.75).
-    - String formatting: `to_string() -> String`.
+    - Load factor (0.75), bucket array, automatic rehashing.
+  - `class TreeMap<K, V> implements IMap<K, V>`:
+    - Red-Black balanced tree. Keys sorted according to `IComparable<K>`.
+    - Range methods: `K first_key()`, `K last_key()`, `IMap<K, V> sub_map(K from_key, K to_key)`.
 
 ### Identified Test & Documentation Deliverables
 - **1. Identified Test Deliverables (`tests/solixlib/TESTS.md` & `tests/solixlib/test_map.cpp`)**:
-  - **Positive Tests**: Putting, updating, and getting keys; rehashing during large insertions; key and value view iteration; formatted `{k: v}` string printed via `Console.println()`.
-  - **Negative Tests**: Retrieving non-existent key throws `KeyNotFoundException`; handling hash collisions safely.
+  - **Positive Tests**:
+    - `HashMap`: Putting, updating, getting, and rehashing across large insertions.
+    - `TreeMap`: Keys traversed in strict sorted order; `first_key()` and `last_key()` retrieval.
+    - Formatted string representation printed via `Console.println()`.
+  - **Negative Tests**: Retrieving non-existent key throws `KeyNotFoundException`; empty `first_key()` throws `NoSuchElementException`.
 - **2. Identified Documentation Deliverables**:
-  - `docs/spec/solixlib/map.md`: Hash distribution requirements, load factor behavior, and API contract.
+  - `docs/spec/solixlib/map.md`: Hash distribution vs Red-Black tree complexity, load factors, and API specifications.
 
 ### Action Items
 - [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Author `IMap.slx`, `KeyValuePair.slx`, and `HashMap.slx`.
+- [ ] Author `IMap.slx`, `KeyValuePair.slx`, `HashMap.slx`, and `TreeMap.slx`.
 - [ ] Implement Catch2 test suite `tests/solixlib/test_map.cpp`.
 - [ ] Author `docs/spec/solixlib/map.md`.
 
 ---
 
-## Phase 30: Standard Library — `solix.collections.Set` & `HashSet` (Distinct Element Container)
+## Phase 30: Standard Library — `solix.collections.Set` (`HashSet<T>` & `TreeSet<T>`)
 
 - **Priority**: `P2 Medium`
-- **Affected Modules**: `solixlib/project/src/solix/collections/ISet.slx`, `HashSet.slx`, `tests/solixlib/test_set.cpp`, `docs/spec/solixlib/set.md`
+- **Affected Modules**: `solixlib/project/src/solix/collections/ISet.slx`, `HashSet.slx`, `TreeSet.slx`, `tests/solixlib/test_set.cpp`, `docs/spec/solixlib/set.md`
 - **Status**: - [ ] Planned
 
 ### Objective
-Implement the distinct element container `solix.collections.HashSet<T>` implementing `ISet<T>`, providing uniqueness guarantees and set algebra (union, intersection, difference, subset checks).
+Implement distinct element containers:
+1. `solix.collections.HashSet<T>`: backed by hash table for O(1) uniqueness.
+2. `solix.collections.TreeSet<T>`: backed by Red-Black tree for sorted unique elements with O(log N) operations.
 
 ### Interconnection & Layering
-- **Builds On**: `ICollection<T>` (Phase 27), `IHashable` & `IEquatable<T>` (Phase 24).
+- **Builds On**: `ICollection<T>` (Phase 27), `IHashable` & `IEquatable<T>` (Phase 24) for `HashSet`, `IComparable<T>` for `TreeSet`.
 - **Printable**: Formats as `"{item1, item2, item3}"` and prints via `Console.println()`.
 
 ### Submodule Architecture & Types
@@ -1404,36 +1480,43 @@ Implement the distinct element container `solix.collections.HashSet<T>` implemen
   - `interface ISet<T> extends ICollection<T>`:
     - `bool add(T item)` (returns true if added, false if duplicate)
     - `bool remove(T item)`, `bool contains(T item)`
-    - `void union_with(ICollection<T> other)`
-    - `void intersect_with(ICollection<T> other)`
-    - `void difference_with(ICollection<T> other)`
-    - `bool is_subset_of(ICollection<T> other)`
-  - `class HashSet<T> implements ISet<T>`:
-    - Formats `to_string()` as `"{item1, item2}"`.
+    - `void union_with(ICollection<T> other)`, `void intersect_with(ICollection<T> other)`, `void difference_with(ICollection<T> other)`
+    - `bool is_subset_of(ICollection<T> other)`, `bool is_superset_of(ICollection<T> other)`
+  - `class HashSet<T> implements ISet<T>`: hash-table backed.
+  - `class TreeSet<T> implements ISet<T>`: Red-Black tree backed, maintains elements in sorted order.
 
 ### Identified Test & Documentation Deliverables
 - **1. Identified Test Deliverables (`tests/solixlib/TESTS.md` & `tests/solixlib/test_set.cpp`)**:
-  - **Positive Tests**: Duplicate additions return `false` and maintain single instance; set union, intersection, and difference mathematical verification; printing set via `Console.println()`.
-  - **Negative Tests**: Modifying collection during iteration throws `InvalidOperationException`.
+  - **Positive Tests**:
+    - Uniqueness enforcement: duplicates rejected.
+    - Set mathematical operations: union, intersection, difference, subset checks.
+    - `TreeSet` traversing elements in strict ascending order.
+  - **Negative Tests**: Concurrent modification detection during iteration throws `InvalidOperationException`.
 - **2. Identified Documentation Deliverables**:
-  - `docs/spec/solixlib/set.md`: Set theory operations and uniqueness semantics.
+  - `docs/spec/solixlib/set.md`: Set theory operations, hash vs tree implementations, and complexity guarantees.
 
 ### Action Items
 - [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Author `ISet.slx` and `HashSet.slx`.
+- [ ] Author `ISet.slx`, `HashSet.slx`, `TreeSet.slx`.
 - [ ] Implement Catch2 test suite `tests/solixlib/test_set.cpp`.
 - [ ] Author `docs/spec/solixlib/set.md`.
 
 ---
 
-## Phase 31: Standard Library — `solix.collections.Linear` (`Stack`, `Queue`, `Deque`, `PriorityQueue`)
+## Phase 31: Standard Library — `solix.collections.Linear` (`Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, `BitSet`)
 
 - **Priority**: `P2 Medium`
-- **Affected Modules**: `solixlib/project/src/solix/collections/Stack.slx`, `Queue.slx`, `Deque.slx`, `PriorityQueue.slx`, `tests/solixlib/test_linear_collections.cpp`, `docs/spec/solixlib/linear_collections.md`
+- **Affected Modules**: `solixlib/project/src/solix/collections/Stack.slx`, `Queue.slx`, `Deque.slx`, `PriorityQueue.slx`, `CircularBuffer.slx`, `BitSet.slx`, `tests/solixlib/test_linear_collections.cpp`, `docs/spec/solixlib/linear_collections.md`
 - **Status**: - [ ] Planned
 
 ### Objective
-Implement specialized linear data structures: LIFO `Stack<T>`, FIFO `Queue<T>`, double-ended `Deque<T>`, and binary-heap `PriorityQueue<T>`.
+Implement comprehensive specialized linear data structures and buffers:
+- LIFO `Stack<T>`
+- FIFO `Queue<T>`
+- Double-ended `Deque<T>`
+- Binary-heap `PriorityQueue<T>`
+- Fixed-capacity FIFO `CircularBuffer<T>` (Ring Buffer)
+- Compact, high-performance `BitSet` (bit array)
 
 ### Interconnection & Layering
 - **Builds On**: `ICollection<T>` (Phase 27) and `IComparable<T>` (Phase 24) for priority ordering.
@@ -1445,18 +1528,27 @@ Implement specialized linear data structures: LIFO `Stack<T>`, FIFO `Queue<T>`, 
   - `class Stack<T> implements ICollection<T>`: `push`, `pop`, `peek`, `size`, `is_empty`
   - `class Queue<T> implements ICollection<T>`: `enqueue`, `dequeue`, `peek`, `size`, `is_empty`
   - `class Deque<T> implements ICollection<T>`: `push_front`, `push_back`, `pop_front`, `pop_back`, `peek_front`, `peek_back`
-  - `class PriorityQueue<T> implements ICollection<T>`: `enqueue`, `dequeue`, `peek` (min-heap order)
+  - `class PriorityQueue<T> implements ICollection<T>`: `enqueue`, `dequeue`, `peek` (binary heap)
+  - `class CircularBuffer<T> implements ICollection<T>`: fixed capacity ring buffer with overwrite or blocking modes.
+  - `class BitSet implements IStringable`:
+    - `void set(int bit_index)`, `void clear(int bit_index)`, `bool get(int bit_index)`
+    - `void and(BitSet other)`, `void or(BitSet other)`, `void xor(BitSet other)`
+    - `int cardinality()`, `int size()`
 
 ### Identified Test & Documentation Deliverables
 - **1. Identified Test Deliverables (`tests/solixlib/TESTS.md` & `tests/solixlib/test_linear_collections.cpp`)**:
-  - **Positive Tests**: Strict LIFO order verification for `Stack`; strict FIFO order verification for `Queue`; highest-priority-first extraction from `PriorityQueue`.
+  - **Positive Tests**:
+    - Strict LIFO order for `Stack`, strict FIFO order for `Queue`.
+    - Priority extraction order from `PriorityQueue`.
+    - `CircularBuffer` wrapping around capacity boundaries cleanly.
+    - `BitSet` bitwise operations (AND, OR, XOR) and cardinality counting.
   - **Negative Tests**: `pop()` or `peek()` on empty stack/queue throws `InvalidOperationException`.
 - **2. Identified Documentation Deliverables**:
   - `docs/spec/solixlib/linear_collections.md`: Performance complexity and buffer behaviors.
 
 ### Action Items
 - [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Author `Stack.slx`, `Queue.slx`, `Deque.slx`, `PriorityQueue.slx`.
+- [ ] Author `Stack.slx`, `Queue.slx`, `Deque.slx`, `PriorityQueue.slx`, `CircularBuffer.slx`, `BitSet.slx`.
 - [ ] Implement Catch2 test suite `tests/solixlib/test_linear_collections.cpp`.
 - [ ] Author `docs/spec/solixlib/linear_collections.md`.
 
@@ -1487,6 +1579,7 @@ Unify all path manipulation and filesystem operations into a single cohesive pac
     - `static String get_file_name_without_extension(String path)`
     - `static bool is_absolute(String path)`
     - `static String get_temp_path()`
+    - `static String normalize(String path)`
   - `class File`:
     - `static bool exists(String path)`
     - `static String read_all_text(String path)` (throws `FileNotFoundException`, `IOException`)
@@ -1497,6 +1590,7 @@ Unify all path manipulation and filesystem operations into a single cohesive pac
     - `static void copy(String src, String dest, bool overwrite = false)`
     - `static void move(String src, String dest)`
     - `static long get_size(String path)`
+    - `static DateTime get_last_modified_time(String path)`
   - `class Directory`:
     - `static bool exists(String path)`
     - `static void create_directory(String path)`
@@ -1575,10 +1669,11 @@ Implement the low-level byte-oriented and character-oriented streaming architect
 - **Status**: - [ ] Planned
 
 ### Objective
-Provide access to the host runtime operating environment: environment variables, command-line arguments, operating system identification, system exit codes, and child subprocess spawning.
+Provide access to host runtime environment variables, command-line arguments, operating system identification, and child subprocess spawning. Natively backed by established lightweight cross-platform C/C++ libraries (e.g. `reproc` or `subprocess.h`) for guaranteed pipe redirection and process lifecycle handling across Linux, macOS, and Windows.
 
 ### Interconnection & Layering
 - **Builds On**: `String` (Phase 23), `List<String>` (Phase 28), `Map<String, String>` (Phase 29).
+- **Cross-Platform Native Subprocesses**: Powered by battle-tested C library (`reproc` / `subprocess.h`), avoiding raw unmaintainable OS syscalls.
 - **Printable**: Process output and environment info printable via `Console`.
 
 ### Submodule Architecture & Types
@@ -1588,7 +1683,6 @@ Provide access to the host runtime operating environment: environment variables,
     - `static String get_env(String key)`
     - `static void set_env(String key, String value)`
     - `static Map<String, String> get_all_env()`
-    - `static void exit(int exit_code)`
     - `static String os_name()`, `static String os_version()`
     - `static bool is_windows()`, `static bool is_linux()`, `static bool is_macos()`
     - `static int processor_count()`
@@ -1598,7 +1692,7 @@ Provide access to the host runtime operating environment: environment variables,
     - `static ProcessResult run(String command, List<String> args)`
     - `void start()`, `int wait_for_exit()`, `void kill()`
 - **Native Implementation (`solixlib/native/src/system.cpp`)**:
-  - POSIX `fork`/`exec`/`waitpid` and Windows `CreateProcess` with pipe redirection.
+  - Cross-platform process runner via established single-header library (`subprocess.h` / `reproc`).
 
 ### Identified Test & Documentation Deliverables
 - **1. Identified Test Deliverables (`tests/solixlib/TESTS.md` & `tests/solixlib/test_environment.cpp`)**:
@@ -1664,10 +1758,11 @@ Implement built-in hardcoded language expressions in the Solix core compiler and
 - **Status**: - [ ] Planned
 
 ### Objective
-Implement essential cryptographic hashing functions (SHA-256, SHA-1, MD5) and binary encodings (Base64, Hexadecimal) using a compact, self-contained native implementation without heavy external OpenSSL dependencies.
+Implement essential cryptographic hashing functions (SHA-256, SHA-1, MD5) and binary encodings (Base64, Hexadecimal) using well-established, battle-tested lightweight C libraries (e.g. Brad Conte's standard `crypto-algorithms` or `monocypher`) rather than handwriting cryptographic math from scratch.
 
 ### Interconnection & Layering
 - **Builds On**: `String` (Phase 23), byte arrays, and `Streams` (Phase 33).
+- **Proven C Libraries**: Integrates standard, audited public-domain C cryptographic implementations for SHA-256, SHA-1, and MD5.
 - **Exception Integration**: Malformed Base64 or odd-length hex strings throw `FormatException`.
 - **Downstream Use**: Package integrity verification, cache checksums, HTTP basic authentication, security digests.
 
@@ -1687,7 +1782,7 @@ Implement essential cryptographic hashing functions (SHA-256, SHA-1, MD5) and bi
     - `static String sha1_hex(String text)`
     - `static String md5_hex(String text)`
 - **Native Implementation (`solixlib/native/src/crypto.cpp`)**:
-  - Self-contained C implementations of FIPS 180-4 SHA-256, SHA-1, RFC 1321 MD5, and RFC 4648 Base64.
+  - Standard, audited C implementations of FIPS 180-4 SHA-256, SHA-1, RFC 1321 MD5, and RFC 4648 Base64.
 
 ### Identified Test & Documentation Deliverables
 - **1. Identified Test Deliverables (`tests/solixlib/TESTS.md` & `tests/solixlib/test_crypto.cpp`)**:
@@ -1698,7 +1793,7 @@ Implement essential cryptographic hashing functions (SHA-256, SHA-1, MD5) and bi
 
 ### Action Items
 - [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Implement self-contained crypto algorithms in `solixlib/native/src/crypto.cpp`.
+- [ ] Embed audited C crypto library in `solixlib/native/src/crypto.cpp`.
 - [ ] Author `Base64.slx`, `Hex.slx`, `Hash.slx`.
 - [ ] Implement Catch2 test suite `tests/solixlib/test_crypto.cpp`.
 - [ ] Author `docs/spec/solixlib/crypto.md`.
@@ -1712,7 +1807,7 @@ Implement essential cryptographic hashing functions (SHA-256, SHA-1, MD5) and bi
 - **Status**: - [ ] Planned
 
 ### Objective
-Implement cross-platform networking primitives: IP address handling, TCP client/server streaming sockets, connectionless UDP datagram transmission (`UdpClient`), and a lightweight HTTP client for REST API consumption.
+Implement cross-platform networking primitives: IP address handling, TCP client/server streaming sockets, connectionless UDP datagram transmission (`UdpClient`), and a lightweight HTTP client for REST API consumption. Leverages established cross-platform BSD/Winsock abstractions and fast HTTP parsing (`picohttpparser`).
 
 ### Interconnection & Layering
 - **Builds On**: `IStream` (Phase 33) for socket read/write, `String` (Phase 23), `Map<String, String>` (Phase 29) for headers.
@@ -1766,6 +1861,7 @@ Implement cross-platform networking primitives: IP address handling, TCP client/
 - [ ] Author `IPAddress.slx`, `IPEndPoint.slx`, `TcpClient.slx`, `TcpListener.slx`, `UdpClient.slx`, `UdpReceiveResult.slx`, `HttpClient.slx`, `HttpResponse.slx`.
 - [ ] Implement Catch2 test suite `tests/solixlib/test_net.cpp`.
 - [ ] Author `docs/spec/solixlib/net.md`.
+
 
 
 
