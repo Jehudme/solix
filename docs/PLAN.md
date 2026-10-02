@@ -49,7 +49,7 @@
 | **Phase 31** | Standard Library: `solix.collections.Linear` (`Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, `BitSet`) | `P2 Medium` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 32** | Standard Library: `solix.io.filesystem` (Unified Path & File System Operations) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
 | **Phase 32.1** | Emergency Refactor: Purge `Any.slx`, Modernize `solix.math.Math` with Generics (`abs<T>`, `min<T>`, `max<T>`, `clamp<T>`, `sign<T>`) & `Optional<T>` | `P0 Blocker` | `solixlib/core`, `solixlib/math`, `tests` | - [x] Complete |
-| **Phase 32.2** | Emergency Refactor: Generic Collections Sequences (`List<T>`, `LinkedList<T>`, `Collections.slx`, `Algorithms.slx`) with `for_each` & Lambdas | `P0 Blocker` | `solixlib/collections`, `tests` | - [ ] Planned |
+| **Phase 32.2** | Emergency Refactor: Generic Collections Sequences (`List<T>`, `LinkedList<T>`, `Collections.slx`, `Algorithms.slx`) with `for_each` & Lambdas | `P0 Blocker` | `solixlib/collections`, `tests` | - [x] Complete |
 | **Phase 32.3** | Emergency Refactor: Generic Linear Containers (`Stack<T>`, `Queue<T>`, `Deque<T>`, `PriorityQueue<T>`, `CircularBuffer<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [ ] Planned |
 | **Phase 32.4** | Emergency Refactor: Generic Associative Containers (`KeyValuePair<K, V>`, `HashMap<K, V>`, `TreeMap<K, V>`, `HashSet<T>`, `TreeSet<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [ ] Planned |
 | **Phase 32.5** | Emergency Refactor: Align Filesystem (`File.slx`, `Directory.slx`) with `List<String>`, Update `test_filesystem.cpp`, Specs & Regression | `P0 Blocker` | `solixlib/io`, `docs`, `tests` | - [ ] Planned |
@@ -1657,19 +1657,19 @@ Completely remove `Any.slx` from the standard library to eliminate untyped union
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `solixlib/project/src/solix/collections/List.slx`, `LinkedList.slx`, `LinkedListNode.slx`, `Collections.slx`, `Algorithms.slx`, `tests/solixlib/test_list.cpp`, `test_collections_core.cpp`, `docs/spec/solixlib/list.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Complete
 
 ### Objective
 Convert `List` and `LinkedList` to full generic classes `List<T>` and `LinkedList<T>`. Add first-class lambda iteration (`for_each(void(*)(T) action)`) and transformation methods (`filter(bool(*)(T) predicate)`). Modernize `Collections` and `Algorithms` with generic methods (`sort<T>`, `binary_search<T>`, `reverse<T>`, `swap<T>`).
 
 ### Action Items
-- [ ] Refactor `List.slx` to `List<T>` backed by `T[] _data`.
-- [ ] Implement `for_each(void(*)(T) action)` and `filter(bool(*)(T) predicate)` in `List<T>`.
-- [ ] Refactor `LinkedList.slx` & `LinkedListNode.slx` to `LinkedList<T>` with `LinkedListNode<T>`.
-- [ ] Implement `for_each(void(*)(T) action)` in `LinkedList<T>`.
-- [ ] Refactor `Collections.slx` and `Algorithms.slx` for generic `List<T>`.
-- [ ] Update `tests/solixlib/test_list.cpp` and `test_collections_core.cpp`.
-- [ ] Update `tests/solixlib/TESTS.md` and documentation in `docs/spec/solixlib/list.md`.
+- [x] Refactor `List.slx` to `List<T>` backed by `T[] _data`.
+- [x] Implement `for_each(void(*)(T) action)` and `filter(bool(*)(T) predicate)` in `List<T>`.
+- [x] Refactor `LinkedList.slx` & `LinkedListNode.slx` to `LinkedList<T>` with `LinkedListNode<T>`.
+- [x] Implement `for_each(void(*)(T) action)` in `LinkedList<T>`.
+- [x] Refactor `Collections.slx` and `Algorithms.slx` for generic `List<T>`.
+- [x] Update `tests/solixlib/test_list.cpp` and `test_collections_core.cpp`.
+- [x] Update `tests/solixlib/TESTS.md` and documentation in `docs/spec/solixlib/list.md`.
 
 ---
 
