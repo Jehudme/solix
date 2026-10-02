@@ -32,6 +32,17 @@ This directory contains the formal specification of the Solix programming langua
 | Document | Description |
 |----------|-------------|
 | [**solixlib Architecture & Scaffolding**](solixlib/scaffolding.md) | Sub-project layout, manifest schema, companion native shared library (`solixlib_native`), and package management lifecycle |
+| [**Exceptions**](solixlib/exceptions.md) | Standard exception hierarchy, root `Exception`, `RuntimeException`, and concrete error types |
+| [**Console**](solixlib/console.md) | Terminal I/O, styled output, ANSI coloring, cursor manipulation, and formatted printing |
+| [**String & StringBuilder**](solixlib/string.md) | Unicode strings, mutable builder, slicing, substring searches, and `IStringable` |
+| [**Primitives**](solixlib/primitives.md) | Boxed primitives, `Optional<T>`, `Any` variant wrapper, and core contracts |
+| [**Math & Random**](solixlib/math.md) | Mathematical functions, trigonometric operations, and PRNG algorithms |
+| [**Time & Chrono**](solixlib/time.md) | `Duration`, `Instant`, `DateTime`, and high-resolution `Stopwatch` |
+| [**Collections: Core**](solixlib/collections_core.md) | `IIterable`, `IIterator`, `ICollection`, `IList`, `IMap`, `ISet`, and `IDeque` contracts |
+| [**Collections: Lists**](solixlib/list.md) | `List` dynamic array and `LinkedList` doubly-linked list |
+| [**Collections: Maps**](solixlib/map.md) | `HashMap` hash table and `TreeMap` Red-Black tree associative dictionaries |
+| [**Collections: Sets**](solixlib/set.md) | `HashSet` hash table and `TreeSet` Red-Black tree distinct element sets |
+| [**Collections: Linear**](solixlib/linear_collections.md) | `Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, and `BitSet` |
 
 ---
 

@@ -1,0 +1,178 @@
+package solix.collections;
+
+import solix.core.IStringable;
+import solix.core.String;
+import solix.core.StringBuilder;
+import solix.exceptions.IllegalArgumentException;
+import solix.exceptions.IndexOutOfBoundsException;
+
+public class BitSet implements IStringable {
+    private bool[] _bits;
+    private int32 _capacity;
+
+    public BitSet() {
+        this._capacity = 64;
+        this._bits = new bool[64];
+        for (int32 i = 0; i < 64; i++) {
+            this._bits[i] = false;
+        }
+    }
+
+    public BitSet(int32 nbits) {
+        if (nbits < 0) {
+            throw new IllegalArgumentException("nbits", "BitSet size cannot be negative");
+        }
+        int32 cap = nbits < 1 ? 1 : nbits;
+        this._capacity = cap;
+        this._bits = new bool[cap];
+        for (int32 i = 0; i < cap; i++) {
+            this._bits[i] = false;
+        }
+    }
+
+    private void ensure_capacity(int32 required) {
+        if (required <= this._capacity) {
+            return;
+        }
+        int32 new_cap = this._capacity * 2;
+        if (new_cap < required) {
+            new_cap = required;
+        }
+        bool[] new_bits = new bool[new_cap];
+        for (int32 i = 0; i < this._capacity; i++) {
+            new_bits[i] = this._bits[i];
+        }
+        for (int32 i = this._capacity; i < new_cap; i++) {
+            new_bits[i] = false;
+        }
+        this._bits = new_bits;
+        this._capacity = new_cap;
+    }
+
+    public int32 size() {
+        return this._capacity;
+    }
+
+    public int32 length() {
+        for (int32 i = this._capacity - 1; i >= 0; i--) {
+            if (this._bits[i]) {
+                return i + 1;
+            }
+        }
+        return 0;
+    }
+
+    public bool is_empty() {
+        return this.cardinality() == 0;
+    }
+
+    public int32 cardinality() {
+        int32 count = 0;
+        for (int32 i = 0; i < this._capacity; i++) {
+            if (this._bits[i]) {
+                count += 1;
+            }
+        }
+        return count;
+    }
+
+    public bool get(int32 bit_index) {
+        if (bit_index < 0) {
+            throw new IndexOutOfBoundsException("Bit index cannot be negative");
+        }
+        if (bit_index >= this._capacity) {
+            return false;
+        }
+        return this._bits[bit_index];
+    }
+
+    public void set(int32 bit_index) {
+        if (bit_index < 0) {
+            throw new IndexOutOfBoundsException("Bit index cannot be negative");
+        }
+        this.ensure_capacity(bit_index + 1);
+        this._bits[bit_index] = true;
+    }
+
+    public void set_value(int32 bit_index, bool value) {
+        if (value) {
+            this.set(bit_index);
+        } else {
+            this.clear(bit_index);
+        }
+    }
+
+    public void clear(int32 bit_index) {
+        if (bit_index < 0) {
+            throw new IndexOutOfBoundsException("Bit index cannot be negative");
+        }
+        if (bit_index < this._capacity) {
+            this._bits[bit_index] = false;
+        }
+    }
+
+    public void clear_all() {
+        for (int32 i = 0; i < this._capacity; i++) {
+            this._bits[i] = false;
+        }
+    }
+
+    public void flip(int32 bit_index) {
+        if (bit_index < 0) {
+            throw new IndexOutOfBoundsException("Bit index cannot be negative");
+        }
+        this.set_value(bit_index, !this.get(bit_index));
+    }
+
+    public void and(BitSet other) {
+        if (other == null) {
+            throw new IllegalArgumentException("other", "BitSet cannot be null");
+        }
+        for (int32 i = 0; i < this._capacity; i++) {
+            this._bits[i] = this._bits[i] && other.get(i);
+        }
+    }
+
+    public void or(BitSet other) {
+        if (other == null) {
+            throw new IllegalArgumentException("other", "BitSet cannot be null");
+        }
+        if (other.size() > this._capacity) {
+            this.ensure_capacity(other.size());
+        }
+        for (int32 i = 0; i < other.size(); i++) {
+            if (other.get(i)) {
+                this._bits[i] = true;
+            }
+        }
+    }
+
+    public void xor(BitSet other) {
+        if (other == null) {
+            throw new IllegalArgumentException("other", "BitSet cannot be null");
+        }
+        int32 max_sz = other.size() > this._capacity ? other.size() : this._capacity;
+        this.ensure_capacity(max_sz);
+        for (int32 i = 0; i < max_sz; i++) {
+            bool a = this.get(i);
+            bool b = other.get(i);
+            this._bits[i] = (a && !b) || (!a && b);
+        }
+    }
+
+    public String to_string() {
+        StringBuilder sb = new StringBuilder("{");
+        bool first = true;
+        for (int32 i = 0; i < this._capacity; i++) {
+            if (this._bits[i]) {
+                if (!first) {
+                    sb.append(", ");
+                }
+                sb.append_int(i);
+                first = false;
+            }
+        }
+        sb.append("}");
+        return sb.to_string();
+    }
+}

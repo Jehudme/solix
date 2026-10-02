@@ -141,5 +141,17 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 10.5 [IMPLEMENTED]**: `TreeSet` node removal, duplicate rejections, and `union_with` (`tests/solixlib/test_set.cpp`).
 - [x] **Case 10.6 [IMPLEMENTED]**: Negative: `TreeSet` `first()` and `last()` on empty set throw `NoSuchElementException` (`tests/solixlib/test_set.cpp`).
 
+---
 
+## 11. Linear Collections (`solix.collections.Linear`: `Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, `BitSet`)
 
+- [x] **Case 11.1 [IMPLEMENTED]**: `Stack` LIFO operations: `push`, `peek`, `pop`, `size`, `is_empty`, `clear`, and array conversion (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.2 [IMPLEMENTED]**: `Queue` FIFO operations: `enqueue`, `peek`, `dequeue`, `size`, `is_empty`, and order preservation (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.3 [IMPLEMENTED]**: `Deque` double-ended operations: `push_front`/`push_back`, `peek_front`/`peek_back`, `pop_front`/`pop_back` (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.4 [IMPLEMENTED]**: `PriorityQueue` binary min-heap and max-heap prioritization, heap extraction order, and peek (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.5 [IMPLEMENTED]**: `CircularBuffer` ring buffer FIFO semantics, overwrite mode vs non-overwrite mode, and wrapping around capacity boundaries (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.6 [IMPLEMENTED]**: `BitSet` bit manipulation: `set`, `get`, `clear`, `flip`, bitwise `and`, `or`, `xor`, and `cardinality` (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.7 [IMPLEMENTED]**: Negative: `Stack.pop()` and `Stack.peek()` on empty stack throw `InvalidOperationException` (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.8 [IMPLEMENTED]**: Negative: `Queue.dequeue()` and `Queue.peek()` on empty queue throw `InvalidOperationException` (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.9 [IMPLEMENTED]**: Negative: `CircularBuffer.read()` on empty buffer and `enqueue()` on full non-overwrite buffer throw `InvalidOperationException` (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.10 [IMPLEMENTED]**: Negative: `BitSet` negative bit index throws `IndexOutOfBoundsException` and null operand throws `IllegalArgumentException` (`tests/solixlib/test_linear_collections.cpp`).

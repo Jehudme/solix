@@ -1,0 +1,66 @@
+package solix.collections;
+
+import solix.core.Any;
+import solix.core.String;
+import solix.core.StringBuilder;
+import solix.exceptions.InvalidOperationException;
+
+public class Stack implements ICollection {
+    private List _items;
+
+    public Stack() {
+        this._items = new List();
+    }
+
+    public Stack(int32 initial_capacity) {
+        this._items = new List(initial_capacity);
+    }
+
+    public void push(Any item) {
+        this._items.add(item);
+    }
+
+    public Any pop() {
+        if (this._items.is_empty()) {
+            throw new InvalidOperationException("Stack is empty");
+        }
+        int32 last_idx = this._items.size() - 1;
+        return this._items.remove_at(last_idx);
+    }
+
+    public Any peek() {
+        if (this._items.is_empty()) {
+            throw new InvalidOperationException("Stack is empty");
+        }
+        int32 last_idx = this._items.size() - 1;
+        return this._items.get(last_idx);
+    }
+
+    public int32 size() {
+        return this._items.size();
+    }
+
+    public bool is_empty() {
+        return this._items.is_empty();
+    }
+
+    public bool contains(Any item) {
+        return this._items.contains(item);
+    }
+
+    public void clear() {
+        this._items.clear();
+    }
+
+    public Any[] to_array() {
+        return this._items.to_array();
+    }
+
+    public IIterator iterator() {
+        return this._items.iterator();
+    }
+
+    public String to_string() {
+        return this._items.to_string();
+    }
+}

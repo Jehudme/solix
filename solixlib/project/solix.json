@@ -252,6 +252,30 @@
     {
       "type": "source",
       "path": "src/solix/collections/TreeSet.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/Stack.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/Queue.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/Deque.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/PriorityQueue.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/CircularBuffer.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/BitSet.slx"
     }
   ],
   "profiles": {
