@@ -134,12 +134,9 @@ inline CliResult run_cli(const std::vector<std::string>& args, const std::filesy
 
     CliResult result;
     try {
-        std::vector<std::string> full_args;
-        full_args.push_back("solix");
-        for (const auto& a : args) {
-            full_args.push_back(a);
-        }
-        app.parse(full_args);
+        std::vector<std::string> parse_args = args;
+        std::reverse(parse_args.begin(), parse_args.end());
+        app.parse(parse_args);
         result.exit_code = 0;
     } catch (const CLI::RuntimeError& e) {
         result.exit_code = e.get_exit_code();

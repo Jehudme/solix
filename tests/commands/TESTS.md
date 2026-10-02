@@ -28,57 +28,57 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 1.1: Single Source File Compilation to Default Output [NOT IMPLEMENTED]
+#### Case 1.1: Single Source File Compilation to Default Output [IMPLEMENTED]
 - **Command**: `solix compile main.slx`
 - **Setup**: `main.slx` with valid class and entry point.
 - **Expected**: Exits 0; creates `out.slxb` in working directory; file contains valid Solix bytecode.
 
-#### Case 1.2: Custom Output Bytecode Path [NOT IMPLEMENTED]
+#### Case 1.2: Custom Output Bytecode Path [IMPLEMENTED]
 - **Command**: `solix compile main.slx -o bin/app.slxb`
 - **Setup**: `main.slx` with valid code.
 - **Expected**: Exits 0; creates `bin/app.slxb` creating nested parent directories if needed.
 
-#### Case 1.3: Multiple Source Files Compilation [NOT IMPLEMENTED]
+#### Case 1.3: Multiple Source Files Compilation [IMPLEMENTED]
 - **Command**: `solix compile main.slx math.slx -o combined.slxb`
 - **Setup**: `math.slx` defining a helper class; `main.slx` referencing it.
 - **Expected**: Exits 0; produces valid `combined.slxb`.
 
-#### Case 1.4: Disassembly / Assembly Emission [NOT IMPLEMENTED]
+#### Case 1.4: Disassembly / Assembly Emission [IMPLEMENTED]
 - **Command**: `solix compile main.slx -o app.slxb -a app.s`
 - **Setup**: `main.slx` with valid statements.
 - **Expected**: Exits 0; creates both `app.slxb` and text assembly file `app.s` with non-empty content.
 
-#### Case 1.5: Custom Entry Point Specification [NOT IMPLEMENTED]
+#### Case 1.5: Custom Entry Point Specification [IMPLEMENTED]
 - **Command**: `solix compile main.slx -e custom_start -o app.slxb`
 - **Setup**: `main.slx` with a method named `custom_start`.
 - **Expected**: Exits 0; bytecode correctly specifies `custom_start` as entry method.
 
-#### Case 1.6: Advanced Logging and Sink Flags [NOT IMPLEMENTED]
+#### Case 1.6: Advanced Logging and Sink Flags [IMPLEMENTED]
 - **Command**: `solix compile main.slx --log-level DEBUG --sink-type STDOUT`
 - **Setup**: `main.slx` with valid statements.
 - **Expected**: Exits 0; stdout captures compiler log statements.
 
 ### Negative Test Scenarios
 
-#### Case 1.7: Missing Source File Argument [NOT IMPLEMENTED]
+#### Case 1.7: Missing Source File Argument [IMPLEMENTED]
 - **Command**: `solix compile`
 - **Expected**: Exits non-zero; error message indicating missing required `files` argument.
 
-#### Case 1.8: Non-Existent Source File [NOT IMPLEMENTED]
+#### Case 1.8: Non-Existent Source File [IMPLEMENTED]
 - **Command**: `solix compile missing_file.slx`
 - **Expected**: Exits non-zero; error message indicating file does not exist.
 
-#### Case 1.9: Source Code Syntax Error [NOT IMPLEMENTED]
+#### Case 1.9: Source Code Syntax Error [IMPLEMENTED]
 - **Command**: `solix compile broken.slx`
 - **Setup**: `broken.slx` containing invalid syntax (`class { broken`).
 - **Expected**: Exits non-zero; compilation error reported; output file not left behind.
 
-#### Case 1.10: Source Code Semantic Error [NOT IMPLEMENTED]
+#### Case 1.10: Source Code Semantic Error [IMPLEMENTED]
 - **Command**: `solix compile semantic_err.slx`
 - **Setup**: `semantic_err.slx` referencing undeclared identifier or type mismatch.
 - **Expected**: Exits non-zero; compiler diagnostic logged.
 
-#### Case 1.11: Invalid Log Level Option [NOT IMPLEMENTED]
+#### Case 1.11: Invalid Log Level Option [IMPLEMENTED]
 - **Command**: `solix compile main.slx --log-level INVALID_LEVEL`
 - **Expected**: Exits non-zero; CLI validator reports error.
 
