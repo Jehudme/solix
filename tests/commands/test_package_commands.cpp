@@ -112,13 +112,13 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
         CHECK(res2.err.find("--force") != std::string::npos);
     }
 
-    SECTION("Positive - Case 5.7 & 5.8: Install Solix Standard Library Project (stdlib) with Native Companion") {
-        std::filesystem::path stdlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "stdlib";
-        REQUIRE(std::filesystem::exists(stdlib_path / "solix.json"));
+    SECTION("Positive - Case 5.7 & 5.8: Install Solix Standard Library Project (solixlib) with Native Companion") {
+        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "project";
+        REQUIRE(std::filesystem::exists(solixlib_path / "solix.json"));
 
-        std::string expected_id = PackageManager::compute_project_id("solix.stdlib", "0.1.0");
+        std::string expected_id = PackageManager::compute_project_id("solixlib", "0.1.0");
 
-        auto res = run_cli({"install", stdlib_path.string()}, solix_home.path());
+        auto res = run_cli({"install", solixlib_path.string()}, solix_home.path());
         CHECK(res.exit_code == 0);
         CHECK(res.out.find("Successfully installed project") != std::string::npos);
         CHECK(res.out.find(expected_id) != std::string::npos);
@@ -128,22 +128,22 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
         CHECK(std::filesystem::exists(installed_dir / "solix.json"));
         CHECK(std::filesystem::exists(installed_dir / "lib"));
 
-        // Verify list shows solix.stdlib
+        // Verify list shows solixlib
         auto list_res = run_cli({"list"}, solix_home.path());
         CHECK(list_res.exit_code == 0);
-        CHECK(list_res.out.find("solix.stdlib") != std::string::npos);
+        CHECK(list_res.out.find("solixlib") != std::string::npos);
         CHECK(list_res.out.find("0.1.0") != std::string::npos);
     }
 
-    SECTION("Positive - Case 5.9: Consumer Project Builds and Runs with Installed Standard Library") {
-        std::filesystem::path stdlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "stdlib";
-        REQUIRE(std::filesystem::exists(stdlib_path / "solix.json"));
+    SECTION("Positive - Case 5.9: Consumer Project Builds and Runs with Installed Standard Library (solixlib)") {
+        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "project";
+        REQUIRE(std::filesystem::exists(solixlib_path / "solix.json"));
 
-        // Install stdlib
-        auto inst_res = run_cli({"install", stdlib_path.string()}, solix_home.path());
+        // Install solixlib
+        auto inst_res = run_cli({"install", solixlib_path.string()}, solix_home.path());
         REQUIRE(inst_res.exit_code == 0);
 
-        // Create consumer project referencing solix.stdlib
+        // Create consumer project referencing solixlib
         auto consumer_dir = proj_workspace.path() / "consumer_app";
         std::filesystem::create_directories(consumer_dir / "src");
 
@@ -152,7 +152,7 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
         manifest["version"] = "1.0.0";
         manifest["dependencies"] = nlohmann::json::array({
             {{"type", "source"}, {"path", "src/main.slx"}},
-            {{"type", "project"}, {"name", "solix.stdlib"}, {"version", "0.1.0"}}
+            {{"type", "project"}, {"name", "solixlib"}, {"version", "0.1.0"}}
         });
         manifest["profiles"]["debug"]["output_directory"] = "build/debug";
         manifest["profiles"]["debug"]["exe_filename"] = "out.slxbin";
@@ -174,14 +174,14 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
         CHECK(run_res.exit_code == 0);
     }
 
-    SECTION("Negative - Case 5.10: Reinstall Standard Library Without Force Flag Fails") {
-        std::filesystem::path stdlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "stdlib";
-        REQUIRE(std::filesystem::exists(stdlib_path / "solix.json"));
+    SECTION("Negative - Case 5.10: Reinstall solixlib Without Force Flag Fails") {
+        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "project";
+        REQUIRE(std::filesystem::exists(solixlib_path / "solix.json"));
 
-        auto res1 = run_cli({"install", stdlib_path.string()}, solix_home.path());
+        auto res1 = run_cli({"install", solixlib_path.string()}, solix_home.path());
         REQUIRE(res1.exit_code == 0);
 
-        auto res2 = run_cli({"install", stdlib_path.string()}, solix_home.path());
+        auto res2 = run_cli({"install", solixlib_path.string()}, solix_home.path());
         CHECK(res2.exit_code != 0);
         CHECK(res2.err.find("already installed") != std::string::npos);
         CHECK(res2.err.find("--force") != std::string::npos);
