@@ -85,8 +85,8 @@ add_library(solixlib_native SHARED
 )
 
 target_include_directories(solixlib_native PRIVATE
-    ${CMAKE_SOURCE_DIR}/language/include
-    ${CMAKE_SOURCE_DIR}/language/src
+    ${CMAKE_SOURCE_DIR}/core/include
+    ${CMAKE_SOURCE_DIR}/core/src
 )
 
 set(SOLIXLIB_OUTPUT_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../project/lib")

@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-The `Binder` stage (`language/src/processes/binder.cpp`) is the core semantic engine of the Solix compiler. Because Solix supports out-of-order type references, cyclic type relationships, class inheritance, method overloading, and template monomorphization, binding cannot occur in a single top-to-bottom AST traversal. Instead, the `Binder` executes **four sequential passes**.
+The `Binder` stage (`core/src/processes/binder.cpp`) is the core semantic engine of the Solix compiler. Because Solix supports out-of-order type references, cyclic type relationships, class inheritance, method overloading, and template monomorphization, binding cannot occur in a single top-to-bottom AST traversal. Instead, the `Binder` executes **four sequential passes**.
 
 ---
 

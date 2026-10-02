@@ -833,6 +833,34 @@ Establish the standard library (`solixlib`) architecture using strict sub-projec
 - `solix install solixlib/project` successfully copies the project and native library into `$SOLIX_HOME`.
 - All 49 existing test suites and new package installation tests pass 100%.
 
+---
+
+## Phase 20.1: Architecture Refactor — Rename Language & Launcher to Core & CLI
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `core/` (formerly `language/`), `cli/` (formerly `launcher/`), `CMakeLists.txt`, `tests/CMakeLists.txt`, `solixlib/native/CMakeLists.txt`, `.github/workflows/release.yml`, documentation
+- **Status**: - [x] Completed & Merged
+
+### Objective
+Cleanly decouple and modernize repository architecture by renaming the compiler and runtime component `language/` to `core/` (target `solix_core`), and the command-line driver and packaging component `launcher/` to `cli/` (target `solix_cli_core`, executable `solix`, alias `solix_cli`). Preserve full backward compatibility through CMake aliases (`solix_language` -> `solix_core`, `solix_launcher_core` -> `solix_cli_core`, custom target `solix_launcher` -> `solix`).
+
+### Action Items
+- [x] **1. Rename Directories**:
+  - Move `language/` to `core/`.
+  - Move `launcher/` to `cli/`.
+- [x] **2. Update CMake Targets & Includes**:
+  - `core/CMakeLists.txt`: Define `solix_core` with backward-compatible alias `solix_language`.
+  - `cli/CMakeLists.txt`: Define `solix_cli_core` with alias `solix_launcher_core` and `solix_cli` target.
+  - Root `CMakeLists.txt`: Update `add_subdirectory` to `core` and `cli`.
+  - `solixlib/native/CMakeLists.txt`: Update include paths to `core/include` and `core/src`.
+  - `tests/CMakeLists.txt`: Link `solix_core` and `solix_cli_core`, update include directories.
+- [x] **3. Update GitHub Workflows & Documentation**:
+  - Update `.github/workflows/release.yml` build target to `solix` and artifact path to `build/cli/solix`.
+  - Update `README.md`, `docs/guide/`, and `docs/spec/` to reflect `core/` and `cli/`.
+- [x] **4. Full Regression Verification**:
+  - Run full suite (`ctest --test-dir build --output-on-failure`): 100% tests pass (49/49).
+
+
 
 
 

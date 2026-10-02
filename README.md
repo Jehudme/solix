@@ -4,7 +4,7 @@
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](./docs/PLAN.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license--contributing)
-[![C++20](https://img.shields.io/badge/runtime-C%2B%2B20-orange)](./language/)
+[![C++20](https://img.shields.io/badge/runtime-C%2B%2B20-orange)](./core/)
 [![Tests](https://img.shields.io/badge/tests-49%20suites-blueviolet)](./tests/)
 
 ---
@@ -401,8 +401,9 @@ class Main {
 
 ```
 solix/
-├── language/          # Core compiler and runtime
-├── launcher/          # CLI executable
+├── core/              # Core compiler and runtime
+├── cli/               # CLI executable and package manager
+├── solixlib/          # Standard library project & native companion
 ├── tests/             # Catch2 test suite (49 suites)
 ├── docs/
 │   ├── spec/          # Formal language & VM specification
@@ -414,8 +415,9 @@ solix/
 
 | Directory | Contents |
 |---|---|
-| [`language/`](./language/) | Core compiler and runtime: lexer, recursive descent parser, multi-pass binder, assembler, and stack/register hybrid bytecode VM — all implemented in C++20. |
-| [`launcher/`](./launcher/) | The `solix` CLI binary (`compile`, `run`, `inspect` subcommands). |
+| [`core/`](./core/) | Core compiler and runtime: lexer, recursive descent parser, multi-pass binder, assembler, and stack/register hybrid bytecode VM — all implemented in C++20. |
+| [`cli/`](./cli/) | The `solix` CLI binary (`compile`, `run`, `build`, `new`, `install`, `uninstall`, `list`, `details`). |
+| [`solixlib/`](./solixlib/) | Official Solix standard library project and C/C++ native companion. |
 | [`tests/`](./tests/) | Catch2 test suite with 49 self-contained test suites covering statement parsing, expression evaluation, type binding, assembler output, VM execution correctness, and native shared library plugins. |
 | [`docs/spec/`](./docs/spec/) | Formal language specification and VM specification documents detailing grammar, type rules, bytecode encoding, native interop, and ARC semantics. |
 | [`docs/wiki/`](./docs/wiki/) | Developer reference: complete keyword glossary, built-in type reference, and standard library API documentation. |

@@ -124,7 +124,7 @@ project(my_solix_plugin CXX)
 set(CMAKE_CXX_STANDARD 17)
 
 add_library(math_plugin SHARED math_plugin.cpp)
-target_include_directories(math_plugin PRIVATE /path/to/solix/language/include)
+target_include_directories(math_plugin PRIVATE /path/to/solix/core/include)
 ```
 
 ---

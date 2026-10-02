@@ -68,14 +68,14 @@ jobs:
           -DCMAKE_CXX_STANDARD=20
 
       - name: Build
-        run: cmake --build build --config Release --target solix_launcher --parallel
+        run: cmake --build build --config Release --target solix --parallel
 
       - name: Package (Linux & macOS)
         if: runner.os != 'Windows'
         run: |
-          strip build/launcher/solix_launcher || true
+          strip build/cli/solix || true
           mkdir -p dist
-          cp build/launcher/solix_launcher dist/solix
+          cp build/cli/solix dist/solix
           [ -f LICENSE ] && cp LICENSE dist/
           [ -f README.md ] && cp README.md dist/
           tar -czvf ${{ matrix.archive_name }} -C dist .
@@ -85,7 +85,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist
-          Copy-Item build\launcher\solix_launcher.exe -Destination dist\solix.exe
+          Copy-Item build\cli\solix.exe -Destination dist\solix.exe
           if (Test-Path LICENSE) { Copy-Item LICENSE -Destination dist\ }
           if (Test-Path README.md) { Copy-Item README.md -Destination dist\ }
           Compress-Archive -Path dist\* -DestinationPath ${{ matrix.archive_name }}
