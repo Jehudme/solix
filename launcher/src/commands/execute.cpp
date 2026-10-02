@@ -1,4 +1,5 @@
 #include "execute.hpp"
+#include "../cli_utils.hpp"
 #include "solix/compilation.hpp"
 #include "solix/runtime.hpp"
 #include <fstream>
@@ -8,7 +9,6 @@
 namespace solix::cli {
 
 void setup_execute_command(CLI::App &app) {
-  // TODO: It must only run the .slxb file
   auto *execute_cmd = app.add_subcommand("run", "run compiled bytecode");
 
   auto opts = std::make_shared<RuntimeOptions>();
@@ -32,17 +32,26 @@ void setup_execute_command(CLI::App &app) {
 
     if (!std::filesystem::exists(path)) {
       std::cerr << "Error: File does not exist: " << path << std::endl;
-      exit(1);
+      cli_exit(1);
+    }
+
+    if (std::filesystem::file_size(path) == 0) {
+      std::cerr << "Error: Bytecode file is empty: " << path << std::endl;
+      cli_exit(1);
     }
 
     opts->bytecode_source = path;
 
+    int32_t exit_code = 0;
     try {
-      int32_t exit_code = run(*opts);
-      std::exit(exit_code);
+      exit_code = run(*opts);
     } catch (const std::exception &e) {
       std::cerr << "Runtime error: " << e.what() << std::endl;
-      exit(1);
+      cli_exit(1);
+    }
+
+    if (exit_code != 0) {
+      cli_exit(exit_code);
     }
   });
 }

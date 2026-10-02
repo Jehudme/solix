@@ -1,4 +1,5 @@
 #include "new.hpp"
+#include "../cli_utils.hpp"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -44,12 +45,12 @@ void setup_new_command(CLI::App &app) {
             if (!std::filesystem::is_directory(target_dir)) {
                 std::cerr << "Error: Destination path exists and is not a directory: " 
                           << target_dir.string() << std::endl;
-                std::exit(1);
+                cli_exit(1);
             }
             if (!std::filesystem::is_empty(target_dir) && !(*force_flag)) {
                 std::cerr << "Error: Destination directory '" << target_dir.string() 
                           << "' already exists and is not empty. Use --force to proceed anyway." << std::endl;
-                std::exit(1);
+                cli_exit(1);
             }
         }
 
@@ -67,7 +68,7 @@ void setup_new_command(CLI::App &app) {
             std::filesystem::path template_path(*template_str);
             if (!std::filesystem::exists(template_path) || !std::filesystem::is_directory(template_path)) {
                 std::cerr << "Error: Template directory does not exist: " << template_path.string() << std::endl;
-                std::exit(1);
+                cli_exit(1);
             }
 
             try {
@@ -104,7 +105,7 @@ void setup_new_command(CLI::App &app) {
                 }
             } catch (const std::exception& e) {
                 std::cerr << "Error: Failed to copy template: " << e.what() << std::endl;
-                std::exit(1);
+                cli_exit(1);
             }
         } else {
             // 3. Default In-Memory Scaffolding (100% self-contained)
@@ -116,7 +117,7 @@ void setup_new_command(CLI::App &app) {
                 std::ofstream slx_out(main_file);
                 if (!slx_out) {
                     std::cerr << "Error: Could not create file " << main_file.string() << std::endl;
-                    std::exit(1);
+                    cli_exit(1);
                 }
                 slx_out << "static int32 " << *entry_str << "() {\n";
                 slx_out << "    return 0;\n";
@@ -178,14 +179,14 @@ void setup_new_command(CLI::App &app) {
                 std::ofstream manifest_out(manifest_path);
                 if (!manifest_out) {
                     std::cerr << "Error: Could not create file " << manifest_path.string() << std::endl;
-                    std::exit(1);
+                    cli_exit(1);
                 }
                 manifest_out << manifest.dump(2) << std::endl;
                 manifest_out.close();
 
             } catch (const std::exception& e) {
                 std::cerr << "Error: Failed to create project: " << e.what() << std::endl;
-                std::exit(1);
+                cli_exit(1);
             }
         }
 

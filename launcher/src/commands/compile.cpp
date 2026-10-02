@@ -1,4 +1,5 @@
 #include "compile.hpp"
+#include "../cli_utils.hpp"
 #include "solix/path_utils.hpp"
 #include "solix/compilation.hpp"
 #include <iostream>
@@ -101,12 +102,12 @@ namespace solix::cli {
                 std::filesystem::path file_path = std::filesystem::path(file_str).lexically_normal();
                 if (!std::filesystem::exists(file_path)) {
                     std::cerr << "Error: File does not exist: " << file_path << std::endl;
-                    exit(1);
+                    cli_exit(1);
                 }
                 std::ifstream t(file_path);
                 if (!t.is_open()) {
                     std::cerr << "Error: Could not open file " << file_path << std::endl;
-                    exit(1);
+                    cli_exit(1);
                 }
                 std::stringstream buffer;
                 buffer << t.rdbuf();
@@ -115,7 +116,7 @@ namespace solix::cli {
             
             int exit_code = execute_compilation_and_write(*opts, out_path);
             if (exit_code != 0) {
-                std::exit(exit_code);
+                cli_exit(exit_code);
             }
         });
     }
