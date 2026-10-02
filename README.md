@@ -5,7 +5,7 @@
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](./docs/PLAN.md)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license--contributing)
 [![C++20](https://img.shields.io/badge/runtime-C%2B%2B20-orange)](./language/)
-[![Tests](https://img.shields.io/badge/tests-42%20suites-blueviolet)](./tests/)
+[![Tests](https://img.shields.io/badge/tests-48%20suites-blueviolet)](./tests/)
 
 ---
 
@@ -403,7 +403,7 @@ class Main {
 solix/
 ├── language/          # Core compiler and runtime
 ├── launcher/          # CLI executable
-├── tests/             # Catch2 test suite (42 suites)
+├── tests/             # Catch2 test suite (48 suites)
 ├── docs/
 │   ├── spec/          # Formal language & VM specification
 │   ├── wiki/          # Developer reference
@@ -416,7 +416,7 @@ solix/
 |---|---|
 | [`language/`](./language/) | Core compiler and runtime: lexer, recursive descent parser, multi-pass binder, assembler, and stack/register hybrid bytecode VM — all implemented in C++20. |
 | [`launcher/`](./launcher/) | The `solix` CLI binary (`compile`, `run`, `inspect` subcommands). |
-| [`tests/`](./tests/) | Catch2 test suite with 42 self-contained test suites covering statement parsing, expression evaluation, type binding, assembler output, and VM execution correctness. |
+| [`tests/`](./tests/) | Catch2 test suite with 48 self-contained test suites covering statement parsing, expression evaluation, type binding, assembler output, and VM execution correctness. |
 | [`docs/spec/`](./docs/spec/) | Formal language specification and VM specification documents detailing grammar, type rules, bytecode encoding, and ARC semantics. |
 | [`docs/wiki/`](./docs/wiki/) | Developer reference: complete keyword glossary, built-in type reference, and standard library API documentation. |
 | [`docs/guide/`](./docs/guide/) | Progressive developer guides, from getting started through advanced topics like generics, exception handling, and ARC patterns. |
@@ -431,7 +431,7 @@ Solix is open-source software released under the **MIT License**. See [`LICENSE`
 Contributions are warmly welcome — whether that is bug reports, documentation improvements, new standard library modules, or compiler features. To contribute:
 
 1. Fork the repository and create a feature branch.
-2. Ensure all 42 test suites pass (`ctest --test-dir build` or `./build/tests/solix_tests`).
+2. Ensure all 48 test suites pass (`ctest --test-dir build` or `./build/tests/solix_tests`).
 3. Add tests for any new language behaviour or compiler stage changes.
 4. Open a pull request with a clear description of the change and its motivation.
 

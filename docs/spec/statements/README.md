@@ -22,6 +22,7 @@ Each document focuses strictly on the architecture and mechanics of the construc
 - [`constructor_declaration.md`](declarations/constructor_declaration.md) — Initializer lists, `super()` chaining, and heap allocation
 - [`method_declaration.md`](declarations/method_declaration.md) — Static, virtual, and abstract member functions
 - [`operator_declaration.md`](declarations/operator_declaration.md) — Operator overloading for `+`, `-`, `*`, `/`, `=`
+- [`generic_declaration.md`](declarations/generic_declaration.md) — Template metaprogramming, classes, methods, and monomorphization
 
 ### Part III: Control Flow & Execution Statements (`control_flow/`)
 - [`block_statement.md`](control_flow/block_statement.md) — Lexical scope boundaries & ARC scope-exit cleanup
@@ -53,3 +54,5 @@ Each document focuses strictly on the architecture and mechanics of the construc
 - [`method_call_expression.md`](expressions/method_call_expression.md) — Static & dynamic virtual VTable invocations
 - [`identifier_expression.md`](expressions/identifier_expression.md) — Scope resolution (stack slot, property, global)
 - [`literal_expression.md`](expressions/literal_expression.md) — Primitive immediates, strings, chars, and null
+- [`function_pointer_expression.md`](expressions/function_pointer_expression.md) — First-class function pointers `ret(*)(params)` & static method references
+- [`lambda_expression.md`](expressions/lambda_expression.md) — Anonymous functions `=>`, closures, and ARC environment captures
