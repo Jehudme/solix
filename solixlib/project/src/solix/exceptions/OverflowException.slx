@@ -1,0 +1,9 @@
+package solix.exceptions;
+
+public class OverflowException extends ArithmeticException {
+    public OverflowException() : super("") {}
+
+    public OverflowException(char[] message) : super(message) {}
+
+    public OverflowException(char[] message, Exception cause) : super(message, cause) {}
+}

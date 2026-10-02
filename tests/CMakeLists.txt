@@ -22,7 +22,7 @@ target_include_directories(solix_test_plugin_b PRIVATE
     ${CMAKE_SOURCE_DIR}/core/src
 )
 
-file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "statements/*.cpp" "commands/*.cpp")
+file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "statements/*.cpp" "commands/*.cpp" "solixlib/*.cpp")
 file(GLOB TEST_SOURCES_RUNTIME CONFIGURE_DEPENDS "runtime/*.cpp")
 list(APPEND TEST_SOURCES ${TEST_SOURCES_RUNTIME})
 

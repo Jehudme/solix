@@ -1,0 +1,9 @@
+package solix.exceptions;
+
+public class KeyNotFoundException extends RuntimeException {
+    public KeyNotFoundException() : super("") {}
+
+    public KeyNotFoundException(char[] message) : super(message) {}
+
+    public KeyNotFoundException(char[] message, Exception cause) : super(message, cause) {}
+}

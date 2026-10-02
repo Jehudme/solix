@@ -1,0 +1,9 @@
+package solix.exceptions;
+
+public class IOException extends Exception {
+    public IOException() : super("") {}
+
+    public IOException(char[] message) : super(message) {}
+
+    public IOException(char[] message, Exception cause) : super(message, cause) {}
+}

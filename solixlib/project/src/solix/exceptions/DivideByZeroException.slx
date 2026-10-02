@@ -1,0 +1,9 @@
+package solix.exceptions;
+
+public class DivideByZeroException extends ArithmeticException {
+    public DivideByZeroException() : super("") {}
+
+    public DivideByZeroException(char[] message) : super(message) {}
+
+    public DivideByZeroException(char[] message, Exception cause) : super(message, cause) {}
+}

@@ -1,0 +1,21 @@
+package solix.exceptions;
+
+public class ArgumentNullException extends IllegalArgumentException {
+    public char[] param_name;
+
+    public ArgumentNullException() : super("") {
+        this.param_name = "";
+    }
+
+    public ArgumentNullException(char[] param_name) : super(param_name) {
+        this.param_name = param_name;
+    }
+
+    public ArgumentNullException(char[] param_name, char[] message) : super(message) {
+        this.param_name = param_name;
+    }
+
+    public char[] get_param_name() {
+        return this.param_name;
+    }
+}

@@ -14,14 +14,19 @@ Each test scenario is assigned a permanent identifier and status tag:
 
 ## 1. Exceptions (`solix.exceptions`)
 
-- [ ] **Case 1.1 [NOT IMPLEMENTED]**: Base `Exception` instantiation with message and `to_string()` retrieval.
-- [ ] **Case 1.2 [NOT IMPLEMENTED]**: Catching `IllegalArgumentException` via base `RuntimeException` and `Exception` polymorphism.
-- [ ] **Case 1.3 [NOT IMPLEMENTED]**: Throwing and catching `IndexOutOfBoundsException` with upper/lower bound details.
-- [ ] **Case 1.4 [NOT IMPLEMENTED]**: Throwing and catching `DivideByZeroException` during numeric zero division.
-- [ ] **Case 1.5 [NOT IMPLEMENTED]**: Throwing and catching `NullReferenceException` on dereferencing null objects.
-- [ ] **Case 1.6 [NOT IMPLEMENTED]**: Throwing and catching `InvalidOperationException` on invalid state transitions.
-- [ ] **Case 1.7 [NOT IMPLEMENTED]**: Throwing and catching `FormatException` on failed type parsing.
-- [ ] **Case 1.8 [NOT IMPLEMENTED]**: Throwing and catching `FileNotFoundException` as a specialization of `IOException`.
+- [x] **Case 1.1 [IMPLEMENTED]**: Base `Exception` instantiation with message and `to_string()` retrieval (`tests/solixlib/test_exceptions.cpp`).
+- [x] **Case 1.2 [IMPLEMENTED]**: Catching `IllegalArgumentException` via base `RuntimeException` and `Exception` polymorphism (`tests/solixlib/test_exceptions.cpp`).
+- [x] **Case 1.3 [IMPLEMENTED]**: Throwing and catching `IndexOutOfBoundsException` with upper/lower bound details (`tests/solixlib/test_exceptions.cpp`).
+- [x] **Case 1.4 [IMPLEMENTED]**: Throwing and catching `DivideByZeroException` during numeric zero division caught as `ArithmeticException` (`tests/solixlib/test_exceptions.cpp`).
+- [x] **Case 1.5 [IMPLEMENTED]**: Throwing and catching `NullReferenceException` on dereferencing null objects / explicit throw (`tests/solixlib/test_exceptions.cpp`).
+- [x] **Case 1.6 [IMPLEMENTED]**: Throwing and catching `InvalidOperationException` on invalid state transitions (`tests/solixlib/test_exceptions.cpp`).
+- [x] **Case 1.7 [IMPLEMENTED]**: Throwing and catching `FormatException` on failed type parsing (`tests/solixlib/test_exceptions.cpp`).
+- [x] **Case 1.8 [IMPLEMENTED]**: Throwing and catching `FileNotFoundException` as a specialization of `IOException` (`tests/solixlib/test_exceptions.cpp`).
+- [x] **Case 1.9 [IMPLEMENTED]**: Exception chaining: verify `get_cause()` returns inner exception (`tests/solixlib/test_exceptions.cpp`).
+- [x] **Case 1.10 [IMPLEMENTED]**: Parameter metadata verification for `ArgumentNullException` and `ArgumentOutOfRangeException` (`tests/solixlib/test_exceptions.cpp`).
+- [x] **Case 1.11 [IMPLEMENTED]**: `SocketException` error code storage and retrieval (`tests/solixlib/test_exceptions.cpp`).
+- [x] **Case 1.12 [IMPLEMENTED]**: `AssertionError` instantiation and catching via base `Exception` (`tests/solixlib/test_exceptions.cpp`).
+- [x] **Case 1.13 [IMPLEMENTED]**: Nested `try-catch-finally` ensuring `finally` blocks execute during exception unwinding (`tests/solixlib/test_exceptions.cpp`).
 
 ---
 
