@@ -106,3 +106,16 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 7.5 [IMPLEMENTED]**: `IDeque` contract double-ended queue operations (`add_first`, `add_last`, `remove_first`, `remove_last`, `peek_first`, `peek_last`) and string representation (`tests/solixlib/test_collections_core.cpp`).
 - [x] **Case 7.6 [IMPLEMENTED]**: Negative: Calling `next()` on exhausted iterator throws `NoSuchElementException` (`tests/solixlib/test_collections_core.cpp`).
 
+---
+
+## 8. Lists & Linear Sequences (`solix.collections.List`, `LinkedList`, `Algorithms`)
+
+- [x] **Case 8.1 [IMPLEMENTED]**: `List` dynamic capacity expansion, indexing (`get`, `set`), and sequential iterator traversal (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.2 [IMPLEMENTED]**: `List` mutation operations (`insert`, `remove_at`, `remove`, `contains`, `index_of`), slicing (`sub_list`), in-place reversal, and string conversion (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.3 [IMPLEMENTED]**: `LinkedList` double-ended queue operations (`add_first`, `add_last`, `remove_first`, `remove_last`, `peek_first`, `peek_last`) and formatted string rendering (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.4 [IMPLEMENTED]**: `LinkedList` index-based access, mutation (`get`, `set`, `insert`, `remove_at`, `remove`) with bidirectional node traversal (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.5 [IMPLEMENTED]**: `Algorithms` collection utilities (`swap`, `reverse`, `fill`, `sort_int32`, `binary_search_int32`) (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.6 [IMPLEMENTED]**: Negative: `List` invalid negative capacity and out-of-bounds index access throw `IllegalArgumentException` and `IndexOutOfBoundsException` (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.7 [IMPLEMENTED]**: Negative: `LinkedList` empty deque operations throw `NoSuchElementException` and out-of-bounds indexing throws `IndexOutOfBoundsException` (`tests/solixlib/test_list.cpp`).
+
+
