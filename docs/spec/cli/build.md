@@ -29,10 +29,11 @@ When `solix build` is executed:
 flowchart TD
     A["Locate solix.json"] --> B["Parse & Validate Profiles"]
     B --> C["Extract Profile Settings<br>(output_directory, exe_filename, logs)"]
-    C --> D["Resolve Root Dependencies<br>(type: source, etc.)"]
-    D --> E["Resolve Profile Additional Dependencies"]
-    E --> F["Invoke Compiler Pipeline"]
-    F --> G["Write Output Artifact<br>(e.g. build/debug/out.slxbin)"]
+    C --> D["Transitive Dependency Walking<br>(type: source, type: project)"]
+    D --> E["SemVer Conflict Resolution & Cycle Handling"]
+    E --> F["Pre-Compilation Source Ingestion"]
+    F --> G["Invoke Compiler Pipeline"]
+    G --> H["Write Output Artifact<br>(e.g. build/debug/out.slxbin)"]
 ```
 
 1. **Manifest Discovery**:
@@ -42,14 +43,19 @@ flowchart TD
    - Ensures `profiles` exists and contains the requested profile object.
    - Extracts output paths (`output_directory`, `exe_filename`, `asm_filename`).
    - Relative paths are resolved against the project root.
-3. **Dependency Resolution**:
-   - Processes project-level `dependencies` array.
-   - Processes profile-level `compilation.additional_dependencies` array.
-   - `DependencyManager` resolves local source files into in-memory compilation buffers.
+3. **Pre-Compilation Dependency Resolution**:
+   - **Transitive Project Traversal**: Recursively scans `type: "project"` dependencies declared in `dependencies` and active profile's `compilation.additional_dependencies`. Projects are resolved either via explicit `path` or discovered in the local `$SOLIX_HOME` registry.
+   - **Circular Dependency Handling**: Cycles (e.g. A depends on B and B depends on A) are recognized and de-duplicated gracefully.
+   - **Semantic Version Conflict Resolution**:
+     | Version Discrepancy | Behavior | Output |
+     |---|---|---|
+     | Different Major | Fatal Error; build aborts before compilation | `Error: Incompatible major versions for dependency '...'` |
+     | Same Major, Different Minor | Warning; automatically selects highest minor version | `Warning: Project '...' has multiple minor versions (...)` |
+     | Same Major and Minor, Different Patch | Clean resolution; silently selects highest patch version | None |
+   - **Source Ingestion**: All unique source files across the root and all selected dependent projects are validated and read into in-memory buffers.
 4. **Compilation & Artifact Emission**:
    - Executes compiler pipeline with configured entry point and log levels.
-   - Automatically creates destination directories.
-   - Writes final binary artifact.
+   - Emits bytecode binary to the configured profile output directory.
 
 ---
 
@@ -58,7 +64,7 @@ flowchart TD
 | Code | Condition |
 |---|---|
 | `0` | Project built successfully; artifacts written to profile directory. |
-| `1` | Missing manifest file, JSON parse error, invalid profile, unresolved dependencies, or compiler error. |
+| `1` | Missing manifest file, JSON parse error, invalid profile, unresolved dependencies, incompatible major SemVer collision, missing dependency sources, or compiler error. |
 
 ---
 
