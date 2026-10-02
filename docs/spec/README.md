@@ -43,6 +43,7 @@ This directory contains the formal specification of the Solix programming langua
 | [**Collections: Maps**](solixlib/map.md) | `HashMap` hash table and `TreeMap` Red-Black tree associative dictionaries |
 | [**Collections: Sets**](solixlib/set.md) | `HashSet` hash table and `TreeSet` Red-Black tree distinct element sets |
 | [**Collections: Linear**](solixlib/linear_collections.md) | `Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, and `BitSet` |
+| [**Filesystem**](solixlib/filesystem.md) | `Path`, `File`, and `Directory` cross-platform I/O and directory management |
 
 ---
 

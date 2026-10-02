@@ -1,0 +1,100 @@
+package solix.io.filesystem;
+
+import solix.core.Any;
+import solix.core.String;
+import solix.collections.List;
+import solix.exceptions.DirectoryNotFoundException;
+import solix.exceptions.IOException;
+
+public class Directory {
+    public static bool exists(String path) {
+        if (path == null || path.data == null) return false;
+        return native_exists(path.data);
+    }
+
+    public static void create_directory(String path) {
+        if (path == null || path.data == null) {
+            throw new IOException("Path is null");
+        }
+        int32 res = native_create(path.data);
+        if (res != 0) {
+            throw new IOException("Failed to create directory");
+        }
+    }
+
+    public static void delete(String path) {
+        delete_with_recursive(path, false);
+    }
+
+    public static void delete_with_recursive(String path, bool recursive) {
+        if (path == null || path.data == null) {
+            throw new DirectoryNotFoundException("", "Path is null");
+        }
+        int32 res = native_delete(path.data, recursive);
+        if (res == 1) {
+            throw new DirectoryNotFoundException(path.data, "Directory not found");
+        }
+        if (res == 2) {
+            throw new IOException("Failed to delete directory");
+        }
+    }
+
+    public static List list_files(String path) {
+        return list_entries_internal(path, 1);
+    }
+
+    public static List list_directories(String path) {
+        return list_entries_internal(path, 2);
+    }
+
+    private static List list_entries_internal(String path, int32 mode) {
+        if (path == null || path.data == null) {
+            throw new DirectoryNotFoundException("", "Path is null");
+        }
+        int32[] err_box = new int32[1];
+        err_box[0] = 0;
+        char[] raw = native_list_entries(path.data, mode, err_box);
+        if (err_box[0] == 1) {
+            throw new DirectoryNotFoundException(path.data, "Directory not found");
+        }
+        if (err_box[0] == 2) {
+            throw new IOException("Failed to list directory");
+        }
+        List entries = new List();
+        if (raw == null || raw.length == 0) {
+            return entries;
+        }
+        String combined = new String(raw);
+        String nl = new String("\n");
+        String[] parts = combined.split(nl);
+        for (int32 i = 0; i < parts.length; i = i + 1) {
+            String p = parts[i];
+            if (p.length() > 0) {
+                Any item = new Any(p);
+                entries.add(item);
+            }
+        }
+        return entries;
+    }
+
+    public static String get_current_directory() {
+        return new String(native_get_current());
+    }
+
+    public static void set_current_directory(String path) {
+        if (path == null || path.data == null) {
+            throw new IOException("Path is null");
+        }
+        int32 res = native_set_current(path.data);
+        if (res != 0) {
+            throw new IOException("Failed to set current directory");
+        }
+    }
+
+    private static native bool native_exists(char[] path);
+    private static native int32 native_create(char[] path);
+    private static native int32 native_delete(char[] path, bool recursive);
+    private static native char[] native_list_entries(char[] path, int32 mode, int32[] err_box);
+    private static native char[] native_get_current();
+    private static native int32 native_set_current(char[] path);
+}

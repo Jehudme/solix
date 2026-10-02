@@ -1,0 +1,147 @@
+package solix.io.filesystem;
+
+import solix.core.Any;
+import solix.core.String;
+import solix.collections.List;
+import solix.exceptions.FileNotFoundException;
+import solix.exceptions.IOException;
+import solix.time.DateTime;
+
+public class File {
+    public static bool exists(String path) {
+        if (path == null || path.data == null) return false;
+        return native_exists(path.data);
+    }
+
+    public static String read_all_text(String path) {
+        if (path == null || path.data == null) {
+            throw new FileNotFoundException("", "File path is null");
+        }
+        int32[] err_box = new int32[1];
+        err_box[0] = 0;
+        char[] content = native_read_all_text(path.data, err_box);
+        if (err_box[0] == 1) {
+            throw new FileNotFoundException(path.data, "File not found");
+        }
+        if (err_box[0] == 2) {
+            throw new IOException("Failed to read file");
+        }
+        return new String(content);
+    }
+
+    public static void write_all_text(String path, String contents) {
+        if (path == null || path.data == null) {
+            throw new IOException("File path is null");
+        }
+        char[] text = (contents != null && contents.data != null) ? contents.data : "";
+        int32 res = native_write_all_text(path.data, text);
+        if (res != 0) {
+            throw new IOException("Failed to write to file");
+        }
+    }
+
+    public static void append_all_text(String path, String contents) {
+        if (path == null || path.data == null) {
+            throw new IOException("File path is null");
+        }
+        char[] text = (contents != null && contents.data != null) ? contents.data : "";
+        int32 res = native_append_all_text(path.data, text);
+        if (res != 0) {
+            throw new IOException("Failed to append to file");
+        }
+    }
+
+    public static List read_all_lines(String path) {
+        String full = read_all_text(path);
+        String nl = new String("\n");
+        String[] parts = full.split(nl);
+        List lines = new List(parts.length);
+        for (int32 i = 0; i < parts.length; i = i + 1) {
+            String p = parts[i];
+            Any item = new Any(p);
+            lines.add(item);
+        }
+        return lines;
+    }
+
+    public static void delete(String path) {
+        if (path == null || path.data == null) return;
+        int32 res = native_delete(path.data);
+        if (res == 1) {
+            throw new FileNotFoundException(path.data, "Cannot delete non-existent file");
+        }
+        if (res == 2) {
+            throw new IOException("Failed to delete file");
+        }
+    }
+
+    public static void copy(String src, String dest) {
+        copy_with_overwrite(src, dest, false);
+    }
+
+    public static void copy_with_overwrite(String src, String dest, bool overwrite) {
+        if (src == null || src.data == null || dest == null || dest.data == null) {
+            throw new IOException("Source or destination path is null");
+        }
+        int32 res = native_copy(src.data, dest.data, overwrite);
+        if (res == 1) {
+            throw new FileNotFoundException(src.data, "Source file not found");
+        }
+        if (res == 2) {
+            throw new IOException("Failed to copy file");
+        }
+    }
+
+    public static void move(String src, String dest) {
+        if (src == null || src.data == null || dest == null || dest.data == null) {
+            throw new IOException("Source or destination path is null");
+        }
+        int32 res = native_move(src.data, dest.data);
+        if (res == 1) {
+            throw new FileNotFoundException(src.data, "Source file not found");
+        }
+        if (res == 2) {
+            throw new IOException("Failed to move file");
+        }
+    }
+
+    public static int64 get_size(String path) {
+        if (path == null || path.data == null) {
+            throw new FileNotFoundException("", "Path is null");
+        }
+        int64[] box = new int64[1];
+        int32 res = native_get_size(path.data, box);
+        if (res == 1) {
+            throw new FileNotFoundException(path.data, "File not found");
+        }
+        if (res == 2) {
+            throw new IOException("Failed to get file size");
+        }
+        return box[0];
+    }
+
+    public static DateTime get_last_modified_time(String path) {
+        if (path == null || path.data == null) {
+            throw new FileNotFoundException("", "Path is null");
+        }
+        int64[] box = new int64[1];
+        int32 res = native_get_last_modified(path.data, box);
+        if (res == 1) {
+            throw new FileNotFoundException(path.data, "File not found");
+        }
+        if (res == 2) {
+            throw new IOException("Failed to get last modified time");
+        }
+        return DateTime.from_epoch_millis(box[0], false);
+    }
+
+    private static native bool native_exists(char[] path);
+    private static native char[] native_read_all_text(char[] path, int32[] err_box);
+    private static native int32 native_write_all_text(char[] path, char[] contents);
+    private static native int32 native_append_all_text(char[] path, char[] contents);
+    private static native int32 native_delete(char[] path);
+    private static native int32 native_copy(char[] src, char[] dest, bool overwrite);
+    private static native int32 native_move(char[] src, char[] dest);
+    private static native int32 native_get_size(char[] path, int64[] out_box);
+    private static native int32 native_get_last_modified(char[] path, int64[] out_box);
+}

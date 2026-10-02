@@ -1,0 +1,63 @@
+package solix.io.filesystem;
+
+import solix.core.String;
+
+public class Path {
+    public static char DIRECTORY_SEPARATOR = native_get_separator();
+
+    public static String combine(String path1, String path2) {
+        char[] p1 = (path1 != null && path1.data != null) ? path1.data : "";
+        char[] p2 = (path2 != null && path2.data != null) ? path2.data : "";
+        return new String(native_combine(p1, p2));
+    }
+
+    public static String combine_chars(char[] p1, char[] p2) {
+        char[] cp1 = (p1 != null) ? p1 : "";
+        char[] cp2 = (p2 != null) ? p2 : "";
+        return new String(native_combine(cp1, cp2));
+    }
+
+    public static String get_directory_name(String path) {
+        if (path == null || path.data == null) return new String("");
+        return new String(native_get_directory_name(path.data));
+    }
+
+    public static String get_file_name(String path) {
+        if (path == null || path.data == null) return new String("");
+        return new String(native_get_file_name(path.data));
+    }
+
+    public static String get_extension(String path) {
+        if (path == null || path.data == null) return new String("");
+        return new String(native_get_extension(path.data));
+    }
+
+    public static String get_file_name_without_extension(String path) {
+        if (path == null || path.data == null) return new String("");
+        return new String(native_get_file_name_without_extension(path.data));
+    }
+
+    public static bool is_absolute(String path) {
+        if (path == null || path.data == null) return false;
+        return native_is_absolute(path.data);
+    }
+
+    public static String get_temp_path() {
+        return new String(native_get_temp_path());
+    }
+
+    public static String normalize(String path) {
+        if (path == null || path.data == null) return new String("");
+        return new String(native_normalize(path.data));
+    }
+
+    private static native char[] native_combine(char[] p1, char[] p2);
+    private static native char[] native_get_directory_name(char[] path);
+    private static native char[] native_get_file_name(char[] path);
+    private static native char[] native_get_extension(char[] path);
+    private static native char[] native_get_file_name_without_extension(char[] path);
+    private static native bool native_is_absolute(char[] path);
+    private static native char[] native_get_temp_path();
+    private static native char[] native_normalize(char[] path);
+    private static native char native_get_separator();
+}

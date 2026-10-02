@@ -381,18 +381,20 @@ public class String implements IStringable, IHashable {
         }
         // Count occurrences
         int32 count = 1;
-        int32 pos = 0;
-        while ((pos = this.index_of(delimiter, pos)) != -1) {
+        int32 pos = this.index_of(delimiter, 0);
+        while (pos != -1) {
             count = count + 1;
-            pos = pos + delimiter.length();
+            pos = this.index_of(delimiter, pos + delimiter.length());
         }
         String[] parts = new String[count];
         int32 start = 0;
         int32 part_idx = 0;
-        while ((pos = this.index_of(delimiter, start)) != -1) {
+        pos = this.index_of(delimiter, start);
+        while (pos != -1) {
             parts[part_idx] = this.substring(start, pos - start);
             part_idx = part_idx + 1;
             start = pos + delimiter.length();
+            pos = this.index_of(delimiter, start);
         }
         parts[part_idx] = this.substring(start, this.length() - start);
         return parts;
