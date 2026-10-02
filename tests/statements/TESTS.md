@@ -4620,4 +4620,138 @@ public class BadGeneric {
 [ERROR] Unknown type: T
 ```
 
+---
+
+## Native Interoperability & Dynamic Shared Library Loader
+
+*Specification Reference*: [Native Interoperability Specification](../../docs/spec/runtime/native_interop.md)
+
+### Positive Test Scenarios (Valid Variations)
+
+### Case 49.1: Static Native Function Call [NOT IMPLEMENTED]
+```solix
+public class NativeMath {
+    public static native int32 add(int32 a, int32 b);
+}
+
+public class Main {
+    public static int32 main() {
+        return NativeMath.add(15, 27) == 42 ? 0 : 1;
+    }
+}
+```
+*Expected Result*: Loads shared library, resolves static native function via C-ABI, executes addition and returns 0.
+
+---
+
+### Case 49.2: Instance Native Function Call with Object Context [NOT IMPLEMENTED]
+```solix
+public class Counter {
+    public int32 value;
+    public native int32 increment();
+}
+
+public class Main {
+    public static int32 main() {
+        Counter c = new Counter();
+        c.value = 10;
+        int32 res = c.increment();
+        return (res == 11 && c.value == 11) ? 0 : 1;
+    }
+}
+```
+*Expected Result*: Calls instance native method, passing `self_address` as object handle to native code, updates field, and returns 0.
+
+---
+
+### Case 49.3: Batch Registration Hook via `solix_register_natives` [NOT IMPLEMENTED]
+```solix
+public class BatchPlugin {
+    public static native int32 multiply(int32 a, int32 b);
+    public static native int32 subtract(int32 a, int32 b);
+}
+
+public class Main {
+    public static int32 main() {
+        int32 m = BatchPlugin.multiply(6, 7);
+        int32 s = BatchPlugin.subtract(50, 8);
+        return (m == 42 && s == 42) ? 0 : 1;
+    }
+}
+```
+*Expected Result*: Shared library exporting `solix_register_natives` hook registers both functions automatically on library load.
+
+---
+
+### Case 49.4: Direct Dynamic Symbol Resolution Fallback [NOT IMPLEMENTED]
+```solix
+public class DynamicLib {
+    public static native int32 direct_export(int32 x);
+}
+
+public class Main {
+    public static int32 main() {
+        return DynamicLib.direct_export(99) == 100 ? 0 : 1;
+    }
+}
+```
+*Expected Result*: Dynamically exports symbol conforming to `NativeFunctionPtr` signature without init hook, resolved on-demand.
+
+---
+
+### Case 49.5: Multiple Shared Libraries Loaded Concurrently [NOT IMPLEMENTED]
+```solix
+public class LibA {
+    public static native int32 funcA();
+}
+
+public class LibB {
+    public static native int32 funcB();
+}
+
+public class Main {
+    public static int32 main() {
+        return (LibA.funcA() + LibB.funcB()) == 100 ? 0 : 1;
+    }
+}
+```
+*Expected Result*: Multiple independent shared libraries loaded simultaneously without symbol collisions.
+
+---
+
+### Negative Test Scenarios
+
+### Case 49.6: Missing / Non-Existent Shared Library Path [NOT IMPLEMENTED]
+```cpp
+// Runtime options specifying a non-existent shared library file path
+options.native_libraries.push_back("non_existent_plugin.dll");
+```
+*Expected Result*: Throws clean runtime error / exception `SharedLibraryException: Failed to load library 'non_existent_plugin.dll'`.
+
+---
+
+### Case 49.7: Corrupted or Non-Binary File Loaded as Shared Library [NOT IMPLEMENTED]
+```cpp
+// Runtime options specifying a plain text or corrupted binary file
+options.native_libraries.push_back("corrupt_dummy.txt");
+```
+*Expected Result*: Throws clean runtime error detailing OS-level loader diagnostic (`dlerror` / `GetLastError`).
+
+---
+
+### Case 49.8: Unresolved Native Method Symbol at Invocation [NOT IMPLEMENTED]
+```solix
+public class MissingNative {
+    public static native int32 non_existent_function();
+}
+
+public class Main {
+    public static int32 main() {
+        return MissingNative.non_existent_function();
+    }
+}
+```
+*Expected Result*: VM throws clean runtime exception `Call to unknown native function: MissingNative_non_existent_function`.
+
+
 
