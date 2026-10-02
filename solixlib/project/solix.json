@@ -200,6 +200,22 @@
     {
       "type": "source",
       "path": "src/solix/collections/Collections.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/LinkedListNode.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/LinkedList.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/List.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/collections/Algorithms.slx"
     }
   ],
   "profiles": {

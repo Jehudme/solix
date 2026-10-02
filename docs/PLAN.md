@@ -43,7 +43,7 @@
 | **Phase 25** | Standard Library: `solix.math.Math` & Numeric Algorithms (`Random`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
 | **Phase 26** | Standard Library: `solix.time.Chrono` (`Duration`, `Instant`, `DateTime`, `Stopwatch`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
 | **Phase 27** | Standard Library: `solix.collections.Core` (Interfaces, `IIterable`, `ICollection`, `to_string`) | `P1 High` | `solixlib`, `tests` | - [x] Complete |
-| **Phase 28** | Standard Library: `solix.collections.List` (`List<T>` Array & `LinkedList<T>`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
+| **Phase 28** | Standard Library: `solix.collections.List` (`List<T>` Array & `LinkedList<T>`) | `P1 High` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 29** | Standard Library: `solix.collections.Map` (`HashMap<K, V>` & `TreeMap<K, V>`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
 | **Phase 30** | Standard Library: `solix.collections.Set` (`HashSet<T>` & `TreeSet<T>`) | `P2 Medium` | `solixlib`, `tests` | - [ ] Planned |
 | **Phase 31** | Standard Library: `solix.collections.Linear` (`Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, `BitSet`) | `P2 Medium` | `solixlib`, `tests` | - [ ] Planned |
@@ -1360,57 +1360,61 @@ Define the foundational collection architecture in Solix. Establish iterator pro
 
 ---
 
-## Phase 28: Standard Library — `solix.collections.List` (`List<T>` Array & `LinkedList<T>`)
+## Phase 28: Standard Library — `solix.collections.List` (`List` Array & `LinkedList`)
 
 - **Priority**: `P1 High`
-- **Affected Modules**: `solixlib/project/src/solix/collections/List.slx`, `solixlib/project/src/solix/collections/LinkedList.slx`, `solixlib/project/src/solix/collections/Algorithms.slx`, `tests/solixlib/test_list.cpp`, `docs/spec/solixlib/list.md`
-- **Status**: - [ ] Planned
+- **Affected Modules**: `solixlib/project/src/solix/collections/List.slx`, `solixlib/project/src/solix/collections/LinkedList.slx`, `solixlib/project/src/solix/collections/LinkedListNode.slx`, `solixlib/project/src/solix/collections/Algorithms.slx`, `tests/solixlib/test_list.cpp`, `docs/spec/solixlib/list.md`
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Implement two complementary sequential collection types:
-1. `solix.collections.List<T>`: resizable dynamic array with amortized O(1) appending and random access.
-2. `solix.collections.LinkedList<T>`: doubly-linked list implementing both `IList<T>` and `IDeque<T>`, providing O(1) insertions and removals at both head and tail.
+1. `solix.collections.List`: resizable dynamic array with amortized O(1) appending and random access.
+2. `solix.collections.LinkedList`: doubly-linked list implementing both `IList` and `IDeque`, providing O(1) insertions and removals at both head and tail.
+3. `solix.collections.Algorithms`: static sorting, shuffling, filling, and searching algorithms.
 
 ### Interconnection & Layering
-- **Builds On**: `IList<T>`, `IDeque<T>` & `ICollection<T>` (Phase 27), `IComparable<T>` & `IEquatable<T>` (Phase 24).
+- **Builds On**: `IList`, `IDeque` & `ICollection` (Phase 27), `IComparable` & `IEquatable` (Phase 24).
 - **Printable**: Automatically formats as `"[item1, item2, ...]"` and prints via `Console.println()`.
-- **Exception Integration**: Out-of-bounds indexing throws `IndexOutOfBoundsException`; negative capacity throws `IllegalArgumentException`.
+- **Exception Integration**: Out-of-bounds indexing throws `IndexOutOfBoundsException`; negative capacity throws `IllegalArgumentException`; empty access throws `NoSuchElementException`.
 - **Universal Data Carrier**: Returned by `String.split()`, `filesystem.list_files()`, `Environment.get_args()`.
 
 ### Submodule Architecture & Types
 - **Solix Surface**:
-  - `class List<T> implements IList<T>`:
-    - Constructors: `List()`, `List(int initial_capacity)`
-    - Capacity: `int capacity()`, `void ensure_capacity(int min_capacity)`, `void shrink_to_fit()`
+  - `class List implements IList`:
+    - Constructors: `List()`, `List(int32 initial_capacity)`
+    - Capacity: `int32 capacity()`, `void ensure_capacity(int32 min_capacity)`, `void shrink_to_fit()`
     - Operations: `get`, `set`, `add`, `insert`, `remove`, `remove_at`, `add_all`, `clear`
-    - Searching & Sorting: `index_of`, `contains`, `sort()`, `reverse()`, `binary_search(item)`
-    - Slicing: `List<T> sub_list(int start, int count)`
-    - Iteration: `IIterator<T> iterator()`
-    - String Conversion: `string to_string()`
-  - `class LinkedList<T> implements IList<T>, IDeque<T>`:
-    - Doubly-linked node chain (`Node<T> prev, next; T value;`)
-    - Head & Tail Operations: `add_first(T item)`, `add_last(T item)`, `remove_first() -> T`, `remove_last() -> T`, `peek_first() -> T`, `peek_last() -> T`
-    - Indexed Operations: `get(index)`, `set(index, item)`, `remove_at(index)` (optimized traversal from closest end)
-    - Iteration: bidirectional iteration support.
-  - `class Collections`: static sorting, shuffling, and searching algorithms.
+    - Searching & Sorting: `index_of`, `contains`, `reverse()`
+    - Slicing: `List sub_list(int32 start, int32 count)`
+    - Iteration: `IIterator iterator()`
+    - String Conversion: `String to_string()`
+  - `class LinkedList implements IList, IDeque`:
+    - Doubly-linked node chain (`LinkedListNode prev, next; Any value;`)
+    - Head & Tail Operations: `add_first(Any item)`, `add_last(Any item)`, `remove_first() -> Any`, `remove_last() -> Any`, `peek_first() -> Any`, `peek_last() -> Any`
+    - Indexed Operations: `get(int32 index)`, `set(int32 index, Any item)`, `remove_at(int32 index)` (optimized traversal from closest end)
+    - Iteration: `IIterator iterator()`
+    - String Conversion: `String to_string()`
+  - `class Algorithms`: static reversing, swapping, filling, sorting, and binary searching.
 
 ### Identified Test & Documentation Deliverables
 - **1. Identified Test Deliverables (`tests/solixlib/TESTS.md` & `tests/solixlib/test_list.cpp`)**:
   - **Positive Tests**:
-    - `List<T>` dynamic capacity expansion (10,000 items) and sorting.
-    - `LinkedList<T>` O(1) head/tail insertions and removals (`add_first`, `add_last`, `remove_first`, `remove_last`).
-    - `Console.println(list)` and `Console.println(linked_list)` bracketed outputs.
+    - `List` dynamic capacity expansion, indexing, and iterator traversal.
+    - `List` mutation (insert, remove, sub_list, reverse, to_string).
+    - `LinkedList` double-ended queue operations and to_string formatting.
+    - `LinkedList` indexed access, mutation, and bidirectional node traversal.
+    - `Algorithms` static utilities (swap, reverse, fill, sort_int32, binary_search_int32).
   - **Negative Tests**:
-    - `get(-1)` or `get(size)` on either list throws `IndexOutOfBoundsException`.
-    - `remove_first()` on empty `LinkedList` throws `NoSuchElementException`.
+    - `List.get(-1)`, `List.get(size)`, and `List(-1)` throw exceptions.
+    - `LinkedList.remove_first()`, `peek_first()`, and `get(0)` on empty throw exceptions.
 - **2. Identified Documentation Deliverables**:
   - `docs/spec/solixlib/list.md`: Dynamic array vs doubly-linked list performance characteristics and API documentation.
 
 ### Action Items
-- [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Author `List.slx`, `LinkedList.slx`, and `Algorithms.slx`.
-- [ ] Implement Catch2 test suite `tests/solixlib/test_list.cpp`.
-- [ ] Author `docs/spec/solixlib/list.md`.
+- [x] Define test specification in `tests/solixlib/TESTS.md`.
+- [x] Author `List.slx`, `LinkedList.slx`, `LinkedListNode.slx`, and `Algorithms.slx`.
+- [x] Implement Catch2 test suite `tests/solixlib/test_list.cpp`.
+- [x] Author `docs/spec/solixlib/list.md`.
 
 ---
 

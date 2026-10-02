@@ -1,0 +1,15 @@
+package solix.collections;
+
+import solix.core.Any;
+
+public class LinkedListNode {
+    public Any value;
+    public LinkedListNode prev;
+    public LinkedListNode next;
+
+    public LinkedListNode(Any val) {
+        this.value = val;
+        this.prev = null;
+        this.next = null;
+    }
+}
