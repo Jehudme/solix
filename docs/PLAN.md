@@ -29,6 +29,7 @@
 | **Phase 12** | CLI Commands & Toolchain Documentation (`docs/spec/cli/`) | `P1 High` | `docs`, `launcher`, `guide` | - [x] Completed |
 | **Phase 13** | Project-Type Dependencies & Transitive SemVer Resolution | `P1 High` | `launcher`, `build`, `tests`, `docs` | - [x] Completed |
 | **Phase 14** | Direct Project Execution (`solix run` for Projects) | `P1 High` | `launcher`, `build`, `tests`, `docs` | - [x] Completed |
+| **Phase 15** | Functions, Lambdas & Generics Documentation and Test Hardening | `P1 High` | `docs`, `tests`, `language` | - [ ] In Progress |
 
 ---
 
@@ -546,6 +547,69 @@ Extend `solix run` to directly run Solix projects (both uninstalled via director
 - Manifest runtime settings apply properly and are overridable by CLI arguments.
 - Existing bytecode file execution (`solix run file.slxbin`) remains 100% backward-compatible.
 - All positive and negative test cases pass.
+
+---
+
+## Phase 15: Functions, Lambdas & Generics Documentation and Test Hardening
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `docs`, `tests`, `language`
+- **Status**: - [ ] In Progress
+
+### Objective
+Provide comprehensive test coverage and documentation for Function Pointers, First-Class Lambdas & Closures, and Generics / Templates in Solix. Create a dedicated test suite for Generics (`tests/statements/declarations/test_generics.cpp`), add formal specifications for function pointer expressions, lambda expressions, and generics in `docs/spec/`, and author complete guides (`docs/guide/07_functions_and_lambdas.md` and `docs/guide/08_generics_and_templates.md`).
+
+### Identified Test & Documentation Deliverables
+- **1. Identified Test Deliverables (`tests/statements/TESTS.md` & `tests/statements/declarations/test_generics.cpp`)**:
+  - Add **Suite 48: Generics & Template Metaprogramming**
+    - **Positive Scenarios**:
+      - **Case 48.1**: Single-Parameter Generic Class (`Box<T>`) storing and retrieving primitive and object types.
+      - **Case 48.2**: Multi-Parameter Generic Class (`Pair<K, V>`) with independent type instantiations.
+      - **Case 48.3**: Generic Interface Implementation (`interface IContainer<T>` and `class Container<T> : IContainer<T>`).
+      - **Case 48.4**: Generic Method with Explicit Type Arguments (`obj.identity<int32>(42)`).
+      - **Case 48.5**: Generic Method with Implicit Template Argument Deduction (`Utils.identity(42)`).
+      - **Case 48.6**: Generic Method with Deductions from Multiple Arguments (`Algorithms.pick(10, 20)`).
+      - **Case 48.7**: Nested Generic Types (`Box<Pair<int32, string>>`).
+      - **Case 48.8**: Generic Class with Function Pointer Fields / Lambdas (`Pipeline<T>` with `T(*)(T)`).
+    - **Negative Scenarios**:
+      - **Case 48.9**: Generic Type Argument Count (Arity) Mismatch (`Pair<int32>`).
+      - **Case 48.10**: Incompatible Type Assignment Between Specialized Generic Instances (`Box<int32> b = new Box<string>()`).
+      - **Case 48.11**: Ambiguous or Conflicting Template Deduction at Call Site.
+      - **Case 48.12**: Unbound / Undefined Type Parameter Identifier in Method Body.
+- **2. Identified Documentation Deliverables**:
+  - `docs/spec/statements/expressions/function_pointer_expression.md`: Specification of function pointer types, static method binding, calling conventions, nullability, and `sizeof`.
+  - `docs/spec/statements/expressions/lambda_expression.md`: Specification of lambda expressions, capture lists (primitive values, ARC tracked objects, `this`), escaping closures, and memory layout.
+  - `docs/spec/generics.md`: Specification of class templates, interface templates, method templates, deduction algorithm, and type aliases.
+  - `docs/guide/07_functions_and_lambdas.md`: Practical developer guide covering function pointers, static method references, lambda expressions, and closures.
+  - `docs/guide/08_generics_and_templates.md`: Practical developer guide covering generic classes, multi-type parameters, generic interfaces, generic methods, type deduction, and `default(T)`.
+  - Update `docs/spec/statements/expressions/README.md`, `docs/spec/statements/README.md`, `docs/guide/README.md`, and `README.md`.
+
+### Action Items
+- [ ] **1. Define Test Specification in `tests/statements/TESTS.md`**:
+  - Add Suite 48 with Cases 48.1 through 48.12 tagged `[NOT IMPLEMENTED]`. Commit test spec.
+- [ ] **2. Implement Catch2 Unit Tests (`tests/statements/declarations/test_generics.cpp`)**:
+  - Implement all positive and negative test cases.
+  - Register `test_generics.cpp` in `tests/CMakeLists.txt`.
+  - Update tags in `tests/statements/TESTS.md` to `[IMPLEMENTED]`.
+- [ ] **3. Author Specifications**:
+  - Create `docs/spec/statements/expressions/function_pointer_expression.md`.
+  - Create `docs/spec/statements/expressions/lambda_expression.md`.
+  - Create `docs/spec/generics.md`.
+  - Update `docs/spec/statements/declarations/class_declaration.md` and `method_declaration.md`.
+  - Update index files.
+- [ ] **4. Author Guides**:
+  - Create `docs/guide/07_functions_and_lambdas.md`.
+  - Create `docs/guide/08_generics_and_templates.md`.
+  - Update `docs/guide/README.md` and `README.md`.
+- [ ] **5. Full Regression Testing & Merge**:
+  - Run `ctest --test-dir build --output-on-failure`.
+  - Non-fast-forward merge into `master`.
+
+### Acceptance Criteria
+- All 12 new Generic test cases pass 100%.
+- Existing function pointer and lambda test suites pass 100%.
+- Comprehensive documentation created in `docs/spec/` and `docs/guide/`.
+- Full test suite passes without regressions.
 
 
 

@@ -12,6 +12,8 @@ Welcome to the Solix developer guides. These documents are written for developer
 | 4 | [Classes and OOP](04_classes_and_oop.md) | Classes, constructors, inheritance, interfaces, `virtual/override`, operators |
 | 5 | [Memory Management and ARC](05_memory_management_and_arc.md) | ARC, object headers, strong/weak references, cycle breaking, destruction |
 | 6 | [Error Handling](06_error_handling.md) | Exception hierarchy, `try/catch/finally`, custom exceptions, propagation |
+| 7 | [Functions, Function Pointers & Lambdas](07_functions_and_lambdas.md) | Static methods, function pointers `ret(*)(params)`, lambdas `=>`, closures, ARC captures |
+| 8 | [Generics & Template Metaprogramming](08_generics_and_templates.md) | Generic classes, multiple type parameters, generic methods, deduction, monomorphization |
 
 ## Related Resources
 

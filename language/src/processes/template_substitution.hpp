@@ -69,6 +69,14 @@ private:
         for (auto& arg : type.type_args) {
             substitute_type(arg);
         }
+        if (type.is_function_pointer) {
+            if (type.return_type) {
+                substitute_type(*type.return_type);
+            }
+            for (auto& param : type.param_types) {
+                substitute_type(param);
+            }
+        }
     }
 };
 

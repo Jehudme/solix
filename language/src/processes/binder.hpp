@@ -162,6 +162,21 @@ public:
     
     void setup_builtins();
     bool check_access(Node* member_decl, Node* owner_class, Node* expr);
+
+    int next_vtable_id = 1;
+    std::unordered_map<std::string, std::vector<MethodDeclaration *>> vtables;
+    std::unordered_set<std::string> vtable_calculated;
+    std::unordered_set<std::string> vtable_in_progress;
+    std::unordered_set<std::string> layout_calculated;
+    std::unordered_set<std::string> layout_in_progress;
+
+    Node *unwrap_alias(Node *n);
+    Node *resolve_base_class(ClassDeclaration *cls);
+    std::string get_method_sig(const std::string &mangled);
+    std::vector<ClassDeclaration *> collect_all_interfaces(ClassDeclaration *cls);
+    void calculate_interface_vtable(ClassDeclaration *iface);
+    void calculate_class_vtable(ClassDeclaration *cls);
+    int calculate_layout(ClassDeclaration *cls);
 };
 
 } // namespace solix
