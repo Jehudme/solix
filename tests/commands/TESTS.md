@@ -247,32 +247,32 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 5.1: Install Valid Project into Local Registry [NOT IMPLEMENTED]
+#### Case 5.1: Install Valid Project into Local Registry [IMPLEMENTED]
 - **Command**: `solix install my_proj`
 - **Setup**: Valid project directory with `solix.json`.
 - **Expected**: Exits 0; project copied into `$SOLIX_HOME/installed/<hash_id>/`; entry recorded in `$SOLIX_HOME/installed.json`.
 
-#### Case 5.2: Deterministic SHA-256 Hash ID Generation [NOT IMPLEMENTED]
+#### Case 5.2: Deterministic SHA-256 Hash ID Generation [IMPLEMENTED]
 - **Setup**: Project with name `"my_pkg"` and version `"1.0.0"`.
 - **Expected**: ID matches first 16 characters of SHA-256(`my_pkg@1.0.0`); folder in `installed/` is named exactly this hash.
 
-#### Case 5.3: Overwrite Existing Installation with Force Flag [NOT IMPLEMENTED]
+#### Case 5.3: Overwrite Existing Installation with Force Flag [IMPLEMENTED]
 - **Command**: `solix install my_proj --force`
 - **Setup**: Project already installed.
 - **Expected**: Exits 0; updates existing installation and timestamp in registry.
 
 ### Negative Test Scenarios
 
-#### Case 5.4: Target Directory Does Not Exist [NOT IMPLEMENTED]
+#### Case 5.4: Target Directory Does Not Exist [IMPLEMENTED]
 - **Command**: `solix install /non_existent_dir`
 - **Expected**: Exits non-zero; error message indicating directory does not exist.
 
-#### Case 5.5: Target Directory Missing solix.json [NOT IMPLEMENTED]
+#### Case 5.5: Target Directory Missing solix.json [IMPLEMENTED]
 - **Command**: `solix install invalid_dir`
 - **Setup**: Directory exists but contains no `solix.json`.
 - **Expected**: Exits non-zero; error message indicating missing manifest.
 
-#### Case 5.6: Reinstall Existing Project Without Force Flag [NOT IMPLEMENTED]
+#### Case 5.6: Reinstall Existing Project Without Force Flag [IMPLEMENTED]
 - **Command**: `solix install my_proj`
 - **Setup**: Project already installed.
 - **Expected**: Exits non-zero; error message stating project is already installed and recommending `--force`.
@@ -285,18 +285,18 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 6.1: Uninstall Successfully Removes Project and Directory [NOT IMPLEMENTED]
+#### Case 6.1: Uninstall Successfully Removes Project and Directory [IMPLEMENTED]
 - **Command**: `solix uninstall my_pkg 1.0.0`
 - **Setup**: `my_pkg` 1.0.0 installed in registry.
 - **Expected**: Exits 0; directory under `$SOLIX_HOME/installed/<hash_id>` is deleted; entry removed from `installed.json`.
 
 ### Negative Test Scenarios
 
-#### Case 6.2: Missing Required Name or Version Arguments [NOT IMPLEMENTED]
+#### Case 6.2: Missing Required Name or Version Arguments [IMPLEMENTED]
 - **Command**: `solix uninstall my_pkg`
 - **Expected**: Exits non-zero; CLI error indicating missing argument.
 
-#### Case 6.3: Package Not Found in Registry [NOT IMPLEMENTED]
+#### Case 6.3: Package Not Found in Registry [IMPLEMENTED]
 - **Command**: `solix uninstall unknown_pkg 9.9.9`
 - **Expected**: Exits non-zero; error message stating project is not installed.
 
@@ -308,12 +308,12 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 7.1: Empty Installation Registry [NOT IMPLEMENTED]
+#### Case 7.1: Empty Installation Registry [IMPLEMENTED]
 - **Command**: `solix list`
 - **Setup**: Clean `$SOLIX_HOME` with no installed projects.
 - **Expected**: Exits 0; outputs "No Solix projects are currently installed."
 
-#### Case 7.2: List Multiple Installed Projects [NOT IMPLEMENTED]
+#### Case 7.2: List Multiple Installed Projects [IMPLEMENTED]
 - **Command**: `solix list`
 - **Setup**: Multiple projects installed in registry.
 - **Expected**: Exits 0; output contains table with headers `NAME`, `VERSION`, `ID`, `INSTALLED PATH` and includes every installed project.
@@ -326,28 +326,28 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 8.1: Extensive Details by Name and Version [NOT IMPLEMENTED]
+#### Case 8.1: Extensive Details by Name and Version [IMPLEMENTED]
 - **Command**: `solix details my_pkg 1.0.0`
 - **Setup**: `my_pkg` 1.0.0 installed with full metadata (description, author, license, profiles, dependencies).
 - **Expected**: Exits 0; displays name, version, hash ID, install date, installed path, disk size, author, description, license, profiles, and dependencies.
 
-#### Case 8.2: Details by Name When Single Version Installed [NOT IMPLEMENTED]
+#### Case 8.2: Details by Name When Single Version Installed [IMPLEMENTED]
 - **Command**: `solix details my_pkg`
 - **Setup**: Only one version of `my_pkg` is installed.
 - **Expected**: Exits 0; automatically resolves the unique version and prints detailed metadata.
 
 ### Negative Test Scenarios
 
-#### Case 8.3: Project Not Found by Name [NOT IMPLEMENTED]
+#### Case 8.3: Project Not Found by Name [IMPLEMENTED]
 - **Command**: `solix details nonexistent_pkg`
 - **Expected**: Exits non-zero; error message stating no installed project found.
 
-#### Case 8.4: Specific Version Not Found [NOT IMPLEMENTED]
+#### Case 8.4: Specific Version Not Found [IMPLEMENTED]
 - **Command**: `solix details my_pkg 9.9.9`
 - **Setup**: `my_pkg` 1.0.0 installed, but 9.9.9 requested.
 - **Expected**: Exits non-zero; error message stating version not found.
 
-#### Case 8.5: Multiple Versions Installed and Version Omitted [NOT IMPLEMENTED]
+#### Case 8.5: Multiple Versions Installed and Version Omitted [IMPLEMENTED]
 - **Command**: `solix details my_multi_pkg`
 - **Setup**: `my_multi_pkg` has versions 1.0.0 and 2.0.0 installed.
 - **Expected**: Prompts user with available versions and their IDs without crashing.
