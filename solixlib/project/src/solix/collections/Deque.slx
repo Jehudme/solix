@@ -4,12 +4,36 @@ import solix.core.Any;
 import solix.core.String;
 import solix.core.StringBuilder;
 import solix.exceptions.InvalidOperationException;
+import solix.exceptions.NoSuchElementException;
+
+public class DequeItemsIterator implements IIterator {
+    private LinkedList<Any> _items;
+    private int32 _idx;
+
+    public DequeItemsIterator(LinkedList<Any> items) {
+        this._items = items;
+        this._idx = 0;
+    }
+
+    public bool has_next() {
+        return this._idx < this._items.size();
+    }
+
+    public Any next() {
+        if (this._idx >= this._items.size()) {
+            throw new NoSuchElementException("Iterator exhausted");
+        }
+        Any val = this._items.get(this._idx);
+        this._idx = this._idx + 1;
+        return val;
+    }
+}
 
 public class Deque implements IDeque {
-    private LinkedList _items;
+    private LinkedList<Any> _items;
 
     public Deque() {
-        this._items = new LinkedList();
+        this._items = new LinkedList<Any>();
     }
 
     public void add_first(Any item) {
@@ -93,7 +117,7 @@ public class Deque implements IDeque {
     }
 
     public IIterator iterator() {
-        return this._items.iterator();
+        return new DequeItemsIterator(this._items);
     }
 
     public String to_string() {

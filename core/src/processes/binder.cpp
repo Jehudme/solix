@@ -235,7 +235,15 @@ Node *Binder::instantiate_template(const std::string &template_name,
 void Binder::record_error(Node *node, const std::string &msg) {
   uint32_t line = node ? node->line : 0;
   uint32_t col = node ? node->column : 0;
-  log_error("[line {}, col {}] {}", line, col, msg);
+  std::string src = "";
+  if (node && node->source && std::holds_alternative<std::filesystem::path>(*node->source)) {
+    src = std::get<std::filesystem::path>(*node->source).string();
+  }
+  if (!src.empty()) {
+    log_error("[{}:{}:{}] {}", src, line, col, msg);
+  } else {
+    log_error("[line {}, col {}] {}", line, col, msg);
+  }
 
   Report report;
   report.severity = ReportSeverity::ERROR;
@@ -837,7 +845,11 @@ void Binder::bind_types_and_memory() {
   log_debug("Starting Pass 2: Type and Memory Binding...");
   static_variable_index = 1;
 
-  for (const auto &[name, node] : global_scope.symbols) {
+  auto get_symbols = [this]() {
+    return std::vector<std::pair<std::string, Node *>>(global_scope.symbols.begin(), global_scope.symbols.end());
+  };
+
+  for (const auto &[name, node] : get_symbols()) {
     if (node->node_type == NodeType::ALIAS_STMT) {
       auto *alias = static_cast<AliasStatement *>(node);
       if (alias->target_type.is_function_pointer) {
@@ -858,7 +870,7 @@ void Binder::bind_types_and_memory() {
     }
   }
 
-  for (const auto &[name, node] : global_scope.symbols) {
+  for (const auto &[name, node] : get_symbols()) {
     if (node->node_type == NodeType::ALIAS_STMT) {
       std::unordered_set<Node *> visited;
       Node *curr = node;
@@ -873,7 +885,7 @@ void Binder::bind_types_and_memory() {
     }
   }
 
-  for (const auto &[name, node] : global_scope.symbols) {
+  for (const auto &[name, node] : get_symbols()) {
     if (node->node_type == NodeType::FIELD_DECL) {
       auto *field = static_cast<FieldDeclaration *>(node);
       current_class =
@@ -899,7 +911,7 @@ void Binder::bind_types_and_memory() {
     }
   }
 
-  for (const auto &[name, node] : global_scope.symbols) {
+  for (const auto &[name, node] : get_symbols()) {
     if (node->node_type == NodeType::METHOD_DECL) {
       auto *method = static_cast<MethodDeclaration *>(node);
       current_class =
@@ -913,13 +925,13 @@ void Binder::bind_types_and_memory() {
     }
   }
 
-  for (const auto &[name, node] : global_scope.symbols) {
+  for (const auto &[name, node] : get_symbols()) {
     if (node->node_type == NodeType::CLASS_DECL) {
       resolve_base_class(static_cast<ClassDeclaration *>(node));
     }
   }
 
-  for (const auto &[name, node] : global_scope.symbols) {
+  for (const auto &[name, node] : get_symbols()) {
     if (node->node_type == NodeType::CLASS_DECL) {
       auto *cls = static_cast<ClassDeclaration *>(node);
       if (!cls->is_primitive && cls->vtable_id == -1) {
@@ -930,7 +942,7 @@ void Binder::bind_types_and_memory() {
     }
   }
 
-  for (const auto &[name, node] : global_scope.symbols) {
+  for (const auto &[name, node] : get_symbols()) {
     if (node->node_type == NodeType::CLASS_DECL) {
       auto *cls = static_cast<ClassDeclaration *>(node);
       if (!cls->base_class_name.empty()) {
@@ -948,7 +960,7 @@ void Binder::bind_types_and_memory() {
     }
   }
 
-  for (const auto &[name, node] : global_scope.symbols) {
+  for (const auto &[name, node] : get_symbols()) {
     if (node->node_type == NodeType::CLASS_DECL) {
       auto *cls = static_cast<ClassDeclaration *>(node);
       if (cls->is_interface) {
@@ -957,7 +969,7 @@ void Binder::bind_types_and_memory() {
     }
   }
 
-  for (const auto &[name, node] : global_scope.symbols) {
+  for (const auto &[name, node] : get_symbols()) {
     if (node->node_type == NodeType::CLASS_DECL) {
       auto *cls = static_cast<ClassDeclaration *>(node);
       if (!cls->is_interface) {
@@ -966,7 +978,7 @@ void Binder::bind_types_and_memory() {
     }
   }
 
-  for (const auto &[name, node] : global_scope.symbols) {
+  for (const auto &[name, node] : get_symbols()) {
     if (node->node_type == NodeType::CLASS_DECL) {
       calculate_layout(static_cast<ClassDeclaration *>(node));
     }
@@ -1687,8 +1699,22 @@ bool Binder::is_assignable(const TypeInfo &target, const TypeInfo &source) {
   if (target.array_depth != source.array_depth)
     return false;
 
+  if (target.type_args.size() != source.type_args.size())
+    return false;
+
   Node *target_node = global_scope.resolve(target.name);
+  if (!target_node) target_node = resolve_symbol(target.name, nullptr, false);
   Node *src_node = global_scope.resolve(source.name);
+  if (!src_node) src_node = resolve_symbol(source.name, nullptr, false);
+
+  if (target_node && src_node && target_node == src_node) {
+    if (target.type_args.empty()) return true;
+    for (size_t i = 0; i < target.type_args.size(); ++i) {
+      if (!is_assignable(target.type_args[i], source.type_args[i])) return false;
+    }
+    return true;
+  }
+
   while (src_node && src_node->node_type == NodeType::CLASS_DECL) {
     auto *cls = static_cast<ClassDeclaration *>(src_node);
     if (src_node == target_node || cls->mangled_name == target.name || cls->class_name == target.name)
@@ -1698,6 +1724,7 @@ bool Binder::is_assignable(const TypeInfo &target, const TypeInfo &source) {
     if (cls->base_class_name.empty())
       break;
     src_node = global_scope.resolve(cls->base_class_name);
+    if (!src_node) src_node = resolve_symbol(cls->base_class_name, nullptr, false);
   }
   return false;
 }

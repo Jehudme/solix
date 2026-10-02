@@ -1,17 +1,17 @@
 package solix.collections;
 
-import solix.core.Any;
+import solix.core.IStringable;
 import solix.core.String;
 import solix.exceptions.IndexOutOfBoundsException;
 import solix.exceptions.IllegalArgumentException;
 import solix.exceptions.NoSuchElementException;
 
-public class ListIterator implements IIterator {
-    private Any[] data;
+public class ListIterator<T> {
+    private T[] data;
     private int32 count;
     private int32 cursor;
 
-    public ListIterator(Any[] arr, int32 cnt) {
+    public ListIterator(T[] arr, int32 cnt) {
         this.data = arr;
         this.count = cnt;
         this.cursor = 0;
@@ -21,22 +21,22 @@ public class ListIterator implements IIterator {
         return this.cursor < this.count;
     }
 
-    public Any next() {
+    public T next() {
         if (this.cursor >= this.count) {
             throw new NoSuchElementException("Iterator exhausted");
         }
-        Any val = this.data[this.cursor];
+        T val = this.data[this.cursor];
         this.cursor = this.cursor + 1;
         return val;
     }
 }
 
-public class List implements IList {
-    private Any[] _data;
+public class List<T> implements IStringable {
+    private T[] _data;
     private int32 _size;
 
     public List() {
-        this._data = new Any[16];
+        this._data = new T[16];
         this._size = 0;
     }
 
@@ -47,7 +47,7 @@ public class List implements IList {
         if (initial_capacity < 4) {
             initial_capacity = 4;
         }
-        this._data = new Any[initial_capacity];
+        this._data = new T[initial_capacity];
         this._size = 0;
     }
 
@@ -65,13 +65,13 @@ public class List implements IList {
 
     public void clear() {
         for (int32 i = 0; i < this._size; i = i + 1) {
-            this._data[i] = null;
+            this._data[i] = default(T);
         }
         this._size = 0;
     }
 
-    public Any[] to_array() {
-        Any[] copy = new Any[this._size];
+    public T[] to_array() {
+        T[] copy = new T[this._size];
         for (int32 i = 0; i < this._size; i = i + 1) {
             copy[i] = this._data[i];
         }
@@ -84,7 +84,7 @@ public class List implements IList {
             if (new_cap < min_capacity) {
                 new_cap = min_capacity;
             }
-            Any[] new_arr = new Any[new_cap];
+            T[] new_arr = new T[new_cap];
             for (int32 i = 0; i < this._size; i = i + 1) {
                 new_arr[i] = this._data[i];
             }
@@ -95,7 +95,7 @@ public class List implements IList {
     public void shrink_to_fit() {
         if (this._data.length > this._size) {
             int32 new_cap = this._size > 4 ? this._size : 4;
-            Any[] new_arr = new Any[new_cap];
+            T[] new_arr = new T[new_cap];
             for (int32 i = 0; i < this._size; i = i + 1) {
                 new_arr[i] = this._data[i];
             }
@@ -103,29 +103,29 @@ public class List implements IList {
         }
     }
 
-    public Any get(int32 index) {
+    public T get(int32 index) {
         if (index < 0 || index >= this._size) {
             throw new IndexOutOfBoundsException("List index out of bounds", index, 0, this._size);
         }
         return this._data[index];
     }
 
-    public Any set(int32 index, Any item) {
+    public T set(int32 index, T item) {
         if (index < 0 || index >= this._size) {
             throw new IndexOutOfBoundsException("List index out of bounds", index, 0, this._size);
         }
-        Any old = this._data[index];
+        T old = this._data[index];
         this._data[index] = item;
         return old;
     }
 
-    public void add(Any item) {
+    public void add(T item) {
         this.ensure_capacity(this._size + 1);
         this._data[this._size] = item;
         this._size = this._size + 1;
     }
 
-    public void insert(int32 index, Any item) {
+    public void insert(int32 index, T item) {
         if (index < 0 || index > this._size) {
             throw new IndexOutOfBoundsException("List insert index out of bounds", index, 0, this._size);
         }
@@ -137,20 +137,20 @@ public class List implements IList {
         this._size = this._size + 1;
     }
 
-    public Any remove_at(int32 index) {
+    public T remove_at(int32 index) {
         if (index < 0 || index >= this._size) {
             throw new IndexOutOfBoundsException("List remove_at index out of bounds", index, 0, this._size);
         }
-        Any old = this._data[index];
+        T old = this._data[index];
         for (int32 i = index; i < this._size - 1; i = i + 1) {
             this._data[i] = this._data[i + 1];
         }
-        this._data[this._size - 1] = null;
+        this._data[this._size - 1] = default(T);
         this._size = this._size - 1;
         return old;
     }
 
-    public bool remove(Any item) {
+    public bool remove(T item) {
         int32 idx = this.index_of(item);
         if (idx != -1) {
             this.remove_at(idx);
@@ -159,38 +159,24 @@ public class List implements IList {
         return false;
     }
 
-    public int32 index_of(Any item) {
+    public int32 index_of(T item) {
         for (int32 i = 0; i < this._size; i = i + 1) {
-            if (item == null) {
-                if (this._data[i] == null) {
-                    return i;
-                }
-            } else {
-                if (this._data[i] != null && this._data[i].equals(item)) {
-                    return i;
-                }
+            if (this._data[i] == item) {
+                return i;
             }
         }
         return -1;
     }
 
-    public bool contains(Any item) {
+    public bool contains(T item) {
         return this.index_of(item) != -1;
     }
 
-    public void add_all(IIterable items) {
-        if (items == null) return;
-        IIterator it = items.iterator();
-        while (it != null && it.has_next()) {
-            this.add(it.next());
-        }
-    }
-
-    public List sub_list(int32 start, int32 count) {
+    public List<T> sub_list(int32 start, int32 count) {
         if (start < 0 || count < 0 || start + count > this._size) {
             throw new IndexOutOfBoundsException("sub_list range out of bounds", start, 0, this._size);
         }
-        List result = new List(count);
+        List<T> result = new List<T>(count);
         for (int32 i = 0; i < count; i = i + 1) {
             result.add(this._data[start + i]);
         }
@@ -199,17 +185,33 @@ public class List implements IList {
 
     public void reverse() {
         for (int32 i = 0; i < this._size / 2; i = i + 1) {
-            Any temp = this._data[i];
+            T temp = this._data[i];
             this._data[i] = this._data[this._size - 1 - i];
             this._data[this._size - 1 - i] = temp;
         }
     }
 
-    public IIterator iterator() {
-        return new ListIterator(this._data, this._size);
+    public void for_each(void(*)(T) action) {
+        for (int32 i = 0; i < this._size; i = i + 1) {
+            action(this._data[i]);
+        }
+    }
+
+    public List<T> filter(bool(*)(T) predicate) {
+        List<T> result = new List<T>();
+        for (int32 i = 0; i < this._size; i = i + 1) {
+            if (predicate(this._data[i])) {
+                result.add(this._data[i]);
+            }
+        }
+        return result;
+    }
+
+    public ListIterator<T> iterator() {
+        return new ListIterator<T>(this._data, this._size);
     }
 
     public String to_string() {
-        return Collections.to_string(this);
+        return new String("[List]");
     }
 }

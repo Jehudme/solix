@@ -69,7 +69,7 @@ public class TreeMap implements IMap {
     }
 
     public bool contains_value(Any value) {
-        List vList = this.values();
+        List<Any> vList = this.values();
         return vList.contains(value);
     }
 
@@ -180,21 +180,21 @@ public class TreeMap implements IMap {
         return cur.key;
     }
 
-    private void inorder_keys(TreeMapNode node, List out) {
+    private void inorder_keys(TreeMapNode node, List<Any> out) {
         if (node == null) return;
         this.inorder_keys(node.left, out);
         out.add(node.key);
         this.inorder_keys(node.right, out);
     }
 
-    private void inorder_values(TreeMapNode node, List out) {
+    private void inorder_values(TreeMapNode node, List<Any> out) {
         if (node == null) return;
         this.inorder_values(node.left, out);
         out.add(node.value);
         this.inorder_values(node.right, out);
     }
 
-    private void inorder_entries(TreeMapNode node, List out) {
+    private void inorder_entries(TreeMapNode node, List<Any> out) {
         if (node == null) return;
         this.inorder_entries(node.left, out);
         KeyValuePair kvp = new KeyValuePair(node.key, node.value);
@@ -202,27 +202,27 @@ public class TreeMap implements IMap {
         this.inorder_entries(node.right, out);
     }
 
-    public List keys() {
-        List list = new List(this._size);
+    public List<Any> keys() {
+        List<Any> list = new List<Any>(this._size);
         this.inorder_keys(this._root, list);
         return list;
     }
 
-    public List values() {
-        List list = new List(this._size);
+    public List<Any> values() {
+        List<Any> list = new List<Any>(this._size);
         this.inorder_values(this._root, list);
         return list;
     }
 
-    public List entries() {
-        List list = new List(this._size);
+    public List<Any> entries() {
+        List<Any> list = new List<Any>(this._size);
         this.inorder_entries(this._root, list);
         return list;
     }
 
     public String to_string() {
-        List kList = this.keys();
-        List vList = this.values();
+        List<Any> kList = this.keys();
+        List<Any> vList = this.values();
         StringBuilder sb = new StringBuilder();
         sb.append_char('{');
         for (int32 i = 0; i < kList.size(); i = i + 1) {

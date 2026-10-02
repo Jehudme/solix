@@ -4,16 +4,40 @@ import solix.core.Any;
 import solix.core.String;
 import solix.core.StringBuilder;
 import solix.exceptions.InvalidOperationException;
+import solix.exceptions.NoSuchElementException;
+
+public class StackIterator implements IIterator {
+    private List<Any> _items;
+    private int32 _idx;
+
+    public StackIterator(List<Any> items) {
+        this._items = items;
+        this._idx = 0;
+    }
+
+    public bool has_next() {
+        return this._idx < this._items.size();
+    }
+
+    public Any next() {
+        if (this._idx >= this._items.size()) {
+            throw new NoSuchElementException("Iterator exhausted");
+        }
+        Any val = this._items.get(this._idx);
+        this._idx = this._idx + 1;
+        return val;
+    }
+}
 
 public class Stack implements ICollection {
-    private List _items;
+    private List<Any> _items;
 
     public Stack() {
-        this._items = new List();
+        this._items = new List<Any>();
     }
 
     public Stack(int32 initial_capacity) {
-        this._items = new List(initial_capacity);
+        this._items = new List<Any>(initial_capacity);
     }
 
     public void push(Any item) {
@@ -57,7 +81,7 @@ public class Stack implements ICollection {
     }
 
     public IIterator iterator() {
-        return this._items.iterator();
+        return new StackIterator(this._items);
     }
 
     public String to_string() {

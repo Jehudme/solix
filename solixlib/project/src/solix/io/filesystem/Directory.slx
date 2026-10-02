@@ -39,15 +39,15 @@ public class Directory {
         }
     }
 
-    public static List list_files(String path) {
+    public static List<String> list_files(String path) {
         return list_entries_internal(path, 1);
     }
 
-    public static List list_directories(String path) {
+    public static List<String> list_directories(String path) {
         return list_entries_internal(path, 2);
     }
 
-    private static List list_entries_internal(String path, int32 mode) {
+    private static List<String> list_entries_internal(String path, int32 mode) {
         if (path == null || path.data == null) {
             throw new DirectoryNotFoundException("", "Path is null");
         }
@@ -60,7 +60,7 @@ public class Directory {
         if (err_box[0] == 2) {
             throw new IOException("Failed to list directory");
         }
-        List entries = new List();
+        List<String> entries = new List<String>();
         if (raw == null || raw.length == 0) {
             return entries;
         }
@@ -70,8 +70,7 @@ public class Directory {
         for (int32 i = 0; i < parts.length; i = i + 1) {
             String p = parts[i];
             if (p.length() > 0) {
-                Any item = new Any(p);
-                entries.add(item);
+                entries.add(p);
             }
         }
         return entries;

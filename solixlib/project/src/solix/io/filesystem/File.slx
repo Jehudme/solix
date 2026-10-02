@@ -51,15 +51,14 @@ public class File {
         }
     }
 
-    public static List read_all_lines(String path) {
+    public static List<String> read_all_lines(String path) {
         String full = read_all_text(path);
         String nl = new String("\n");
         String[] parts = full.split(nl);
-        List lines = new List(parts.length);
+        List<String> lines = new List<String>(parts.length);
         for (int32 i = 0; i < parts.length; i = i + 1) {
             String p = parts[i];
-            Any item = new Any(p);
-            lines.add(item);
+            lines.add(p);
         }
         return lines;
     }
