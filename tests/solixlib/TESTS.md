@@ -74,4 +74,15 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 4.7 [IMPLEMENTED]**: Negative: invalid `Any` unwrapping type mismatch throws `InvalidOperationException` (`tests/solixlib/test_primitives.cpp`).
 - [x] **Case 4.8 [IMPLEMENTED]**: Negative: `Int.parse()` and `Double.parse()` with non-numeric inputs throw `FormatException` (`tests/solixlib/test_primitives.cpp`).
 
+---
+
+## 5. Math & Random (`solix.math.Math`, `Random`)
+
+- [x] **Case 5.1 [IMPLEMENTED]**: Mathematical constants (`PI`, `E`, `TAU`), basic bounds and signs (`abs`, `min`, `max`, `clamp`, `sign`, `copy_sign`) (`tests/solixlib/test_math.cpp`).
+- [x] **Case 5.2 [IMPLEMENTED]**: Exponential, power, and logarithmic algorithms (`sqrt`, `cbrt`, `hypot`, `pow`, `exp`, `log`, `log10`, `log2`) (`tests/solixlib/test_math.cpp`).
+- [x] **Case 5.3 [IMPLEMENTED]**: Trigonometric, degree/radian conversions, and rounding (`sin`, `cos`, `to_radians`, `to_degrees`, `floor`, `ceil`, `round`, `trunc`) (`tests/solixlib/test_math.cpp`).
+- [x] **Case 5.4 [IMPLEMENTED]**: PRNG determinism with seed and distribution across integer ranges, floats, and booleans (`tests/solixlib/test_math.cpp`).
+- [x] **Case 5.5 [IMPLEMENTED]**: Negative: Random bounds validation throws `IllegalArgumentException` on invalid/negative bounds or inverted ranges (`tests/solixlib/test_math.cpp`).
+
+
 

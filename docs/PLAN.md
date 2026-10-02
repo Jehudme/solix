@@ -40,7 +40,7 @@
 | **Phase 22** | Standard Library: `solix.system.Console` (Foundational Terminal I/O) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
 | **Phase 23** | Standard Library: `solix.core.String` & `StringBuilder` (`IStringable` Contract) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
 | **Phase 24** | Standard Library: `solix.core.Primitives` & Types (`Optional<T>`, `Any`, Contracts) | `P1 High` | `solixlib`, `tests` | - [x] Complete |
-| **Phase 25** | Standard Library: `solix.math.Math` & Numeric Algorithms (`Random`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
+| **Phase 25** | Standard Library: `solix.math.Math` & Numeric Algorithms (`Random`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
 | **Phase 26** | Standard Library: `solix.time.Chrono` (`Duration`, `Instant`, `DateTime`, `Stopwatch`) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 27** | Standard Library: `solix.collections.Core` (Interfaces, `IIterable`, `ICollection`, `to_string`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
 | **Phase 28** | Standard Library: `solix.collections.List` (`List<T>` Array & `LinkedList<T>`) | `P1 High` | `solixlib`, `tests` | - [ ] Planned |
@@ -1257,11 +1257,12 @@ Provide comprehensive mathematical constants, transcendental functions, geometri
   - `docs/spec/solixlib/math.md`: Accuracy guarantees, IEEE 754 compliance, and PRNG specifications.
 
 ### Action Items
-- [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Implement `solixlib/native/src/math.cpp` and bind in `register.cpp`.
-- [ ] Author `solix.math.Math.slx` and `solix.math.Random.slx`.
-- [ ] Implement Catch2 test suite `tests/solixlib/test_math.cpp`.
-- [ ] Author `docs/spec/solixlib/math.md`.
+- [x] Define test specification in `tests/solixlib/TESTS.md`.
+- [x] Implement `solixlib/native/src/math.cpp` and bind in `register.cpp`.
+- [x] Author `solix.math.Math.slx` and `solix.math.Random.slx`.
+- [x] Implement Catch2 test suite `tests/solixlib/test_math.cpp`.
+- [x] Author `docs/spec/solixlib/math.md`.
+
 
 ---
 
