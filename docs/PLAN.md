@@ -24,6 +24,7 @@
 | **Phase 7** | Documentation & Specification Synchronization | `P2 Polish` | `docs`, `launcher`, `tests` | - [x] Completed |
 | **Phase 8** | Project Manifest & Modular Build Subcommand (`solix build`) | `P1 High` | `launcher`, `build` | - [x] Completed |
 | **Phase 9** | Project Scaffolding & Initialization Subcommand (`solix new`) | `P1 High` | `launcher`, `templates` | - [x] Completed |
+| **Phase 10** | Package Lifecycle Management (`install`, `uninstall`, `list`, `details`) | `P1 High` | `launcher` | - [x] Completed |
 
 ---
 
@@ -301,5 +302,44 @@ Implement the `solix new` project scaffolding subcommand supporting hybrid gener
 - CLI flags override manifest fields in `solix.json`.
 - Collision protection prevents accidental overwriting of existing non-empty folders without `--force`.
 - All 42 unit test suites compile and pass 100%.
+
+---
+
+## Phase 10: Package Lifecycle Management (`install`, `uninstall`, `list`, `details`)
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `launcher`
+- **Status**: - [x] Completed & Merged
+
+### Objective
+Implement cross-platform local package management for Solix projects via subcommands `install`, `uninstall`, `list`, and `details`. Projects are installed into a dedicated platform directory (`~/.solix/installed/` or `$SOLIX_HOME/installed/`) inside directories named after a deterministic 16-hex hash ID computed from `name@version`. All package metadata is maintained in a centralized `installed.json` registry file for O(1) lookups, uninstalls, and listings.
+
+### Action Items
+- [x] **1. Implement Package Manager Core (`launcher/src/package_manager.hpp` / `.cpp`)**:
+  - Implement deterministic 16-hex FNV-1a hash calculation `compute_project_id(name, version)`.
+  - Implement cross-platform directory resolution (`get_solix_home()`, `get_installed_dir()`, `get_registry_path()`) supporting `$SOLIX_HOME` override.
+  - Implement centralized registry operations on `installed.json` (load, save, add entry, remove entry).
+  - Implement `install_project(path, force)`, `uninstall_project(name, version)`, `list_installed_projects()`, and `get_project_details(name, version)`.
+- [x] **2. Implement CLI Subcommands (`launcher/src/commands/package.hpp` / `.cpp`)**:
+  - `solix install [path] [-f,--force]`
+  - `solix uninstall <name> <version>`
+  - `solix list`
+  - `solix details <name> [version]`
+  - Register subcommands in `launcher/CMakeLists.txt` and `launcher/src/main.cpp`.
+- [x] **3. End-to-End Verification & Testing**:
+  - Test `solix install` on a newly created project -> verify hash ID directory creation and entry in `installed.json`.
+  - Test `solix list` -> verify formatted tabular output.
+  - Test `solix details <name> <version>` -> verify extensive project metadata display.
+  - Test `solix uninstall <name> <version>` -> verify directory removal and registry cleanup.
+  - Test collision prevention (require `--force` to reinstall identical version).
+  - Run full test suite (`ctest`) to ensure zero regressions across all 42 suites.
+
+### Acceptance Criteria
+- `solix install` installs projects into `<installed_dir>/<hash_id>/` where `<hash_id>` is derived from `name@version`.
+- `installed.json` centrally records all installed package metadata.
+- `solix uninstall` requires both name and version and cleans up the package directory and registry entry.
+- `solix list` and `solix details` correctly report installed package information.
+- All 42 unit test suites compile and pass 100%.
+
 
 
