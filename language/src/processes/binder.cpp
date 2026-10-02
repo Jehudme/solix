@@ -131,6 +131,12 @@ Node *Binder::instantiate_template(const std::string &template_name,
 
   if (clone->node_type == NodeType::CLASS_DECL) {
     auto *cls = static_cast<ClassDeclaration *>(clone);
+    cls->vtable.clear();
+    cls->itable.clear();
+    cls->reference_field_offsets.clear();
+    cls->vtable_id = -1;
+    cls->base_vtable_id = -1;
+
     cls->class_name = mangled_name.substr(my_prefix.length());
     cls->package_context = my_prefix;
     current_package = my_prefix;
@@ -141,13 +147,6 @@ Node *Binder::instantiate_template(const std::string &template_name,
     ClassDeclaration* current_class_copy = current_class;
     current_class = cls;
 
-    int offset = (!cls->base_class_name.empty() ? 0 : 1);
-    if (!cls->base_class_name.empty()) {
-      Node *base_node = global_scope.resolve(cls->base_class_name);
-      if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
-        offset = static_cast<ClassDeclaration *>(base_node)->instance_size;
-      }
-    }
     for (const auto &child : cls->children) {
       if (child && child->node_type == NodeType::FIELD_DECL) {
         auto *field = static_cast<FieldDeclaration *>(child.get());
@@ -159,15 +158,30 @@ Node *Binder::instantiate_template(const std::string &template_name,
           field->is_reference_type = !(type_decl && type_decl->is_primitive &&
                                        field->type_info.array_depth == 0);
         }
-        if (!field->is_static) {
-          field->memory_index = offset++;
-        }
       } else if (child && child->node_type == NodeType::METHOD_DECL) {
         auto *method = static_cast<MethodDeclaration *>(child.get());
         method->return_type = resolve_type(method->return_type, method);
       }
     }
-    cls->instance_size = offset;
+
+    resolve_base_class(cls);
+    if (!cls->is_primitive) {
+      cls->vtable_id = next_vtable_id++;
+      if (!cls->base_class_name.empty()) {
+        Node *base_node = unwrap_alias(global_scope.resolve(cls->base_class_name));
+        if (!base_node) base_node = unwrap_alias(resolve_symbol(cls->base_class_name, cls, false));
+        if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
+          cls->base_vtable_id = static_cast<ClassDeclaration *>(base_node)->vtable_id;
+        }
+      }
+    }
+
+    calculate_layout(cls);
+    if (cls->is_interface) {
+      calculate_interface_vtable(cls);
+    } else {
+      calculate_class_vtable(cls);
+    }
 
     current_class = current_class_copy;
 
@@ -899,50 +913,16 @@ void Binder::bind_types_and_memory() {
     }
   }
 
-  auto unwrap_alias = [&](Node *n) -> Node * {
-    while (n && n->node_type == NodeType::ALIAS_STMT) {
-      auto *alias_stmt = static_cast<AliasStatement *>(n);
-      if (alias_stmt->resolved_declaration) {
-        n = alias_stmt->resolved_declaration;
-      } else {
-        n = resolve_symbol(alias_stmt->target_type.name, alias_stmt, false);
-        alias_stmt->resolved_declaration = n;
-      }
-    }
-    return n;
-  };
-
-  auto resolve_base_class = [&](ClassDeclaration *cls) -> Node * {
-    if (cls->base_class_name.empty()) return nullptr;
-    Node *node = resolve_symbol(cls->base_class_name, cls, true);
-    node = unwrap_alias(node);
-    if (node && node->node_type == NodeType::CLASS_DECL) {
-      if (static_cast<ClassDeclaration *>(node)->is_primitive) {
-        record_error(cls, "Cannot extend non-class type '" + cls->base_class_name + "'");
-        return nullptr;
-      }
-      cls->base_class_name = static_cast<ClassDeclaration *>(node)->mangled_name;
-      return node;
-    }
-    if (node) {
-      record_error(cls, "Cannot extend non-class type '" + cls->base_class_name + "'");
-      return nullptr;
-    }
-    record_error(cls, "Base class not found: " + cls->base_class_name);
-    return nullptr;
-  };
-
   for (const auto &[name, node] : global_scope.symbols) {
     if (node->node_type == NodeType::CLASS_DECL) {
       resolve_base_class(static_cast<ClassDeclaration *>(node));
     }
   }
 
-  int next_vtable_id = 1;
   for (const auto &[name, node] : global_scope.symbols) {
     if (node->node_type == NodeType::CLASS_DECL) {
       auto *cls = static_cast<ClassDeclaration *>(node);
-      if (!cls->is_primitive) {
+      if (!cls->is_primitive && cls->vtable_id == -1) {
         cls->vtable_id = next_vtable_id++;
         log_debug("Assigned vtable_id {} to class/interface '{}'", cls->vtable_id,
                   cls->mangled_name);
@@ -968,260 +948,6 @@ void Binder::bind_types_and_memory() {
     }
   }
 
-  std::unordered_map<std::string, std::vector<MethodDeclaration *>> vtables;
-  std::unordered_set<std::string> vtable_calculated;
-  std::unordered_set<std::string> vtable_in_progress;
-
-  auto get_method_sig = [](const std::string &mangled) -> std::string {
-    size_t paren = mangled.find('(');
-    if (paren == std::string::npos) {
-      size_t last_dot = mangled.rfind('.');
-      return (last_dot == std::string::npos) ? mangled : mangled.substr(last_dot + 1);
-    }
-    size_t last_dot = mangled.rfind('.', paren);
-    if (last_dot == std::string::npos) {
-      return mangled;
-    }
-    return mangled.substr(last_dot + 1);
-  };
-
-  auto collect_all_interfaces = [&](ClassDeclaration *cls) -> std::vector<ClassDeclaration *> {
-    std::vector<ClassDeclaration *> result;
-    std::unordered_set<std::string> visited;
-
-    std::function<void(ClassDeclaration *)> collect = [&](ClassDeclaration *c) {
-      if (!c) return;
-      if (visited.count(c->mangled_name)) return;
-      visited.insert(c->mangled_name);
-
-      for (const auto &iface_name : c->implemented_interfaces) {
-        Node *n = resolve_symbol(iface_name, c, false);
-        n = unwrap_alias(n);
-        if (n && n->node_type == NodeType::CLASS_DECL) {
-          auto *iface = static_cast<ClassDeclaration *>(n);
-          collect(iface);
-          result.push_back(iface);
-        }
-      }
-      if (c->is_interface && !c->base_class_name.empty()) {
-        Node *bn = resolve_symbol(c->base_class_name, c, false);
-        bn = unwrap_alias(bn);
-        if (bn && bn->node_type == NodeType::CLASS_DECL) {
-          auto *base_iface = static_cast<ClassDeclaration *>(bn);
-          collect(base_iface);
-          result.push_back(base_iface);
-        }
-      }
-      if (!c->is_interface && !c->base_class_name.empty()) {
-        Node *bn = unwrap_alias(global_scope.resolve(c->base_class_name));
-        if (bn && bn->node_type == NodeType::CLASS_DECL) {
-          collect(static_cast<ClassDeclaration *>(bn));
-        }
-      }
-    };
-
-    collect(cls);
-    return result;
-  };
-
-  std::function<void(ClassDeclaration *)> calculate_interface_vtable =
-      [&](ClassDeclaration *iface) {
-    if (vtable_calculated.count(iface->mangled_name))
-      return;
-    if (vtable_in_progress.count(iface->mangled_name)) {
-      record_error(iface, "Circular interface inheritance detected for '" + iface->class_name + "'");
-      return;
-    }
-    vtable_in_progress.insert(iface->mangled_name);
-
-    std::vector<MethodDeclaration *> vtable;
-    if (!iface->base_class_name.empty()) {
-      Node *base_node = unwrap_alias(resolve_symbol(iface->base_class_name, iface, false));
-      if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
-        auto *base_iface = static_cast<ClassDeclaration *>(base_node);
-        calculate_interface_vtable(base_iface);
-        vtable = vtables[base_iface->mangled_name];
-      }
-    }
-
-    for (const auto &child : iface->children) {
-      if (child->node_type == NodeType::METHOD_DECL) {
-        auto *method = static_cast<MethodDeclaration *>(child.get());
-        method->is_abstract = true;
-        method->is_virtual = true;
-        bool found = false;
-        for (size_t i = 0; i < vtable.size(); ++i) {
-          if (get_method_sig(vtable[i]->mangled_name) == get_method_sig(method->mangled_name)) {
-            vtable[i] = method;
-            method->vtable_index = i;
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          method->vtable_index = vtable.size();
-          vtable.push_back(method);
-        }
-      }
-    }
-
-    vtable_in_progress.erase(iface->mangled_name);
-    vtables[iface->mangled_name] = vtable;
-    iface->vtable = vtable;
-    vtable_calculated.insert(iface->mangled_name);
-  };
-
-  std::function<void(ClassDeclaration *)> calculate_class_vtable =
-      [&](ClassDeclaration *cls) {
-    if (cls->is_interface) {
-      calculate_interface_vtable(cls);
-      return;
-    }
-    if (vtable_calculated.count(cls->mangled_name))
-      return;
-    if (vtable_in_progress.count(cls->mangled_name)) {
-      record_error(cls, "Circular inheritance detected for class '" + cls->class_name + "'");
-      return;
-    }
-    vtable_in_progress.insert(cls->mangled_name);
-
-    log_trace("Calculating vtable for class '{}'", cls->mangled_name);
-    std::vector<MethodDeclaration *> vtable;
-    if (!cls->base_class_name.empty()) {
-      Node *base_node = unwrap_alias(global_scope.resolve(cls->base_class_name));
-      if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
-        auto *base_cls = static_cast<ClassDeclaration *>(base_node);
-        calculate_class_vtable(base_cls);
-        vtable = vtables[base_cls->mangled_name];
-        cls->itable = base_cls->itable;
-      }
-    }
-
-    for (const auto &child : cls->children) {
-      if (child->node_type == NodeType::METHOD_DECL) {
-        auto *method = static_cast<MethodDeclaration *>(child.get());
-        if (method->is_override) {
-          bool found = false;
-          for (size_t i = 0; i < vtable.size(); ++i) {
-            std::string base_sig = get_method_sig(vtable[i]->mangled_name);
-            std::string drv_sig = get_method_sig(method->mangled_name);
-            if (base_sig == drv_sig) {
-              if (vtable[i]->return_type != method->return_type) {
-                record_error(method, fmt::format("Overriding method '{}' has incompatible return type '{}' (expected '{}')",
-                                                 method->method_name, method->return_type.name, vtable[i]->return_type.name));
-              }
-              vtable[i] = method;
-              method->vtable_index = i;
-              method->is_virtual = true;
-              found = true;
-              log_trace("VTable override: {} at index {}",
-                        method->mangled_name, i);
-              break;
-            }
-          }
-          if (!found)
-            throw std::runtime_error(
-                "Method marked override but no base method found: " +
-                method->mangled_name);
-        } else if (method->is_virtual || method->is_abstract) {
-          method->is_virtual = true;
-          method->vtable_index = vtable.size();
-          vtable.push_back(method);
-          log_trace("VTable addition: {} assigned slot {}",
-                    method->mangled_name, method->vtable_index);
-        }
-      }
-    }
-
-    // Process implemented interfaces
-    auto all_ifaces = collect_all_interfaces(cls);
-    for (auto *iface : all_ifaces) {
-      calculate_interface_vtable(iface);
-      std::vector<int> iface_slots(iface->vtable.size(), -1);
-      for (size_t idx = 0; idx < iface->vtable.size(); ++idx) {
-        MethodDeclaration *im = iface->vtable[idx];
-        MethodDeclaration *impl_method = nullptr;
-
-        ClassDeclaration *curr = cls;
-        while (curr) {
-          for (const auto &mc : curr->children) {
-            if (mc && mc->node_type == NodeType::METHOD_DECL) {
-              auto *m = static_cast<MethodDeclaration *>(mc.get());
-              if (m->method_name == im->method_name && !m->is_abstract &&
-                  m->parameters.size() == im->parameters.size()) {
-                bool params_match = true;
-                for (size_t p = 0; p < m->parameters.size(); ++p) {
-                  auto *p1 = static_cast<VariableDeclaration *>(m->parameters[p].get());
-                  auto *p2 = static_cast<VariableDeclaration *>(im->parameters[p].get());
-                  if (p1->type_info != p2->type_info) {
-                    params_match = false;
-                    break;
-                  }
-                }
-                if (params_match) {
-                  impl_method = m;
-                  break;
-                }
-              }
-            }
-          }
-          if (impl_method || curr->base_class_name.empty()) break;
-          Node *bn = unwrap_alias(global_scope.resolve(curr->base_class_name));
-          curr = (bn && bn->node_type == NodeType::CLASS_DECL) ? static_cast<ClassDeclaration *>(bn) : nullptr;
-        }
-
-        if (!impl_method) {
-          if (!cls->is_abstract) {
-            record_error(cls, fmt::format("Class '{}' does not implement interface method '{}()'", cls->class_name, im->method_name));
-          }
-        } else {
-          int slot = -1;
-          for (size_t s = 0; s < vtable.size(); ++s) {
-            if (vtable[s] == impl_method) {
-              slot = static_cast<int>(s);
-              break;
-            }
-          }
-          if (slot == -1) {
-            for (size_t s = 0; s < vtable.size(); ++s) {
-              if (get_method_sig(vtable[s]->mangled_name) == get_method_sig(impl_method->mangled_name)) {
-                vtable[s] = impl_method;
-                impl_method->vtable_index = s;
-                impl_method->is_virtual = true;
-                slot = static_cast<int>(s);
-                break;
-              }
-            }
-          }
-          if (slot == -1) {
-            slot = static_cast<int>(vtable.size());
-            impl_method->is_virtual = true;
-            impl_method->vtable_index = slot;
-            vtable.push_back(impl_method);
-          }
-          iface_slots[idx] = slot;
-        }
-      }
-      cls->itable[iface->vtable_id] = iface_slots;
-    }
-
-    vtable_in_progress.erase(cls->mangled_name);
-    vtables[cls->mangled_name] = vtable;
-    cls->vtable = vtable;
-    vtable_calculated.insert(cls->mangled_name);
-
-    if (!cls->is_abstract) {
-      for (MethodDeclaration *m : cls->vtable) {
-        if (m->is_abstract) {
-          std::string parent_name = (m->parent && m->parent->node_type == NodeType::CLASS_DECL)
-                                        ? static_cast<ClassDeclaration *>(m->parent)->class_name
-                                        : "";
-          record_error(cls, "Class '" + cls->class_name + "' must implement abstract method '" + m->method_name + "()' from '" + parent_name + "'");
-        }
-      }
-    }
-  };
-
   for (const auto &[name, node] : global_scope.symbols) {
     if (node->node_type == NodeType::CLASS_DECL) {
       auto *cls = static_cast<ClassDeclaration *>(node);
@@ -1242,84 +968,337 @@ void Binder::bind_types_and_memory() {
 
   for (const auto &[name, node] : global_scope.symbols) {
     if (node->node_type == NodeType::CLASS_DECL) {
-      auto *cls = static_cast<ClassDeclaration *>(node);
-      bool has_abstract = false;
-      for (auto *m : cls->vtable) {
-        if (m->is_abstract) {
-          has_abstract = true;
-          break;
-        }
-      }
-    }
-  }
-
-  auto is_exception_class = [&](ClassDeclaration *cls) -> bool {
-    std::unordered_set<std::string> visited;
-    std::string current_name = cls->mangled_name;
-    while (!current_name.empty()) {
-      if (visited.count(current_name)) break;
-      visited.insert(current_name);
-      if (current_name == "Exception" || current_name == "Throwable" ||
-          current_name.ends_with(".Exception") || current_name.ends_with(".Throwable")) return true;
-      Node *node = global_scope.resolve(current_name);
-      if (node && node->node_type == NodeType::CLASS_DECL) {
-        current_name = static_cast<ClassDeclaration *>(node)->base_class_name;
-      } else {
-        break;
-      }
-    }
-    return false;
-  };
-
-  std::unordered_set<std::string> layout_calculated;
-  std::unordered_set<std::string> layout_in_progress;
-  std::function<int(ClassDeclaration *)> calculate_layout =
-      [&](ClassDeclaration *cls) -> int {
-    if (layout_calculated.count(cls->mangled_name))
-      return cls->instance_size;
-    if (layout_in_progress.count(cls->mangled_name))
-      return 1;
-    layout_in_progress.insert(cls->mangled_name);
-
-    int offset = (!cls->base_class_name.empty() ? 0 : 1);
-    cls->reference_field_offsets.clear();
-    if (!cls->base_class_name.empty()) {
-      Node *base_node = global_scope.resolve(cls->base_class_name);
-      if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
-        auto *base_cls = static_cast<ClassDeclaration *>(base_node);
-        offset = calculate_layout(base_cls);
-        cls->reference_field_offsets = base_cls->reference_field_offsets;
-      } else {
-        throw std::runtime_error("Base class not found: " +
-                                 cls->base_class_name);
-      }
-    }
-    for (const auto &child : cls->children) {
-      if (child->node_type == NodeType::FIELD_DECL) {
-        auto *field = static_cast<FieldDeclaration *>(child.get());
-        if (!field->is_static) {
-          field->memory_index = offset++;
-          if (field->is_reference_type && !field->is_weak) {
-            cls->reference_field_offsets.push_back(static_cast<uint32_t>(field->memory_index));
-          }
-          log_trace("Field '{}' in '{}' assigned instance offset {}",
-                    field->field_name, cls->mangled_name, field->memory_index);
-        }
-      }
-    }
-    layout_in_progress.erase(cls->mangled_name);
-    cls->instance_size = offset;
-    layout_calculated.insert(cls->mangled_name);
-    log_debug("Class '{}' instance layout computed: size = {} words",
-              cls->mangled_name, cls->instance_size);
-    return cls->instance_size;
-  };
-
-  for (const auto &[name, node] : global_scope.symbols) {
-    if (node->node_type == NodeType::CLASS_DECL) {
       calculate_layout(static_cast<ClassDeclaration *>(node));
     }
   }
+}
+
+Node *Binder::unwrap_alias(Node *n) {
+  while (n && n->node_type == NodeType::ALIAS_STMT) {
+    auto *alias_stmt = static_cast<AliasStatement *>(n);
+    if (alias_stmt->resolved_declaration) {
+      n = alias_stmt->resolved_declaration;
+    } else {
+      n = resolve_symbol(alias_stmt->target_type.name, alias_stmt, false);
+      alias_stmt->resolved_declaration = n;
+    }
+  }
+  return n;
+}
+
+Node *Binder::resolve_base_class(ClassDeclaration *cls) {
+  if (cls->base_class_name.empty()) return nullptr;
+  Node *node = resolve_symbol(cls->base_class_name, cls, true);
+  node = unwrap_alias(node);
+  if (node && node->node_type == NodeType::CLASS_DECL) {
+    if (static_cast<ClassDeclaration *>(node)->is_primitive) {
+      record_error(cls, "Cannot extend non-class type '" + cls->base_class_name + "'");
+      return nullptr;
+    }
+    cls->base_class_name = static_cast<ClassDeclaration *>(node)->mangled_name;
+    return node;
+  }
+  if (node) {
+    record_error(cls, "Cannot extend non-class type '" + cls->base_class_name + "'");
+    return nullptr;
+  }
+  record_error(cls, "Base class not found: " + cls->base_class_name);
+  return nullptr;
+}
+
+std::string Binder::get_method_sig(const std::string &mangled) {
+  size_t paren = mangled.find('(');
+  if (paren == std::string::npos) {
+    size_t last_dot = mangled.rfind('.');
+    return (last_dot == std::string::npos) ? mangled : mangled.substr(last_dot + 1);
+  }
+  size_t last_dot = mangled.rfind('.', paren);
+  if (last_dot == std::string::npos) {
+    return mangled;
+  }
+  return mangled.substr(last_dot + 1);
+}
+
+std::vector<ClassDeclaration *> Binder::collect_all_interfaces(ClassDeclaration *cls) {
+  std::vector<ClassDeclaration *> result;
+  std::unordered_set<std::string> visited;
+
+  std::function<void(ClassDeclaration *)> collect = [&](ClassDeclaration *c) {
+    if (!c) return;
+    if (visited.count(c->mangled_name)) return;
+    visited.insert(c->mangled_name);
+
+    for (const auto &iface_name : c->implemented_interfaces) {
+      Node *n = resolve_symbol(iface_name, c, false);
+      n = unwrap_alias(n);
+      if (n && n->node_type == NodeType::CLASS_DECL) {
+        auto *iface = static_cast<ClassDeclaration *>(n);
+        collect(iface);
+        result.push_back(iface);
+      }
+    }
+    if (c->is_interface && !c->base_class_name.empty()) {
+      Node *bn = resolve_symbol(c->base_class_name, c, false);
+      bn = unwrap_alias(bn);
+      if (bn && bn->node_type == NodeType::CLASS_DECL) {
+        auto *base_iface = static_cast<ClassDeclaration *>(bn);
+        collect(base_iface);
+        result.push_back(base_iface);
+      }
+    }
+    if (!c->is_interface && !c->base_class_name.empty()) {
+      Node *bn = unwrap_alias(global_scope.resolve(c->base_class_name));
+      if (!bn) bn = unwrap_alias(resolve_symbol(c->base_class_name, c, false));
+      if (bn && bn->node_type == NodeType::CLASS_DECL) {
+        collect(static_cast<ClassDeclaration *>(bn));
+      }
+    }
+  };
+
+  collect(cls);
+  return result;
+}
+
+void Binder::calculate_interface_vtable(ClassDeclaration *iface) {
+  if (vtable_calculated.count(iface->mangled_name))
+    return;
+  if (vtable_in_progress.count(iface->mangled_name)) {
+    record_error(iface, "Circular interface inheritance detected for '" + iface->class_name + "'");
+    return;
+  }
+  vtable_in_progress.insert(iface->mangled_name);
+
+  std::vector<MethodDeclaration *> vtable;
+  if (!iface->base_class_name.empty()) {
+    Node *base_node = unwrap_alias(resolve_symbol(iface->base_class_name, iface, false));
+    if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
+      auto *base_iface = static_cast<ClassDeclaration *>(base_node);
+      calculate_interface_vtable(base_iface);
+      vtable = vtables[base_iface->mangled_name];
+    }
+  }
+
+  for (const auto &child : iface->children) {
+    if (child->node_type == NodeType::METHOD_DECL) {
+      auto *method = static_cast<MethodDeclaration *>(child.get());
+      method->is_abstract = true;
+      method->is_virtual = true;
+      bool found = false;
+      for (size_t i = 0; i < vtable.size(); ++i) {
+        if (get_method_sig(vtable[i]->mangled_name) == get_method_sig(method->mangled_name)) {
+          vtable[i] = method;
+          method->vtable_index = i;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        method->vtable_index = vtable.size();
+        vtable.push_back(method);
+      }
+    }
+  }
+
+  vtable_in_progress.erase(iface->mangled_name);
+  vtables[iface->mangled_name] = vtable;
+  iface->vtable = vtable;
+  vtable_calculated.insert(iface->mangled_name);
+}
+
+void Binder::calculate_class_vtable(ClassDeclaration *cls) {
+  if (cls->is_interface) {
+    calculate_interface_vtable(cls);
+    return;
+  }
+  if (vtable_calculated.count(cls->mangled_name))
+    return;
+  if (vtable_in_progress.count(cls->mangled_name)) {
+    record_error(cls, "Circular inheritance detected for class '" + cls->class_name + "'");
+    return;
+  }
+  vtable_in_progress.insert(cls->mangled_name);
+
+  log_trace("Calculating vtable for class '{}'", cls->mangled_name);
+  std::vector<MethodDeclaration *> vtable;
+  if (!cls->base_class_name.empty()) {
+    Node *base_node = unwrap_alias(global_scope.resolve(cls->base_class_name));
+    if (!base_node) {
+      base_node = unwrap_alias(resolve_symbol(cls->base_class_name, cls, false));
+    }
+    if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
+      auto *base_cls = static_cast<ClassDeclaration *>(base_node);
+      calculate_class_vtable(base_cls);
+      vtable = vtables[base_cls->mangled_name];
+      cls->itable = base_cls->itable;
+    }
+  }
+
+  for (const auto &child : cls->children) {
+    if (child->node_type == NodeType::METHOD_DECL) {
+      auto *method = static_cast<MethodDeclaration *>(child.get());
+      if (method->is_override) {
+        bool found = false;
+        for (size_t i = 0; i < vtable.size(); ++i) {
+          std::string base_sig = get_method_sig(vtable[i]->mangled_name);
+          std::string drv_sig = get_method_sig(method->mangled_name);
+          if (base_sig == drv_sig) {
+            if (vtable[i]->return_type != method->return_type) {
+              record_error(method, fmt::format("Overriding method '{}' has incompatible return type '{}' (expected '{}')",
+                                               method->method_name, method->return_type.name, vtable[i]->return_type.name));
+            }
+            vtable[i] = method;
+            method->vtable_index = i;
+            method->is_virtual = true;
+            found = true;
+            log_trace("VTable override: {} at index {}",
+                      method->mangled_name, i);
+            break;
+          }
+        }
+        if (!found)
+          throw std::runtime_error(
+              "Method marked override but no base method found: " +
+              method->mangled_name);
+      } else if (method->is_virtual || method->is_abstract) {
+        method->is_virtual = true;
+        method->vtable_index = vtable.size();
+        vtable.push_back(method);
+        log_trace("VTable addition: {} assigned slot {}",
+                  method->mangled_name, method->vtable_index);
+      }
+    }
+  }
+
+  // Process implemented interfaces
+  auto all_ifaces = collect_all_interfaces(cls);
+  for (auto *iface : all_ifaces) {
+    calculate_interface_vtable(iface);
+    std::vector<int> iface_slots(iface->vtable.size(), -1);
+    for (size_t idx = 0; idx < iface->vtable.size(); ++idx) {
+      MethodDeclaration *im = iface->vtable[idx];
+      MethodDeclaration *impl_method = nullptr;
+
+      ClassDeclaration *curr = cls;
+      while (curr) {
+        for (const auto &mc : curr->children) {
+          if (mc && mc->node_type == NodeType::METHOD_DECL) {
+            auto *m = static_cast<MethodDeclaration *>(mc.get());
+            if (m->method_name == im->method_name && !m->is_abstract &&
+                m->parameters.size() == im->parameters.size()) {
+              bool params_match = true;
+              for (size_t p = 0; p < m->parameters.size(); ++p) {
+                auto *p1 = static_cast<VariableDeclaration *>(m->parameters[p].get());
+                auto *p2 = static_cast<VariableDeclaration *>(im->parameters[p].get());
+                if (p1->type_info != p2->type_info) {
+                  params_match = false;
+                  break;
+                }
+              }
+              if (params_match) {
+                impl_method = m;
+                break;
+              }
+            }
+          }
+        }
+        if (impl_method || curr->base_class_name.empty()) break;
+        Node *bn = unwrap_alias(global_scope.resolve(curr->base_class_name));
+        if (!bn) bn = unwrap_alias(resolve_symbol(curr->base_class_name, curr, false));
+        curr = (bn && bn->node_type == NodeType::CLASS_DECL) ? static_cast<ClassDeclaration *>(bn) : nullptr;
+      }
+
+      if (!impl_method) {
+        if (!cls->is_abstract) {
+          record_error(cls, fmt::format("Class '{}' does not implement interface method '{}()'", cls->class_name, im->method_name));
+        }
+      } else {
+        int slot = -1;
+        for (size_t s = 0; s < vtable.size(); ++s) {
+          if (vtable[s] == impl_method) {
+            slot = static_cast<int>(s);
+            break;
+          }
+        }
+        if (slot == -1) {
+          for (size_t s = 0; s < vtable.size(); ++s) {
+            if (get_method_sig(vtable[s]->mangled_name) == get_method_sig(impl_method->mangled_name)) {
+              vtable[s] = impl_method;
+              impl_method->vtable_index = s;
+              impl_method->is_virtual = true;
+              slot = static_cast<int>(s);
+              break;
+            }
+          }
+        }
+        if (slot == -1) {
+          slot = static_cast<int>(vtable.size());
+          impl_method->is_virtual = true;
+          impl_method->vtable_index = slot;
+          vtable.push_back(impl_method);
+        }
+        iface_slots[idx] = slot;
+      }
+    }
+    cls->itable[iface->vtable_id] = iface_slots;
+  }
+
+  vtable_in_progress.erase(cls->mangled_name);
+  vtables[cls->mangled_name] = vtable;
+  cls->vtable = vtable;
+  vtable_calculated.insert(cls->mangled_name);
+
+  if (!cls->is_abstract) {
+    for (MethodDeclaration *m : cls->vtable) {
+      if (m->is_abstract) {
+        std::string parent_name = (m->parent && m->parent->node_type == NodeType::CLASS_DECL)
+                                      ? static_cast<ClassDeclaration *>(m->parent)->class_name
+                                      : "";
+        record_error(cls, "Class '" + cls->class_name + "' must implement abstract method '" + m->method_name + "()' from '" + parent_name + "'");
+      }
+    }
+  }
+}
+
+int Binder::calculate_layout(ClassDeclaration *cls) {
+  if (layout_calculated.count(cls->mangled_name))
+    return cls->instance_size;
+  if (layout_in_progress.count(cls->mangled_name))
+    return 1;
+  layout_in_progress.insert(cls->mangled_name);
+
+  int offset = (!cls->base_class_name.empty() ? 0 : 1);
+  cls->reference_field_offsets.clear();
+  if (!cls->base_class_name.empty()) {
+    Node *base_node = global_scope.resolve(cls->base_class_name);
+    if (!base_node) base_node = unwrap_alias(resolve_symbol(cls->base_class_name, cls, false));
+    if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
+      auto *base_cls = static_cast<ClassDeclaration *>(base_node);
+      offset = calculate_layout(base_cls);
+      cls->reference_field_offsets = base_cls->reference_field_offsets;
+    } else {
+      throw std::runtime_error("Base class not found: " +
+                               cls->base_class_name);
+    }
+  }
+  for (const auto &child : cls->children) {
+    if (child->node_type == NodeType::FIELD_DECL) {
+      auto *field = static_cast<FieldDeclaration *>(child.get());
+      if (!field->is_static) {
+        field->memory_index = offset++;
+        if (field->is_reference_type && !field->is_weak) {
+          cls->reference_field_offsets.push_back(static_cast<uint32_t>(field->memory_index));
+        }
+        log_trace("Field '{}' in '{}' assigned instance offset {}",
+                  field->field_name, cls->mangled_name, field->memory_index);
+      }
+    }
+  }
+  layout_in_progress.erase(cls->mangled_name);
+  cls->instance_size = offset;
+  layout_calculated.insert(cls->mangled_name);
+  log_debug("Class '{}' instance layout computed: size = {} words",
+            cls->mangled_name, cls->instance_size);
+  return cls->instance_size;
 }
 
 // ─── Binder::execute ─────────────────────────────────────────────────────────

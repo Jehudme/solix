@@ -1512,7 +1512,8 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
 
     // Constructor check
     if (check(TokenType::IDENTIFIER) &&
-        tokens[current + 1]->type == TokenType::PUNCTUATION_OPEN_PAREN) {
+        tokens[current + 1]->type == TokenType::PUNCTUATION_OPEN_PAREN &&
+        !(current + 2 < tokens.size() && tokens[current + 2]->type == TokenType::OPERATOR_MULTIPLY)) {
       if (std::get<std::string>(peek().value) != decl->class_name) {
         throw ParseError("Constructor name '" + std::get<std::string>(peek().value) + "' does not match enclosing class '" + decl->class_name + "'", peek().line, peek().column);
       }

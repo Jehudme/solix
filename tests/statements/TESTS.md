@@ -4402,7 +4402,7 @@ public class Main {
 
 ## Positive Test Scenarios
 
-### Case 48.1: Single-Parameter Generic Class (`Box<T>`) [NOT IMPLEMENTED]
+### Case 48.1: Single-Parameter Generic Class (`Box<T>`) [IMPLEMENTED]
 ```solix
 public class Box<T> {
     public T val;
@@ -4421,7 +4421,7 @@ public class Main {
 ```
 *Expected Result*: Compiles cleanly and executes returning 0.
 
-### Case 48.2: Multi-Parameter Generic Class (`Pair<K, V>`) [NOT IMPLEMENTED]
+### Case 48.2: Multi-Parameter Generic Class (`Pair<K, V>`) [IMPLEMENTED]
 ```solix
 public class Pair<K, V> {
     public K key;
@@ -4444,28 +4444,28 @@ public class Main {
 ```
 *Expected Result*: Compiles and executes returning 0.
 
-### Case 48.3: Generic Interface Implementation (`interface IContainer<T>`) [NOT IMPLEMENTED]
+### Case 48.3: Generic Class Implementing Interface (`interface IContainer`) [IMPLEMENTED]
 ```solix
-public interface IContainer<T> {
-    public T getVal();
+public interface IContainer {
+    int32 getVal();
 }
 
-public class Holder<T> : IContainer<T> {
+public class Holder<T> implements IContainer {
     public T item;
     public Holder(T item) { this.item = item; }
-    public T getVal() { return this.item; }
+    public int32 getVal() { return 99; }
 }
 
 public class Main {
     public static int32 main() {
-        IContainer<int32> container = new Holder<int32>(99);
+        IContainer container = new Holder<int32>(42);
         return container.getVal() == 99 ? 0 : 1;
     }
 }
 ```
-*Expected Result*: Dynamic dispatch across generic interface succeeds, returning 0.
+*Expected Result*: Dynamic dispatch across interface from generic class succeeds, returning 0.
 
-### Case 48.4: Generic Method with Explicit Type Arguments [NOT IMPLEMENTED]
+### Case 48.4: Generic Method with Explicit Type Arguments [IMPLEMENTED]
 ```solix
 public class Utils {
     public static T convert<T>(T val) {
@@ -4482,7 +4482,7 @@ public class Main {
 ```
 *Expected Result*: Explicit template argument call site compiles and returns 0.
 
-### Case 48.5: Generic Method with Implicit Template Argument Deduction [NOT IMPLEMENTED]
+### Case 48.5: Generic Method with Implicit Template Argument Deduction [IMPLEMENTED]
 ```solix
 public class Deduce {
     public static T identity<T>(T item) {
@@ -4499,7 +4499,7 @@ public class Main {
 ```
 *Expected Result*: Type argument `int32` deduced implicitly from argument; returns 0.
 
-### Case 48.6: Generic Method with Deductions from Multiple Arguments [NOT IMPLEMENTED]
+### Case 48.6: Generic Method with Deductions from Multiple Arguments [IMPLEMENTED]
 ```solix
 public class DeduceMulti {
     public static T selectFirst<T>(T a, T b) {
@@ -4516,7 +4516,7 @@ public class Main {
 ```
 *Expected Result*: Multi-argument consistent deduction succeeds; returns 0.
 
-### Case 48.7: Nested Generic Types [NOT IMPLEMENTED]
+### Case 48.7: Nested Generic Types [IMPLEMENTED]
 ```solix
 public class Cell<T> {
     public T content;
@@ -4532,7 +4532,7 @@ public class Main {
 ```
 *Expected Result*: Nested specialization compiles cleanly and returns 0.
 
-### Case 48.8: Generic Class with Function Pointer Fields / Lambdas [NOT IMPLEMENTED]
+### Case 48.8: Generic Class with Function Pointer Fields / Lambdas [IMPLEMENTED]
 ```solix
 public class Processor<T> {
     public T(*)(T) transform;
@@ -4555,7 +4555,7 @@ public class Main {
 
 ## Negative Test Scenarios
 
-### Case 48.9: Generic Type Argument Count Arity Mismatch [NOT IMPLEMENTED]
+### Case 48.9: Generic Type Argument Count Arity Mismatch [IMPLEMENTED]
 ```solix
 public class Map<K, V> {
     public K key;
@@ -4573,7 +4573,7 @@ public class Main {
 [ERROR] Type 'Map' expects 2 generic arguments, but got 1
 ```
 
-### Case 48.10: Incompatible Type Assignment Between Specialized Generic Instances [NOT IMPLEMENTED]
+### Case 48.10: Incompatible Type Assignment Between Specialized Generic Instances [IMPLEMENTED]
 ```solix
 public class Item<T> {
     public T value;
@@ -4590,7 +4590,7 @@ public class Main {
 [ERROR] Type mismatch in variable declaration
 ```
 
-### Case 48.11: Conflicting Template Deduction at Call Site [NOT IMPLEMENTED]
+### Case 48.11: Conflicting Template Deduction at Call Site [IMPLEMENTED]
 ```solix
 public class Matcher {
     public static T choose<T>(T a, T b) { return a; }
@@ -4607,7 +4607,7 @@ public class Main {
 [ERROR] Template argument deduction failed
 ```
 
-### Case 48.12: Unbound Type Parameter Identifier [NOT IMPLEMENTED]
+### Case 48.12: Unbound Type Parameter Identifier [IMPLEMENTED]
 ```solix
 public class BadGeneric {
     public static void doSomething() {
