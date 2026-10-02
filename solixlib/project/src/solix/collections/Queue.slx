@@ -1,0 +1,60 @@
+package solix.collections;
+
+import solix.core.Any;
+import solix.core.String;
+import solix.core.StringBuilder;
+import solix.exceptions.InvalidOperationException;
+
+public class Queue implements ICollection {
+    private LinkedList _items;
+
+    public Queue() {
+        this._items = new LinkedList();
+    }
+
+    public void enqueue(Any item) {
+        this._items.add_last(item);
+    }
+
+    public Any dequeue() {
+        if (this._items.is_empty()) {
+            throw new InvalidOperationException("Queue is empty");
+        }
+        return this._items.remove_first();
+    }
+
+    public Any peek() {
+        if (this._items.is_empty()) {
+            throw new InvalidOperationException("Queue is empty");
+        }
+        return this._items.peek_first();
+    }
+
+    public int32 size() {
+        return this._items.size();
+    }
+
+    public bool is_empty() {
+        return this._items.is_empty();
+    }
+
+    public bool contains(Any item) {
+        return this._items.contains(item);
+    }
+
+    public void clear() {
+        this._items.clear();
+    }
+
+    public Any[] to_array() {
+        return this._items.to_array();
+    }
+
+    public IIterator iterator() {
+        return this._items.iterator();
+    }
+
+    public String to_string() {
+        return this._items.to_string();
+    }
+}

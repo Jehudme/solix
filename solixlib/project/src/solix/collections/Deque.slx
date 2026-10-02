@@ -1,0 +1,102 @@
+package solix.collections;
+
+import solix.core.Any;
+import solix.core.String;
+import solix.core.StringBuilder;
+import solix.exceptions.InvalidOperationException;
+
+public class Deque implements IDeque {
+    private LinkedList _items;
+
+    public Deque() {
+        this._items = new LinkedList();
+    }
+
+    public void add_first(Any item) {
+        this._items.add_first(item);
+    }
+
+    public void push_front(Any item) {
+        this._items.add_first(item);
+    }
+
+    public void add_last(Any item) {
+        this._items.add_last(item);
+    }
+
+    public void push_back(Any item) {
+        this._items.add_last(item);
+    }
+
+    public Any remove_first() {
+        if (this._items.is_empty()) {
+            throw new InvalidOperationException("Deque is empty");
+        }
+        return this._items.remove_first();
+    }
+
+    public Any pop_front() {
+        return this.remove_first();
+    }
+
+    public Any remove_last() {
+        if (this._items.is_empty()) {
+            throw new InvalidOperationException("Deque is empty");
+        }
+        return this._items.remove_last();
+    }
+
+    public Any pop_back() {
+        return this.remove_last();
+    }
+
+    public Any peek_first() {
+        if (this._items.is_empty()) {
+            throw new InvalidOperationException("Deque is empty");
+        }
+        return this._items.peek_first();
+    }
+
+    public Any peek_front() {
+        return this.peek_first();
+    }
+
+    public Any peek_last() {
+        if (this._items.is_empty()) {
+            throw new InvalidOperationException("Deque is empty");
+        }
+        return this._items.peek_last();
+    }
+
+    public Any peek_back() {
+        return this.peek_last();
+    }
+
+    public int32 size() {
+        return this._items.size();
+    }
+
+    public bool is_empty() {
+        return this._items.is_empty();
+    }
+
+    public bool contains(Any item) {
+        return this._items.contains(item);
+    }
+
+    public void clear() {
+        this._items.clear();
+    }
+
+    public Any[] to_array() {
+        return this._items.to_array();
+    }
+
+    public IIterator iterator() {
+        return this._items.iterator();
+    }
+
+    public String to_string() {
+        return this._items.to_string();
+    }
+}

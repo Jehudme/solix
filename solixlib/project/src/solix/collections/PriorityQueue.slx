@@ -1,0 +1,146 @@
+package solix.collections;
+
+import solix.core.Any;
+import solix.core.String;
+import solix.core.StringBuilder;
+import solix.exceptions.InvalidOperationException;
+
+public class PriorityQueue implements ICollection {
+    private List _heap;
+    private bool _is_max_heap;
+
+    public PriorityQueue() {
+        this._heap = new List();
+        this._is_max_heap = false;
+    }
+
+    public PriorityQueue(bool is_max_heap) {
+        this._heap = new List();
+        this._is_max_heap = is_max_heap;
+    }
+
+    private int32 compare(Any a, Any b) {
+        if (a == null && b == null) return 0;
+        if (a == null) return -1;
+        if (b == null) return 1;
+        if (a.is_int() && b.is_int()) {
+            int32 ia = a.as_int32();
+            int32 ib = b.as_int32();
+            if (ia < ib) return -1;
+            if (ia > ib) return 1;
+            return 0;
+        }
+        if (a.is_string() && b.is_string()) {
+            return a.as_string().compare_to(b.as_string());
+        }
+        int32 ha = a.hash_code();
+        int32 hb = b.hash_code();
+        if (ha < hb) return -1;
+        if (ha > hb) return 1;
+        return 0;
+    }
+
+    private bool higher_priority(Any a, Any b) {
+        int32 cmp = this.compare(a, b);
+        if (this._is_max_heap) {
+            return cmp > 0;
+        } else {
+            return cmp < 0;
+        }
+    }
+
+    private void swap(int32 i, int32 j) {
+        Any tmp = this._heap.get(i);
+        this._heap.set(i, this._heap.get(j));
+        this._heap.set(j, tmp);
+    }
+
+    private void sift_up(int32 idx) {
+        while (idx > 0) {
+            int32 parent = (idx - 1) / 2;
+            if (this.higher_priority(this._heap.get(idx), this._heap.get(parent))) {
+                this.swap(idx, parent);
+                idx = parent;
+            } else {
+                break;
+            }
+        }
+    }
+
+    private void sift_down(int32 idx) {
+        int32 count = this._heap.size();
+        while (true) {
+            int32 best = idx;
+            int32 left = 2 * idx + 1;
+            int32 right = 2 * idx + 2;
+
+            if (left < count && this.higher_priority(this._heap.get(left), this._heap.get(best))) {
+                best = left;
+            }
+            if (right < count && this.higher_priority(this._heap.get(right), this._heap.get(best))) {
+                best = right;
+            }
+
+            if (best != idx) {
+                this.swap(idx, best);
+                idx = best;
+            } else {
+                break;
+            }
+        }
+    }
+
+    public void enqueue(Any item) {
+        this._heap.add(item);
+        this.sift_up(this._heap.size() - 1);
+    }
+
+    public Any dequeue() {
+        if (this._heap.is_empty()) {
+            throw new InvalidOperationException("PriorityQueue is empty");
+        }
+        Any root = this._heap.get(0);
+        int32 last_idx = this._heap.size() - 1;
+        Any last_item = this._heap.remove_at(last_idx);
+        if (this._heap.size() > 0) {
+            this._heap.set(0, last_item);
+            this.sift_down(0);
+        }
+        return root;
+    }
+
+    public Any peek() {
+        if (this._heap.is_empty()) {
+            throw new InvalidOperationException("PriorityQueue is empty");
+        }
+        return this._heap.get(0);
+    }
+
+    public int32 size() {
+        return this._heap.size();
+    }
+
+    public bool is_empty() {
+        return this._heap.is_empty();
+    }
+
+    public bool contains(Any item) {
+        return this._heap.contains(item);
+    }
+
+    public void clear() {
+        this._heap.clear();
+    }
+
+    public Any[] to_array() {
+        return this._heap.to_array();
+    }
+
+    public IIterator iterator() {
+        return this._heap.iterator();
+    }
+
+    public String to_string() {
+        return this._heap.to_string();
+    }
+}
