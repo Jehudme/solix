@@ -612,6 +612,42 @@ Provide comprehensive test coverage and documentation for Function Pointers, Fir
 - Comprehensive documentation created in `docs/spec/` and `docs/guide/`.
 - Full test suite passes without regressions (48/48 suites, 100% pass rate).
 
+---
+
+## Phase 16: Windows CI and Cross-Platform Test Stabilization
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `runtime` (`language/include/solix/runtime.hpp`, `language/src/runtime.cpp`), `build` (`tests/CMakeLists.txt`, `launcher/CMakeLists.txt`, `.github/workflows/integration.yml`)
+- **Status**: - [ ] In Progress
+
+### Objective
+Resolve the Windows CI test failure (`SIGSEGV - Stack overflow`) in GitHub Actions (`windows-latest (clang)`) across all unit test suites, eliminate runtime stack exhaustion, configure proper PE executable stack reserve, and ensure continuous integration passes 100% on Windows, Linux, and macOS.
+
+### Root Cause Analysis
+1. `struct RuntimeContext` in `language/include/solix/runtime.hpp` contained an embedded `std::array<Frame, 65536> call_stack;` taking over 1 MB of contiguous memory.
+2. In `language/src/runtime.cpp`, `int32_t run(RuntimeOptions &options)` instantiated `RuntimeContext vm(options);` as an automatic local variable on the thread stack.
+3. Windows PE default stack reserve is exactly 1 MB (1,048,576 bytes). Allocating `RuntimeContext` immediately triggered `EXCEPTION_STACK_OVERFLOW` (0xC00000FD) during compiler stack probing (`__chkstk`), causing Catch2 to report `SIGSEGV - Stack overflow` on every test invoking VM execution.
+
+### Action Items
+- [ ] **1. Decouple RuntimeContext and Call Stack from Thread Stack**:
+  - Convert `call_stack` in `RuntimeContext` to `std::vector<Frame>` dynamically allocated on the heap during initialization (`call_stack.resize(65536)`).
+  - Allocate `RuntimeContext` on the heap via `std::make_unique<RuntimeContext>(options)` in `solix::run(RuntimeOptions &options)`.
+- [ ] **2. Configure Binary Linker Stack Reserve**:
+  - In `tests/CMakeLists.txt` and `launcher/CMakeLists.txt`, set `/STACK:16777216` (or `-Wl,--stack,16777216`) on Windows to ensure 16 MB stack reserve for deep AST traversals, matching POSIX thread defaults.
+- [ ] **3. Push & Monitor GitHub Actions CI**:
+  - Push branch to trigger `integration.yml` in GitHub Actions.
+  - Monitor CI run across all matrix targets (`ubuntu-latest gcc`, `ubuntu-latest clang`, `macos-latest apple-clang`, `windows-latest clang`).
+  - Verify `windows-latest (clang)` passes 100%.
+- [ ] **4. Merge to Master**:
+  - Merge feature branch into `master` using `--no-ff`.
+  - Push `master` and verify final CI run succeeds.
+
+### Acceptance Criteria
+- `windows-latest (clang)` job in `.github/workflows/integration.yml` passes completely.
+- All 48 test suites execute without stack overflow or segmentation faults on Windows, Linux, and macOS.
+- GitHub Actions CI workflow concludes with green status across all matrix jobs.
+
+
 
 
 

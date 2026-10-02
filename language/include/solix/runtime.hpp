@@ -111,7 +111,7 @@ struct RuntimeContext {
   int32_t exit_code = 0;
   bool entry_method_called = false;
 
-  std::array<Frame, 65536> call_stack;
+  std::vector<Frame> call_stack;
   size_t call_depth = 0;
   Address active_closure_env = 0;
   

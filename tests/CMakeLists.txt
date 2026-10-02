@@ -29,5 +29,13 @@ target_compile_definitions(solix_tests PRIVATE
     SOLIX_PROJECT_ROOT="${CMAKE_SOURCE_DIR}"
 )
 
+if(WIN32)
+    if(MSVC)
+        target_link_options(solix_tests PRIVATE "/STACK:16777216")
+    else()
+        target_link_options(solix_tests PRIVATE "-Wl,--stack,16777216")
+    endif()
+endif()
+
 include(Catch)
 catch_discover_tests(solix_tests)

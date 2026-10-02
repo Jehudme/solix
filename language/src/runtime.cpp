@@ -167,6 +167,7 @@ void Memory::decrease_reference_callable(Address env) {
 
 RuntimeContext::RuntimeContext(const RuntimeOptions &opts)
     : options(opts), memory(opts.stack_capacity, opts.heap_capacity) {
+  call_stack.resize(65536);
 
   memory.object_destructor = [this](Memory &mem, Address address) {
     if (address == 0 || address >= mem.heap.size()) return;
@@ -1459,8 +1460,8 @@ op_DEC_REF_SLOT:
 }
 
 int32_t run(RuntimeOptions &options) {
-  RuntimeContext vm(options);
-  vm.execute();
-  return vm.exit_code;
+  auto vm = std::make_unique<RuntimeContext>(options);
+  vm->execute();
+  return vm->exit_code;
 }
 } // namespace solix
