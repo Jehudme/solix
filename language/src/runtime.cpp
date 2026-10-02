@@ -1,4 +1,5 @@
 #include "solix/runtime.hpp"
+#include "solix/native_registry.hpp"
 #include "utilities/optcodes.hpp"
 #include <bit>
 #include <cmath>
@@ -95,26 +96,6 @@ void Memory::deallocate(Address address) {
   free_blocks.push_back(header_addr);
 }
 
-void Memory::write_u64(Address address, uint32_t offset,
-                              uint64_t value) {
-  heap[address + offset] = value;
-}
-uint64_t Memory::read_u64(Address address, uint32_t offset) const {
-  return heap[address + offset];
-}
-void Memory::write_f64(Address address, uint32_t offset, double value) {
-  heap[address + offset] = std::bit_cast<uint64_t>(value);
-}
-double Memory::read_f64(Address address, uint32_t offset) const {
-  return std::bit_cast<double>(heap[address + offset]);
-}
-void Memory::write_char(Address address, uint32_t offset, char value) {
-  heap[address + offset] = static_cast<uint64_t>(value);
-}
-char Memory::read_char(Address address, uint32_t offset) const {
-  return static_cast<char>(heap[address + offset]);
-}
-
 void Memory::increase_reference(Address address) {
   if (address == 0)
     return;
@@ -206,10 +187,18 @@ RuntimeContext::RuntimeContext(const RuntimeOptions &opts)
                                path.string());
     }
   }
+
+  for (const auto &lib_path : options.native_libraries) {
+    NativeRegistry::global().load_library(lib_path);
+  }
 }
 
-void RuntimeContext::register_native(uint32_t id, NativeFunction func) {
-  native_registry[id] = std::move(func);
+void RuntimeContext::register_native(uint32_t id, NativeFunctionPtr func) {
+  if (id >= native_table.size()) {
+    native_table.resize(id + 1, nullptr);
+  }
+  native_table[id] = func;
+  native_registry[id] = func;
 }
 
 void RuntimeContext::push(uint64_t val) {
@@ -1073,7 +1062,11 @@ op_CALL_NATIVE:
         }
 
         SYNC_SP();
-        if (native_registry.count(id)) {
+        if (id < native_table.size() && native_table[id] != nullptr) {
+            uint64_t result = native_table[id](*this, self_address, args.data(), arg_count);
+            RESTORE_SP();
+            PUSH(result);
+        } else if (native_registry.count(id)) {
             uint64_t result = native_registry[id](*this, self_address, args.data(), arg_count);
             RESTORE_SP();
             PUSH(result);
@@ -1242,8 +1235,39 @@ op_DEFINE_NATIVE:
     {
       uint32_t id = read_u32(bytecode, program_counter);
       std::string name = read_string(bytecode, program_counter);
-      if (options.native_functions.count(name)) {
-        native_registry[id] = options.native_functions[name];
+      NativeFunctionPtr func = nullptr;
+
+      std::vector<std::string> candidates;
+      candidates.push_back(name);
+
+      size_t paren_pos = name.find('(');
+      std::string no_params = (paren_pos != std::string::npos) ? name.substr(0, paren_pos) : name;
+      candidates.push_back(no_params);
+
+      std::string with_underscores = no_params;
+      for (char &c : with_underscores) {
+        if (c == '.' || c == ':') c = '_';
+      }
+      candidates.push_back(with_underscores);
+
+      size_t last_sep = no_params.find_last_of(".:");
+      if (last_sep != std::string::npos && last_sep + 1 < no_params.size()) {
+        candidates.push_back(no_params.substr(last_sep + 1));
+      }
+
+      for (const auto &cand : candidates) {
+        if (options.native_functions.count(cand)) {
+          func = options.native_functions[cand];
+          break;
+        }
+        func = NativeRegistry::global().find_function(cand);
+        if (func) break;
+        func = NativeRegistry::global().find_symbol_in_loaded_libraries(cand);
+        if (func) break;
+      }
+
+      if (func) {
+        register_native(id, func);
       } else {
         std::cerr << "Warning: Native function " << name << " not found."
                   << std::endl;

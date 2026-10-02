@@ -19,15 +19,17 @@ using Heap = std::vector<uint64_t>; // Option B: Everything, including chars,
 using Address = uint32_t;
 
 struct RuntimeContext;
-using NativeFunction = std::function<uint64_t(
-    RuntimeContext &, uint64_t self_address, uint64_t *args, size_t arg_count)>;
+using NativeFunctionPtr = uint64_t (*)(
+    RuntimeContext &, uint64_t self_address, uint64_t *args, size_t arg_count);
+using NativeFunction = NativeFunctionPtr;
 
 struct RuntimeOptions {
   size_t stack_capacity = 1024 * 1024;     // 1M words
   size_t heap_capacity = 1024 * 1024 * 16; // 16MB words
   std::variant<Bytecode, std::filesystem::path> bytecode_source;
   std::vector<std::string> program_args;
-  std::unordered_map<std::string, NativeFunction> native_functions;
+  std::unordered_map<std::string, NativeFunctionPtr> native_functions;
+  std::vector<std::filesystem::path> native_libraries;
 };
 
 // -----------------------------------------------------------------------------
@@ -85,14 +87,26 @@ struct Memory {
   void decrease_reference_callable(Address env);
 
   // Casting Helpers for 64-bit blocks
-  void write_u64(Address address, uint32_t offset, uint64_t value);
-  uint64_t read_u64(Address address, uint32_t offset) const;
+  inline void write_u64(Address address, uint32_t offset, uint64_t value) {
+    heap[address + offset] = value;
+  }
+  inline uint64_t read_u64(Address address, uint32_t offset) const {
+    return heap[address + offset];
+  }
 
-  void write_f64(Address address, uint32_t offset, double value);
-  double read_f64(Address address, uint32_t offset) const;
+  inline void write_f64(Address address, uint32_t offset, double value) {
+    heap[address + offset] = std::bit_cast<uint64_t>(value);
+  }
+  inline double read_f64(Address address, uint32_t offset) const {
+    return std::bit_cast<double>(heap[address + offset]);
+  }
 
-  void write_char(Address address, uint32_t offset, char value);
-  char read_char(Address address, uint32_t offset) const;
+  inline void write_char(Address address, uint32_t offset, char value) {
+    heap[address + offset] = static_cast<uint64_t>(value);
+  }
+  inline char read_char(Address address, uint32_t offset) const {
+    return static_cast<char>(heap[address + offset]);
+  }
 };
 
 int32_t run(RuntimeOptions &options);
@@ -119,7 +133,8 @@ struct RuntimeContext {
   Address active_exception = 0;
   std::unordered_map<Address, Address> return_to_cleanup;
   
-  std::unordered_map<uint32_t, NativeFunction> native_registry;
+  std::vector<NativeFunctionPtr> native_table;
+  std::unordered_map<uint32_t, NativeFunctionPtr> native_registry;
   std::unordered_map<uint32_t, std::vector<uint32_t>> vtables;
   std::unordered_map<uint32_t, int32_t> vtable_bases;
   std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::vector<uint32_t>>> itables;
@@ -127,7 +142,7 @@ struct RuntimeContext {
 
   RuntimeContext(const RuntimeOptions &opts);
 
-  void register_native(uint32_t id, NativeFunction func);
+  void register_native(uint32_t id, NativeFunctionPtr func);
   void execute();
 
   void push(uint64_t val);
