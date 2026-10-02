@@ -2,152 +2,140 @@
 
 ## Overview
 
-The `solix.collections` linear collections module provides specialized, high-performance linear data structures, queues, buffers, and bit vectors:
-1. `Stack`: Last-In-First-Out (LIFO) stack container backed by dynamic array.
-2. `Queue`: First-In-First-Out (FIFO) queue container backed by doubly linked nodes.
-3. `Deque`: Double-ended queue (`IDeque`) supporting $O(1)$ insertion and removal at both extremities.
-4. `PriorityQueue`: Binary heap priority container supporting min-heap and max-heap extraction orders with $O(\log N)$ updates.
-5. `CircularBuffer`: Fixed-capacity FIFO ring buffer supporting bounded streaming with optional overwrite semantics.
+The `solix.collections` linear collections module provides specialized, high-performance generic linear data structures, queues, buffers, and bit vectors:
+1. `Stack<T>`: Last-In-First-Out (LIFO) stack container backed by dynamic array with `for_each` lambda iteration.
+2. `Queue<T>`: First-In-First-Out (FIFO) queue container backed by doubly linked nodes with `for_each` lambda iteration.
+3. `Deque<T>`: Double-ended queue supporting $O(1)$ insertion and removal at both extremities with `for_each` lambda iteration.
+4. `PriorityQueue<T>`: Binary heap priority container supporting comparator lambdas (`int32(*)(T, T)`) with $O(\log N)$ updates and `for_each`.
+5. `CircularBuffer<T>`: Fixed-capacity FIFO ring buffer supporting bounded streaming with optional overwrite semantics, `enqueue`/`dequeue`, and `for_each`.
 6. `BitSet`: Dynamically expandable bit vector providing dense binary flags, bitwise operations (`and`, `or`, `xor`), and popcount cardinality tracking.
 
 ---
 
-## 1. Class: `solix.collections.Stack`
+## 1. Class: `solix.collections.Stack<T>`
 
-LIFO stack data structure implementing `ICollection`.
+Compile-time generic LIFO stack data structure.
 
 ### Constructors
 - `Stack()`: Initializes an empty stack with default initial capacity.
 - `Stack(int32 initial_capacity)`: Initializes an empty stack with specified initial capacity.
 
 ### Methods
-- `void push(Any item)`: Pushes an element onto the top of the stack.
-- `Any pop()`: Removes and returns the element at the top of the stack. Throws `InvalidOperationException` if the stack is empty.
-- `Any peek()`: Returns the element at the top of the stack without removing it. Throws `InvalidOperationException` if the stack is empty.
+- `void push(T item)`: Pushes an element onto the top of the stack.
+- `T pop()`: Removes and returns the element at the top of the stack. Throws `InvalidOperationException` if the stack is empty.
+- `T peek()`: Returns the element at the top of the stack without removing it. Throws `InvalidOperationException` if the stack is empty.
 - `int32 size()`: Returns the number of elements in the stack.
 - `bool is_empty()`: Returns `true` if the stack contains no elements.
-- `bool contains(Any item)`: Returns `true` if the specified element is in the stack.
+- `bool contains(T item)`: Returns `true` if the specified element is in the stack.
 - `void clear()`: Removes all elements from the stack.
-- `Any[] to_array()`: Returns an array containing all elements in insertion order.
-- `IIterator iterator()`: Returns an iterator over elements.
-- `String to_string()`: Formats the stack as a bracketed list `"[item1, item2, ...]"`.
-
-### Complexity
-- **Push**: Amortized $O(1)$.
-- **Pop / Peek**: $O(1)$.
+- `T[] to_array()`: Returns an array containing all elements in insertion order.
+- `void for_each(void(*)(T) action)`: Sequentially executes `action(item)` on all elements.
+- `StackIterator<T> iterator()`: Returns an iterator over elements.
+- `String to_string()`: Returns `"[Stack]"`.
 
 ---
 
-## 2. Class: `solix.collections.Queue`
+## 2. Class: `solix.collections.Queue<T>`
 
-FIFO queue data structure implementing `ICollection`.
+Compile-time generic FIFO queue data structure backed by doubly linked nodes.
 
 ### Constructors
 - `Queue()`: Initializes an empty FIFO queue.
 
 ### Methods
-- `void enqueue(Any item)`: Inserts an element at the end of the queue.
-- `Any dequeue()`: Removes and returns the element at the beginning of the queue. Throws `InvalidOperationException` if the queue is empty.
-- `Any peek()`: Returns the element at the beginning of the queue without removing it. Throws `InvalidOperationException` if the queue is empty.
+- `void enqueue(T item)`: Inserts an element at the end of the queue.
+- `T dequeue()`: Removes and returns the element at the beginning of the queue. Throws `InvalidOperationException` if the queue is empty.
+- `T peek()`: Returns the element at the beginning of the queue without removing it. Throws `InvalidOperationException` if the queue is empty.
 - `int32 size()`: Returns the number of elements in the queue.
 - `bool is_empty()`: Returns `true` if the queue is empty.
-- `bool contains(Any item)`: Returns `true` if the specified element is in the queue.
+- `bool contains(T item)`: Returns `true` if the specified element is in the queue.
 - `void clear()`: Removes all elements from the queue.
-- `Any[] to_array()`: Returns an array of elements in FIFO order.
-- `IIterator iterator()`: Returns an iterator over elements in FIFO order.
-- `String to_string()`: Formats the queue as `"[item1, item2, ...]"`.
-
-### Complexity
-- **Enqueue / Dequeue / Peek**: Guaranteed $O(1)$.
+- `T[] to_array()`: Returns an array of elements in FIFO order.
+- `void for_each(void(*)(T) action)`: Sequentially executes `action(item)` on all elements.
+- `QueueIterator<T> iterator()`: Returns an iterator over elements in FIFO order.
+- `String to_string()`: Returns `"[Queue]"`.
 
 ---
 
-## 3. Class: `solix.collections.Deque`
+## 3. Class: `solix.collections.Deque<T>`
 
-Double-ended queue implementing `IDeque` and `ICollection`.
+Compile-time generic double-ended queue supporting $O(1)$ operations at both ends.
 
 ### Constructors
 - `Deque()`: Initializes an empty double-ended queue.
 
 ### Methods
-- `void push_front(Any item)` / `void add_first(Any item)`: Inserts an element at the front.
-- `void push_back(Any item)` / `void add_last(Any item)`: Inserts an element at the back.
-- `Any pop_front()` / `Any remove_first()`: Removes and returns the front element. Throws `InvalidOperationException` if empty.
-- `Any pop_back()` / `Any remove_last()`: Removes and returns the back element. Throws `InvalidOperationException` if empty.
-- `Any peek_front()` / `Any peek_first()`: Returns the front element without removing it. Throws `InvalidOperationException` if empty.
-- `Any peek_back()` / `Any peek_last()`: Returns the back element without removing it. Throws `InvalidOperationException` if empty.
-- `int32 size()`, `bool is_empty()`, `void clear()`, `Any[] to_array()`, `IIterator iterator()`.
-
-### Complexity
-- **All front/back insertions, removals, and peeks**: Guaranteed $O(1)$.
-
----
-
-## 4. Class: `solix.collections.PriorityQueue`
-
-Binary heap priority queue implementing `ICollection`.
-
-### Constructors
-- `PriorityQueue()`: Initializes an empty min-heap priority queue (lowest value dequeued first).
-- `PriorityQueue(bool is_max_heap)`: Initializes an empty priority queue with specified heap mode (`true` for max-heap, `false` for min-heap).
-
-### Methods
-- `void enqueue(Any item)`: Inserts an element into the priority queue and sifts it up into place.
-- `Any dequeue()`: Removes and returns the highest priority element (root). Throws `InvalidOperationException` if empty.
-- `Any peek()`: Returns the highest priority element without removing it. Throws `InvalidOperationException` if empty.
-- `int32 size()`, `bool is_empty()`, `void clear()`, `Any[] to_array()`, `IIterator iterator()`.
-
-### Complexity
-- **Enqueue**: $O(\log N)$.
-- **Dequeue**: $O(\log N)$.
-- **Peek**: $O(1)$.
+- `void push_front(T item)` / `void add_first(T item)`: Inserts an element at the front.
+- `void push_back(T item)` / `void add_last(T item)`: Inserts an element at the back.
+- `T pop_front()` / `T remove_first()`: Removes and returns the front element. Throws `InvalidOperationException` if empty.
+- `T pop_back()` / `T remove_last()`: Removes and returns the back element. Throws `InvalidOperationException` if empty.
+- `T peek_front()` / `T peek_first()`: Returns the front element without removing it. Throws `InvalidOperationException` if empty.
+- `T peek_back()` / `T peek_last()`: Returns the back element without removing it. Throws `InvalidOperationException` if empty.
+- `int32 size()`, `bool is_empty()`, `void clear()`, `T[] to_array()`.
+- `void for_each(void(*)(T) action)`: Sequentially executes `action(item)` on all elements.
+- `DequeIterator<T> iterator()`: Returns iterator over deque elements.
+- `String to_string()`: Returns `"[Deque]"`.
 
 ---
 
-## 5. Class: `solix.collections.CircularBuffer`
+## 4. Class: `solix.collections.PriorityQueue<T>`
 
-Fixed-capacity FIFO ring buffer implementing `ICollection`.
+Compile-time generic binary heap priority queue parameterized by a comparator lambda.
 
 ### Constructors
-- `CircularBuffer(int32 capacity)`: Initializes a circular buffer with specified fixed capacity in non-overwrite mode. Throws `IllegalArgumentException` if capacity $\le 0$.
-- `CircularBuffer(int32 capacity, bool overwrite)`: Initializes a circular buffer with specified capacity and overwrite policy.
+- `PriorityQueue(int32(*)(T, T) comparator)`: Initializes an empty priority queue with the specified comparator lambda.
 
 ### Methods
-- `int32 capacity()`: Returns the buffer's maximum capacity.
-- `int32 size()`: Returns current element count.
-- `bool is_full()`: Returns `true` when element count equals capacity.
-- `bool is_overwrite()`: Returns `true` if overwrite mode is enabled.
-- `bool write(Any item)`: Writes an item. If full and overwrite is false, returns `false`. If full and overwrite is true, advances read head, overwrites oldest element, and returns `true`.
-- `void enqueue(Any item)`: Writes an item. Throws `InvalidOperationException` if full and overwrite is false.
-- `Any read()` / `Any dequeue()`: Reads and removes the oldest item. Throws `InvalidOperationException` if empty.
-- `Any peek()`: Returns oldest item without removing it. Throws `InvalidOperationException` if empty.
-- `void clear()`, `Any[] to_array()`, `IIterator iterator()`.
+- `void enqueue(T item)`: Inserts an element into the priority queue and sifts it up into place.
+- `T dequeue()`: Removes and returns the highest priority element (root). Throws `InvalidOperationException` if empty.
+- `T peek()`: Returns the highest priority element without removing it. Throws `InvalidOperationException` if empty.
+- `int32 size()`, `bool is_empty()`, `void clear()`, `T[] to_array()`.
+- `void for_each(void(*)(T) action)`: Sequentially executes `action(item)` across heap elements.
+- `PriorityQueueIterator<T> iterator()`: Returns iterator over heap elements.
+- `String to_string()`: Returns `"[PriorityQueue]"`.
 
-### Complexity
-- **Read / Write / Peek**: Guaranteed $O(1)$ without dynamic allocations.
+---
+
+## 5. Class: `solix.collections.CircularBuffer<T>`
+
+Compile-time generic fixed-capacity circular ring buffer with optional overwrite support.
+
+### Constructors
+- `CircularBuffer(int32 capacity)`: Initializes a non-overwrite ring buffer with specified capacity.
+- `CircularBuffer(int32 capacity, bool overwrite)`: Initializes a ring buffer with specified capacity and overwrite policy.
+
+### Methods
+- `int32 capacity()`: Returns total buffer capacity.
+- `int32 size()`: Returns current stored element count.
+- `bool is_empty()`, `bool is_full()`, `bool is_overwrite()`.
+- `bool write(T item)`: Writes item to buffer. In non-overwrite mode, returns `false` if full. In overwrite mode, drops oldest element and returns `true`.
+- `void enqueue(T item)`: Writes item to buffer; throws `InvalidOperationException` if full in non-overwrite mode.
+- `T read()` / `T dequeue()`: Reads and removes the oldest element. Throws `InvalidOperationException` if empty.
+- `T peek()`: Reads the oldest element without removal. Throws `InvalidOperationException` if empty.
+- `T get(int32 index)`: Direct access relative to head. Throws `InvalidOperationException` if out of bounds.
+- `void clear()`, `T[] to_array()`.
+- `void for_each(void(*)(T) action)`: Sequentially executes `action(item)` on all elements from head to tail.
+- `CircularBufferIterator<T> iterator()`.
+- `String to_string()`: Returns `"[CircularBuffer]"`.
 
 ---
 
 ## 6. Class: `solix.collections.BitSet`
 
-Dense dynamically-sized bit vector implementing `IStringable`.
+Dynamically expandable bit vector with bitwise operators.
 
 ### Constructors
-- `BitSet()`: Initializes a bit set with initial capacity of 64 bits (all clear).
-- `BitSet(int32 nbits)`: Initializes a bit set with capacity for at least `nbits`. Throws `IllegalArgumentException` if `nbits < 0`.
+- `BitSet()`: Initializes a 64-bit vector.
+- `BitSet(int32 nbits)`: Initializes a vector with at least `nbits` capacity.
 
 ### Methods
-- `bool get(int32 bit_index)`: Returns value of the bit at specified index. Throws `IndexOutOfBoundsException` if `bit_index < 0`.
-- `void set(int32 bit_index)`: Sets bit at `bit_index` to `true`. Automatically expands capacity if needed.
-- `void set_value(int32 bit_index, bool value)`: Sets bit at `bit_index` to specified boolean value.
-- `void clear(int32 bit_index)`: Clears bit at `bit_index` (`false`).
-- `void clear_all()`: Clears all bits.
+- `void set(int32 bit_index)`: Sets bit at `bit_index` to `true`.
+- `void set_value(int32 bit_index, bool value)`: Sets bit at `bit_index` to `value`.
+- `bool get(int32 bit_index)`: Returns bit state at `bit_index`.
+- `void clear_bit(int32 bit_index)`: Clears bit at `bit_index`.
 - `void flip(int32 bit_index)`: Inverts bit at `bit_index`.
-- `void and(BitSet other)`: Performs bitwise logical AND with `other`. Throws `IllegalArgumentException` if `other` is `null`.
-- `void or(BitSet other)`: Performs bitwise logical OR with `other`.
-- `void xor(BitSet other)`: Performs bitwise logical XOR with `other`.
-- `int32 cardinality()`: Returns number of bits set to `true`.
-- `int32 length()`: Returns index of highest set bit + 1 (or 0 if empty).
-- `int32 size()`: Returns allocated bit capacity.
+- `void clear()`: Resets all bits to `false`.
+- `int32 cardinality()`: Returns the number of bits set to `true`.
+- `int32 length()`: Returns the logical size (index of highest set bit + 1).
 - `bool is_empty()`: Returns `true` if no bits are set.
-- `String to_string()`: Formats set bit indices as `"{0, 5, 63}"`.
+- `void and(BitSet other)`, `void or(BitSet other)`, `void xor(BitSet other)`, `void and_not(BitSet other)`.

@@ -145,16 +145,16 @@ Each test scenario is assigned a permanent identifier and status tag:
 
 ## 11. Linear Collections (`solix.collections.Linear`: `Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, `BitSet`)
 
-- [ ] **Case 11.1 [NOT IMPLEMENTED]**: `Stack<T>` LIFO operations (`push`, `peek`, `pop`, `size`, `is_empty`, `clear`), `for_each` lambda iteration, and array conversion (`tests/solixlib/test_linear_collections.cpp`).
-- [ ] **Case 11.2 [NOT IMPLEMENTED]**: `Queue<T>` FIFO operations (`enqueue`, `peek`, `dequeue`, `size`, `is_empty`), `for_each` lambda iteration, and order preservation (`tests/solixlib/test_linear_collections.cpp`).
-- [ ] **Case 11.3 [NOT IMPLEMENTED]**: `Deque<T>` double-ended operations (`push_front`/`push_back`, `peek_front`/`peek_back`, `pop_front`/`pop_back`), `for_each` lambda iteration (`tests/solixlib/test_linear_collections.cpp`).
-- [ ] **Case 11.4 [NOT IMPLEMENTED]**: `PriorityQueue<T>` binary heap with comparator lambda (`int32(*)(T, T)`), extraction order, peek, and `for_each` (`tests/solixlib/test_linear_collections.cpp`).
-- [ ] **Case 11.5 [NOT IMPLEMENTED]**: `CircularBuffer<T>` ring buffer semantics, overwrite mode vs non-overwrite mode, wrapping around capacity boundaries, and `for_each` (`tests/solixlib/test_linear_collections.cpp`).
-- [ ] **Case 11.6 [NOT IMPLEMENTED]**: `BitSet` bit manipulation: `set`, `get`, `clear`, `flip`, bitwise `and`, `or`, `xor`, and `cardinality` (`tests/solixlib/test_linear_collections.cpp`).
-- [ ] **Case 11.7 [NOT IMPLEMENTED]**: Negative: `Stack<T>.pop()` and `peek()` on empty stack throw `InvalidOperationException` (`tests/solixlib/test_linear_collections.cpp`).
-- [ ] **Case 11.8 [NOT IMPLEMENTED]**: Negative: `Queue<T>.dequeue()` and `peek()` on empty queue throw `InvalidOperationException` (`tests/solixlib/test_linear_collections.cpp`).
-- [ ] **Case 11.9 [NOT IMPLEMENTED]**: Negative: `CircularBuffer<T>.read()` on empty buffer throws `InvalidOperationException` (`tests/solixlib/test_linear_collections.cpp`).
-- [ ] **Case 11.10 [NOT IMPLEMENTED]**: Negative: `BitSet` negative bit index throws `IndexOutOfBoundsException` and null operand throws `IllegalArgumentException` (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.1 [IMPLEMENTED]**: `Stack<T>` LIFO operations (`push`, `peek`, `pop`, `size`, `is_empty`, `clear`), `for_each` lambda iteration, and array conversion (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.2 [IMPLEMENTED]**: `Queue<T>` FIFO operations (`enqueue`, `peek`, `dequeue`, `size`, `is_empty`), `for_each` lambda iteration, and order preservation (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.3 [IMPLEMENTED]**: `Deque<T>` double-ended operations (`push_front`/`push_back`, `peek_front`/`peek_back`, `pop_front`/`pop_back`), `for_each` lambda iteration (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.4 [IMPLEMENTED]**: `PriorityQueue<T>` binary heap with comparator lambda (`int32(*)(T, T)`), extraction order, peek, and `for_each` (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.5 [IMPLEMENTED]**: `CircularBuffer<T>` ring buffer semantics, overwrite mode vs non-overwrite mode, wrapping around capacity boundaries, and `for_each` (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.6 [IMPLEMENTED]**: `BitSet` bit manipulation: `set`, `get`, `clear`, `flip`, bitwise `and`, `or`, `xor`, and `cardinality` (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.7 [IMPLEMENTED]**: Negative: `Stack<T>.pop()` and `peek()` on empty stack throw `InvalidOperationException` (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.8 [IMPLEMENTED]**: Negative: `Queue<T>.dequeue()` and `peek()` on empty queue throw `InvalidOperationException` (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.9 [IMPLEMENTED]**: Negative: `CircularBuffer<T>.read()` on empty buffer throws `InvalidOperationException` (`tests/solixlib/test_linear_collections.cpp`).
+- [x] **Case 11.10 [IMPLEMENTED]**: Negative: `BitSet` negative bit index throws `IndexOutOfBoundsException` and null operand throws `IllegalArgumentException` (`tests/solixlib/test_linear_collections.cpp`).
 
 ---
 

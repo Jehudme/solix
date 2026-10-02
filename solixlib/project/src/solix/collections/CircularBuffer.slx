@@ -103,6 +103,16 @@ public class CircularBuffer<T> implements IStringable {
         return true;
     }
 
+    public void enqueue(T item) {
+        if (!this.write(item)) {
+            throw new InvalidOperationException("CircularBuffer is full");
+        }
+    }
+
+    public T dequeue() {
+        return this.read();
+    }
+
     public T read() {
         if (this.is_empty()) {
             throw new InvalidOperationException("CircularBuffer is empty");

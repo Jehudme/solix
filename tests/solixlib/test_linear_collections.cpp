@@ -7,41 +7,45 @@ TEST_CASE("Standard Library - solix.collections.Linear", "[solixlib][collections
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
             import solix.collections.Stack;
-            import solix.core.Any;
 
             class Main {
                 public static int32 main() {
-                    Stack stack = new Stack();
+                    Stack<int32> stack = new Stack<int32>();
                     if (!stack.is_empty()) return 1;
                     if (stack.size() != 0) return 2;
 
-                    Any a1 = new Any(10);
-                    Any a2 = new Any(20);
-                    Any a3 = new Any(30);
-                    stack.push(a1);
-                    stack.push(a2);
-                    stack.push(a3);
+                    stack.push(10);
+                    stack.push(20);
+                    stack.push(30);
 
                     if (stack.size() != 3) return 3;
                     if (stack.is_empty()) return 4;
 
-                    Any top = stack.peek();
-                    if (top.as_int32() != 30) return 5;
+                    int32 top = stack.peek();
+                    if (top != 30) return 5;
 
-                    Any p1 = stack.pop();
-                    if (p1.as_int32() != 30) return 6;
+                    // for_each check
+                    int32[] sum_box = new int32[1];
+                    sum_box[0] = 0;
+                    stack.for_each([sum_box](int32 x) : void {
+                        sum_box[0] = sum_box[0] + x;
+                    });
+                    if (sum_box[0] != 60) return 50;
+
+                    int32 p1 = stack.pop();
+                    if (p1 != 30) return 6;
                     if (stack.size() != 2) return 600 + stack.size();
 
-                    Any p2 = stack.pop();
-                    if (p2.as_int32() != 20) return p2.as_int32();
+                    int32 p2 = stack.pop();
+                    if (p2 != 20) return p2;
 
-                    Any p3 = stack.pop();
-                    if (p3.as_int32() != 10) return 8;
+                    int32 p3 = stack.pop();
+                    if (p3 != 10) return 8;
 
                     if (!stack.is_empty()) return 9;
                     if (stack.size() != 0) return 10;
 
-                    stack.push(new Any(99));
+                    stack.push(99);
                     stack.clear();
                     if (stack.size() != 0) return 11;
 
@@ -57,29 +61,36 @@ TEST_CASE("Standard Library - solix.collections.Linear", "[solixlib][collections
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
             import solix.collections.Queue;
-            import solix.core.Any;
 
             class Main {
                 public static int32 main() {
-                    Queue q = new Queue();
+                    Queue<int32> q = new Queue<int32>();
                     if (!q.is_empty()) return 1;
                     if (q.size() != 0) return 2;
 
-                    q.enqueue(new Any(100));
-                    q.enqueue(new Any(200));
-                    q.enqueue(new Any(300));
+                    q.enqueue(100);
+                    q.enqueue(200);
+                    q.enqueue(300);
 
                     if (q.size() != 3) return 3;
-                    if (q.peek().as_int32() != 100) return 4;
+                    if (q.peek() != 100) return 4;
 
-                    Any d1 = q.dequeue();
-                    if (d1.as_int32() != 100) return 5;
+                    // for_each check
+                    int32[] sum_box = new int32[1];
+                    sum_box[0] = 0;
+                    q.for_each([sum_box](int32 x) : void {
+                        sum_box[0] = sum_box[0] + x;
+                    });
+                    if (sum_box[0] != 600) return 40;
 
-                    Any d2 = q.dequeue();
-                    if (d2.as_int32() != 200) return 6;
+                    int32 d1 = q.dequeue();
+                    if (d1 != 100) return 5;
 
-                    Any d3 = q.dequeue();
-                    if (d3.as_int32() != 300) return 7;
+                    int32 d2 = q.dequeue();
+                    if (d2 != 200) return 6;
+
+                    int32 d3 = q.dequeue();
+                    if (d3 != 300) return 7;
 
                     if (!q.is_empty()) return 8;
 
@@ -95,25 +106,32 @@ TEST_CASE("Standard Library - solix.collections.Linear", "[solixlib][collections
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
             import solix.collections.Deque;
-            import solix.core.Any;
 
             class Main {
                 public static int32 main() {
-                    Deque dq = new Deque();
-                    dq.push_front(new Any(20));
-                    dq.push_front(new Any(10));
-                    dq.push_back(new Any(30));
-                    dq.push_back(new Any(40));
+                    Deque<int32> dq = new Deque<int32>();
+                    dq.push_front(20);
+                    dq.push_front(10);
+                    dq.push_back(30);
+                    dq.push_back(40);
 
                     // Order: 10, 20, 30, 40
                     if (dq.size() != 4) return 1;
-                    if (dq.peek_front().as_int32() != 10) return 2;
-                    if (dq.peek_back().as_int32() != 40) return 3;
+                    if (dq.peek_front() != 10) return 2;
+                    if (dq.peek_back() != 40) return 3;
 
-                    if (dq.pop_front().as_int32() != 10) return 4;
-                    if (dq.pop_back().as_int32() != 40) return 5;
-                    if (dq.pop_front().as_int32() != 20) return 6;
-                    if (dq.pop_back().as_int32() != 30) return 7;
+                    // for_each check
+                    int32[] sum_box = new int32[1];
+                    sum_box[0] = 0;
+                    dq.for_each([sum_box](int32 x) : void {
+                        sum_box[0] = sum_box[0] + x;
+                    });
+                    if (sum_box[0] != 100) return 30;
+
+                    if (dq.pop_front() != 10) return 4;
+                    if (dq.pop_back() != 40) return 5;
+                    if (dq.pop_front() != 20) return 6;
+                    if (dq.pop_back() != 30) return 7;
 
                     if (!dq.is_empty()) return 8;
 
@@ -129,52 +147,49 @@ TEST_CASE("Standard Library - solix.collections.Linear", "[solixlib][collections
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
             import solix.collections.PriorityQueue;
-            import solix.core.Any;
 
             class Main {
                 public static int32 main() {
-                    // Min-heap test
-                    PriorityQueue min_pq = new PriorityQueue();
-                    Any m1 = new Any(40);
-                    Any m2 = new Any(10);
-                    Any m3 = new Any(30);
-                    Any m4 = new Any(20);
-                    Any m5 = new Any(50);
-                    min_pq.enqueue(m1);
-                    min_pq.enqueue(m2);
-                    min_pq.enqueue(m3);
-                    min_pq.enqueue(m4);
-                    min_pq.enqueue(m5);
+                    // Min-heap test (comparator: a - b < 0 => a has higher priority)
+                    PriorityQueue<int32> min_pq = new PriorityQueue<int32>([](int32 a, int32 b) => a - b);
+                    min_pq.enqueue(40);
+                    min_pq.enqueue(10);
+                    min_pq.enqueue(30);
+                    min_pq.enqueue(20);
+                    min_pq.enqueue(50);
 
                     if (min_pq.size() != 5) return 1;
-                    if (min_pq.peek().as_int32() != 10) return 2;
+                    if (min_pq.peek() != 10) return 2;
 
-                    if (min_pq.dequeue().as_int32() != 10) return 3;
-                    if (min_pq.dequeue().as_int32() != 20) return 4;
-                    if (min_pq.dequeue().as_int32() != 30) return 5;
-                    if (min_pq.dequeue().as_int32() != 40) return 6;
-                    if (min_pq.dequeue().as_int32() != 50) return 7;
+                    // for_each check
+                    int32[] sum_box = new int32[1];
+                    sum_box[0] = 0;
+                    min_pq.for_each([sum_box](int32 x) : void {
+                        sum_box[0] = sum_box[0] + x;
+                    });
+                    if (sum_box[0] != 150) return 20;
+
+                    if (min_pq.dequeue() != 10) return 3;
+                    if (min_pq.dequeue() != 20) return 4;
+                    if (min_pq.dequeue() != 30) return 5;
+                    if (min_pq.dequeue() != 40) return 6;
+                    if (min_pq.dequeue() != 50) return 7;
                     if (!min_pq.is_empty()) return 8;
 
-                    // Max-heap test
-                    PriorityQueue max_pq = new PriorityQueue(true);
-                    Any x1 = new Any(10);
-                    Any x2 = new Any(50);
-                    Any x3 = new Any(30);
-                    Any x4 = new Any(20);
-                    Any x5 = new Any(40);
-                    max_pq.enqueue(x1);
-                    max_pq.enqueue(x2);
-                    max_pq.enqueue(x3);
-                    max_pq.enqueue(x4);
-                    max_pq.enqueue(x5);
+                    // Max-heap test (comparator: b - a < 0 => b < a => a has higher priority)
+                    PriorityQueue<int32> max_pq = new PriorityQueue<int32>([](int32 a, int32 b) => b - a);
+                    max_pq.enqueue(10);
+                    max_pq.enqueue(50);
+                    max_pq.enqueue(30);
+                    max_pq.enqueue(20);
+                    max_pq.enqueue(40);
 
-                    if (max_pq.peek().as_int32() != 50) return 9;
-                    if (max_pq.dequeue().as_int32() != 50) return 10;
-                    if (max_pq.dequeue().as_int32() != 40) return 11;
-                    if (max_pq.dequeue().as_int32() != 30) return 12;
-                    if (max_pq.dequeue().as_int32() != 20) return 13;
-                    if (max_pq.dequeue().as_int32() != 10) return 14;
+                    if (max_pq.peek() != 50) return 9;
+                    if (max_pq.dequeue() != 50) return 10;
+                    if (max_pq.dequeue() != 40) return 11;
+                    if (max_pq.dequeue() != 30) return 12;
+                    if (max_pq.dequeue() != 20) return 13;
+                    if (max_pq.dequeue() != 10) return 14;
                     if (!max_pq.is_empty()) return 15;
 
                     return 0;
@@ -189,50 +204,49 @@ TEST_CASE("Standard Library - solix.collections.Linear", "[solixlib][collections
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
             import solix.collections.CircularBuffer;
-            import solix.core.Any;
 
             class Main {
                 public static int32 main() {
                     // Non-overwrite mode
-                    CircularBuffer cb = new CircularBuffer(3, false);
+                    CircularBuffer<int32> cb = new CircularBuffer<int32>(3, false);
                     if (cb.capacity() != 3) return 1;
                     if (!cb.is_empty()) return 2;
 
-                    Any c1 = new Any(1);
-                    Any c2 = new Any(2);
-                    Any c3 = new Any(3);
-                    Any c4 = new Any(4);
-
-                    if (!cb.write(c1)) return 3;
-                    if (!cb.write(c2)) return 4;
-                    if (!cb.write(c3)) return 5;
+                    if (!cb.write(1)) return 3;
+                    if (!cb.write(2)) return 4;
+                    if (!cb.write(3)) return 5;
                     if (!cb.is_full()) return 6;
 
                     // Overwrite disallowed
-                    if (cb.write(c4)) return 7;
+                    if (cb.write(4)) return 7;
 
-                    if (cb.read().as_int32() != 1) return 8;
+                    // for_each check
+                    int32[] sum_box = new int32[1];
+                    sum_box[0] = 0;
+                    cb.for_each([sum_box](int32 x) : void {
+                        sum_box[0] = sum_box[0] + x;
+                    });
+                    if (sum_box[0] != 6) return 70;
+
+                    if (cb.read() != 1) return 8;
                     // Now 1 slot free
-                    if (!cb.write(c4)) return 9;
+                    if (!cb.write(4)) return 9;
 
-                    if (cb.read().as_int32() != 2) return 10;
-                    if (cb.read().as_int32() != 3) return 11;
-                    if (cb.read().as_int32() != 4) return 12;
+                    if (cb.read() != 2) return 10;
+                    if (cb.read() != 3) return 11;
+                    if (cb.read() != 4) return 12;
                     if (!cb.is_empty()) return 13;
 
                     // Overwrite mode
-                    CircularBuffer ow = new CircularBuffer(2, true);
-                    Any o1 = new Any(10);
-                    Any o2 = new Any(20);
-                    Any o3 = new Any(30);
-                    ow.write(o1);
-                    ow.write(o2);
+                    CircularBuffer<int32> ow = new CircularBuffer<int32>(2, true);
+                    ow.write(10);
+                    ow.write(20);
                     // Overwrites 10
-                    ow.write(o3);
+                    ow.write(30);
 
                     if (ow.size() != 2) return 14;
-                    if (ow.read().as_int32() != 20) return 15;
-                    if (ow.read().as_int32() != 30) return 16;
+                    if (ow.read() != 20) return 15;
+                    if (ow.read() != 30) return 16;
                     if (!ow.is_empty()) return 17;
 
                     return 0;
@@ -313,7 +327,7 @@ TEST_CASE("Standard Library - solix.collections.Linear", "[solixlib][collections
 
             class Main {
                 public static int32 main() {
-                    Stack s = new Stack();
+                    Stack<int32> s = new Stack<int32>();
                     bool pop_caught = false;
                     try {
                         s.pop();
@@ -345,7 +359,7 @@ TEST_CASE("Standard Library - solix.collections.Linear", "[solixlib][collections
 
             class Main {
                 public static int32 main() {
-                    Queue q = new Queue();
+                    Queue<int32> q = new Queue<int32>();
                     bool dequeue_caught = false;
                     try {
                         q.dequeue();
@@ -373,12 +387,11 @@ TEST_CASE("Standard Library - solix.collections.Linear", "[solixlib][collections
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
             import solix.collections.CircularBuffer;
-            import solix.core.Any;
             import solix.exceptions.InvalidOperationException;
 
             class Main {
                 public static int32 main() {
-                    CircularBuffer cb = new CircularBuffer(1, false);
+                    CircularBuffer<int32> cb = new CircularBuffer<int32>(1, false);
                     bool read_caught = false;
                     try {
                         cb.read();
@@ -386,10 +399,10 @@ TEST_CASE("Standard Library - solix.collections.Linear", "[solixlib][collections
                         read_caught = true;
                     }
 
-                    cb.enqueue(new Any(42));
+                    cb.enqueue(42);
                     bool enqueue_caught = false;
                     try {
-                        cb.enqueue(new Any(43));
+                        cb.enqueue(43);
                     } catch (InvalidOperationException ex) {
                         enqueue_caught = true;
                     }
