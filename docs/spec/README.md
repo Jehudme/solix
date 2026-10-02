@@ -27,6 +27,12 @@ This directory contains the formal specification of the Solix programming langua
 |----------|-------------|
 | [**CLI & Toolchain Reference**](cli/README.md) | Authoritative reference for all 8 CLI subcommands (`compile`, `run`, `build`, `new`, `install`, `uninstall`, `list`, `details`) and `solix.json` manifest schema |
 
+### Standard Library
+
+| Document | Description |
+|----------|-------------|
+| [**Standard Library Architecture & Scaffolding**](stdlib/scaffolding.md) | Layout, manifest schema, companion native shared library (`solix_stdlib_native`), and package management lifecycle |
+
 ---
 
 ## Document Map
@@ -45,6 +51,8 @@ docs/spec/
 │   ├── new.md                  ← solix new specification
 │   ├── package.md              ← Local package management specification
 │   └── manifest.md             ← solix.json project manifest schema
+├── stdlib/
+│   └── scaffolding.md          ← Standard library layout & packaging specification
 └── statements/
     ├── README.md               ← Statements reference index
     ├── modules/
