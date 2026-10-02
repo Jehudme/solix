@@ -12,7 +12,9 @@ struct ProjectBuildResult {
     std::filesystem::path project_root;
     nlohmann::json manifest;
     std::string profile_name;
+    std::vector<std::filesystem::path> dependency_roots;
 };
+
 
 ProjectBuildResult build_project(const std::filesystem::path& manifest_or_dir,
                                  const std::string& profile_name);

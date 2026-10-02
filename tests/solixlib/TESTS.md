@@ -61,3 +61,17 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 3.8 [IMPLEMENTED]**: `StringBuilder` capacity growth, chaining, insertions, deletions, reversals (`tests/solixlib/test_string.cpp`).
 - [x] **Case 3.9 [IMPLEMENTED]**: Interoperability with `Console`: printing `String` and custom `IStringable` (`tests/solixlib/test_string.cpp`).
 
+---
+
+## 4. Primitives & Types (`solix.core.Primitives`, `Optional<T>`, `Any`, Contracts)
+
+- [x] **Case 4.1 [IMPLEMENTED]**: Boxed `Int` operations: `value()`, `to_string()`, `hash_code()`, `equals()`, `compare_to()`, `parse()`, `try_parse()`, and bitwise utilities (`count_leading_zeros`, `count_trailing_zeros`, `bit_count`, `reverse_bytes`) (`tests/solixlib/test_primitives.cpp`).
+- [x] **Case 4.2 [IMPLEMENTED]**: Boxed `Double` operations, IEEE 754 constants (`NaN`, `POSITIVE_INFINITY`, `NEGATIVE_INFINITY`), queries (`is_nan`, `is_infinite`), and parsing (`tests/solixlib/test_primitives.cpp`).
+- [x] **Case 4.3 [IMPLEMENTED]**: Boxed `Bool` and `Char` operations, character classification (`is_digit`, `is_letter`, `is_whitespace`, `is_upper_case`, `is_lower_case`), and casing transformations (`tests/solixlib/test_primitives.cpp`).
+- [x] **Case 4.4 [IMPLEMENTED]**: `Optional<T>` value presence, unwrapping, and fallback (`has_value`, `is_empty`, `value`, `value_or`) (`tests/solixlib/test_primitives.cpp`).
+- [x] **Case 4.5 [IMPLEMENTED]**: Negative: accessing `Optional.empty().value()` throws `InvalidOperationException` (`tests/solixlib/test_primitives.cpp`).
+- [x] **Case 4.6 [IMPLEMENTED]**: `Any` dynamic container boxing (`int`, `double`, `bool`, `char`, `String`), type inspection (`is_*`, `type_name`), equality, and unwrapping (`as_*`) (`tests/solixlib/test_primitives.cpp`).
+- [x] **Case 4.7 [IMPLEMENTED]**: Negative: invalid `Any` unwrapping type mismatch throws `InvalidOperationException` (`tests/solixlib/test_primitives.cpp`).
+- [x] **Case 4.8 [IMPLEMENTED]**: Negative: `Int.parse()` and `Double.parse()` with non-numeric inputs throw `FormatException` (`tests/solixlib/test_primitives.cpp`).
+
+

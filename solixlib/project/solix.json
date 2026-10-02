@@ -19,6 +19,46 @@
     },
     {
       "type": "source",
+      "path": "src/solix/core/IComparable.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/core/IEquatable.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/core/ICloneable.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/core/IHashable.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/core/Any.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/core/Optional.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/core/Int.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/core/Double.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/core/Bool.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/core/Char.slx"
+    },
+    {
+      "type": "source",
       "path": "src/solix/core/StringBuilder.slx"
     },
     {

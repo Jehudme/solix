@@ -1,0 +1,38 @@
+package solix.core;
+
+import solix.exceptions.FormatException;
+
+public class Bool implements IStringable, IHashable {
+    private bool _value;
+
+    public Bool(bool val) {
+        this._value = val;
+    }
+
+    public bool value() {
+        return this._value;
+    }
+
+    public String to_string() {
+        return String.value_of(this._value);
+    }
+
+    public int32 hash_code() {
+        return this._value ? 1231 : 1237;
+    }
+
+    public bool equals(Bool other) {
+        if (other == null) return false;
+        return this._value == other._value;
+    }
+
+    public int32 compare_to(Bool other) {
+        if (this._value == other._value) return 0;
+        if (this._value) return 1;
+        return -1;
+    }
+
+    public static bool parse(String s) {
+        return String.parse_bool(s);
+    }
+}

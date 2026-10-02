@@ -126,9 +126,10 @@ ProjectBuildResult build_project(const std::filesystem::path& manifest_or_dir,
 
     // 3. Pre-Compilation Modular Dependency & Transitive Project Resolution
     DependencyManager dep_mgr;
-    if (!dep_mgr.resolve_all(root, project_root, profile, *opts)) {
+    if (!dep_mgr.resolve_all(root, project_root, profile, *opts, &result.dependency_roots)) {
         return result;
     }
+
 
     if (opts->sources.empty()) {
         std::cerr << "Error: No source files found to compile in profile '" << profile_name << "'." << std::endl;

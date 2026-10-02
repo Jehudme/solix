@@ -174,6 +174,8 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
         CHECK(run_res.exit_code == 0);
     }
 
+
+
     SECTION("Negative - Case 5.10: Reinstall solixlib Without Force Flag Fails") {
         std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "project";
         REQUIRE(std::filesystem::exists(solixlib_path / "solix.json"));

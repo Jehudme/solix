@@ -1,0 +1,74 @@
+package solix.core;
+
+import solix.exceptions.FormatException;
+
+public class Int implements IStringable, IHashable {
+    public static int32 MIN_VALUE = -2147483647 - 1;
+    public static int32 MAX_VALUE = 2147483647;
+
+    private int32 _value;
+
+    public Int(int32 val) {
+        this._value = val;
+    }
+
+    public int32 value() {
+        return this._value;
+    }
+
+    public String to_string() {
+        return String.value_of(this._value);
+    }
+
+    public int32 hash_code() {
+        return this._value;
+    }
+
+    public bool equals(Int other) {
+        if (other == null) return false;
+        return this._value == other._value;
+    }
+
+    public int32 compare_to(Int other) {
+        if (this._value < other._value) return -1;
+        if (this._value > other._value) return 1;
+        return 0;
+    }
+
+    public static int32 parse(String s) {
+        return String.parse_int(s);
+    }
+
+    public static bool try_parse(String s, Int out_val) {
+        try {
+            int32 v = String.parse_int(s);
+            if (out_val != null) {
+                out_val._value = v;
+            }
+            return true;
+        } catch (FormatException e) {
+            return false;
+        }
+    }
+
+    public static int32 count_leading_zeros(int32 val) {
+        return native_clz(val);
+    }
+
+    public static int32 count_trailing_zeros(int32 val) {
+        return native_ctz(val);
+    }
+
+    public static int32 bit_count(int32 val) {
+        return native_popcount(val);
+    }
+
+    public static int32 reverse_bytes(int32 val) {
+        return native_bswap(val);
+    }
+
+    private static native int32 native_clz(int32 val);
+    private static native int32 native_ctz(int32 val);
+    private static native int32 native_popcount(int32 val);
+    private static native int32 native_bswap(int32 val);
+}

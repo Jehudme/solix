@@ -1,0 +1,5 @@
+package solix.core;
+
+public interface IHashable {
+    int32 hash_code();
+}
