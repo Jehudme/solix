@@ -11,6 +11,18 @@
     },
     {
       "type": "source",
+      "path": "src/solix/core/IStringable.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/core/String.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/solix/core/StringBuilder.slx"
+    },
+    {
+      "type": "source",
       "path": "src/solix/system/Console.slx"
     },
     {

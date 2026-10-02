@@ -44,5 +44,20 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 2.10 [IMPLEMENTED]**: Negative: `Console.input_int()` with non-numeric input throws `FormatException` (`tests/solixlib/test_console.cpp`).
 - [x] **Case 2.11 [IMPLEMENTED]**: Negative: `Console.input_double()` with invalid text throws `FormatException` (`tests/solixlib/test_console.cpp`).
 - [x] **Case 2.12 [IMPLEMENTED]**: Terminal control operations (`clear()`, `flush()`, `set_color()`, `reset_color()`, `set_cursor_position()`, `set_title()`) (`tests/solixlib/test_console.cpp`).
-- [ ] **Case 2.13 [NOT IMPLEMENTED]**: Post-String upgrade: `Console.print()` and `Console.println()` with `String` and `IStringable` instances.
-- [ ] **Case 2.14 [NOT IMPLEMENTED]**: Post-String upgrade: `Console.input() -> String` reading complete line.
+- [x] **Case 2.13 [IMPLEMENTED]**: Post-String upgrade: `Console.print()` and `Console.println()` with `String` and `IStringable` instances (`tests/solixlib/test_string.cpp`).
+- [x] **Case 2.14 [IMPLEMENTED]**: Post-String upgrade: `Console.input() -> String` reading complete line (`tests/solixlib/test_string.cpp`).
+
+---
+
+## 3. String & StringBuilder (`solix.core.String`, `StringBuilder`, `IStringable`)
+
+- [x] **Case 3.1 [IMPLEMENTED]**: `String` basic operations: `length()`, `is_empty()`, `char_at()`, and out-of-bounds checks (`tests/solixlib/test_string.cpp`).
+- [x] **Case 3.2 [IMPLEMENTED]**: Substring operations: `substring(start, end)`, `substring(start)`, parameter validation (`tests/solixlib/test_string.cpp`).
+- [x] **Case 3.3 [IMPLEMENTED]**: Search & inspection: `index_of()`, `contains()`, `starts_with()`, `ends_with()` (`tests/solixlib/test_string.cpp`).
+- [x] **Case 3.4 [IMPLEMENTED]**: Transformations: `to_upper_case()`, `to_lower_case()`, `trim()`, `replace()` (`tests/solixlib/test_string.cpp`).
+- [x] **Case 3.5 [IMPLEMENTED]**: Split and join: `split()`, `join()` (`tests/solixlib/test_string.cpp`).
+- [x] **Case 3.6 [IMPLEMENTED]**: Numeric parsing: `parse_int()`, `parse_double()`, `parse_bool()` with positive and negative inputs (`tests/solixlib/test_string.cpp`).
+- [x] **Case 3.7 [IMPLEMENTED]**: Static conversions: `value_of()` for integer, float, bool, and char (`tests/solixlib/test_string.cpp`).
+- [x] **Case 3.8 [IMPLEMENTED]**: `StringBuilder` capacity growth, chaining, insertions, deletions, reversals (`tests/solixlib/test_string.cpp`).
+- [x] **Case 3.9 [IMPLEMENTED]**: Interoperability with `Console`: printing `String` and custom `IStringable` (`tests/solixlib/test_string.cpp`).
+
