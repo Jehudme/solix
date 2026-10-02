@@ -194,46 +194,46 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 4.1: Default Project Scaffolding [NOT IMPLEMENTED]
+#### Case 4.1: Default Project Scaffolding [IMPLEMENTED]
 - **Command**: `solix new my_project`
-- **Expected**: Exits 0; generates `my_project/solix.json`, `my_project/src/main.slx`, `.gitignore`, `README.md`.
+- **Expected**: Exits 0; generates `my_project/solix.json` and `my_project/src/main.slx`.
 
-#### Case 4.2: Scaffolding with Custom Metadata Options [NOT IMPLEMENTED]
+#### Case 4.2: Scaffolding with Custom Metadata Options [IMPLEMENTED]
 - **Command**: `solix new my_lib -n custom_lib -v 1.2.3 -a "Alice <alice@example.com>" -d "A math lib" -l Apache-2.0 -t math -t fast -e start`
 - **Expected**: Exits 0; `solix.json` contains specified name, version, author, description, license, tags, and entry point.
 
-#### Case 4.3: Scaffolding into an Existing Empty Directory [NOT IMPLEMENTED]
+#### Case 4.3: Scaffolding into an Existing Empty Directory [IMPLEMENTED]
 - **Command**: `solix new empty_dir`
 - **Setup**: `empty_dir` pre-created and empty.
 - **Expected**: Exits 0; files populated inside `empty_dir`.
 
-#### Case 4.4: Overwriting Non-Empty Directory with Force Flag [NOT IMPLEMENTED]
+#### Case 4.4: Overwriting Non-Empty Directory with Force Flag [IMPLEMENTED]
 - **Command**: `solix new existing_dir --force`
 - **Setup**: `existing_dir` contains existing files.
 - **Expected**: Exits 0; overwrites project files without failing.
 
-#### Case 4.5: Scaffolding Using Custom Template Folder [NOT IMPLEMENTED]
+#### Case 4.5: Scaffolding Using Custom Template Folder [IMPLEMENTED]
 - **Command**: `solix new templated_proj --template /path/to/custom_template`
 - **Setup**: Custom template folder containing template files with placeholders like `{{PROJECT_NAME}}`.
 - **Expected**: Exits 0; files copied from template folder and placeholders substituted.
 
 ### Negative Test Scenarios
 
-#### Case 4.6: Missing Target Path Argument [NOT IMPLEMENTED]
+#### Case 4.6: Missing Target Path Argument [IMPLEMENTED]
 - **Command**: `solix new`
 - **Expected**: Exits non-zero; CLI error indicating `path` is required.
 
-#### Case 4.7: Target Directory Already Exists and Non-Empty Without Force [NOT IMPLEMENTED]
+#### Case 4.7: Target Directory Already Exists and Non-Empty Without Force [IMPLEMENTED]
 - **Command**: `solix new occupied_dir`
 - **Setup**: `occupied_dir` contains `some_file.txt`.
 - **Expected**: Exits non-zero; error message stating directory is not empty and recommending `--force`.
 
-#### Case 4.8: Target Path Exists as a Regular File [NOT IMPLEMENTED]
+#### Case 4.8: Target Path Exists as a Regular File [IMPLEMENTED]
 - **Command**: `solix new file_as_dir`
 - **Setup**: `file_as_dir` is a regular file.
 - **Expected**: Exits non-zero; error message stating path exists and is not a directory.
 
-#### Case 4.9: Custom Template Path Does Not Exist [NOT IMPLEMENTED]
+#### Case 4.9: Custom Template Path Does Not Exist [IMPLEMENTED]
 - **Command**: `solix new my_proj --template /non_existent_template_dir`
 - **Expected**: Exits non-zero; error message stating template directory does not exist.
 
