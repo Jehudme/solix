@@ -1,0 +1,162 @@
+package solix.system;
+
+import solix.exceptions.*;
+
+public class Console {
+    // Low-level native bindings
+    private static native void native_print_string(char[] str);
+    private static native void native_print_int(int64 val);
+    private static native void native_print_double(float64 val);
+    private static native void native_print_bool(bool val);
+    private static native void native_print_char(char val);
+    private static native void native_println();
+
+    private static native void native_error_string(char[] str);
+    private static native void native_error_int(int64 val);
+    private static native void native_warning_string(char[] str);
+    private static native void native_warning_int(int64 val);
+    private static native void native_info_string(char[] str);
+    private static native void native_info_int(int64 val);
+    private static native void native_success_string(char[] str);
+    private static native void native_success_int(int64 val);
+
+    private static native char[] native_read_line();
+    private static native char native_read_char();
+
+    private static native void native_clear();
+    private static native void native_flush();
+    private static native void native_set_color(int32 ansi_code);
+    private static native void native_reset_color();
+    private static native void native_set_cursor_position(int32 row, int32 col);
+    private static native void native_set_title(char[] title);
+    private static native int32 native_try_parse_double(char[] str, float64[] out_box);
+
+    // Output methods
+    public static void print(char[] val) { native_print_string(val); }
+    public static void print(int32 val) { native_print_int((int64)val); }
+    public static void print(int64 val) { native_print_int(val); }
+    public static void print(float64 val) { native_print_double(val); }
+    public static void print(bool val) { native_print_bool(val); }
+    public static void print(char val) { native_print_char(val); }
+
+    public static void println(char[] val) {
+        native_print_string(val);
+        native_println();
+    }
+    public static void println(int32 val) {
+        native_print_int((int64)val);
+        native_println();
+    }
+    public static void println(int64 val) {
+        native_print_int(val);
+        native_println();
+    }
+    public static void println(float64 val) {
+        native_print_double(val);
+        native_println();
+    }
+    public static void println(bool val) {
+        native_print_bool(val);
+        native_println();
+    }
+    public static void println(char val) {
+        native_print_char(val);
+        native_println();
+    }
+    public static void println() {
+        native_println();
+    }
+
+    // Diagnostics (Colorized)
+    public static void error(char[] val) { native_error_string(val); }
+    public static void error(int32 val) { native_error_int((int64)val); }
+    public static void error(int64 val) { native_error_int(val); }
+
+    public static void warning(char[] val) { native_warning_string(val); }
+    public static void warning(int32 val) { native_warning_int((int64)val); }
+    public static void warning(int64 val) { native_warning_int(val); }
+
+    public static void info(char[] val) { native_info_string(val); }
+    public static void info(int32 val) { native_info_int((int64)val); }
+    public static void info(int64 val) { native_info_int(val); }
+
+    public static void success(char[] val) { native_success_string(val); }
+    public static void success(int32 val) { native_success_int((int64)val); }
+    public static void success(int64 val) { native_success_int(val); }
+
+    // Input methods
+    public static char[] input_chars() {
+        return native_read_line();
+    }
+
+    public static char input_char() {
+        return native_read_char();
+    }
+
+    public static int32 input_int() {
+        char[] line = native_read_line();
+        if (line == null || line.length == 0) {
+            throw new FormatException("Empty input for integer parsing");
+        }
+        int32 start = 0;
+        bool negative = false;
+        if (line[0] == '-') {
+            negative = true;
+            start = 1;
+        } else if (line[0] == '+') {
+            start = 1;
+        }
+        if (start >= line.length) {
+            throw new FormatException("Invalid numeric string format");
+        }
+        int32 result = 0;
+        for (int32 i = start; i < line.length; i = i + 1) {
+            char c = line[i];
+            if (c < '0' || c > '9') {
+                throw new FormatException("Input string contains non-digit character");
+            }
+            result = result * 10 + ((int32)c - (int32)'0');
+        }
+        return negative ? -result : result;
+    }
+
+    public static float64 input_double() {
+        char[] line = native_read_line();
+        if (line == null || line.length == 0) {
+            throw new FormatException("Empty input for double parsing");
+        }
+        float64[] box = new float64[1];
+        if (native_try_parse_double(line, box) == 0) {
+            throw new FormatException("Input string was not in a valid floating-point format");
+        }
+        return box[0];
+    }
+
+    public static bool input_bool() {
+        char[] line = native_read_line();
+        if (line == null || line.length == 0) {
+            throw new FormatException("Empty input for bool parsing");
+        }
+        if (line.length == 4 && line[0] == 't' && line[1] == 'r' && line[2] == 'u' && line[3] == 'e') {
+            return true;
+        }
+        if (line.length == 5 && line[0] == 'f' && line[1] == 'a' && line[2] == 'l' && line[3] == 's' && line[4] == 'e') {
+            return false;
+        }
+        if (line.length == 1 && line[0] == '1') {
+            return true;
+        }
+        if (line.length == 1 && line[0] == '0') {
+            return false;
+        }
+        throw new FormatException("Input string was not recognized as a valid boolean");
+    }
+
+    // Terminal Control
+    public static void clear() { native_clear(); }
+    public static void flush() { native_flush(); }
+    public static void set_color(int32 ansi_code) { native_set_color(ansi_code); }
+    public static void reset_color() { native_reset_color(); }
+    public static void set_cursor_position(int32 row, int32 col) { native_set_cursor_position(row, col); }
+    public static void set_title(char[] title) { native_set_title(title); }
+}
