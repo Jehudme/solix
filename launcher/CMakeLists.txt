@@ -16,10 +16,12 @@ FetchContent_MakeAvailable(nlohmann_json)
 
 add_executable(solix
     src/main.cpp
+    src/package_manager.cpp
     src/commands/compile.cpp
     src/commands/execute.cpp
     src/commands/build.cpp
     src/commands/new.cpp
+    src/commands/package.cpp
 )
 
 target_link_libraries(solix PRIVATE solix_language CLI11::CLI11 nlohmann_json::nlohmann_json)
