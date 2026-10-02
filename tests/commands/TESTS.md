@@ -158,32 +158,32 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Project with entry file and auxiliary source files linked via manifest.
 - **Expected**: Exits 0; all source files compiled into output artifact.
 
-#### Case 3.10: Direct Project Dependency via Relative Path [NOT IMPLEMENTED]
+#### Case 3.10: Direct Project Dependency via Relative Path [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Project `app` depends on project `lib` using `"type": "project"` and relative `"path": "../lib"`.
 - **Expected**: Exits 0; resolves `lib`, aggregates `lib` source files, and produces binary.
 
-#### Case 3.11: Transitive Project Dependency Chain [NOT IMPLEMENTED]
+#### Case 3.11: Transitive Project Dependency Chain [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Project `app` depends on `libA`, which depends on `libB`.
 - **Expected**: Exits 0; recursively resolves all transitive projects and sources; compiles all into final output.
 
-#### Case 3.12: Circular / Mutual Project Dependencies [NOT IMPLEMENTED]
+#### Case 3.12: Circular / Mutual Project Dependencies [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Project `libA` depends on `libB`, and `libB` depends on `libA`.
 - **Expected**: Exits 0; circularity is gracefully de-duplicated without infinite loop or failure; builds cleanly.
 
-#### Case 3.13: SemVer Patch Difference Silent Resolution [NOT IMPLEMENTED]
+#### Case 3.13: SemVer Patch Difference Silent Resolution [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Transitive tree includes `math_lib@1.0.1` and `math_lib@1.0.4`.
 - **Expected**: Exits 0; silently picks highest patch version (`1.0.4`) and compiles without warning.
 
-#### Case 3.14: SemVer Minor Difference Warning and Resolution [NOT IMPLEMENTED]
+#### Case 3.14: SemVer Minor Difference Warning and Resolution [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Transitive tree includes `util_lib@1.1.0` and `util_lib@1.3.0`.
 - **Expected**: Exits 0; outputs warning about minor version divergence, selects highest minor (`1.3.0`), and succeeds.
 
-#### Case 3.15: Project Dependency Resolved from Installed Registry [NOT IMPLEMENTED]
+#### Case 3.15: Project Dependency Resolved from Installed Registry [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Project references installed package `helper_lib` by name and SemVer requirement without explicit local `path`.
 - **Expected**: Exits 0; discovers installed package in local repository (`$SOLIX_HOME`) and links sources.
@@ -214,17 +214,17 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: `solix.json` pointing to non-existent source file.
 - **Expected**: Exits non-zero; error reported indicating file does not exist.
 
-#### Case 3.16: Incompatible Major SemVer Collision [NOT IMPLEMENTED]
+#### Case 3.16: Incompatible Major SemVer Collision [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Dependency tree requires both `core_lib@1.0.0` and `core_lib@2.0.0`.
 - **Expected**: Exits non-zero; error message indicating incompatible major versions before compilation begins.
 
-#### Case 3.17: Missing Project Dependency Manifest Path [NOT IMPLEMENTED]
+#### Case 3.17: Missing Project Dependency Manifest Path [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Project dependency specifies `"path": "../missing_lib"`, which does not exist.
 - **Expected**: Exits non-zero; error message indicating project dependency manifest was not found.
 
-#### Case 3.18: Missing Source File in Dependent Project [NOT IMPLEMENTED]
+#### Case 3.18: Missing Source File in Dependent Project [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Dependent project manifest references a non-existent source file.
 - **Expected**: Exits non-zero; pre-compilation validation error for missing dependency source.

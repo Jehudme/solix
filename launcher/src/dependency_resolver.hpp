@@ -62,7 +62,7 @@ public:
         file_path = file_path.lexically_normal();
 
         if (!std::filesystem::exists(file_path)) {
-            std::cerr << "Error: Source dependency file does not exist: " << file_path.string() << std::endl;
+            std::cerr << "Error: Dependency source file does not exist: " << file_path.string() << std::endl;
             return false;
         }
 
@@ -176,8 +176,8 @@ public:
 
             // Check for minor version differences (same major, different minor)
             if (lowest.version.minor != highest.version.minor) {
-                std::cout << "Warning: Different minor versions requested for dependency '" << name
-                          << "' (" << lowest.version.raw << " vs " << highest.version.raw
+                std::cout << "Warning: Project '" << name << "' has multiple minor versions ("
+                          << lowest.version.raw << " vs " << highest.version.raw
                           << "). Selecting highest version " << highest.version.raw << "." << std::endl;
             }
 
