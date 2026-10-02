@@ -47,7 +47,12 @@
 | **Phase 29** | Standard Library: `solix.collections.Map` (`HashMap<K, V>` & `TreeMap<K, V>`) | `P1 High` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 30** | Standard Library: `solix.collections.Set` (`HashSet<T>` & `TreeSet<T>`) | `P2 Medium` | `solixlib`, `tests` | - [x] Complete |
 | **Phase 31** | Standard Library: `solix.collections.Linear` (`Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, `BitSet`) | `P2 Medium` | `solixlib`, `tests` | - [x] Complete |
-| **Phase 32** | Standard Library: `solix.io.filesystem` (Unified Path & File System Operations) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
+| **Phase 32** | Standard Library: `solix.io.filesystem` (Unified Path & File System Operations) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [x] Complete |
+| **Phase 32.1** | Emergency Refactor: Purge `Any.slx`, Modernize `solix.math.Math` with Generics (`abs<T>`, `min<T>`, `max<T>`, `clamp<T>`, `sign<T>`) & `Optional<T>` | `P0 Blocker` | `solixlib/core`, `solixlib/math`, `tests` | - [ ] Planned |
+| **Phase 32.2** | Emergency Refactor: Generic Collections Sequences (`List<T>`, `LinkedList<T>`, `Collections.slx`, `Algorithms.slx`) with `for_each` & Lambdas | `P0 Blocker` | `solixlib/collections`, `tests` | - [ ] Planned |
+| **Phase 32.3** | Emergency Refactor: Generic Linear Containers (`Stack<T>`, `Queue<T>`, `Deque<T>`, `PriorityQueue<T>`, `CircularBuffer<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [ ] Planned |
+| **Phase 32.4** | Emergency Refactor: Generic Associative Containers (`KeyValuePair<K, V>`, `HashMap<K, V>`, `TreeMap<K, V>`, `HashSet<T>`, `TreeSet<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [ ] Planned |
+| **Phase 32.5** | Emergency Refactor: Align Filesystem (`File.slx`, `Directory.slx`) with `List<String>`, Update `test_filesystem.cpp`, Specs & Regression | `P0 Blocker` | `solixlib/io`, `docs`, `tests` | - [ ] Planned |
 | **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, Readers/Writers) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 34** | Standard Library: `solix.system.Environment` (OS, Env, Subprocesses) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 35** | Core Compiler & Runtime: Language Intrinsics (`assert`, `exit`, Hardcoded Built-ins) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
@@ -1564,7 +1569,7 @@ Implement comprehensive specialized linear data structures and buffers:
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `solixlib/project/src/solix/io/filesystem/`, `solixlib/native/src/io_fs.cpp`, `tests/solixlib/test_filesystem.cpp`, `docs/spec/solixlib/filesystem.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Complete
 
 ### Objective
 Unify all path manipulation and filesystem operations into a single cohesive package `solix.io.filesystem`. Expose static and object-oriented file, directory, and path APIs backed natively by cross-platform C++20 `<filesystem>`.
@@ -1615,11 +1620,114 @@ Unify all path manipulation and filesystem operations into a single cohesive pac
   - `docs/spec/solixlib/filesystem.md`: Filesystem path contracts, unified package structure, and cross-platform permissions.
 
 ### Action Items
-- [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Implement `solixlib/native/src/io_fs.cpp` using `std::filesystem`.
-- [ ] Author unified `filesystem` classes under `solixlib/project/src/solix/io/filesystem/`.
-- [ ] Implement Catch2 test suite `tests/solixlib/test_filesystem.cpp`.
-- [ ] Author `docs/spec/solixlib/filesystem.md`.
+- [x] Define test specification in `tests/solixlib/TESTS.md`.
+- [x] Implement `solixlib/native/src/io_fs.cpp` using `std::filesystem`.
+- [x] Author unified `filesystem` classes under `solixlib/project/src/solix/io/filesystem/`.
+- [x] Implement Catch2 test suite `tests/solixlib/test_filesystem.cpp`.
+- [x] Author `docs/spec/solixlib/filesystem.md`.
+
+---
+
+## Phase 32.1: Emergency Refactor — Purge `Any.slx`, Modernize `solix.math.Math` with Generics & `Optional<T>`
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `solixlib/project/src/solix/core/Any.slx`, `solixlib/project/src/solix/core/Optional.slx`, `solixlib/project/src/solix/math/Math.slx`, `tests/solixlib/test_math.cpp`, `tests/solixlib/test_primitives.cpp`, `docs/spec/solixlib/primitives.md`, `docs/spec/solixlib/math.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Completely remove `Any.slx` from the standard library to eliminate untyped union overhead and ARC tracking pitfalls. Modernize `solix.math.Math` with generic static methods (`abs<T>`, `min<T>`, `max<T>`, `clamp<T>`, `sign<T>`) supporting arbitrary numeric types (`int32`, `int64`, `float64`). Enhance `Optional<T>` with functional lambda helpers (`if_present`, `filter`).
+
+### Action Items
+- [ ] Delete `solixlib/project/src/solix/core/Any.slx` and remove from `solix.json`.
+- [ ] Add generic math operations to `solixlib/project/src/solix/math/Math.slx`:
+  - `public static <T> T abs(T v)`
+  - `public static <T> T min(T a, T b)`
+  - `public static <T> T max(T a, T b)`
+  - `public static <T> T clamp(T val, T min_val, T max_val)`
+  - `public static <T> int32 sign(T v)`
+- [ ] Add functional lambda helpers to `Optional<T>`:
+  - `public void if_present(void(*)(T) consumer)`
+  - `public Optional<T> filter(bool(*)(T) predicate)`
+- [ ] Update `tests/solixlib/test_math.cpp` and `tests/solixlib/test_primitives.cpp`.
+- [ ] Update `tests/solixlib/TESTS.md` and documentation in `docs/spec/solixlib/math.md` and `primitives.md`.
+
+---
+
+## Phase 32.2: Emergency Refactor — Generic Collections Sequences (`List<T>`, `LinkedList<T>`, `Collections`, `Algorithms`) with Lambdas
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `solixlib/project/src/solix/collections/List.slx`, `LinkedList.slx`, `LinkedListNode.slx`, `Collections.slx`, `Algorithms.slx`, `tests/solixlib/test_list.cpp`, `test_collections_core.cpp`, `docs/spec/solixlib/list.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Convert `List` and `LinkedList` to full generic classes `List<T>` and `LinkedList<T>`. Add first-class lambda iteration (`for_each(void(*)(T) action)`) and transformation methods (`filter(bool(*)(T) predicate)`). Modernize `Collections` and `Algorithms` with generic methods (`sort<T>`, `binary_search<T>`, `reverse<T>`, `swap<T>`).
+
+### Action Items
+- [ ] Refactor `List.slx` to `List<T>` backed by `T[] _data`.
+- [ ] Implement `for_each(void(*)(T) action)` and `filter(bool(*)(T) predicate)` in `List<T>`.
+- [ ] Refactor `LinkedList.slx` & `LinkedListNode.slx` to `LinkedList<T>` with `LinkedListNode<T>`.
+- [ ] Implement `for_each(void(*)(T) action)` in `LinkedList<T>`.
+- [ ] Refactor `Collections.slx` and `Algorithms.slx` for generic `List<T>`.
+- [ ] Update `tests/solixlib/test_list.cpp` and `test_collections_core.cpp`.
+- [ ] Update `tests/solixlib/TESTS.md` and documentation in `docs/spec/solixlib/list.md`.
+
+---
+
+## Phase 32.3: Emergency Refactor — Generic Linear Containers (`Stack<T>`, `Queue<T>`, `Deque<T>`, `PriorityQueue<T>`, `CircularBuffer<T>`)
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `solixlib/project/src/solix/collections/Stack.slx`, `Queue.slx`, `Deque.slx`, `PriorityQueue.slx`, `CircularBuffer.slx`, `tests/solixlib/test_linear_collections.cpp`, `docs/spec/solixlib/linear_collections.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Convert all linear collections and streaming buffers to compile-time generic classes. Implement `for_each(void(*)(T) action)` across all linear structures, enable comparator lambdas (`int32(*)(T, T)`) in `PriorityQueue<T>`, and eliminate all remaining references to `Any`.
+
+### Action Items
+- [ ] Refactor `Stack.slx` to `Stack<T>` with `for_each`.
+- [ ] Refactor `Queue.slx` to `Queue<T>` with `for_each`.
+- [ ] Refactor `Deque.slx` to `Deque<T>` with `for_each`.
+- [ ] Refactor `PriorityQueue.slx` to `PriorityQueue<T>` with comparator lambda constructor and `for_each`.
+- [ ] Refactor `CircularBuffer.slx` to `CircularBuffer<T>` backed by `T[]` with `for_each`.
+- [ ] Update `tests/solixlib/test_linear_collections.cpp`.
+- [ ] Update `tests/solixlib/TESTS.md` and documentation in `docs/spec/solixlib/linear_collections.md`.
+
+---
+
+## Phase 32.4: Emergency Refactor — Generic Associative Containers (`KeyValuePair<K, V>`, `HashMap<K, V>`, `TreeMap<K, V>`, `HashSet<T>`, `TreeSet<T>`)
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `solixlib/project/src/solix/collections/KeyValuePair.slx`, `HashMapEntry.slx`, `HashMap.slx`, `TreeMapNode.slx`, `TreeMap.slx`, `HashSet.slx`, `TreeSet.slx`, `tests/solixlib/test_map.cpp`, `test_set.cpp`, `docs/spec/solixlib/map.md`, `set.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Convert all associative dictionaries and distinct sets to generic types parameterized on key and value. Implement `for_each(void(*)(K, V) action)` for maps and `for_each(void(*)(T) action)` for sets. Ensure typed view collections (`keys(): List<K>`, `values(): List<V>`, `entries(): List<KeyValuePair<K, V>>`).
+
+### Action Items
+- [ ] Refactor `KeyValuePair.slx` and `HashMapEntry.slx` to generic pairs/entries.
+- [ ] Refactor `HashMap.slx` to `HashMap<K, V>` with `for_each(void(*)(K, V) action)`.
+- [ ] Refactor `TreeMapNode.slx` and `TreeMap.slx` to `TreeMap<K, V>` with `for_each(void(*)(K, V) action)`.
+- [ ] Refactor `HashSet.slx` to `HashSet<T>` backed by `HashMap<T, bool>` with `for_each(void(*)(T) action)`.
+- [ ] Refactor `TreeSet.slx` to `TreeSet<T>` backed by `TreeMap<T, bool>` with `for_each(void(*)(T) action)`.
+- [ ] Update `tests/solixlib/test_map.cpp` and `tests/solixlib/test_set.cpp`.
+- [ ] Update `tests/solixlib/TESTS.md` and documentation in `docs/spec/solixlib/map.md` and `set.md`.
+
+---
+
+## Phase 32.5: Emergency Refactor — Filesystem & Downstream Alignment, Specs & Full Regression
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `solixlib/project/src/solix/io/filesystem/File.slx`, `Directory.slx`, `tests/solixlib/test_filesystem.cpp`, `docs/spec/solixlib/filesystem.md`, full test harness
+- **Status**: - [ ] Planned
+
+### Objective
+Align `File.slx` and `Directory.slx` to return typed `List<String>` rather than untyped/Any collections. Update `tests/solixlib/test_filesystem.cpp` to verify direct string element operations without casts. Rebuild `solixlib.slxbin` and run the entire CTest regression suite to achieve 100% passing across all 61 tests.
+
+### Action Items
+- [ ] Update `File.read_all_lines` to return `List<String>`.
+- [ ] Update `Directory.list_files` and `Directory.list_directories` to return `List<String>`.
+- [ ] Update `tests/solixlib/test_filesystem.cpp`.
+- [ ] Author/update `docs/spec/solixlib/filesystem.md`.
+- [ ] Run full regression suite `ctest --test-dir build --output-on-failure` (100% pass required).
 
 ---
 
