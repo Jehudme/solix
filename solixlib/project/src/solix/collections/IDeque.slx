@@ -1,0 +1,12 @@
+package solix.collections;
+
+import solix.core.Any;
+
+public interface IDeque extends ICollection {
+    void add_first(Any item);
+    void add_last(Any item);
+    Any remove_first();
+    Any remove_last();
+    Any peek_first();
+    Any peek_last();
+}

@@ -416,6 +416,15 @@ public class String implements IStringable, IHashable {
         return true;
     }
 
+    public bool equals_chars(char[] other) {
+        if (other == null) return false;
+        if (this.length() != other.length) return false;
+        for (int32 i = 0; i < this.length(); i = i + 1) {
+            if (this.data[i] != other[i]) return false;
+        }
+        return true;
+    }
+
     public int32 hash_code() {
         int32 h = 0;
         int32 len = this.length();

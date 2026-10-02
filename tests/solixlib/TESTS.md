@@ -94,3 +94,15 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 6.4 [IMPLEMENTED]**: `Stopwatch` lifecycle (start, stop, reset, restart, elapsed duration querying) (`tests/solixlib/test_time.cpp`).
 - [x] **Case 6.5 [IMPLEMENTED]**: Sleep duration validation via native sleep binding (`tests/solixlib/test_time.cpp`).
 - [x] **Case 6.6 [IMPLEMENTED]**: Negative: invalid `DateTime` date bounds validation throws `IllegalArgumentException` (`tests/solixlib/test_time.cpp`).
+
+---
+
+## 7. Collections Core (`solix.collections.Core`)
+
+- [x] **Case 7.1 [IMPLEMENTED]**: `IIterator` step-through navigation and contract validation (`has_next()`, `next()`) (`tests/solixlib/test_collections_core.cpp`).
+- [x] **Case 7.2 [IMPLEMENTED]**: `ICollection` and `IReadOnlyCollection` lifecycle: `size()`, `is_empty()`, `contains()`, `to_array()`, `clear()`, and `to_string()` formatting via `Collections.to_string()` (`tests/solixlib/test_collections_core.cpp`).
+- [x] **Case 7.3 [IMPLEMENTED]**: Polymorphic interface dispatch and `Console.print` integration across `ICollection`, `IIterable`, and `IStringable` (`tests/solixlib/test_collections_core.cpp`).
+- [x] **Case 7.4 [IMPLEMENTED]**: `IList` contract index-based access, mutation, insertion, element removal, and index lookups (`tests/solixlib/test_collections_core.cpp`).
+- [x] **Case 7.5 [IMPLEMENTED]**: `IDeque` contract double-ended queue operations (`add_first`, `add_last`, `remove_first`, `remove_last`, `peek_first`, `peek_last`) and string representation (`tests/solixlib/test_collections_core.cpp`).
+- [x] **Case 7.6 [IMPLEMENTED]**: Negative: Calling `next()` on exhausted iterator throws `NoSuchElementException` (`tests/solixlib/test_collections_core.cpp`).
+

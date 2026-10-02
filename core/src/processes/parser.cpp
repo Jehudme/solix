@@ -1368,8 +1368,13 @@ std::unique_ptr<Node> ParserState::parse_interface_declaration(TokenType modifie
   decl->access_modifier = modifier;
 
   if (match(TokenType::KEYWORD_EXTENDS) || match(TokenType::PUNCTUATION_COLON)) {
-    TypeInfo base_type = parse_type_info();
-    decl->base_class_name = base_type.name;
+    do {
+      TypeInfo base_type = parse_type_info();
+      if (decl->base_class_name.empty()) {
+        decl->base_class_name = base_type.name;
+      }
+      decl->implemented_interfaces.push_back(base_type.name);
+    } while (match(TokenType::PUNCTUATION_COMMA));
   }
 
   consume(TokenType::PUNCTUATION_OPEN_BRACE, "Expected '{' before interface body");

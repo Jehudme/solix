@@ -41,6 +41,10 @@ public class StringBuilder implements IStringable {
         return this.append_chars(s.data);
     }
 
+    public StringBuilder append(char[] s) {
+        return this.append_chars(s);
+    }
+
     public StringBuilder append_chars(char[] s) {
         if (s == null || s.length == 0) return this;
         this.ensure_capacity(s.length);

@@ -1,0 +1,14 @@
+package solix.collections;
+
+import solix.core.Any;
+import solix.core.IStringable;
+import solix.core.String;
+
+public interface ICollection extends IIterable, IStringable {
+    int32 size();
+    bool is_empty();
+    bool contains(Any item);
+    void clear();
+    Any[] to_array();
+    String to_string();
+}
