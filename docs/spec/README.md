@@ -20,6 +20,12 @@ This directory contains the formal specification of the Solix programming langua
 |----------|-------------|
 | [**Statements Reference**](statements/README.md) | Practical, code-first reference for all 37 Solix statements, declarations, and expressions — each covering overview, compilation mechanics, and real bytecode examples |
 
+### CLI & Toolchain
+
+| Document | Description |
+|----------|-------------|
+| [**CLI & Toolchain Reference**](cli/README.md) | Authoritative reference for all 8 CLI subcommands (`compile`, `run`, `build`, `new`, `install`, `uninstall`, `list`, `details`) and `solix.json` manifest schema |
+
 ---
 
 ## Document Map
@@ -30,6 +36,14 @@ docs/spec/
 ├── lexical.md                  ← Lexical Grammar Specification
 ├── types.md                    ← Type System & Static Semantics
 ├── vm_isa.md                   ← VM Instruction Set Architecture
+├── cli/
+│   ├── README.md               ← CLI & Toolchain reference index
+│   ├── compile.md              ← solix compile specification
+│   ├── run.md                  ← solix run specification
+│   ├── build.md                ← solix build specification
+│   ├── new.md                  ← solix new specification
+│   ├── package.md              ← Local package management specification
+│   └── manifest.md             ← solix.json project manifest schema
 └── statements/
     ├── README.md               ← Statements reference index
     ├── modules/

@@ -1,39 +1,94 @@
 # Solix Engineering Workflow & Development Lifecycle
 
-Each phase and feature in Solix must strictly adhere to the following development lifecycle:
+This document defines the mandatory engineering process and quality standards for all development on the Solix programming language, compiler, runtime, launcher, and toolchain.
 
-1. **Dedicated Branching**: Create a feature branch:
-   ```bash
-   git checkout -b phase-N-descriptive-name
-   ```
-2. **Implementation**: Implement code changes according to the detailed architectural and solution specification.
-3. **Commit Implementation**:
-   ```bash
-   git commit -m "feat/fix: <description>"
-   ```
-4. **Test Specification Analysis & Update**:
-   - Before implementing test code, analyze the codebase and recent changes to determine required test coverage.
-   - Update `tests/statements/TESTS.md` by adding or updating the test scenarios to be implemented.
-   - By default, all newly added test cases in `tests/statements/TESTS.md` must be tagged with `[NOT IMPLEMENTED]`.
-5. **Commit Test Specification**:
-   ```bash
-   git commit -m "test(spec): update test specifications in TESTS.md"
-   ```
-6. **Unit & Statement Test Implementation**:
-   - Implement or update Catch2 unit tests in `tests/statements/` organized cleanly by construct category (`modules/`, `declarations/`, `control_flow/`, `expressions/`).
-   - As test cases are implemented and verified, update their tags in `tests/statements/TESTS.md` from `[NOT IMPLEMENTED]` to `[IMPLEMENTED]`.
-7. **Commit Tests**:
-   - Commit tests incrementally between statements:
-     ```bash
-     git commit -m "test: implement Catch2 test suite for <construct>"
-     ```
-8. **Full Test Suite Run**:
-   - Run the complete test suite:
-     ```bash
-     ctest --test-dir build --output-on-failure
-     ```
-9. **Merge**:
-   - Merge back into `master` using non-fast-forward merge:
-     ```bash
-     git checkout master && git merge --no-ff phase-N-descriptive-name
-     ```
+---
+
+## Universal Scope & Core Invariants
+
+The rules and requirements described herein apply universally to **all language statements, language features, compiler/runtime internals, and CLI commands**.
+
+Whenever any construct, feature, or command is added, modified, or refactored:
+1. **Mandatory Test Updates**: Tests must be created or updated covering **ALL positive scenarios** (valid usage, syntax, arguments, options, flags, runtime output guarantees) and **ALL negative scenarios** (syntax errors, invalid types, missing arguments, unhandled faults, out-of-bounds inputs, exit codes).
+2. **Mandatory Documentation Updates**: Formal specifications, developer guides, and references must be created or updated in lockstep with code changes.
+3. **Mandatory Phase Identification**: In every phase, the engineering plan ([`PLAN.md`](PLAN.md)) must explicitly enumerate:
+   - The specific code modules and interfaces being modified or introduced.
+   - The specific test suites and test cases (positive and negative) required.
+   - The specific documentation files and sections to be created or updated.
+
+---
+
+## Step-by-Step Development Lifecycle
+
+Every phase, feature, or bugfix must strictly follow this sequential lifecycle:
+
+### 1. Dedicated Branching
+Create a dedicated feature branch off `master`:
+```bash
+git checkout -b phase-N-descriptive-name
+```
+Never commit directly to `master`.
+
+### 2. Implementation
+Implement code changes according to the architectural design, keeping code modular, self-contained, and cross-platform portable.
+
+### 3. Commit Implementation
+Commit the code changes before proceeding to tests or documentation:
+```bash
+git commit -m "feat/fix: <description>"
+```
+
+### 4. Test & Documentation Specification Analysis
+Before writing test code or documentation:
+- **Analyze Scope**: Determine all affected statements, language constructs, or CLI commands.
+- **Identify Test Matrix**: Formulate comprehensive positive and negative test scenarios.
+- **Update Master Test Specifications**:
+  - For language statements/constructs: update [`tests/statements/TESTS.md`](../tests/statements/TESTS.md).
+  - For CLI commands and toolchain subcommands: update [`tests/commands/TESTS.md`](../tests/commands/TESTS.md).
+  - Every newly added test scenario must initially be tagged with `[NOT IMPLEMENTED]`.
+- **Identify Documentation Deliverables**:
+  - For CLI commands: formal command specifications in `docs/spec/cli/` and user guides in `docs/guide/`.
+  - For language statements: syntax and bytecode mechanics in `docs/spec/statements/` and keyword entries in `docs/wiki/keywords/`.
+  - For architecture/runtime: internals in `docs/architecture/` and formal ISA/type rules in `docs/spec/`.
+
+### 5. Commit Test Specifications
+Commit the updated test specification document with `[NOT IMPLEMENTED]` tags:
+```bash
+git commit -m "test(spec): define test specifications in TESTS.md"
+```
+
+### 6. Test Suite Implementation & Verification
+- Implement Catch2 unit tests:
+  - Language statements: organized cleanly under `tests/statements/` (`modules/`, `declarations/`, `control_flow/`, `expressions/`).
+  - CLI subcommands: organized under `tests/commands/` using isolated sandbox fixtures (`TempDir`, `run_cli`).
+- Ensure tests verify both positive execution results (artifacts, output strings, exit code 0) and negative failure conditions (error messages, invalid argument detection, non-zero exit codes).
+- As test scenarios are implemented and verified to pass, update their tags in the corresponding `TESTS.md` from `[NOT IMPLEMENTED]` to `[IMPLEMENTED]`.
+
+### 7. Documentation Implementation & Updates
+- Author or update all identified documentation artifacts:
+  - Ensure documentation contains real, working examples matching the current codebase.
+  - Remove all legacy, obsolete, or purged features (e.g. legacy stdlib assumptions).
+  - Update top-level documentation indexes (`docs/spec/README.md`, `docs/guide/README.md`, etc.).
+
+### 8. Incremental Commit of Tests and Documentation
+Commit test suites and documentation incrementally:
+```bash
+git commit -m "test(<subsystem>): implement Catch2 test suite for <construct>"
+git commit -m "docs(<subsystem>): add formal specification and guide for <feature>"
+```
+
+### 9. Full Test Suite Verification
+Run the complete regression test suite across all statements and CLI commands:
+```bash
+ctest --test-dir build --output-on-failure
+```
+Ensure 100% pass rate before requesting merge.
+
+### 10. Non-Fast-Forward Merge
+Merge the feature branch back into `master` using non-fast-forward merge (`--no-ff`) to preserve the feature's commit history:
+```bash
+git checkout master
+git merge --no-ff phase-N-descriptive-name -m "Merge branch 'phase-N-descriptive-name' into master"
+git branch -d phase-N-descriptive-name
+```
+Update [`docs/PLAN.md`](PLAN.md) to record the phase as completed.

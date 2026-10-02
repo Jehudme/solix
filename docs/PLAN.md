@@ -26,6 +26,7 @@
 | **Phase 9** | Project Scaffolding & Initialization Subcommand (`solix new`) | `P1 High` | `launcher`, `templates` | - [x] Completed |
 | **Phase 10** | Package Lifecycle Management (`install`, `uninstall`, `list`, `details`) | `P1 High` | `launcher` | - [x] Completed |
 | **Phase 11** | CLI Commands Test Suite & Master Specification (`tests/commands/`) | `P1 High` | `tests`, `launcher`, `build` | - [x] Completed |
+| **Phase 12** | CLI Commands & Toolchain Documentation (`docs/spec/cli/`) | `P1 High` | `docs`, `launcher`, `guide` | - [x] Completed |
 
 ---
 
@@ -380,6 +381,53 @@ Establish a dedicated, comprehensive Catch2 unit test suite and master test spec
 - `tests/commands/TESTS.md` comprehensively documents all positive and negative scenarios for every subcommand.
 - Catch2 test suites under `tests/commands/` execute and verify every scenario.
 - All tests pass 100% via `ctest`.
+
+---
+
+## Phase 12: CLI Commands & Comprehensive Toolchain Documentation
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `docs`, `launcher`, `guide`, `workflow`
+- **Status**: - [x] Completed & Merged
+
+### Objective
+Establish comprehensive, authoritative, and formal documentation for the entire Solix toolchain and CLI command suite (`compile`, `run`, `build`, `new`, `install`, `uninstall`, `list`, `details`, and `solix.json` manifest). Bring developer guides up to date with the modular architecture, link CLI specifications into the language specification indexes, and formalize the engineering workflow requiring explicit identification of positive/negative tests and documentation for all commands, statements, and features.
+
+### Identified Test & Documentation Deliverables
+- **1. Test Identification**:
+  - Verify that existing positive and negative test cases in `tests/commands/TESTS.md` completely match the documented CLI behaviors and arguments across all 8 subcommands.
+  - Maintain Catch2 test suite integrity (`test_compile_command.cpp`, `test_run_command.cpp`, `test_build_command.cpp`, `test_new_command.cpp`, `test_package_commands.cpp`).
+- **2. Documentation Identification**:
+  - `docs/WORKFLOW.md`: Add mandatory rules governing tests (positive + negative) and documentation for all CLI commands, language statements, and features, mandating that each phase explicitly identify them.
+  - `docs/spec/cli/README.md`: Master index and architectural overview of the Solix CLI, global invocation syntax, options, and exit codes.
+  - `docs/spec/cli/compile.md`: Full formal specification for `solix compile`.
+  - `docs/spec/cli/run.md`: Full formal specification for `solix run`.
+  - `docs/spec/cli/build.md`: Full formal specification for `solix build`.
+  - `docs/spec/cli/new.md`: Full formal specification for `solix new`.
+  - `docs/spec/cli/package.md`: Full formal specification for local package management (`install`, `uninstall`, `list`, `details`).
+  - `docs/spec/cli/manifest.md`: Complete schema specification for `solix.json`.
+  - `docs/guide/01_getting_started.md`: Revise getting started guide to reflect the modern CLI workflow (`new`, `build`, `run`, `install`, `list`, `details`, `uninstall`) and purge obsolete standard library references.
+  - `docs/spec/README.md`: Update specification map and tables to reference the new CLI documentation suite.
+
+### Action Items
+- [x] **1. Workflow Hardening (`docs/WORKFLOW.md`)**:
+  - Formalize rule requiring that whenever any CLI command, statement, or feature is added or updated, positive and negative tests plus corresponding documentation must be updated in lockstep.
+  - Enforce phase-level identification of tests and docs.
+- [x] **2. Author CLI Command Specifications (`docs/spec/cli/`)**:
+  - Write `README.md`, `compile.md`, `run.md`, `build.md`, `new.md`, `package.md`, `manifest.md`.
+- [x] **3. Update User Guides & Top-Level Indexes**:
+  - Modernize `docs/guide/01_getting_started.md` with accurate CLI instructions and examples.
+  - Update `docs/spec/README.md` to link `docs/spec/cli/`.
+- [x] **4. Verification & Regression Check**:
+  - Ensure all documentation links resolve.
+  - Run `ctest --test-dir build --output-on-failure` to verify 100% test passing.
+
+### Acceptance Criteria
+- Complete documentation suite exists under `docs/spec/cli/`.
+- `docs/WORKFLOW.md` explicitly mandates positive/negative test coverage and documentation updates for all statements, features, and CLI commands.
+- `docs/guide/01_getting_started.md` and `docs/spec/README.md` are synchronized.
+- All 47 test suites pass 100%.
+
 
 
 

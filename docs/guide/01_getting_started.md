@@ -1,29 +1,33 @@
 # Getting Started with Solix
 
-Solix is a statically typed, object-oriented programming language with Automatic Reference Counting (ARC) memory management. This guide walks you through installing the toolchain, understanding the project layout, and writing your first program.
+Solix is a statically typed, object-oriented programming language designed for high performance and deterministic memory management through Automatic Reference Counting (ARC).
+
+This guide walks you through building the toolchain, scaffolding a new project, building and running applications, and managing local packages with the `solix` CLI.
 
 ---
 
 ## Table of Contents
 
-1. [Building from Source](#building-from-source)
-2. [Project Structure](#project-structure)
-3. [CLI Commands](#cli-commands)
-4. [Hello, World!](#hello-world)
-5. [Command-Line Arguments](#command-line-arguments)
-6. [Exit Codes](#exit-codes)
+1. [Prerequisites & Building from Source](#prerequisites--building-from-source)
+2. [CLI Toolchain Overview](#cli-toolchain-overview)
+3. [Your First Project (`solix new`)](#your-first-project-solix-new)
+4. [Building Your Project (`solix build`)](#building-your-project-solix-build)
+5. [Running Your Application (`solix run`)](#running-your-application-solix-run)
+6. [Compiling Individual Files (`solix compile`)](#compiling-individual-files-solix-compile)
+7. [Local Package Management (`install`, `list`, `details`, `uninstall`)](#local-package-management)
+8. [Exit Codes & Return Values](#exit-codes--return-values)
 
 ---
 
-## Building from Source
+## Prerequisites & Building from Source
 
 ### Prerequisites
 
-| Tool | Minimum Version |
-|------|----------------|
-| CMake | 3.20 |
-| C++ compiler (GCC or Clang) | C++20 support |
-| Git | Any recent version |
+| Tool | Minimum Version | Purpose |
+|---|---|---|
+| CMake | 3.20 | Build configuration and target generation |
+| C++ Compiler | C++20 (GCC 11+, Clang 13+, MSVC 2019+) | Language engine compilation |
+| Git | Recent version | Fetching dependencies |
 
 ### Clone and Build
 
@@ -35,190 +39,182 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 cmake --build . --parallel
 ```
 
-After a successful build, the `solix` binary is located at `build/solix`.
+After building, the unified CLI executable is located at:
+- **`build/launcher/solix`** (with symlink/alias **`build/launcher/solix_launcher`**)
 
-### (Optional) Install System-Wide
-
+You can optionally install it system-wide:
 ```bash
 sudo cmake --install .
 ```
 
-This installs the `solix` binary to `/usr/local/bin`.
-
 ---
 
-## Project Structure
+## CLI Toolchain Overview
 
-```
-solix/
-├── language/                  # Compiler and runtime (C++ source)
-│   ├── include/               # Public headers (compilation, runtime)
-│   └── src/
-│       ├── processes/         # Lexer, Parser, Binder, Assembler
-│       └── utilities/         # AST nodes, opcodes, diagnostics
-├── launcher/                  # CLI front-end
-├── tests/                     # Unit and integration tests (Catch2)
-└── docs/                      # Documentation (this directory)
-```
-
-A Solix source file uses the `.slx` extension. Each file belongs to exactly one **package**, declared at the top of the file:
-
-```solix
-package com.example.myapp;
-```
-
----
-
-## CLI Commands
-
-The `solix` executable exposes two primary subcommands.
-
-### `solix compile`
-
-Compiles one or more `.slx` source files into a bytecode binary.
-
-```
-solix compile [options] <source-files...>
-```
-
-| Option | Description |
-|--------|-------------|
-| `-o <file>` | Output file path for the compiled binary (default: `out.slxb`) |
-| `--asm <file>` | Emit human-readable assembly alongside the binary |
-| `--lib <dir>` | Additional library directory to include on the search path |
-
-**Example:**
+The `solix` executable provides a cohesive set of subcommands:
 
 ```bash
-solix compile -o hello.slxb hello.slx
+solix <subcommand> [options] [arguments...]
 ```
 
-### `solix run`
-
-Compiles and immediately executes source files in a single step.
-
-```
-solix run [options] <source-files...> [-- <program-args...>]
-```
-
-| Option | Description |
-|--------|-------------|
-| `--lib <dir>` | Additional library directory |
-| `--` | Separator; everything after this is passed to the Solix program as `args` |
-
-**Example:**
-
-```bash
-solix run main.slx -- Alice 42
-```
+| Subcommand | Function | Reference |
+|---|---|---|
+| `new` | Scaffolds a new project with directory structure and manifest | [docs/spec/cli/new.md](../spec/cli/new.md) |
+| `build` | Builds project artifacts from `solix.json` profiles | [docs/spec/cli/build.md](../spec/cli/build.md) |
+| `run` | Executes compiled bytecode binaries on the Solix VM | [docs/spec/cli/run.md](../spec/cli/run.md) |
+| `compile` | Directly compiles source files into bytecode | [docs/spec/cli/compile.md](../spec/cli/compile.md) |
+| `install` | Installs a local project into `$SOLIX_HOME` | [docs/spec/cli/package.md](../spec/cli/package.md) |
+| `uninstall` | Uninstalls an installed project by name and version | [docs/spec/cli/package.md](../spec/cli/package.md) |
+| `list` | Lists all installed projects in tabular format | [docs/spec/cli/package.md](../spec/cli/package.md) |
+| `details` | Shows comprehensive metadata for an installed project | [docs/spec/cli/package.md](../spec/cli/package.md) |
 
 ---
 
-## Hello, World!
+## Your First Project (`solix new`)
 
-Every Solix program defines an execution entry point. The following signatures are supported:
-- `static int32 main()` — directly returns an integer exit code.
-- `static void main(char[][] args)` — receives command-line arguments.
-- `static int32 main(char[][] args)` — receives command-line arguments and returns an integer exit code.
+To create a new Solix project:
 
-**`hello.slx`**
+```bash
+solix new hello_solix
+cd hello_solix
+```
+
+This generates a standard project structure:
+
+```
+hello_solix/
+├── solix.json             # Declarative project and build manifest
+└── src/
+    └── main.slx           # Starter source code with entry method
+```
+
+### Understanding `src/main.slx`
 
 ```solix
-package com.example;
-
-import solix.systems.Console;
-
-static void main(char[][] args) {
-    Console.println("Hello, World!");
+static int32 main() {
+    return 0;
 }
 ```
 
-Run it:
+Every executable Solix program defines an entry point (default name `main`). The return value of `main()` is propagated directly to the host operating system shell as the process exit code.
+
+---
+
+## Building Your Project (`solix build`)
+
+Build the default `debug` profile:
 
 ```bash
-solix run hello.slx
+solix build
+```
+
+This resolves project dependencies from `solix.json` and outputs the executable bytecode binary to `build/debug/out.slxbin`.
+
+To compile an optimized `release` profile:
+
+```bash
+solix build -p release
+```
+
+Output: `build/release/out.slxbin`.
+
+---
+
+## Running Your Application (`solix run`)
+
+Execute the compiled bytecode on the Solix Virtual Machine:
+
+```bash
+solix run build/debug/out.slxbin
+```
+
+You can pass arguments to your program after the bytecode file:
+
+```bash
+solix run build/debug/out.slxbin arg1 arg2 123
+```
+
+---
+
+## Compiling Individual Files (`solix compile`)
+
+If you want to compile standalone source files without a manifest:
+
+```bash
+solix compile src/main.slx -o app.slxb
+```
+
+To emit disassembly text alongside the bytecode:
+
+```bash
+solix compile src/main.slx -o app.slxb -a app.s
+```
+
+---
+
+## Local Package Management
+
+Solix includes local package management commands for sharing and inspecting reusable libraries on your machine.
+
+### 1. Install a Project
+From your project directory:
+
+```bash
+solix install .
+```
+
+The package manager computes a deterministic 16-hex SHA-256 identifier (e.g., `8df34a2e57b901fc`) from your project name and version, copies the project into `$SOLIX_HOME/installed/<id>/`, and records it in `$SOLIX_HOME/installed.json`.
+
+### 2. List Installed Packages
+```bash
+solix list
 ```
 
 Output:
-
 ```
-Hello, World!
-```
+Installed Solix Projects (1):
 
-### What is `char[][]`?
-
-In Solix there are no built-in string literals that map directly to a `String` object at the `main` boundary. Command-line arguments are passed as an **array of character arrays** — `char[][]` — where each `char[]` is one argument string.
-
-```solix
-import solix.systems.Console;
-import solix.core.String;
-
-static void main(char[][] args) {
-    Console.print("Argument count: ");
-    Console.println(args.length);
-
-    for (int32 i = 0; i < args.length; i++) {
-        String arg = new String(args[i]);
-        Console.println(arg);
-    }
-}
+NAME                     VERSION     ID                INSTALLED PATH
+--------------------------------------------------------------------------------
+hello_solix              0.1.0       8df34a2e57b901fc  /home/user/.solix/installed/8df34a2e57b901fc
 ```
 
----
-
-## Command-Line Arguments
-
-| Index | Content |
-|-------|---------|
-| `args[0]` | First user-supplied argument (the program name is **not** included) |
-| `args[1]` | Second argument |
-| … | … |
-| `args[args.length - 1]` | Last argument |
-
-Each element is a `char[]` which can be wrapped in a `String` for convenient manipulation:
-
-```solix
-import solix.core.String;
-import solix.systems.Console;
-
-static void main(char[][] args) {
-    if (args.length == 0) {
-        Console.println("No arguments provided.");
-        return;
-    }
-
-    String name = new String(args[0]);
-    Console.print("Hello, ");
-    Console.print(name);
-    Console.println("!");
-}
+### 3. Inspect Package Details
+```bash
+solix details hello_solix
 ```
 
-Run:
+Displays package author, version, disk usage, build profiles, and declared dependencies.
+
+### 4. Uninstall a Package
+To remove an installed package, specify both the name and version:
 
 ```bash
-solix run greet.slx -- Alice
-# Hello, Alice!
+solix uninstall hello_solix 0.1.0
 ```
 
 ---
 
-## Exit Codes
+## Exit Codes & Return Values
 
-Solix programs exit with a code that reflects their outcome.
+| Exit Code | Meaning |
+|---|---|
+| `0` | Success / program returned 0 |
+| `1` | Error (syntax, semantic, missing file, or unhandled runtime fault) |
+| `N` (`N > 0`) | Custom integer exit code returned by `main()` |
 
-| Code | Meaning |
-|------|---------|
-| `0` | Program completed successfully |
-| `1` | Unhandled exception terminated the program |
-| `2` | Compilation failed (syntax or type error) |
-
-The runtime prints the unhandled exception's `to_string()` to `stderr` before exiting with code `1`.
-
-To exit deliberately with a specific code, define `main` with return type `int32`:
+For example, a program returning 42:
 
 ```solix
 static int32 main() {
     return 42;
 }
+```
+
+When compiled and executed:
+```bash
+solix compile check.slx -o check.slxb
+solix run check.slxb
+echo $?
+# 42
 ```
