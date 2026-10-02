@@ -3,7 +3,9 @@ add_library(solixlib_native SHARED
     src/console.cpp
     src/string.cpp
     src/primitives.cpp
+    src/math.cpp
 )
+
 
 
 target_include_directories(solixlib_native PRIVATE

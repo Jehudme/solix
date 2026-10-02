@@ -1,0 +1,54 @@
+package solix.math;
+
+import solix.exceptions.IllegalArgumentException;
+
+public class Random {
+    private int64 _handle;
+
+    public Random() {
+        this._handle = native_init(0);
+    }
+
+    public Random(int64 seed) {
+        this._handle = native_init(seed);
+    }
+
+    public int64 next_int64() {
+        return native_next_u64(this._handle);
+    }
+
+    public int32 next_int() {
+        int64 val = native_next_u64(this._handle);
+        int32 low = (int32)val;
+        if (low < 0) return -low;
+        return low;
+    }
+
+    public int32 next_int(int32 max) {
+        if (max <= 0) {
+            throw new IllegalArgumentException("max", "Bound must be strictly positive");
+        }
+        return this.next_int() % max;
+    }
+
+    public int32 next_int(int32 min, int32 max) {
+        if (min >= max) {
+            throw new IllegalArgumentException("min", "Minimum must be strictly less than maximum bound");
+        }
+        int32 range = max - min;
+        return min + this.next_int(range);
+    }
+
+    public float64 next_double() {
+        return native_next_double(this._handle);
+    }
+
+    public bool next_bool() {
+        int64 val = native_next_u64(this._handle);
+        return (val % 2) == 1;
+    }
+
+    private static native int64 native_init(int64 seed);
+    private static native int64 native_next_u64(int64 handle);
+    private static native float64 native_next_double(int64 handle);
+}

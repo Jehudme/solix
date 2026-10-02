@@ -5,5 +5,8 @@ public class IllegalArgumentException extends RuntimeException {
 
     public IllegalArgumentException(char[] message) : super(message) {}
 
+    public IllegalArgumentException(char[] param_name, char[] message) : super(message) {}
+
     public IllegalArgumentException(char[] message, Exception cause) : super(message, cause) {}
+
 }
