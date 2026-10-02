@@ -25,7 +25,7 @@
 | **Phase 8** | Project Manifest & Modular Build Subcommand (`solix build`) | `P1 High` | `launcher`, `build` | - [x] Completed |
 | **Phase 9** | Project Scaffolding & Initialization Subcommand (`solix new`) | `P1 High` | `launcher`, `templates` | - [x] Completed |
 | **Phase 10** | Package Lifecycle Management (`install`, `uninstall`, `list`, `details`) | `P1 High` | `launcher` | - [x] Completed |
-| **Phase 11** | CLI Commands Test Suite & Master Specification (`tests/commands/`) | `P1 High` | `tests`, `launcher`, `build` | - [ ] In Progress |
+| **Phase 11** | CLI Commands Test Suite & Master Specification (`tests/commands/`) | `P1 High` | `tests`, `launcher`, `build` | - [x] Completed |
 
 ---
 
@@ -348,32 +348,32 @@ Implement cross-platform local package management for Solix projects via subcomm
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `tests`, `launcher`, `build`
-- **Status**: - [ ] In Progress
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Establish a dedicated, comprehensive Catch2 unit test suite and master test specification for all Solix CLI subcommands (`compile`, `run`, `build`, `new`, `install`, `uninstall`, `list`, and `details`). The test suites mirror the architectural rigor of `tests/statements/` and `tests/statements/TESTS.md`, validating all positive execution scenarios and negative error handling paths with isolated sandbox test environments.
 
 ### Action Items
-- [ ] **1. Modularize Launcher Library Target**:
+- [x] **1. Modularize Launcher Library Target**:
   - In `launcher/CMakeLists.txt`, create static library `solix_launcher_core` exposing command runners, dependency resolvers, and the package manager.
   - Link `solix_launcher_core` to both `solix` executable and `solix_tests`.
-- [ ] **2. Update Build System & Discover Command Tests**:
+- [x] **2. Update Build System & Discover Command Tests**:
   - In `tests/CMakeLists.txt`, configure discovery for both `statements/*.cpp` and `commands/*.cpp`.
   - Add launcher include directories to `solix_tests`.
-- [ ] **3. Create In-Process CLI Test Helper (`tests/include/cli_test_helper.hpp`)**:
+- [x] **3. Create In-Process CLI Test Helper (`tests/include/cli_test_helper.hpp`)**:
   - Implement sandbox temporary directory fixture (`TempDir`).
   - Implement CLI invocation harness capturing exit codes, `std::cout`, and `std::cerr` streams.
-- [ ] **4. Define Master Test Specification (`tests/commands/TESTS.md`)**:
+- [x] **4. Define Master Test Specification (`tests/commands/TESTS.md`)**:
   - Document all positive and negative test scenarios for every command (`compile`, `run`, `build`, `new`, `install`, `uninstall`, `list`, `details`).
   - Initially tag all scenarios with `[NOT IMPLEMENTED]`.
-- [ ] **5. Implement Command Catch2 Test Suites**:
+- [x] **5. Implement Command Catch2 Test Suites**:
   - `tests/commands/test_compile_command.cpp`: Verify compilation, custom output paths, assembly dumping, entry points, and error states.
   - `tests/commands/test_run_command.cpp`: Verify bytecode execution, arguments passing, stack/heap flags, and runtime errors.
   - `tests/commands/test_build_command.cpp`: Verify zero-arg builds, profiles (`debug`, `release`, `test`), manifest paths, and missing file faults.
   - `tests/commands/test_new_command.cpp`: Verify project scaffolding, manifest parameter overrides, template copying, and collision prevention.
   - `tests/commands/test_package_commands.cpp`: Verify `install`, `uninstall`, `list`, and `details` with central `installed.json` registry and deterministic hash IDs.
   - Update all tags in `tests/commands/TESTS.md` from `[NOT IMPLEMENTED]` to `[IMPLEMENTED]`.
-- [ ] **6. Full Test Suite Verification**:
+- [x] **6. Full Test Suite Verification**:
   - Run `ctest --test-dir build --output-on-failure` to ensure all 42 statement test suites and all new command test suites pass 100%.
 
 ### Acceptance Criteria
