@@ -110,13 +110,13 @@ Each test scenario is assigned a permanent identifier and status tag:
 
 ## 8. Lists & Linear Sequences (`solix.collections.List`, `LinkedList`, `Algorithms`)
 
-- [ ] **Case 8.1 [NOT IMPLEMENTED]**: `List<T>` dynamic capacity expansion, indexing (`get`, `set`), `for_each` lambda traversal, and functional `filter` predicate (`tests/solixlib/test_list.cpp`).
-- [ ] **Case 8.2 [NOT IMPLEMENTED]**: `List<T>` mutation operations (`insert`, `remove_at`, `remove`, `contains`, `index_of`), slicing (`sub_list`), in-place reversal, and string conversion (`tests/solixlib/test_list.cpp`).
-- [ ] **Case 8.3 [NOT IMPLEMENTED]**: `LinkedList<T>` double-ended queue operations (`add_first`, `add_last`, `remove_first`, `remove_last`, `peek_first`, `peek_last`), `for_each` lambda iteration, and formatted string rendering (`tests/solixlib/test_list.cpp`).
-- [ ] **Case 8.4 [NOT IMPLEMENTED]**: `LinkedList<T>` index-based access, mutation (`get`, `set`, `insert`, `remove_at`, `remove`) with bidirectional node traversal and `filter` (`tests/solixlib/test_list.cpp`).
-- [ ] **Case 8.5 [NOT IMPLEMENTED]**: Generic `Algorithms` collection utilities (`swap<T>`, `reverse<T>`, `fill<T>`, comparator-based `sort<T>`, comparator-based `binary_search<T>`) (`tests/solixlib/test_list.cpp`).
-- [ ] **Case 8.6 [NOT IMPLEMENTED]**: Negative: `List<T>` invalid negative capacity and out-of-bounds index access throw `IllegalArgumentException` and `IndexOutOfBoundsException` (`tests/solixlib/test_list.cpp`).
-- [ ] **Case 8.7 [NOT IMPLEMENTED]**: Negative: `LinkedList<T>` empty deque operations throw `NoSuchElementException` and out-of-bounds indexing throws `IndexOutOfBoundsException` (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.1 [IMPLEMENTED]**: `List<T>` dynamic capacity expansion, indexing (`get`, `set`), `for_each` lambda traversal, and functional `filter` predicate (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.2 [IMPLEMENTED]**: `List<T>` mutation operations (`insert`, `remove_at`, `remove`, `contains`, `index_of`), slicing (`sub_list`), in-place reversal, and string conversion (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.3 [IMPLEMENTED]**: `LinkedList<T>` double-ended queue operations (`add_first`, `add_last`, `remove_first`, `remove_last`, `peek_first`, `peek_last`), `for_each` lambda iteration, and formatted string rendering (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.4 [IMPLEMENTED]**: `LinkedList<T>` index-based access, mutation (`get`, `set`, `insert`, `remove_at`, `remove`) with bidirectional node traversal and `filter` (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.5 [IMPLEMENTED]**: Generic `Algorithms` collection utilities (`swap<T>`, `reverse<T>`, `fill<T>`, comparator-based `sort<T>`, comparator-based `binary_search<T>`) (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.6 [IMPLEMENTED]**: Negative: `List<T>` invalid negative capacity and out-of-bounds index access throw `IllegalArgumentException` and `IndexOutOfBoundsException` (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.7 [IMPLEMENTED]**: Negative: `LinkedList<T>` empty deque operations throw `NoSuchElementException` and out-of-bounds indexing throws `IndexOutOfBoundsException` (`tests/solixlib/test_list.cpp`).
 
 ---
 

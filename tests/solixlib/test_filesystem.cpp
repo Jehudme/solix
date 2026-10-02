@@ -118,12 +118,12 @@ TEST_CASE("Standard Library - solix.io.filesystem", "[solixlib][io][filesystem]"
                     String text = new String("line1\nline2\nline3");
                     File.write_all_text(path, text);
 
-                    List lines = File.read_all_lines(path);
+                    List<String> lines = File.read_all_lines(path);
                     if (lines.size() != 3) return 1;
 
-                    String l1 = lines.get(0).as_string();
-                    String l2 = lines.get(1).as_string();
-                    String l3 = lines.get(2).as_string();
+                    String l1 = lines.get(0);
+                    String l2 = lines.get(1);
+                    String l3 = lines.get(2);
 
                     if (!l1.equals_chars("line1")) return 2;
                     if (!l2.equals_chars("line2")) return 3;
@@ -215,14 +215,14 @@ TEST_CASE("Standard Library - solix.io.filesystem", "[solixlib][io][filesystem]"
                     String hello = new String("hello");
                     File.write_all_text(f1_path, hello);
 
-                    List files = Directory.list_files(sub_dir);
+                    List<String> files = Directory.list_files(sub_dir);
                     if (files.size() != 1) return 2;
-                    String found_file = files.get(0).as_string();
+                    String found_file = files.get(0);
                     if (!found_file.equals(f1_name)) return 3;
 
-                    List dirs = Directory.list_directories(base_dir);
+                    List<String> dirs = Directory.list_directories(base_dir);
                     if (dirs.size() != 1) return 4;
-                    String found_dir = dirs.get(0).as_string();
+                    String found_dir = dirs.get(0);
                     if (!found_dir.equals(sub_name)) return 5;
 
                     Directory.delete_with_recursive(base_dir, true);
