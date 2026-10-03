@@ -29,14 +29,12 @@ TEST_CASE("Standard Library - solix.io.filesystem", "[solixlib][io][filesystem]"
                     String stem = Path.get_file_name_without_extension(full_path);
                     if (!stem.equals_chars("c")) return 5;
 
-                    String abs_path = new String("/usr/bin");
-                    if (!Path.is_absolute(abs_path)) return 6;
+                    String temp_path = Path.get_temp_path();
+                    if (temp_path.length() == 0) return 8;
+                    if (!Path.is_absolute(temp_path)) return 6;
 
                     String rel_path = new String("src/main.slx");
                     if (Path.is_absolute(rel_path)) return 7;
-
-                    String temp_path = Path.get_temp_path();
-                    if (temp_path.length() == 0) return 8;
 
                     String dirty = new String("a/b/../c");
                     String normalized = Path.normalize(dirty);
