@@ -3,78 +3,73 @@
 ## Overview
 
 The `solix.collections` map module provides associative key-value mapping containers:
-1. `KeyValuePair`: Encapsulates a single key-value association, implementing `IStringable` formatted as `key: value`.
-2. `IMap`: Generic mapping contract specifying key-value insertions, lookups, removals, key/value list extraction, and clear operations.
-3. `HashMap`: High-performance hash table with bucket chaining, dynamic load-factor monitoring, and automatic capacity expansion.
-4. `TreeMap`: Self-balancing ordered binary search tree maintaining keys in strict sorted order according to `IComparable<K>` (or natural ordering), supporting min/max key queries and ordered key traversal.
+1. `KeyValuePair<K, V>`: Encapsulates a single key-value association, implementing `IStringable`.
+2. `HashMap<K, V>`: High-performance hash table with bucket chaining, dynamic load-factor monitoring, functional `for_each(void(*)(K, V) action)`, and automatic capacity expansion.
+3. `TreeMap<K, V>`: Self-balancing ordered binary search tree maintaining keys in sorted order according to a comparator lambda `int32(*)(K, K)`, supporting min/max key queries, ordered key traversal, and functional `for_each(void(*)(K, V) action)`.
 
-Both map implementations implement `IMap`, `IReadOnlyCollection`, `IIterable`, and `IStringable`, supporting canonical string rendering (`"{k1: v1, k2: v2}"`) and direct terminal output via `Console.println()`.
+Both map implementations implement `IStringable`, supporting canonical string rendering (`"[HashMap]"`, `"[TreeMap]"`).
 
 ---
 
-## 1. Class: `solix.collections.KeyValuePair`
+## 1. Class: `solix.collections.KeyValuePair<K, V>`
 
-Encapsulates an immutable association between a key and a value.
+Encapsulates an association between a key of type `K` and a value of type `V`.
 
 ### Constructors
-- `KeyValuePair(Any key, Any value)`: Creates an entry pair with given key and value.
+- `KeyValuePair(K key, V value)`: Creates an entry pair with given key and value.
 
 ### Properties / Methods
-- `key() -> Any`: Returns the entry key.
-- `value() -> Any`: Returns the entry value.
-- `to_string() -> String`: Returns `"key: value"`.
+- `get_key() -> K`: Returns the entry key.
+- `get_value() -> V`: Returns the entry value.
+- `to_string() -> String`: Returns `"[KeyValuePair]"`.
 
 ---
 
-## 2. Interface: `solix.collections.IMap`
+## 2. Class: `solix.collections.HashMap<K, V>`
 
-Contract for map collections. Extends `IReadOnlyCollection`, `IIterable`, and `IStringable`.
+Hash table implementation using bucket chaining.
+
+### Constructors
+- `HashMap()`: Initializes empty hash map with default capacity of 16 and default load factor threshold.
+- `HashMap(int32 initial_capacity)`: Initializes empty hash map with specified bucket count.
+- `HashMap(int32(*)(K) hasher)`: Initializes hash map with custom key hasher function pointer.
+- `HashMap(int32 initial_capacity, int32(*)(K) hasher)`: Initializes hash map with initial capacity and custom hasher.
 
 ### Methods
 - `size() -> int32`: Returns number of key-value pairs stored.
 - `is_empty() -> bool`: Returns `true` if `size() == 0`.
 - `clear() -> void`: Removes all entries from map.
-- `contains_key(Any key) -> bool`: Returns `true` if key exists in map.
-- `contains_value(Any value) -> bool`: Returns `true` if one or more keys map to specified value.
-- `get(Any key) -> Any`: Returns value associated with key. Throws `KeyNotFoundException` if key is not found.
-- `get_or_default(Any key, Any default_val) -> Any`: Returns value associated with key, or `default_val` if absent.
-- `put(Any key, Any value) -> void`: Associates specified value with specified key. If key exists, updates value.
-- `remove(Any key) -> Any`: Removes entry with specified key and returns previous value. Throws `KeyNotFoundException` if key is absent.
-- `keys() -> List`: Returns a list containing all keys in the map.
-- `values() -> List`: Returns a list containing all values in the map.
-- `entries() -> List`: Returns a list of `KeyValuePair` entries.
+- `contains_key(K key) -> bool`: Returns `true` if key exists in map.
+- `contains_value(V value) -> bool`: Returns `true` if one or more keys map to specified value.
+- `get(K key) -> V`: Returns value associated with key. Throws `KeyNotFoundException` if key is not found.
+- `get_or_default(K key, V default_val) -> V`: Returns value associated with key, or `default_val` if absent.
+- `put(K key, V value) -> void`: Associates specified value with specified key. If key exists, updates value.
+- `remove(K key) -> V`: Removes entry with specified key and returns previous value.
+- `keys() -> List<K>`: Returns a list containing all keys in the map.
+- `values() -> List<V>`: Returns a list containing all values in the map.
+- `entries() -> List<KeyValuePair<K, V>>`: Returns a list of `KeyValuePair<K, V>` entries.
+- `for_each(void(*)(K, V) action) -> void`: Executes callback action for every key-value pair.
+- `to_string() -> String`: Returns `"[HashMap]"`.
 
 ---
 
-## 3. Class: `solix.collections.HashMap`
+## 3. Class: `solix.collections.TreeMap<K, V>`
 
-Hash table implementation of `IMap` using bucket chaining.
-
-### Constructors
-- `HashMap()`: Initializes empty hash map with default capacity of 16 and default load factor threshold.
-- `HashMap(int32 initial_capacity)`: Initializes empty hash map with specified bucket count. Throws `IllegalArgumentException` if `initial_capacity <= 0`.
-
-### Characteristics & Performance
-- **Time Complexity**: Average O(1) for `get`, `put`, `remove`, and `contains_key`.
-- **Key Hashing**: Employs `Collections.hash_code(key)` with positive bitmasking (`hash & 0x7FFFFFFF`) to ensure valid table indices.
-- **Rehashing**: Automatically expands bucket array and redistributes entries when `size >= capacity * 3 / 4`.
-- **String Representation**: Canonical format `"{k1: v1, k2: v2}"`.
-
----
-
-## 4. Class: `solix.collections.TreeMap`
-
-Ordered binary search tree implementation of `IMap`.
+Ordered binary search tree implementation.
 
 ### Constructors
-- `TreeMap()`: Initializes an empty tree map.
+- `TreeMap()`: Initializes an empty tree map with default comparator.
+- `TreeMap(int32(*)(K, K) comparator)`: Initializes tree map with explicit key comparison function pointer.
 
-### Ordered Operations
-- `first_key() -> Any`: Returns minimum key in the map according to ordering. Throws `NoSuchElementException` if empty.
-- `last_key() -> Any`: Returns maximum key in the map according to ordering. Throws `NoSuchElementException` if empty.
-
-### Characteristics & Performance
-- **Time Complexity**: Guaranteed O(log N) for `get`, `put`, `remove`, and `contains_key`.
-- **Ordering**: Keys are compared using `IComparable.compare_to()` if implemented, or fallback comparison logic.
-- **Ordered Traversal**: In-order traversal produces keys and entries in ascending sorted order.
-- **String Representation**: Canonical format `"{k1: v1, k2: v2}"` sorted by key.
+### Methods
+- `first_key() -> K`: Returns minimum key in the map according to ordering. Throws `NoSuchElementException` if empty.
+- `last_key() -> K`: Returns maximum key in the map according to ordering. Throws `NoSuchElementException` if empty.
+- `get(K key) -> V`: Returns value associated with key. Throws `KeyNotFoundException` if key is absent.
+- `get_or_default(K key, V default_val) -> V`: Returns value associated with key, or default if absent.
+- `put(K key, V value) -> void`: Inserts or updates key-value pair in tree.
+- `remove(K key) -> V`: Removes key from tree and returns old value.
+- `keys() -> List<K>`: In-order traversal returning keys in ascending order.
+- `values() -> List<V>`: In-order traversal returning values ordered by key.
+- `entries() -> List<KeyValuePair<K, V>>`: In-order traversal returning key-value pairs.
+- `for_each(void(*)(K, V) action) -> void`: In-order iteration executing action on each pair.
+- `to_string() -> String`: Returns `"[TreeMap]"`.

@@ -3,59 +3,66 @@
 ## Overview
 
 The `solix.collections` set module provides mathematical set abstractions guaranteeing distinct, duplicate-free elements:
-1. `ISet`: Generic set contract extending `ICollection`, declaring membership checks, distinct additions, element removals, and set algebra operations (`union_with`, `intersect_with`, `difference_with`, `is_subset_of`, `is_superset_of`).
-2. `HashSet`: High-performance hash table backed set providing average $O(1)$ insertions, lookups, and deletions.
-3. `TreeSet`: Self-balancing binary search tree backed set maintaining elements in strict ascending order, supporting boundary element queries (`first()`, `last()`) and ordered iteration in $O(\log N)$ time.
+1. `HashSet<T>`: High-performance hash table backed set providing average O(1) insertions, lookups, and deletions, with functional `for_each(void(*)(T) action)`.
+2. `TreeSet<T>`: Self-balancing binary search tree backed set maintaining elements in sorted order according to a comparator lambda `int32(*)(T, T)`, supporting boundary element queries (`first()`, `last()`), ordered iteration, and functional `for_each(void(*)(T) action)`.
 
-Both implementations implement `ISet`, `ICollection`, `IIterable`, and `IStringable`, supporting canonical string formatting (`"{item1, item2, item3}"`) and direct output through `Console.println()`.
-
----
-
-## 1. Interface: `solix.collections.ISet`
-
-Contract for set collections. Extends `ICollection`.
-
-### Methods
-- `bool add(Any item)`: Adds the specified element to this set if it is not already present. Returns `true` if the element was added, or `false` if the element already existed.
-- `bool remove(Any item)`: Removes the specified element from this set if present. Returns `true` if removed, or `false` if not found.
-- `void union_with(ICollection other)`: Modifies the current set to contain all elements present in this set, in the specified collection, or in both.
-- `void intersect_with(ICollection other)`: Modifies the current set to contain only elements that are present in both this set and the specified collection.
-- `void difference_with(ICollection other)`: Removes all elements in the specified collection from the current set.
-- `bool is_subset_of(ICollection other)`: Returns `true` if every element of this set is present in the specified collection.
-- `bool is_superset_of(ICollection other)`: Returns `true` if this set contains all elements of the specified collection.
+Both implementations implement `IStringable`, supporting canonical string formatting (`"[HashSet]"`, `"[TreeSet]"`).
 
 ---
 
-## 2. Class: `solix.collections.HashSet`
+## 1. Class: `solix.collections.HashSet<T>`
 
-Hash-table backed implementation of `ISet`.
+Hash-table backed distinct set implementation.
 
 ### Constructors
 - `HashSet()`: Initializes an empty hash set with default initial capacity (16).
 - `HashSet(int32 initial_capacity)`: Initializes an empty hash set with specified initial bucket capacity.
+- `HashSet(int32(*)(T) hasher)`: Initializes hash set with custom element hasher function pointer.
+- `HashSet(int32 initial_capacity, int32(*)(T) hasher)`: Initializes hash set with initial capacity and custom hasher.
 
-### Complexity & Characteristics
-- **Lookup & Insertion**: Average $O(1)$ for `add()`, `remove()`, and `contains()`.
-- **Iteration Order**: Unspecified; dependent on bucket hash distribution.
-- **Set Algebra**:
-  - `union_with(other)`: $O(M)$ where $M$ is the size of `other`.
-  - `intersect_with(other)`: $O(N)$ where $N$ is the size of `this`.
-  - `difference_with(other)`: $O(M)$ where $M$ is the size of `other`.
+### Methods
+- `bool add(T item)`: Adds element if not already present. Returns `true` if added, `false` if duplicate.
+- `bool remove(T item)`: Removes element if present. Returns `true` if removed, `false` otherwise.
+- `bool contains(T item)`: Checks if element is present.
+- `int32 size()`: Returns count of unique elements.
+- `bool is_empty()`: Returns true if set is empty.
+- `void clear()`: Removes all elements.
+- `T[] to_array()`: Exports elements into an array.
+- `List<T> to_list()`: Exports elements into a generic `List<T>`.
+- `void for_each(void(*)(T) action)`: Executes action on every element.
+- `void union_with(HashSet<T> other)`: Adds all elements from `other`.
+- `void intersect_with(HashSet<T> other)`: Retains only elements present in both sets.
+- `void difference_with(HashSet<T> other)`: Removes all elements present in `other`.
+- `bool is_subset_of(HashSet<T> other)`: Returns true if all elements are contained in `other`.
+- `bool is_superset_of(HashSet<T> other)`: Returns true if all elements of `other` are contained in this set.
+- `String to_string()`: Returns `"[HashSet]"`.
 
 ---
 
-## 3. Class: `solix.collections.TreeSet`
+## 2. Class: `solix.collections.TreeSet<T>`
 
-Red-Black binary search tree backed implementation of `ISet`.
+Binary search tree backed ordered distinct set implementation.
 
 ### Constructors
-- `TreeSet()`: Initializes an empty tree set maintaining elements in natural ascending order.
+- `TreeSet()`: Initializes an empty tree set with natural ordering.
+- `TreeSet(int32(*)(T, T) comparator)`: Initializes tree set with explicit element comparison function pointer.
 
 ### Methods
-- `Any first()`: Retrieves the lowest (minimum) element in the set. Throws `NoSuchElementException` if the set is empty.
-- `Any last()`: Retrieves the highest (maximum) element in the set. Throws `NoSuchElementException` if the set is empty.
-
-### Complexity & Characteristics
-- **Lookup & Insertion**: Guaranteed $O(\log N)$ for `add()`, `remove()`, and `contains()`.
-- **Iteration Order**: Ascending sorted order.
-- **String Rendering**: Formats elements in strictly sorted order: `"{10, 20, 30, 40, 50}"`.
+- `T first()`: Retrieves the lowest (minimum) element in the set. Throws `NoSuchElementException` if empty.
+- `T last()`: Retrieves the highest (maximum) element in the set. Throws `NoSuchElementException` if empty.
+- `bool add(T item)`: Inserts element in sorted position if distinct.
+- `bool remove(T item)`: Removes element from tree.
+- `bool contains(T item)`: Searches for element in O(log N) time.
+- `int32 size()`: Returns element count.
+- `bool is_empty()`: Returns true if empty.
+- `void clear()`: Clears all elements.
+- `T[] to_array()`: In-order sorted array representation.
+- `List<T> to_list()`: In-order sorted `List<T>`.
+- `TreeSetIterator<T> iterator()`: Returns in-order iterator.
+- `void for_each(void(*)(T) action)`: In-order traversal executing action.
+- `void union_with(TreeSet<T> other)`: Merges elements from `other`.
+- `void intersect_with(TreeSet<T> other)`: Retains elements present in both trees.
+- `void difference_with(TreeSet<T> other)`: Removes elements present in `other`.
+- `bool is_subset_of(TreeSet<T> other)`: Returns true if subset.
+- `bool is_superset_of(TreeSet<T> other)`: Returns true if superset.
+- `String to_string()`: Returns `"[TreeSet]"`.

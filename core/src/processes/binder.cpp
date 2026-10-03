@@ -190,6 +190,7 @@ Node *Binder::instantiate_template(const std::string &template_name,
       BinderPass old = current_pass;
       current_pass = BinderPass::BIND_EXECUTION;
       current_package = my_prefix;
+      bound_templates.insert(mangled_name);
       bind_tree(clone);
       current_pass = old;
     }
@@ -1393,6 +1394,44 @@ void Binder::execute() {
         node->accept(*this);
       } else {
         bind_tree(node.get());
+      }
+    }
+  }
+
+  // Fixed-point loop: bind any template instantiations that were created during
+  // Pass 2 (bind_types_and_memory) and thus never had bind_tree called.
+  // New instantiations can be triggered during each bind_tree call (e.g. nested
+  // generics), so we repeat until no new templates are discovered.
+  log_debug("Pass 3b: Binding deferred template instantiations...");
+  current_pass = BinderPass::BIND_EXECUTION;
+  {
+    Source tmpl_key = std::string("__instantiated_templates");
+    // Use index-based loop: bind_tree may push_back new entries to the vector
+    // as new templates get instantiated, so we can't use range-for (iterator
+    // invalidation). The outer loop re-scans until no new unbound templates remain.
+    bool found_unbound = true;
+    while (found_unbound) {
+      found_unbound = false;
+      if (context.nodes.count(tmpl_key)) {
+        auto &tmpl_nodes = context.nodes.at(tmpl_key);
+        for (size_t i = 0; i < tmpl_nodes.size(); ++i) {
+          if (!tmpl_nodes[i]) continue;
+          Node *n = tmpl_nodes[i].get();
+          std::string mname;
+          if (n->node_type == NodeType::CLASS_DECL)
+            mname = static_cast<ClassDeclaration *>(n)->mangled_name;
+          else if (n->node_type == NodeType::METHOD_DECL)
+            mname = static_cast<MethodDeclaration *>(n)->method_name;
+          else if (n->node_type == NodeType::ALIAS_STMT)
+            mname = static_cast<AliasStatement *>(n)->alias_name;
+          if (!mname.empty() && !bound_templates.count(mname)) {
+            log_debug("Pass 3b: binding deferred template '{}'", mname);
+            bound_templates.insert(mname);
+            current_package = "";
+            bind_tree(n);
+            found_unbound = true;
+          }
+        }
       }
     }
   }
