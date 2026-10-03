@@ -2,6 +2,7 @@
 #include "compile.hpp"
 #include "../cli_utils.hpp"
 #include "../dependency_resolver.hpp"
+#include "../package_manager.hpp"
 #include "solix/compilation.hpp"
 #include "solix/path_utils.hpp"
 #include <filesystem>
@@ -18,12 +19,28 @@ ProjectBuildResult build_project(const std::filesystem::path& manifest_or_dir,
     ProjectBuildResult result;
     result.profile_name = profile_name;
 
-    std::filesystem::path manifest_path = manifest_or_dir;
-    if (manifest_path.empty()) {
-        manifest_path = "solix.json";
+    std::string target_str = manifest_or_dir.string();
+    if (target_str.empty()) {
+        target_str = "solix.json";
     }
-    if (std::filesystem::is_directory(manifest_path)) {
-        manifest_path /= "solix.json";
+
+    std::filesystem::path manifest_path;
+    auto at_pos = target_str.find('@');
+    if (at_pos != std::string::npos && !std::filesystem::exists(target_str)) {
+        std::string pkg = target_str.substr(0, at_pos);
+        std::string ver = target_str.substr(at_pos + 1);
+        PackageManager pkg_mgr;
+        auto installed = pkg_mgr.get_project_by_name_and_version(pkg, ver);
+        if (!installed) {
+            std::cerr << "Error: Installed project '" << pkg << "' with version '" << ver << "' not found" << std::endl;
+            return result;
+        }
+        manifest_path = installed->path / "solix.json";
+    } else {
+        manifest_path = target_str;
+        if (std::filesystem::is_directory(manifest_path)) {
+            manifest_path /= "solix.json";
+        }
     }
     manifest_path = manifest_path.lexically_normal();
 
@@ -151,13 +168,13 @@ void setup_build_command(CLI::App &app) {
     auto *build_cmd = app.add_subcommand("build", "Build the Solix project using solix.json");
 
     auto profile_str = std::make_shared<std::string>("debug");
-    auto manifest_path_str = std::make_shared<std::string>("solix.json");
+    auto target_str = std::make_shared<std::string>();
 
     build_cmd->add_option("-p,--profile", *profile_str, "Build profile (default: debug)");
-    build_cmd->add_option("-m,--manifest", *manifest_path_str, "Path to solix.json or project directory (default: solix.json)");
+    build_cmd->add_option("target", *target_str, "Path to project directory, solix.json, or package@version (default: solix.json)");
 
-    build_cmd->callback([profile_str, manifest_path_str]() {
-        auto build_res = build_project(*manifest_path_str, *profile_str);
+    build_cmd->callback([profile_str, target_str]() {
+        auto build_res = build_project(*target_str, *profile_str);
         if (!build_res.success) {
             cli_exit(1);
         }
