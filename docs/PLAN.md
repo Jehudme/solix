@@ -52,7 +52,7 @@
 | **Phase 32.2** | Emergency Refactor: Generic Collections Sequences (`List<T>`, `LinkedList<T>`, `Collections.slx`, `Algorithms.slx`) with `for_each` & Lambdas | `P0 Blocker` | `solixlib/collections`, `tests` | - [x] Complete |
 | **Phase 32.3** | Emergency Refactor: Generic Linear Containers (`Stack<T>`, `Queue<T>`, `Deque<T>`, `PriorityQueue<T>`, `CircularBuffer<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [x] Complete |
 | **Phase 32.4** | Emergency Refactor: Generic Associative Containers (`KeyValuePair<K, V>`, `HashMap<K, V>`, `TreeMap<K, V>`, `HashSet<T>`, `TreeSet<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [x] Complete |
-| **Phase 32.5** | Emergency Refactor: Align Filesystem (`File.slx`, `Directory.slx`) with `List<String>`, Update `test_filesystem.cpp`, Specs & Regression | `P0 Blocker` | `solixlib/io`, `docs`, `tests` | - [ ] Planned |
+| **Phase 32.5** | Emergency Refactor: Align Filesystem (`File.slx`, `Directory.slx`) with `List<String>`, Update `test_filesystem.cpp`, Specs & Regression | `P0 Blocker` | `solixlib/io`, `docs`, `tests` | - [x] Complete |
 | **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, Readers/Writers) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 34** | Standard Library: `solix.system.Environment` (OS, Env, Subprocesses) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 35** | Core Compiler & Runtime: Language Intrinsics (`assert`, `exit`, Hardcoded Built-ins) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
@@ -1717,17 +1717,17 @@ Convert all associative dictionaries and distinct sets to generic types paramete
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `solixlib/project/src/solix/io/filesystem/File.slx`, `Directory.slx`, `tests/solixlib/test_filesystem.cpp`, `docs/spec/solixlib/filesystem.md`, full test harness
-- **Status**: - [ ] Planned
+- **Status**: - [x] Complete
 
 ### Objective
 Align `File.slx` and `Directory.slx` to return typed `List<String>` rather than untyped/Any collections. Update `tests/solixlib/test_filesystem.cpp` to verify direct string element operations without casts. Rebuild `solixlib.slxbin` and run the entire CTest regression suite to achieve 100% passing across all 61 tests.
 
 ### Action Items
-- [ ] Update `File.read_all_lines` to return `List<String>`.
-- [ ] Update `Directory.list_files` and `Directory.list_directories` to return `List<String>`.
-- [ ] Update `tests/solixlib/test_filesystem.cpp`.
-- [ ] Author/update `docs/spec/solixlib/filesystem.md`.
-- [ ] Run full regression suite `ctest --test-dir build --output-on-failure` (100% pass required).
+- [x] Update `File.read_all_lines` to return `List<String>`.
+- [x] Update `Directory.list_files` and `Directory.list_directories` to return `List<String>`.
+- [x] Update `tests/solixlib/test_filesystem.cpp`.
+- [x] Author/update `docs/spec/solixlib/filesystem.md`.
+- [x] Run full regression suite `ctest --test-dir build --output-on-failure` (100% pass required).
 
 ---
 
