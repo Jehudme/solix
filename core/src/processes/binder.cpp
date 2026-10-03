@@ -1619,10 +1619,9 @@ void Binder::bind_tree(Node *root) {
     return;
   } else if (root->node_type == NodeType::CONSTRUCTOR_DECL) {
     auto *ctor = static_cast<ConstructorDeclaration *>(root);
-    fmt::print(stderr, "BIND_TREE CONSTRUCTOR: {} (current_class={})\n",
-               ctor->class_name, current_class ? current_class->class_name : "<none>");
     local_variable_index = 0;
-    log_debug("Binding constructor for class '{}'", ctor->class_name);
+    log_debug("BIND_TREE CONSTRUCTOR: {} (current_class={})\n",
+               ctor->class_name, current_class ? current_class->class_name : "<none>");
 
     SymbolTable constructor_scope;
     enter_scope(&constructor_scope);

@@ -202,13 +202,12 @@ void RuntimeContext::register_native(uint32_t id, NativeFunctionPtr func) {
 }
 
 void RuntimeContext::push(uint64_t val) {
-
   if (memory.stack_pointer >= memory.stack.size())
     throw std::runtime_error("Stack overflow");
   memory.stack[memory.stack_pointer++] = val;
 }
-uint64_t RuntimeContext::pop() {
 
+uint64_t RuntimeContext::pop() {
   if (memory.stack_pointer == 0)
     throw std::runtime_error("Stack underflow");
   return memory.stack[--memory.stack_pointer];
@@ -220,6 +219,7 @@ static inline uint32_t read_u32(const Bytecode &bcode, Address &pc) {
   pc += 4;
   return val;
 }
+
 static inline uint64_t read_u64(const Bytecode &bcode, Address &pc) {
   uint64_t val = (static_cast<uint64_t>(bcode[pc]) << 56) |
                  (static_cast<uint64_t>(bcode[pc + 1]) << 48) |
@@ -232,6 +232,7 @@ static inline uint64_t read_u64(const Bytecode &bcode, Address &pc) {
   pc += 8;
   return val;
 }
+
 static inline std::string read_string(const Bytecode &bcode, Address &pc) {
   uint32_t length = read_u32(bcode, pc);
   std::string str(reinterpret_cast<const char *>(&bcode[pc]), length);
@@ -244,6 +245,7 @@ template <typename T> inline uint64_t bit_cast_to_u64(T value) {
   std::memcpy(&result, &value, sizeof(T));
   return result;
 }
+
 template <typename T> inline T bit_cast_from_u64(uint64_t value) {
   T result;
   std::memcpy(&result, &value, sizeof(T));
@@ -515,6 +517,7 @@ vm_dispatch:
 
   DISPATCH();
 #endif
+
 op_PUSH_CONST_I8:
 op_PUSH_CONST_I16:
 op_PUSH_CONST_I32:
@@ -1190,21 +1193,25 @@ op_CALL_INTERFACE:
     if (obj == 0) throw std::runtime_error("NullPointer");
     uint32_t class_vtable_id = heap_data[obj];
 
-    auto it_cls = itables.find(class_vtable_id);
-    if (it_cls == itables.end()) {
-      throw std::runtime_error("Virtual method resolution failed!");
+    uint32_t target_ip = 0;
+    {
+      auto it_cls = itables.find(class_vtable_id);
+      if (it_cls == itables.end()) {
+        throw std::runtime_error("Virtual method resolution failed!");
+      }
+      auto it_iface = it_cls->second.find(iface_id);
+      if (it_iface == it_cls->second.end() ||
+          iface_method_index >= it_iface->second.size()) {
+        throw std::runtime_error("Virtual method resolution failed!");
+      }
+      uint32_t vtable_index = it_iface->second[iface_method_index];
+      auto it_vtable = vtables.find(class_vtable_id);
+      if (it_vtable == vtables.end() ||
+          vtable_index >= it_vtable->second.size()) {
+        throw std::runtime_error("Virtual method resolution failed!");
+      }
+      target_ip = it_vtable->second[vtable_index];
     }
-    auto it_iface = it_cls->second.find(iface_id);
-    if (it_iface == it_cls->second.end() ||
-        iface_method_index >= it_iface->second.size()) {
-      throw std::runtime_error("Virtual method resolution failed!");
-    }
-    uint32_t vtable_index = it_iface->second[iface_method_index];
-    if (vtables.find(class_vtable_id) == vtables.end() ||
-        vtable_index >= vtables[class_vtable_id].size()) {
-      throw std::runtime_error("Virtual method resolution failed!");
-    }
-    uint32_t target_ip = vtables[class_vtable_id][vtable_index];
 
     uint32_t new_frame_pointer = current_sp_idx - arg_count;
     if (call_depth >= 65536)
@@ -1340,13 +1347,16 @@ op_JMP_TO_OUTER_CLEANUP:
           throw std::runtime_error("Unhandled exception reached top level.");
       }
       
-      auto it = return_to_cleanup.find(ret_ip);
-      if (it != return_to_cleanup.end()) {
-          program_counter = it->second;
-      } else {
-          // If the caller has NO cleanup, just loop JMP_TO_OUTER_CLEANUP again!
-          // We can simulate this by putting program_counter just before a JMP_TO_OUTER_CLEANUP
-          // Or just recursively pop frames.
+      bool found_cleanup = false;
+      {
+          auto it = return_to_cleanup.find(ret_ip);
+          if (it != return_to_cleanup.end()) {
+              program_counter = it->second;
+              found_cleanup = true;
+          }
+      }
+
+      if (!found_cleanup) {
           while (true) {
               if (call_depth == 0) {
                   if (active_exception != 0) {
@@ -1356,9 +1366,15 @@ op_JMP_TO_OUTER_CLEANUP:
                   throw std::runtime_error("Unhandled exception reached top level.");
               }
               Frame caller = call_stack[call_depth - 1];
-              auto it2 = return_to_cleanup.find(caller.return_ip);
-              if (it2 != return_to_cleanup.end()) {
-                  program_counter = it2->second;
+              bool inner_found = false;
+              {
+                  auto it2 = return_to_cleanup.find(caller.return_ip);
+                  if (it2 != return_to_cleanup.end()) {
+                      program_counter = it2->second;
+                      inner_found = true;
+                  }
+              }
+              if (inner_found) {
                   break;
               }
               call_depth--;
