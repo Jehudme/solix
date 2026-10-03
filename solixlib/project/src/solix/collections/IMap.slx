@@ -1,19 +1,18 @@
 package solix.collections;
 
-import solix.core.Any;
 import solix.core.IStringable;
 
 public interface IMap extends IStringable {
     int32 size();
     bool is_empty();
     void clear();
-    bool contains_key(Any key);
-    bool contains_value(Any value);
-    Any get(Any key);
-    Any get_or_default(Any key, Any default_val);
-    void put(Any key, Any value);
-    Any remove(Any key);
-    List<Any> keys();
-    List<Any> values();
-    List<Any> entries();
+    bool contains_key(IStringable key);
+    bool contains_value(IStringable value);
+    IStringable get(IStringable key);
+    IStringable get_or_default(IStringable key, IStringable default_val);
+    void put(IStringable key, IStringable value);
+    IStringable remove(IStringable key);
+    List<IStringable> keys();
+    List<IStringable> values();
+    List<IStringable> entries();
 }

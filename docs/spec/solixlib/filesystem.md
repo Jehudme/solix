@@ -36,7 +36,7 @@ Static file system utilities for reading, writing, and managing files.
 - `static String read_all_text(String path)`: Opens a text file, reads all contents into a `String`, and closes the file. Throws `FileNotFoundException` if the file does not exist, or `IOException` on read failure.
 - `static void write_all_text(String path, String content)`: Creates a new file, writes the specified string to the file, and closes the file. Overwrites existing files. Throws `IOException` on failure.
 - `static void append_all_text(String path, String content)`: Opens a file, appends the specified string to the end of the file, and closes the file. Creates the file if it does not exist. Throws `IOException` on failure.
-- `static List read_all_lines(String path)`: Reads all lines from the specified file and returns them as a `List` of `String` entries.
+- `static List<String> read_all_lines(String path)`: Reads all lines from the specified file and returns them as a `List<String>`.
 - `static void delete(String path)`: Deletes the specified file. Throws `FileNotFoundException` if the file does not exist, or `IOException` on deletion failure.
 - `static void copy(String source, String destination)`: Copies an existing file to a new file location. Defaults to not overwriting. Throws `FileNotFoundException` or `IOException`.
 - `static void copy_with_overwrite(String source, String destination, bool overwrite)`: Copies an existing file to a new location with optional overwrite semantics.
@@ -56,8 +56,8 @@ Static directory utilities for directory creation, enumeration, and deletion.
 - `static void create_directory(String path)`: Creates all directories and subdirectories in the specified path unless they already exist. Throws `IOException` on failure.
 - `static void delete(String path)`: Deletes the specified empty directory. Throws `DirectoryNotFoundException` if the directory does not exist, or `IOException` if the directory is not empty.
 - `static void delete_with_recursive(String path, bool recursive)`: Deletes the specified directory and, if `recursive` is `true`, all subdirectories and files in the path.
-- `static List list_files(String path)`: Returns a `List` containing the names of all regular files located directly inside the specified directory. Throws `DirectoryNotFoundException` or `IOException`.
-- `static List list_directories(String path)`: Returns a `List` containing the names of all subdirectories located directly inside the specified directory. Throws `DirectoryNotFoundException` or `IOException`.
+- `static List<String> list_files(String path)`: Returns a `List<String>` containing the names of all regular files located directly inside the specified directory. Throws `DirectoryNotFoundException` or `IOException`.
+- `static List<String> list_directories(String path)`: Returns a `List<String>` containing the names of all subdirectories located directly inside the specified directory. Throws `DirectoryNotFoundException` or `IOException`.
 - `static String get_current_directory()`: Returns the absolute path of the current working directory of the application.
 - `static void set_current_directory(String path)`: Sets the application's current working directory to the specified path. Throws `IOException` on failure.
 

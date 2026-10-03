@@ -1,5 +1,5 @@
 package solix.core;
 
 public interface IComparable {
-    int32 compare_to(Any other);
+    int32 compare_to(IComparable other);
 }

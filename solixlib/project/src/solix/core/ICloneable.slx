@@ -1,5 +1,5 @@
 package solix.core;
 
 public interface ICloneable {
-    Any clone();
+    IStringable clone();
 }

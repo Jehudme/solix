@@ -1,6 +1,5 @@
 package solix.io.filesystem;
 
-import solix.core.Any;
 import solix.core.String;
 import solix.collections.List;
 import solix.exceptions.DirectoryNotFoundException;

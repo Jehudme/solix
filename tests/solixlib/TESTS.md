@@ -162,7 +162,7 @@ Each test scenario is assigned a permanent identifier and status tag:
 
 - [x] **Case 12.1 [IMPLEMENTED]**: `Path` manipulation: `combine`, `get_directory_name`, `get_file_name`, `get_extension`, `get_file_name_without_extension`, `is_absolute`, `get_temp_path`, and `normalize` (`tests/solixlib/test_filesystem.cpp`).
 - [x] **Case 12.2 [IMPLEMENTED]**: `File` text I/O: writing, existence check, reading all text, appending text, and size retrieval (`tests/solixlib/test_filesystem.cpp`).
-- [x] **Case 12.3 [IMPLEMENTED]**: `File` line reading: `read_all_lines` splitting text by line separators into a `List` (`tests/solixlib/test_filesystem.cpp`).
+- [x] **Case 12.3 [IMPLEMENTED]**: `File` line reading: `read_all_lines` splitting text by line separators into a `List<String>` (`tests/solixlib/test_filesystem.cpp`).
 - [x] **Case 12.4 [IMPLEMENTED]**: `File` operations: copying, moving, and deleting files (`tests/solixlib/test_filesystem.cpp`).
 - [x] **Case 12.5 [IMPLEMENTED]**: `Directory` operations: creation, existence, listing files, listing directories, and recursive/non-recursive deletion (`tests/solixlib/test_filesystem.cpp`).
 - [x] **Case 12.6 [IMPLEMENTED]**: Negative: `File.read_all_text()` on non-existent file throws `FileNotFoundException` (`tests/solixlib/test_filesystem.cpp`).
