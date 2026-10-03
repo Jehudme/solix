@@ -240,6 +240,13 @@ private:
                                            std::vector<ProjectCandidate>& discovered_projects) {
         std::filesystem::path target_manifest;
 
+        std::string raw_pkg;
+        if (dep_node.contains("package") && dep_node["package"].is_string()) {
+            raw_pkg = dep_node["package"].get<std::string>();
+        } else if (dep_node.contains("name") && dep_node["name"].is_string()) {
+            raw_pkg = dep_node["name"].get<std::string>();
+        }
+
         if (dep_node.contains("path") && dep_node["path"].is_string()) {
             std::string raw_path = dep_node["path"].get<std::string>();
             std::filesystem::path p(raw_path);
@@ -250,9 +257,17 @@ private:
                 p /= "solix.json";
             }
             target_manifest = p.lexically_normal();
-        } else if (dep_node.contains("name") && dep_node["name"].is_string()) {
-            std::string name = dep_node["name"].get<std::string>();
-            std::string version = dep_node.value("version", "");
+        } else if (!raw_pkg.empty()) {
+            std::string name;
+            std::string version;
+            auto at_pos = raw_pkg.find('@');
+            if (at_pos != std::string::npos) {
+                name = raw_pkg.substr(0, at_pos);
+                version = raw_pkg.substr(at_pos + 1);
+            } else {
+                name = raw_pkg;
+                version = dep_node.value("version", "");
+            }
 
             PackageManager pm;
             std::optional<InstalledProject> matched;
@@ -279,7 +294,7 @@ private:
             }
             target_manifest = (matched->path / "solix.json").lexically_normal();
         } else {
-            std::cerr << "Error: 'project' dependency must specify either 'path' or 'name'." << std::endl;
+            std::cerr << "Error: 'project' dependency must specify 'package' (or 'name') as 'name@version', or 'path'." << std::endl;
             return false;
         }
 

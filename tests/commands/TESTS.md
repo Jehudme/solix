@@ -221,7 +221,7 @@ This document is the master test specification for the Solix CLI command suite (
 
 ## BuildCommand
 
-*Command*: `solix build [-p <profile>] [-m <manifest>]`
+*Command*: `solix build [target] [-p <profile>]`
 
 ### Positive Test Scenarios
 
@@ -235,8 +235,8 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: `solix.json` with `release` profile specifying different output and optimization settings.
 - **Expected**: Exits 0; outputs release artifact.
 
-#### Case 3.3: Custom Manifest Path via Flag [IMPLEMENTED]
-- **Command**: `solix build -m path/to/project/solix.json`
+#### Case 3.3: Custom Manifest Path via Positional Argument [IMPLEMENTED]
+- **Command**: `solix build path/to/project/solix.json`
 - **Setup**: Manifest in custom subdirectory.
 - **Expected**: Exits 0; resolves project paths relative to manifest's parent directory.
 
@@ -275,10 +275,30 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Project references installed package `helper_lib` by name and SemVer requirement without explicit local `path`.
 - **Expected**: Exits 0; discovers installed package in local repository (`$SOLIX_HOME`) and links sources.
 
+#### Case 3.19: Build Project by Directory Path Positional Argument [IMPLEMENTED]
+- **Command**: `solix build path/to/project_dir`
+- **Setup**: Directory containing `solix.json` passed as positional argument.
+- **Expected**: Exits 0; automatically infers `solix.json` within directory and builds successfully.
+
+#### Case 3.20: Build Installed Package by name@version Positional Argument [IMPLEMENTED]
+- **Command**: `solix build pkg_name@1.0.0`
+- **Setup**: Package installed in `$SOLIX_HOME`.
+- **Expected**: Exits 0; locates installed package manifest in registry and compiles to its output directory.
+
+#### Case 3.21: Build Project with Combined name@version in Manifest 'name' Field [IMPLEMENTED]
+- **Command**: `solix build`
+- **Setup**: Consumer project manifest specifies `{"type": "project", "name": "helper_pkg@1.2.0"}` without separate version.
+- **Expected**: Exits 0; successfully splits name and version, locates package, and compiles.
+
+#### Case 3.22: Build Project with Combined name@version in Manifest 'package' Field [IMPLEMENTED]
+- **Command**: `solix build`
+- **Setup**: Consumer project manifest specifies `{"type": "project", "package": "helper_pkg@1.2.0"}`.
+- **Expected**: Exits 0; successfully resolves dependency and compiles.
+
 ### Negative Test Scenarios
 
 #### Case 3.5: Missing Manifest File [IMPLEMENTED]
-- **Command**: `solix build -m non_existent_solix.json`
+- **Command**: `solix build non_existent_solix.json`
 - **Expected**: Exits non-zero; error message "Manifest file does not exist".
 
 #### Case 3.6: Malformed Manifest JSON [IMPLEMENTED]
@@ -315,6 +335,15 @@ This document is the master test specification for the Solix CLI command suite (
 - **Command**: `solix build`
 - **Setup**: Dependent project manifest references a non-existent source file.
 - **Expected**: Exits non-zero; pre-compilation validation error for missing dependency source.
+
+#### Case 3.23: Build Non-Existent Installed Package name@version [IMPLEMENTED]
+- **Command**: `solix build non_existent_pkg@1.0.0`
+- **Setup**: Package not present in `$SOLIX_HOME` registry.
+- **Expected**: Exits non-zero; error message "Error: Installed project 'non_existent_pkg' with version '1.0.0' not found".
+
+#### Case 3.24: Build with Legacy -m Flag Reports CLI Error [IMPLEMENTED]
+- **Command**: `solix build -m path/to/solix.json`
+- **Expected**: Exits non-zero; CLI validator reports error for unrecognized option `-m`.
 
 ---
 

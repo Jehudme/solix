@@ -152,7 +152,7 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
         manifest["version"] = "1.0.0";
         manifest["dependencies"] = nlohmann::json::array({
             {{"type", "source"}, {"path", "src/main.slx"}},
-            {{"type", "project"}, {"name", "solixlib"}, {"version", "0.1.0"}}
+            {{"type", "project"}, {"package", "solixlib@0.1.0"}}
         });
         manifest["profiles"]["debug"]["output_directory"] = "build/debug";
         manifest["profiles"]["debug"]["exe_filename"] = "out.slxbin";

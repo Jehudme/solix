@@ -23,7 +23,7 @@ TEST_CASE("CLI Command - new", "[command][new]") {
         CHECK(manifest["version"] == "0.1.0");
 
         // Verify the generated project builds cleanly
-        auto build_res = run_cli({"build", "-m", (proj_dir / "solix.json").string()});
+        auto build_res = run_cli({"build", (proj_dir / "solix.json").string()});
         CHECK(build_res.exit_code == 0);
         CHECK(std::filesystem::exists(proj_dir / "build/debug/out.slxbin"));
     }
@@ -59,8 +59,8 @@ TEST_CASE("CLI Command - new", "[command][new]") {
         std::string src_content = sandbox.read_file("custom_proj/src/main.slx");
         CHECK(src_content.find("static int32 start()") != std::string::npos);
 
-        // Verify project builds cleanly with the custom entry point
-        auto build_res = run_cli({"build", "-m", (proj_dir / "solix.json").string()});
+        // Verify project builds cleanly with the custom entry point using directory path
+        auto build_res = run_cli({"build", proj_dir.string()});
         CHECK(build_res.exit_code == 0);
     }
 

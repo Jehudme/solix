@@ -53,6 +53,7 @@
 | **Phase 32.3** | Emergency Refactor: Generic Linear Containers (`Stack<T>`, `Queue<T>`, `Deque<T>`, `PriorityQueue<T>`, `CircularBuffer<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [x] Complete |
 | **Phase 32.4** | Emergency Refactor: Generic Associative Containers (`KeyValuePair<K, V>`, `HashMap<K, V>`, `TreeMap<K, V>`, `HashSet<T>`, `TreeSet<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [x] Complete |
 | **Phase 32.5** | Emergency Refactor: Align Filesystem (`File.slx`, `Directory.slx`) with `List<String>`, Update `test_filesystem.cpp`, Specs & Regression | `P0 Blocker` | `solixlib/io`, `docs`, `tests` | - [x] Complete |
+| **Phase 32.6** | CLI Build Ergonomics & Manifest Dependency Alignment (Positional Target & `name@version` Dependencies) | `P0 Blocker` | `cli`, `docs`, `tests` | - [ ] Planned |
 | **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, Readers/Writers) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 34** | Standard Library: `solix.system.Environment` (OS, Env, Subprocesses) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 35** | Core Compiler & Runtime: Language Intrinsics (`assert`, `exit`, Hardcoded Built-ins) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
@@ -1728,6 +1729,25 @@ Align `File.slx` and `Directory.slx` to return typed `List<String>` rather than 
 - [x] Update `tests/solixlib/test_filesystem.cpp`.
 - [x] Author/update `docs/spec/solixlib/filesystem.md`.
 - [x] Run full regression suite `ctest --test-dir build --output-on-failure` (100% pass required).
+
+---
+
+## Phase 32.6: CLI Build Ergonomics & Manifest Dependency Alignment
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `cli/src/commands/build.hpp`, `cli/src/commands/build.cpp`, `cli/src/dependency_resolver.hpp`, `tests/commands/test_build_command.cpp`, `tests/commands/test_new_command.cpp`, `tests/commands/test_package_commands.cpp`, `docs/spec/cli/build.md`, `tests/commands/TESTS.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Enhance `solix build` command ergonomics by removing the `-m` / `--manifest` requirement in favor of an intuitive optional positional argument `[target]` accepting a project path, a direct `solix.json` path, or an installed package identifier (`name@version`), matching the `run` command behavior. Modernize project dependency declarations in `solix.json` to combine name and version into a single composite identifier (`"package": "name@version"` / `"name": "name@version"`).
+
+### Action Items
+- [ ] Update `setup_build_command` in `cli/src/commands/build.cpp` to remove `-m` / `--manifest` and introduce positional `target` argument (defaulting to `"solix.json"`).
+- [ ] Update `build_project` in `cli/src/commands/build.cpp` to resolve local directories, `solix.json` files, and installed packages (`name@version`) via `PackageManager`.
+- [ ] Update `discover_single_project_dependency` in `cli/src/dependency_resolver.hpp` to parse combined `name@version` dependency specifications.
+- [ ] Update `test_build_command.cpp`, `test_new_command.cpp`, and `test_package_commands.cpp` to verify positional targets and combined dependency declarations.
+- [ ] Update `tests/commands/TESTS.md` and `docs/spec/cli/build.md`.
+- [ ] Run full regression suite `ctest --test-dir build --output-on-failure` (100% pass required).
 
 ---
 
