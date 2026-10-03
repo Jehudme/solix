@@ -156,6 +156,6 @@ public class TreeSet<T> implements IStringable {
     }
 
     public String to_string() {
-        return "[TreeSet]";
+        return new String("[TreeSet]");
     }
 }

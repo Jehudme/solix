@@ -150,6 +150,6 @@ public class HashSet<T> implements IStringable {
     }
 
     public String to_string() {
-        return "[HashSet]";
+        return new String("[HashSet]");
     }
 }
