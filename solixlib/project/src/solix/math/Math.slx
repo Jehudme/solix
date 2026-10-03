@@ -35,7 +35,7 @@ public class Math {
     }
 
     public static T copy_sign<T>(T magnitude, T sign_val) {
-        T abs_m = abs<T>(magnitude);
+        T abs_m = Math.abs<T>(magnitude);
         if (sign_val < default(T)) return -abs_m;
         return abs_m;
     }

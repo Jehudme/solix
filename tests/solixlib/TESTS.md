@@ -122,24 +122,24 @@ Each test scenario is assigned a permanent identifier and status tag:
 
 ## 9. Maps & Associative Dictionaries (`solix.collections.Map`, `HashMap`, `TreeMap`, `KeyValuePair`)
 
-- [ ] **Case 9.1 [NOT IMPLEMENTED]**: `HashMap<K, V>` generic insertion, retrieval (`get`, `get_or_default`), updating existing keys, key and value membership (`contains_key`, `contains_value`), and removal (`tests/solixlib/test_map.cpp`).
-- [ ] **Case 9.2 [NOT IMPLEMENTED]**: `HashMap<K, V>` automatic load-factor rehashing across multi-key insertions verifying data preservation (`tests/solixlib/test_map.cpp`).
-- [ ] **Case 9.3 [NOT IMPLEMENTED]**: `HashMap<K, V>` view collections (`keys()`, `values()`, `entries()`), `for_each` lambda iteration, and string representation (`tests/solixlib/test_map.cpp`).
-- [ ] **Case 9.4 [NOT IMPLEMENTED]**: `TreeMap<K, V>` ordered insertion, boundary lookups (`first_key()`, `last_key()`), and in-order sorted key traversal (`tests/solixlib/test_map.cpp`).
-- [ ] **Case 9.5 [NOT IMPLEMENTED]**: `TreeMap<K, V>` node removal (leaf, internal, root), dictionary clearing, `for_each` lambda iteration, and membership queries (`tests/solixlib/test_map.cpp`).
-- [ ] **Case 9.6 [NOT IMPLEMENTED]**: Negative: `HashMap<K, V>.get()` with missing key throws `KeyNotFoundException` (`tests/solixlib/test_map.cpp`).
-- [ ] **Case 9.7 [NOT IMPLEMENTED]**: Negative: `TreeMap<K, V>.get()` with missing key throws `KeyNotFoundException` and `first_key()` on empty map throws `NoSuchElementException` (`tests/solixlib/test_map.cpp`).
+- [x] **Case 9.1 [IMPLEMENTED]**: `HashMap<K, V>` generic insertion, retrieval (`get`, `get_or_default`), updating existing keys, key and value membership (`contains_key`, `contains_value`), and removal (`tests/solixlib/test_map.cpp`).
+- [x] **Case 9.2 [IMPLEMENTED]**: `HashMap<K, V>` automatic load-factor rehashing across multi-key insertions verifying data preservation (`tests/solixlib/test_map.cpp`).
+- [x] **Case 9.3 [IMPLEMENTED]**: `HashMap<K, V>` view collections (`keys()`, `values()`, `entries()`), `for_each` lambda iteration, and string representation (`tests/solixlib/test_map.cpp`).
+- [x] **Case 9.4 [IMPLEMENTED]**: `TreeMap<K, V>` ordered insertion, boundary lookups (`first_key()`, `last_key()`), and in-order sorted key traversal (`tests/solixlib/test_map.cpp`).
+- [x] **Case 9.5 [IMPLEMENTED]**: `TreeMap<K, V>` node removal (leaf, internal, root), dictionary clearing, `for_each` lambda iteration, and membership queries (`tests/solixlib/test_map.cpp`).
+- [x] **Case 9.6 [IMPLEMENTED]**: Negative: `HashMap<K, V>.get()` with missing key throws `KeyNotFoundException` (`tests/solixlib/test_map.cpp`).
+- [x] **Case 9.7 [IMPLEMENTED]**: Negative: `TreeMap<K, V>.get()` with missing key throws `KeyNotFoundException` and `first_key()` on empty map throws `NoSuchElementException` (`tests/solixlib/test_map.cpp`).
 
 ---
 
 ## 10. Sets (`solix.collections.Set`, `HashSet`, `TreeSet`)
 
-- [ ] **Case 10.1 [NOT IMPLEMENTED]**: `HashSet<T>` distinct insertion, duplicate rejection, contains, remove, clear, and `for_each` lambda iteration (`tests/solixlib/test_set.cpp`).
-- [ ] **Case 10.2 [NOT IMPLEMENTED]**: `HashSet<T>` set algebra: `union_with`, `intersect_with`, `difference_with` (`tests/solixlib/test_set.cpp`).
-- [ ] **Case 10.3 [NOT IMPLEMENTED]**: `HashSet<T>` subset and superset relationships (`is_subset_of`, `is_superset_of`) (`tests/solixlib/test_set.cpp`).
-- [ ] **Case 10.4 [NOT IMPLEMENTED]**: `TreeSet<T>` ordered uniqueness, boundary lookups (`first()`, `last()`), in-order iterator traversal, and `for_each` lambda iteration (`tests/solixlib/test_set.cpp`).
-- [ ] **Case 10.5 [NOT IMPLEMENTED]**: `TreeSet<T>` node removal, duplicate rejections, and `union_with` (`tests/solixlib/test_set.cpp`).
-- [ ] **Case 10.6 [NOT IMPLEMENTED]**: Negative: `TreeSet<T>` `first()` and `last()` on empty set throw `NoSuchElementException` (`tests/solixlib/test_set.cpp`).
+- [x] **Case 10.1 [IMPLEMENTED]**: `HashSet<T>` distinct insertion, duplicate rejection, contains, remove, clear, and `for_each` lambda iteration (`tests/solixlib/test_set.cpp`).
+- [x] **Case 10.2 [IMPLEMENTED]**: `HashSet<T>` set algebra: `union_with`, `intersect_with`, `difference_with` (`tests/solixlib/test_set.cpp`).
+- [x] **Case 10.3 [IMPLEMENTED]**: `HashSet<T>` subset and superset relationships (`is_subset_of`, `is_superset_of`) (`tests/solixlib/test_set.cpp`).
+- [x] **Case 10.4 [IMPLEMENTED]**: `TreeSet<T>` ordered uniqueness, boundary lookups (`first()`, `last()`), in-order iterator traversal, and `for_each` lambda iteration (`tests/solixlib/test_set.cpp`).
+- [x] **Case 10.5 [IMPLEMENTED]**: `TreeSet<T>` node removal, duplicate rejections, and `union_with` (`tests/solixlib/test_set.cpp`).
+- [x] **Case 10.6 [IMPLEMENTED]**: Negative: `TreeSet<T>` `first()` and `last()` on empty set throw `NoSuchElementException` (`tests/solixlib/test_set.cpp`).
 
 ---
 

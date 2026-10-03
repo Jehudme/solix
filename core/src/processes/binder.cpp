@@ -1620,8 +1620,7 @@ void Binder::bind_tree(Node *root) {
   } else if (root->node_type == NodeType::CONSTRUCTOR_DECL) {
     auto *ctor = static_cast<ConstructorDeclaration *>(root);
     local_variable_index = 0;
-    log_debug("BIND_TREE CONSTRUCTOR: {} (current_class={})\n",
-               ctor->class_name, current_class ? current_class->class_name : "<none>");
+    log_debug("Binding constructor for class '{}'", ctor->class_name);
 
     SymbolTable constructor_scope;
     enter_scope(&constructor_scope);
@@ -1969,10 +1968,6 @@ void Binder::visit(IdentifierNode &n) {
     }
 
     Node *declaration = resolve_symbol(n.name, &n, true);
-    if (n.name == "k") {
-      fmt::print(stderr, "BINDER VISIT IDENTIFIER 'k': current_pass={}, current_scope={}, resolved={}\n",
-                 (int)current_pass, (void*)current_scope, (void*)declaration);
-    }
     if (!declaration && current_class) {
       for (const auto &child : current_class->children) {
         if (child && child->node_type == NodeType::METHOD_DECL) {
