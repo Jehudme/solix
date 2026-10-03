@@ -66,7 +66,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         CHECK(std::filesystem::file_size(sandbox.path() / "build/release/out.slxbin") > 0);
     }
 
-    SECTION("Positive - Case 3.3: Custom Manifest Path via Flag") {
+    SECTION("Positive - Case 3.3: Custom Manifest Path via Positional Argument") {
         auto proj_dir = sandbox.path() / "nested_proj";
         std::filesystem::create_directories(proj_dir / "src");
 
@@ -79,7 +79,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         sf << "static int32 main() { return 0; }\n";
         sf.close();
 
-        auto res = run_cli({"build", "-m", manifest_path.string()});
+        auto res = run_cli({"build", manifest_path.string()});
 
         CHECK(res.exit_code == 0);
         CHECK(std::filesystem::exists(proj_dir / "build/debug/out.slxbin"));
@@ -112,7 +112,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
 
     SECTION("Negative - Case 3.5: Missing Manifest File") {
         auto missing = sandbox.path() / "non_existent_solix.json";
-        auto res = run_cli({"build", "-m", missing.string()});
+        auto res = run_cli({"build", missing.string()});
 
         CHECK(res.exit_code != 0);
         CHECK(res.err.find("Manifest file does not exist") != std::string::npos);
@@ -213,7 +213,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_sf << "static int32 main() { return MathLib.getValue() == 100 ? 0 : 1; }\n";
         app_sf.close();
 
-        auto res = run_cli({"build", "-m", (app_dir / "solix.json").string()});
+        auto res = run_cli({"build", (app_dir / "solix.json").string()});
         CHECK(res.exit_code == 0);
         CHECK(std::filesystem::exists(app_dir / "build/debug/out.slxbin"));
 
@@ -276,7 +276,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         a_sf << "static int32 main() { return ClassB.val() == 15 ? 0 : 1; }\n";
         a_sf.close();
 
-        auto res = run_cli({"build", "-m", (a_dir / "solix.json").string()});
+        auto res = run_cli({"build", (a_dir / "solix.json").string()});
         CHECK(res.exit_code == 0);
         CHECK(std::filesystem::exists(a_dir / "build/debug/out.slxbin"));
 
@@ -339,7 +339,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_src << "static int32 main() { return (LibOne.val1() + LibTwo.val2()) == 33 ? 0 : 1; }\n";
         app_src.close();
 
-        auto res = run_cli({"build", "-m", (app_dir / "solix.json").string()});
+        auto res = run_cli({"build", (app_dir / "solix.json").string()});
         CHECK(res.exit_code == 0);
         CHECK(std::filesystem::exists(app_dir / "build/debug/out.slxbin"));
 
@@ -437,7 +437,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_src << "static int32 main() { return (LibLeft.left() + LibRight.right() + SharedLib.patchNum()) == 34 ? 0 : 1; }\n";
         app_src.close();
 
-        auto res = run_cli({"build", "-m", (app_dir / "solix.json").string()});
+        auto res = run_cli({"build", (app_dir / "solix.json").string()});
         CHECK(res.exit_code == 0);
         CHECK(res.out.find("Warning") == std::string::npos);
 
@@ -501,7 +501,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_src << "static int32 main() { return UtilLib.minorNum() == 3 ? 0 : 1; }\n";
         app_src.close();
 
-        auto res = run_cli({"build", "-m", (app_dir / "solix.json").string()});
+        auto res = run_cli({"build", (app_dir / "solix.json").string()});
         CHECK(res.exit_code == 0);
         CHECK(res.out.find("Warning: Project 'util_lib' has multiple minor versions") != std::string::npos);
 
@@ -543,7 +543,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_m["version"] = "1.0.0";
         app_m["dependencies"] = nlohmann::json::array({
             {{"type", "source"}, {"path", "src/main.slx"}},
-            {{"type", "project"}, {"name", "helper_pkg"}, {"version", "1.2.0"}}
+            {{"type", "project"}, {"package", "helper_pkg@1.2.0"}}
         });
         app_m["profiles"]["debug"]["output_directory"] = "build/debug";
         app_m["profiles"]["debug"]["exe_filename"] = "out.slxbin";
@@ -556,7 +556,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_src << "static int32 main() { return HelperPkg.getAnswer() == 42 ? 0 : 1; }\n";
         app_src.close();
 
-        auto res = run_cli({"build", "-m", (app_dir / "solix.json").string()}, solix_home.path());
+        auto res = run_cli({"build", (app_dir / "solix.json").string()}, solix_home.path());
         CHECK(res.exit_code == 0);
         CHECK(std::filesystem::exists(app_dir / "build/debug/out.slxbin"));
 
@@ -616,7 +616,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_src << "static int32 main() { return 0; }\n";
         app_src.close();
 
-        auto res = run_cli({"build", "-m", (app_dir / "solix.json").string()});
+        auto res = run_cli({"build", (app_dir / "solix.json").string()});
         CHECK(res.exit_code != 0);
         CHECK(res.err.find("Incompatible major versions for dependency 'core_lib'") != std::string::npos);
     }
@@ -642,7 +642,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_src << "static int32 main() { return 0; }\n";
         app_src.close();
 
-        auto res = run_cli({"build", "-m", (app_dir / "solix.json").string()});
+        auto res = run_cli({"build", (app_dir / "solix.json").string()});
         CHECK(res.exit_code != 0);
         CHECK(res.err.find("Project dependency manifest does not exist") != std::string::npos);
     }
@@ -681,9 +681,189 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_src << "static int32 main() { return 0; }\n";
         app_src.close();
 
-        auto res = run_cli({"build", "-m", (app_dir / "solix.json").string()});
+        auto res = run_cli({"build", (app_dir / "solix.json").string()});
         CHECK(res.exit_code != 0);
         CHECK(res.err.find("Dependency source file does not exist") != std::string::npos);
+    }
+
+    SECTION("Positive - Case 3.19: Build Project by Directory Path Positional Argument") {
+        auto proj_dir = sandbox.path() / "pos_dir_proj";
+        std::filesystem::create_directories(proj_dir / "src");
+
+        std::ofstream mf(proj_dir / "solix.json");
+        mf << create_sample_manifest("pos_dir_proj");
+        mf.close();
+
+        std::ofstream sf(proj_dir / "src/main.slx");
+        sf << "static int32 main() { return 0; }\n";
+        sf.close();
+
+        auto res = run_cli({"build", proj_dir.string()});
+        CHECK(res.exit_code == 0);
+        CHECK(std::filesystem::exists(proj_dir / "build/debug/out.slxbin"));
+    }
+
+    SECTION("Positive - Case 3.20: Build Installed Package by name@version Positional Argument") {
+        TempDir solix_home;
+
+        auto pkg_dir = sandbox.path() / "inst_pkg";
+        std::filesystem::create_directories(pkg_dir / "src");
+        nlohmann::json pm;
+        pm["project"] = "demo_installed_pkg";
+        pm["version"] = "2.0.0";
+        pm["dependencies"] = nlohmann::json::array({
+            {{"type", "source"}, {"path", "src/main.slx"}}
+        });
+        pm["profiles"]["debug"]["output_directory"] = "build/debug";
+        pm["profiles"]["debug"]["exe_filename"] = "out.slxbin";
+        pm["profiles"]["debug"]["compilation"]["entry_point"] = "main";
+        pm["profiles"]["debug"]["compilation"]["multithreaded"] = false;
+
+        std::ofstream pf(pkg_dir / "solix.json");
+        pf << pm.dump(2);
+        pf.close();
+
+        std::ofstream ps(pkg_dir / "src/main.slx");
+        ps << "class DemoInst { public static int32 val() { return 100; } }\n"
+           << "static int32 main() { return 0; }\n";
+        ps.close();
+
+        auto inst_res = run_cli({"install", pkg_dir.string()}, solix_home.path());
+        CHECK(inst_res.exit_code == 0);
+
+        // Build using name@version
+        auto res = run_cli({"build", "demo_installed_pkg@2.0.0"}, solix_home.path());
+        CHECK(res.exit_code == 0);
+    }
+
+    SECTION("Positive - Case 3.21: Build Project with Combined name@version in Manifest 'name' Field") {
+        TempDir solix_home;
+
+        auto pkg_dir = sandbox.path() / "name_field_pkg";
+        std::filesystem::create_directories(pkg_dir / "src");
+        nlohmann::json pm;
+        pm["project"] = "name_lib";
+        pm["version"] = "1.5.0";
+        pm["dependencies"] = nlohmann::json::array({
+            {{"type", "source"}, {"path", "src/lib.slx"}}
+        });
+        pm["profiles"]["debug"]["output_directory"] = "build/debug";
+        pm["profiles"]["debug"]["exe_filename"] = "out.slxbin";
+        pm["profiles"]["debug"]["compilation"]["entry_point"] = "main";
+        pm["profiles"]["debug"]["compilation"]["multithreaded"] = false;
+
+        std::ofstream pf(pkg_dir / "solix.json");
+        pf << pm.dump(2);
+        pf.close();
+
+        std::ofstream ps(pkg_dir / "src/lib.slx");
+        ps << "class NameLib { public static int32 val() { return 77; } }\n";
+        ps.close();
+
+        auto inst_res = run_cli({"install", pkg_dir.string()}, solix_home.path());
+        CHECK(inst_res.exit_code == 0);
+
+        auto app_dir = sandbox.path() / "consumer_name_app";
+        std::filesystem::create_directories(app_dir / "src");
+        nlohmann::json app_m;
+        app_m["project"] = "consumer_name_app";
+        app_m["version"] = "1.0.0";
+        app_m["dependencies"] = nlohmann::json::array({
+            {{"type", "source"}, {"path", "src/main.slx"}},
+            {{"type", "project"}, {"name", "name_lib@1.5.0"}}
+        });
+        app_m["profiles"]["debug"]["output_directory"] = "build/debug";
+        app_m["profiles"]["debug"]["exe_filename"] = "out.slxbin";
+        app_m["profiles"]["debug"]["compilation"]["entry_point"] = "main";
+        app_m["profiles"]["debug"]["compilation"]["multithreaded"] = false;
+
+        std::ofstream af(app_dir / "solix.json");
+        af << app_m.dump(2);
+        af.close();
+
+        std::ofstream as(app_dir / "src/main.slx");
+        as << "static int32 main() { return NameLib.val() == 77 ? 0 : 1; }\n";
+        as.close();
+
+        auto build_res = run_cli({"build", app_dir.string()}, solix_home.path());
+        CHECK(build_res.exit_code == 0);
+
+        auto run_res = run_cli({"run", (app_dir / "build/debug/out.slxbin").string()}, solix_home.path());
+        CHECK(run_res.exit_code == 0);
+    }
+
+    SECTION("Positive - Case 3.22: Build Project with Combined name@version in Manifest 'package' Field") {
+        TempDir solix_home;
+
+        auto pkg_dir = sandbox.path() / "pkg_field_pkg";
+        std::filesystem::create_directories(pkg_dir / "src");
+        nlohmann::json pm;
+        pm["project"] = "pkg_lib";
+        pm["version"] = "3.2.1";
+        pm["dependencies"] = nlohmann::json::array({
+            {{"type", "source"}, {"path", "src/lib.slx"}}
+        });
+        pm["profiles"]["debug"]["output_directory"] = "build/debug";
+        pm["profiles"]["debug"]["exe_filename"] = "out.slxbin";
+        pm["profiles"]["debug"]["compilation"]["entry_point"] = "main";
+        pm["profiles"]["debug"]["compilation"]["multithreaded"] = false;
+
+        std::ofstream pf(pkg_dir / "solix.json");
+        pf << pm.dump(2);
+        pf.close();
+
+        std::ofstream ps(pkg_dir / "src/lib.slx");
+        ps << "class PkgLib { public static int32 val() { return 88; } }\n";
+        ps.close();
+
+        auto inst_res = run_cli({"install", pkg_dir.string()}, solix_home.path());
+        CHECK(inst_res.exit_code == 0);
+
+        auto app_dir = sandbox.path() / "consumer_pkg_app";
+        std::filesystem::create_directories(app_dir / "src");
+        nlohmann::json app_m;
+        app_m["project"] = "consumer_pkg_app";
+        app_m["version"] = "1.0.0";
+        app_m["dependencies"] = nlohmann::json::array({
+            {{"type", "source"}, {"path", "src/main.slx"}},
+            {{"type", "project"}, {"package", "pkg_lib@3.2.1"}}
+        });
+        app_m["profiles"]["debug"]["output_directory"] = "build/debug";
+        app_m["profiles"]["debug"]["exe_filename"] = "out.slxbin";
+        app_m["profiles"]["debug"]["compilation"]["entry_point"] = "main";
+        app_m["profiles"]["debug"]["compilation"]["multithreaded"] = false;
+
+        std::ofstream af(app_dir / "solix.json");
+        af << app_m.dump(2);
+        af.close();
+
+        std::ofstream as(app_dir / "src/main.slx");
+        as << "static int32 main() { return PkgLib.val() == 88 ? 0 : 1; }\n";
+        as.close();
+
+        auto build_res = run_cli({"build", app_dir.string()}, solix_home.path());
+        CHECK(build_res.exit_code == 0);
+
+        auto run_res = run_cli({"run", (app_dir / "build/debug/out.slxbin").string()}, solix_home.path());
+        CHECK(run_res.exit_code == 0);
+    }
+
+    SECTION("Negative - Case 3.23: Build Non-Existent Installed Package name@version") {
+        TempDir solix_home;
+        auto res = run_cli({"build", "ghost_pkg@9.9.9"}, solix_home.path());
+        CHECK(res.exit_code != 0);
+        CHECK(res.err.find("Installed project 'ghost_pkg' with version '9.9.9' not found") != std::string::npos);
+    }
+
+    SECTION("Negative - Case 3.24: Build with Legacy -m Flag Reports CLI Error") {
+        auto proj_dir = sandbox.path() / "legacy_flag_proj";
+        std::filesystem::create_directories(proj_dir / "src");
+        std::ofstream mf(proj_dir / "solix.json");
+        mf << create_sample_manifest();
+        mf.close();
+
+        auto res = run_cli({"build", "-m", (proj_dir / "solix.json").string()});
+        CHECK(res.exit_code != 0);
     }
 }
 
