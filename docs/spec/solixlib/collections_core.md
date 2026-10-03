@@ -14,7 +14,7 @@ Provides sequential step-through access across elements of a collection.
 
 ### Methods
 - `has_next() -> bool`: Returns `true` if iteration has more elements.
-- `next() -> Any`: Returns next element in iteration. Throws `NoSuchElementException` if iterator is exhausted.
+- `next() -> IStringable`: Returns next element in iteration. Throws `NoSuchElementException` if iterator is exhausted.
 
 ---
 
@@ -34,8 +34,8 @@ Represents a read-only queryable sequence of elements. Extends `IIterable` and `
 ### Methods
 - `size() -> int32`: Returns total number of elements.
 - `is_empty() -> bool`: Returns `true` if `size() == 0`.
-- `contains(Any item) -> bool`: Returns `true` if specified item is contained.
-- `to_array() -> Any[]`: Returns snapshot array containing all elements.
+- `contains(IStringable item) -> bool`: Returns `true` if specified item is contained.
+- `to_array() -> IStringable[]`: Returns snapshot array containing all elements.
 
 ---
 
@@ -44,7 +44,7 @@ Represents a read-only queryable sequence of elements. Extends `IIterable` and `
 Base mutable collection interface. Extends `IReadOnlyCollection`.
 
 ### Methods
-- All methods inherited from `IReadOnlyCollection`: `size()`, `is_empty()`, `contains(Any)`, `to_array()`, `iterator()`, `to_string()`.
+- All methods inherited from `IReadOnlyCollection`: `size()`, `is_empty()`, `contains(IStringable)`, `to_array()`, `iterator()`, `to_string()`.
 - `clear() -> void`: Removes all elements from collection.
 
 ---
@@ -54,13 +54,13 @@ Base mutable collection interface. Extends `IReadOnlyCollection`.
 Ordered sequence supporting random index-based access, insertion, and deletion. Extends `ICollection`.
 
 ### Methods
-- `get(int32 index) -> Any`: Returns element at specified 0-based index. Throws `IndexOutOfBoundsException`.
-- `set(int32 index, Any item) -> Any`: Replaces element at specified index and returns replaced element.
-- `add(Any item) -> void`: Appends element to tail of list.
-- `insert(int32 index, Any item) -> void`: Inserts element at specified index, shifting subsequent elements right.
-- `remove_at(int32 index) -> Any`: Removes and returns element at specified index.
-- `remove(Any item) -> bool`: Removes first occurrence of specified item; returns `true` if found and removed.
-- `index_of(Any item) -> int32`: Returns 0-based index of first occurrence, or `-1` if not present.
+- `get(int32 index) -> IStringable`: Returns element at specified 0-based index. Throws `IndexOutOfBoundsException`.
+- `set(int32 index, IStringable item) -> void`: Replaces element at specified index.
+- `add(IStringable item) -> void`: Appends element to tail of list.
+- `insert(int32 index, IStringable item) -> void`: Inserts element at specified index, shifting subsequent elements right.
+- `remove_at(int32 index) -> IStringable`: Removes and returns element at specified index.
+- `remove(IStringable item) -> bool`: Removes first occurrence of specified item; returns `true` if found and removed.
+- `index_of(IStringable item) -> int32`: Returns 0-based index of first occurrence, or `-1` if not present.
 
 ---
 
@@ -69,12 +69,12 @@ Ordered sequence supporting random index-based access, insertion, and deletion. 
 Double-ended sequence supporting insertion and extraction from both ends. Extends `ICollection`.
 
 ### Methods
-- `add_first(Any item) -> void`: Inserts element at head.
-- `add_last(Any item) -> void`: Inserts element at tail.
-- `remove_first() -> Any`: Removes and returns head element. Throws `NoSuchElementException` if empty.
-- `remove_last() -> Any`: Removes and returns tail element. Throws `NoSuchElementException` if empty.
-- `peek_first() -> Any`: Returns head element without removing. Throws `NoSuchElementException` if empty.
-- `peek_last() -> Any`: Returns tail element without removing. Throws `NoSuchElementException` if empty.
+- `add_first(IStringable item) -> void`: Inserts element at head.
+- `add_last(IStringable item) -> void`: Inserts element at tail.
+- `remove_first() -> IStringable`: Removes and returns head element. Throws `NoSuchElementException` if empty.
+- `remove_last() -> IStringable`: Removes and returns tail element. Throws `NoSuchElementException` if empty.
+- `peek_first() -> IStringable`: Returns head element without removing. Throws `NoSuchElementException` if empty.
+- `peek_last() -> IStringable`: Returns tail element without removing. Throws `NoSuchElementException` if empty.
 
 ---
 

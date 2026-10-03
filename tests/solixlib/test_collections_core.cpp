@@ -8,7 +8,8 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
         sources["main.slx"] = R"(
             import solix.collections.IIterator;
             import solix.collections.IIterable;
-            import solix.core.Any;
+            import solix.core.IStringable;
+            import solix.core.Int;
 
             class SimpleIterator implements IIterator {
                 private int32[] data;
@@ -25,11 +26,11 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     return this.index < this.count;
                 }
 
-                public Any next() {
+                public IStringable next() {
                     if (this.index >= this.count) {
                         return null;
                     }
-                    Any res = new Any(this.data[this.index]);
+                    Int res = new Int(this.data[this.index]);
                     this.index = this.index + 1;
                     return res;
                 }
@@ -58,16 +59,16 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     IIterator it = seq.iterator();
 
                     if (!it.has_next()) return 1;
-                    Any first = it.next();
-                    if (first == null || first.as_int32() != 10) return 2;
+                    Int first = (Int)it.next();
+                    if (first == null || first.value() != 10) return 2;
 
                     if (!it.has_next()) return 3;
-                    Any second = it.next();
-                    if (second == null || second.as_int32() != 20) return 4;
+                    Int second = (Int)it.next();
+                    if (second == null || second.value() != 20) return 4;
 
                     if (!it.has_next()) return 5;
-                    Any third = it.next();
-                    if (third == null || third.as_int32() != 30) return 6;
+                    Int third = (Int)it.next();
+                    if (third == null || third.value() != 30) return 6;
 
                     if (it.has_next()) return 7;
                     return 0;
@@ -86,17 +87,17 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             import solix.collections.IIterable;
             import solix.collections.ICollection;
             import solix.collections.Collections;
-            import solix.core.Any;
+            import solix.core.Int;
             import solix.core.String;
             import solix.core.IStringable;
             import solix.system.Console;
 
             class ArrayCollection implements ICollection {
-                private Any[] elements;
+                private IStringable[] elements;
                 private int32 count;
 
                 public ArrayCollection() {
-                    this.elements = new Any[10];
+                    this.elements = new IStringable[10];
                     this.count = 0;
                 }
 
@@ -107,22 +108,22 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     this.count = 0;
                 }
 
-                public void add(Any item) {
+                public void add(IStringable item) {
                     this.elements[this.count] = item;
                     this.count = this.count + 1;
                 }
 
-                public bool contains(Any item) {
+                public bool contains(IStringable item) {
                     for (int32 i = 0; i < this.count; i = i + 1) {
-                        if (this.elements[i] != null && this.elements[i].equals(item)) {
+                        if (this.elements[i] != null && this.elements[i].to_string().equals(item.to_string())) {
                             return true;
                         }
                     }
                     return false;
                 }
 
-                public Any[] to_array() {
-                    Any[] copy = new Any[this.count];
+                public IStringable[] to_array() {
+                    IStringable[] copy = new IStringable[this.count];
                     for (int32 i = 0; i < this.count; i = i + 1) {
                         copy[i] = this.elements[i];
                     }
@@ -139,19 +140,19 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             }
 
             class ArrayCollIterator implements IIterator {
-                private Any[] arr;
+                private IStringable[] arr;
                 private int32 cnt;
                 private int32 pos;
 
-                public ArrayCollIterator(Any[] a, int32 c) {
+                public ArrayCollIterator(IStringable[] a, int32 c) {
                     this.arr = a;
                     this.cnt = c;
                     this.pos = 0;
                 }
 
                 public bool has_next() { return this.pos < this.cnt; }
-                public Any next() {
-                    Any val = this.arr[this.pos];
+                public IStringable next() {
+                    IStringable val = this.arr[this.pos];
                     this.pos = this.pos + 1;
                     return val;
                 }
@@ -167,9 +168,9 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     String sEmpty = col.to_string();
                     if (!sEmpty.equals_chars("[]")) return 3;
 
-                    Any c1 = new Any(1);
-                    Any c2 = new Any(2);
-                    Any c3 = new Any(3);
+                    Int c1 = new Int(1);
+                    Int c2 = new Int(2);
+                    Int c3 = new Int(3);
                     col.add(c1);
                     col.add(c2);
                     col.add(c3);
@@ -177,7 +178,7 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     if (col.is_empty()) return 4;
                     if (col.size() != 3) return 5;
                     if (!col.contains(c2)) return 6;
-                    Any c99 = new Any(99);
+                    Int c99 = new Int(99);
                     if (col.contains(c99)) return 7;
 
                     // Formatted to_string
@@ -185,9 +186,10 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     if (!sFull.equals_chars("[1, 2, 3]")) return 8;
 
                     // to_array
-                    Any[] arr = col.to_array();
+                    IStringable[] arr = col.to_array();
                     if (arr.length != 3) return 9;
-                    if (arr[1].as_int32() != 2) return 10;
+                    Int arr1 = (Int)arr[1];
+                    if (arr1.value() != 2) return 10;
 
                     // clear
                     col.clear();
@@ -210,7 +212,7 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             import solix.collections.IIterator;
             import solix.collections.ICollection;
             import solix.collections.Collections;
-            import solix.core.Any;
+            import solix.core.Int;
             import solix.core.String;
             import solix.core.IStringable;
             import solix.system.Console;
@@ -218,9 +220,9 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             class MockCollection implements ICollection {
                 public int32 size() { return 2; }
                 public bool is_empty() { return false; }
-                public bool contains(Any item) { return true; }
+                public bool contains(IStringable item) { return true; }
                 public void clear() {}
-                public Any[] to_array() { return new Any[0]; }
+                public IStringable[] to_array() { return new IStringable[0]; }
                 public IIterator iterator() { return new MockIterator(); }
                 public String to_string() { return new String("[mock1, mock2]"); }
             }
@@ -229,9 +231,9 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                 private int32 idx;
                 public MockIterator() { this.idx = 0; }
                 public bool has_next() { return this.idx < 2; }
-                public Any next() {
+                public IStringable next() {
                     this.idx = this.idx + 1;
-                    return new Any(this.idx);
+                    return new Int(this.idx);
                 }
             }
 
@@ -272,15 +274,16 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             import solix.collections.IList;
             import solix.collections.IIterator;
             import solix.collections.Collections;
-            import solix.core.Any;
+            import solix.core.Int;
+            import solix.core.IStringable;
             import solix.core.String;
 
             class SimpleList implements IList {
-                private Any[] data;
+                private IStringable[] data;
                 private int32 count;
 
                 public SimpleList() {
-                    this.data = new Any[10];
+                    this.data = new IStringable[10];
                     this.count = 0;
                 }
 
@@ -288,12 +291,12 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                 public bool is_empty() { return this.count == 0; }
                 public void clear() { this.count = 0; }
 
-                public bool contains(Any item) {
+                public bool contains(IStringable item) {
                     return this.index_of(item) != -1;
                 }
 
-                public Any[] to_array() {
-                    Any[] r = new Any[this.count];
+                public IStringable[] to_array() {
+                    IStringable[] r = new IStringable[this.count];
                     for (int32 i = 0; i < this.count; i = i + 1) r[i] = this.data[i];
                     return r;
                 }
@@ -306,20 +309,20 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     return Collections.to_string(this);
                 }
 
-                public void add(Any item) {
+                public void add(IStringable item) {
                     this.data[this.count] = item;
                     this.count = this.count + 1;
                 }
 
-                public Any get(int32 index) {
+                public IStringable get(int32 index) {
                     return this.data[index];
                 }
 
-                public void set(int32 index, Any item) {
+                public void set(int32 index, IStringable item) {
                     this.data[index] = item;
                 }
 
-                public void insert(int32 index, Any item) {
+                public void insert(int32 index, IStringable item) {
                     for (int32 i = this.count; i > index; i = i - 1) {
                         this.data[i] = this.data[i - 1];
                     }
@@ -327,15 +330,15 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     this.count = this.count + 1;
                 }
 
-                public bool remove(Any item) {
+                public bool remove(IStringable item) {
                     int32 idx = this.index_of(item);
                     if (idx == -1) return false;
                     this.remove_at(idx);
                     return true;
                 }
 
-                public Any remove_at(int32 index) {
-                    Any old = this.data[index];
+                public IStringable remove_at(int32 index) {
+                    IStringable old = this.data[index];
                     for (int32 i = index; i < this.count - 1; i = i + 1) {
                         this.data[i] = this.data[i + 1];
                     }
@@ -343,9 +346,9 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     return old;
                 }
 
-                public int32 index_of(Any item) {
+                public int32 index_of(IStringable item) {
                     for (int32 i = 0; i < this.count; i = i + 1) {
-                        if (this.data[i] != null && this.data[i].equals(item)) {
+                        if (this.data[i] != null && this.data[i].to_string().equals(item.to_string())) {
                             return i;
                         }
                     }
@@ -354,13 +357,13 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             }
 
             class SimpleListIterator implements IIterator {
-                private Any[] arr;
+                private IStringable[] arr;
                 private int32 cnt;
                 private int32 pos;
-                public SimpleListIterator(Any[] a, int32 c) { this.arr = a; this.cnt = c; this.pos = 0; }
+                public SimpleListIterator(IStringable[] a, int32 c) { this.arr = a; this.cnt = c; this.pos = 0; }
                 public bool has_next() { return this.pos < this.cnt; }
-                public Any next() {
-                    Any val = this.arr[this.pos];
+                public IStringable next() {
+                    IStringable val = this.arr[this.pos];
                     this.pos = this.pos + 1;
                     return val;
                 }
@@ -369,31 +372,35 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             class Main {
                 public static int32 main() {
                     IList list = new SimpleList();
-                    Any a1 = new Any(10);
-                    Any a2 = new Any(20);
-                    Any a3 = new Any(30);
+                    Int a1 = new Int(10);
+                    Int a2 = new Int(20);
+                    Int a3 = new Int(30);
                     list.add(a1);
                     list.add(a2);
                     list.add(a3);
 
                     if (list.size() != 3) return 1;
-                    if (list.get(1).as_int32() != 20) return 2;
+                    Int g1 = (Int)list.get(1);
+                    if (g1.value() != 20) return 2;
 
-                    Any a25 = new Any(25);
+                    Int a25 = new Int(25);
                     list.set(1, a25);
-                    if (list.get(1).as_int32() != 25) return 3;
+                    Int g1_2 = (Int)list.get(1);
+                    if (g1_2.value() != 25) return 3;
 
-                    Any a15 = new Any(15);
+                    Int a15 = new Int(15);
                     list.insert(1, a15);
                     // Now: [10, 15, 25, 30]
                     if (list.size() != 4) return 4;
-                    if (list.get(1).as_int32() != 15) return 5;
-                    if (list.get(2).as_int32() != 25) return 6;
+                    Int g1_3 = (Int)list.get(1);
+                    if (g1_3.value() != 15) return 5;
+                    Int g2 = (Int)list.get(2);
+                    if (g2.value() != 25) return 6;
 
                     if (list.index_of(a25) != 2) return 7;
 
-                    Any removed = list.remove_at(1);
-                    if (removed.as_int32() != 15) return 8;
+                    Int removed = (Int)list.remove_at(1);
+                    if (removed.value() != 15) return 8;
                     if (list.size() != 3) return 9;
 
                     bool remSuccess = list.remove(a25);
@@ -418,18 +425,19 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             import solix.collections.IDeque;
             import solix.collections.IIterator;
             import solix.collections.Collections;
-            import solix.core.Any;
+            import solix.core.Int;
+            import solix.core.IStringable;
             import solix.core.String;
             import solix.system.Console;
 
             class SimpleDeque implements IDeque {
-                private Any[] data;
+                private IStringable[] data;
                 private int32 head;
                 private int32 tail;
                 private int32 count;
 
                 public SimpleDeque() {
-                    this.data = new Any[20];
+                    this.data = new IStringable[20];
                     this.head = 10;
                     this.tail = 10;
                     this.count = 0;
@@ -439,15 +447,15 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                 public bool is_empty() { return this.count == 0; }
                 public void clear() { this.head = 10; this.tail = 10; this.count = 0; }
 
-                public bool contains(Any item) {
+                public bool contains(IStringable item) {
                     for (int32 i = this.head; i < this.tail; i = i + 1) {
-                        if (this.data[i] != null && this.data[i].equals(item)) return true;
+                        if (this.data[i] != null && this.data[i].to_string().equals(item.to_string())) return true;
                     }
                     return false;
                 }
 
-                public Any[] to_array() {
-                    Any[] r = new Any[this.count];
+                public IStringable[] to_array() {
+                    IStringable[] r = new IStringable[this.count];
                     for (int32 i = 0; i < this.count; i = i + 1) {
                         r[i] = this.data[this.head + i];
                     }
@@ -462,49 +470,49 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     return Collections.to_string(this);
                 }
 
-                public void add_first(Any item) {
+                public void add_first(IStringable item) {
                     this.head = this.head - 1;
                     this.data[this.head] = item;
                     this.count = this.count + 1;
                 }
 
-                public void add_last(Any item) {
+                public void add_last(IStringable item) {
                     this.data[this.tail] = item;
                     this.tail = this.tail + 1;
                     this.count = this.count + 1;
                 }
 
-                public Any remove_first() {
-                    Any v = this.data[this.head];
+                public IStringable remove_first() {
+                    IStringable v = this.data[this.head];
                     this.head = this.head + 1;
                     this.count = this.count - 1;
                     return v;
                 }
 
-                public Any remove_last() {
+                public IStringable remove_last() {
                     this.tail = this.tail - 1;
-                    Any v = this.data[this.tail];
+                    IStringable v = this.data[this.tail];
                     this.count = this.count - 1;
                     return v;
                 }
 
-                public Any peek_first() {
+                public IStringable peek_first() {
                     return this.data[this.head];
                 }
 
-                public Any peek_last() {
+                public IStringable peek_last() {
                     return this.data[this.tail - 1];
                 }
             }
 
             class DequeIterator implements IIterator {
-                private Any[] arr;
+                private IStringable[] arr;
                 private int32 cur;
                 private int32 end;
-                public DequeIterator(Any[] a, int32 h, int32 t) { this.arr = a; this.cur = h; this.end = t; }
+                public DequeIterator(IStringable[] a, int32 h, int32 t) { this.arr = a; this.cur = h; this.end = t; }
                 public bool has_next() { return this.cur < this.end; }
-                public Any next() {
-                    Any v = this.arr[this.cur];
+                public IStringable next() {
+                    IStringable v = this.arr[this.cur];
                     this.cur = this.cur + 1;
                     return v;
                 }
@@ -513,27 +521,29 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             class Main {
                 public static int32 main() {
                     IDeque deque = new SimpleDeque();
-                    Any d10 = new Any(10);
-                    Any d5 = new Any(5);
-                    Any d20 = new Any(20);
+                    Int d10 = new Int(10);
+                    Int d5 = new Int(5);
+                    Int d20 = new Int(20);
                     deque.add_last(d10);
                     deque.add_first(d5);
                     deque.add_last(d20);
                     // Layout: [5, 10, 20]
 
                     if (deque.size() != 3) return 1;
-                    if (deque.peek_first().as_int32() != 5) return 2;
-                    if (deque.peek_last().as_int32() != 20) return 3;
+                    Int p1 = (Int)deque.peek_first();
+                    if (p1.value() != 5) return 2;
+                    Int p2 = (Int)deque.peek_last();
+                    if (p2.value() != 20) return 3;
 
                     String repr = deque.to_string();
                     if (!repr.equals_chars("[5, 10, 20]")) return 4;
 
-                    Any f = deque.remove_first();
-                    if (f.as_int32() != 5) return 5;
+                    Int f = (Int)deque.remove_first();
+                    if (f.value() != 5) return 5;
                     if (deque.size() != 2) return 6;
 
-                    Any l = deque.remove_last();
-                    if (l.as_int32() != 20) return 7;
+                    Int l = (Int)deque.remove_last();
+                    if (l.value() != 20) return 7;
                     if (deque.size() != 1) return 8;
 
                     return 0;
@@ -550,7 +560,8 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
         sources["main.slx"] = R"(
             import solix.collections.IIterator;
             import solix.exceptions.NoSuchElementException;
-            import solix.core.Any;
+            import solix.core.Int;
+            import solix.core.IStringable;
 
             class GuardedIterator implements IIterator {
                 private int32 count;
@@ -565,12 +576,12 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     return this.pos < this.count;
                 }
 
-                public Any next() {
+                public IStringable next() {
                     if (this.pos >= this.count) {
                         throw new NoSuchElementException("Iterator exhausted");
                     }
                     this.pos = this.pos + 1;
-                    return new Any(this.pos);
+                    return new Int(this.pos);
                 }
             }
 

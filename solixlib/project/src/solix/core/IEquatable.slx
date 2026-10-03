@@ -1,5 +1,5 @@
 package solix.core;
 
 public interface IEquatable {
-    bool equals(Any other);
+    bool equals(IEquatable other);
 }

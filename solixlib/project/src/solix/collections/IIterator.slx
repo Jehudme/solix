@@ -1,8 +1,8 @@
 package solix.collections;
 
-import solix.core.Any;
+import solix.core.IStringable;
 
 public interface IIterator {
     bool has_next();
-    Any next();
+    IStringable next();
 }

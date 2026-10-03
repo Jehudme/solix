@@ -1,6 +1,5 @@
 package solix.collections;
 
-import solix.core.Any;
 import solix.core.IStringable;
 import solix.core.String;
 import solix.core.StringBuilder;
@@ -19,7 +18,7 @@ public class Collections {
                 sb.append_char(',');
                 sb.append_char(' ');
             }
-            Any item = it.next();
+            IStringable item = it.next();
             if (item == null) {
                 sb.append_char('n');
                 sb.append_char('u');

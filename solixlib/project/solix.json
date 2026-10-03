@@ -59,10 +59,6 @@
     },
     {
       "type": "source",
-      "path": "src/solix/core/Any.slx"
-    },
-    {
-      "type": "source",
       "path": "src/solix/core/Optional.slx"
     },
     {
