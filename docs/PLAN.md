@@ -51,7 +51,7 @@
 | **Phase 32.1** | Emergency Refactor: Purge `Any.slx`, Modernize `solix.math.Math` with Generics (`abs<T>`, `min<T>`, `max<T>`, `clamp<T>`, `sign<T>`) & `Optional<T>` | `P0 Blocker` | `solixlib/core`, `solixlib/math`, `tests` | - [x] Complete |
 | **Phase 32.2** | Emergency Refactor: Generic Collections Sequences (`List<T>`, `LinkedList<T>`, `Collections.slx`, `Algorithms.slx`) with `for_each` & Lambdas | `P0 Blocker` | `solixlib/collections`, `tests` | - [x] Complete |
 | **Phase 32.3** | Emergency Refactor: Generic Linear Containers (`Stack<T>`, `Queue<T>`, `Deque<T>`, `PriorityQueue<T>`, `CircularBuffer<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [x] Complete |
-| **Phase 32.4** | Emergency Refactor: Generic Associative Containers (`KeyValuePair<K, V>`, `HashMap<K, V>`, `TreeMap<K, V>`, `HashSet<T>`, `TreeSet<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [ ] Planned |
+| **Phase 32.4** | Emergency Refactor: Generic Associative Containers (`KeyValuePair<K, V>`, `HashMap<K, V>`, `TreeMap<K, V>`, `HashSet<T>`, `TreeSet<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [x] Complete |
 | **Phase 32.5** | Emergency Refactor: Align Filesystem (`File.slx`, `Directory.slx`) with `List<String>`, Update `test_filesystem.cpp`, Specs & Regression | `P0 Blocker` | `solixlib/io`, `docs`, `tests` | - [ ] Planned |
 | **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, Readers/Writers) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 34** | Standard Library: `solix.system.Environment` (OS, Env, Subprocesses) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
@@ -1697,19 +1697,19 @@ Convert all linear collections and streaming buffers to compile-time generic cla
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `solixlib/project/src/solix/collections/KeyValuePair.slx`, `HashMapEntry.slx`, `HashMap.slx`, `TreeMapNode.slx`, `TreeMap.slx`, `HashSet.slx`, `TreeSet.slx`, `tests/solixlib/test_map.cpp`, `test_set.cpp`, `docs/spec/solixlib/map.md`, `set.md`
-- **Status**: - [ ] Planned
-
+- **Status**: - [x] Complete
+ 
 ### Objective
 Convert all associative dictionaries and distinct sets to generic types parameterized on key and value. Implement `for_each(void(*)(K, V) action)` for maps and `for_each(void(*)(T) action)` for sets. Ensure typed view collections (`keys(): List<K>`, `values(): List<V>`, `entries(): List<KeyValuePair<K, V>>`).
 
 ### Action Items
-- [ ] Refactor `KeyValuePair.slx` and `HashMapEntry.slx` to generic pairs/entries.
-- [ ] Refactor `HashMap.slx` to `HashMap<K, V>` with `for_each(void(*)(K, V) action)`.
-- [ ] Refactor `TreeMapNode.slx` and `TreeMap.slx` to `TreeMap<K, V>` with `for_each(void(*)(K, V) action)`.
-- [ ] Refactor `HashSet.slx` to `HashSet<T>` backed by `HashMap<T, bool>` with `for_each(void(*)(T) action)`.
-- [ ] Refactor `TreeSet.slx` to `TreeSet<T>` backed by `TreeMap<T, bool>` with `for_each(void(*)(T) action)`.
-- [ ] Update `tests/solixlib/test_map.cpp` and `tests/solixlib/test_set.cpp`.
-- [ ] Update `tests/solixlib/TESTS.md` and documentation in `docs/spec/solixlib/map.md` and `set.md`.
+- [x] Refactor `KeyValuePair.slx` and `HashMapEntry.slx` to generic pairs/entries.
+- [x] Refactor `HashMap.slx` to `HashMap<K, V>` with `for_each(void(*)(K, V) action)`.
+- [x] Refactor `TreeMapNode.slx` and `TreeMap.slx` to `TreeMap<K, V>` with `for_each(void(*)(K, V) action)`.
+- [x] Refactor `HashSet.slx` to `HashSet<T>` backed by `HashMap<T, bool>` with `for_each(void(*)(T) action)`.
+- [x] Refactor `TreeSet.slx` to `TreeSet<T>` backed by `TreeMap<T, bool>` with `for_each(void(*)(T) action)`.
+- [x] Update `tests/solixlib/test_map.cpp` and `tests/solixlib/test_set.cpp`.
+- [x] Update `tests/solixlib/TESTS.md` and documentation in `docs/spec/solixlib/map.md` and `set.md`.
 
 ---
 
