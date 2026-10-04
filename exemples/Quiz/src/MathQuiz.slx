@@ -1,0 +1,132 @@
+import solix.system.Console;
+import solix.math.Random;
+import solix.core.StringBuilder;
+import solix.core.String;
+import solix.exceptions.FormatException;
+
+enum Operation {
+    ADDITION,
+    SUBSTRACTION,
+    MULTIPLICATION,
+    DIVISION
+}
+
+class Question {
+    public int32 left;
+    public int32 right;
+    public int32 result;
+    public Operation operation;
+
+    public Question(Random rng) {
+        this.left = rng.next_int(1, 100);
+        this.right = rng.next_int(1, 100);
+
+        int32 opCode = rng.next_int(0, 4);
+        switch (opCode) {
+            case 0:
+                this.operation = Operation.ADDITION;
+                this.result = this.left + this.right;
+                break;
+            case 1:
+                this.operation = Operation.SUBSTRACTION;
+                this.result = this.left - this.right;
+                break;
+            case 2:
+                this.operation = Operation.MULTIPLICATION;
+                this.result = this.left * this.right;
+                break;
+            default:
+                this.operation = Operation.DIVISION;
+                // Ensure integer division cleanly matches left / right
+                this.result = this.left / this.right;
+                break;
+        }
+    }
+
+    public char get_symbol() {
+        switch (this.operation) {
+            case Operation.ADDITION:       return '+';
+            case Operation.SUBSTRACTION:    return '-';
+            case Operation.MULTIPLICATION: return '*';
+            case Operation.DIVISION:       return '/';
+        }
+        return '?';
+    }
+}
+
+class Prompt {
+    private static Random rng = new Random();
+    private Question question;
+
+    public Prompt() {
+        this.question = new Question(rng);
+    }
+
+    public bool tryAnswering() {
+        StringBuilder builder = new StringBuilder();
+        builder
+            .append(String.value_of(this.question.left))
+            .append_char(' ')
+            .append_char(this.question.get_symbol())
+            .append_char(' ')
+            .append(String.value_of(this.question.right))
+            .append(new String(" = "));
+
+        Console.print(builder.to_string());
+        String inputStr = Console.input();
+
+        // Check for quit commands
+        if (inputStr.equals(new String("quit")) || inputStr.equals(new String("q"))) {
+            return false;
+        }
+
+        try {
+            int32 userAnswer = String.to_int(inputStr);
+            if (userAnswer == this.question.result) {
+                Console.success(new String("Correct!\n"));
+            } else {
+                StringBuilder err = new StringBuilder();
+                err.append(new String("Incorrect! Expected: "))
+                   .append_int((int64)this.question.result)
+                   .append_char('\n');
+                Console.error(err.to_string());
+            }
+        } catch (FormatException ex) {
+            Console.warning(new String("Invalid input! Please enter an integer.\n"));
+        }
+
+        return true;
+    }
+}
+
+class Application {
+    private static bool running;
+
+    public static void run() {
+        running = true;
+        Console.info(new String("=== Solix Math Quiz (Type 'q' or 'quit' to exit) ===\n"));
+
+        int32 rounds = 0;
+        while (running) {
+            Prompt prompt = new Prompt();
+            bool keepPlaying = prompt.tryAnswering();
+
+            if (!keepPlaying) {
+                running = false;
+            } else {
+                rounds = rounds + 1;
+                if (rounds >= 5) {
+                    Console.info(new String("Completed 5 rounds. Exiting quiz.\n"));
+                    running = false;
+                }
+            }
+        }
+    }
+}
+
+class Main {
+    public static int32 main() {
+        Application.run();
+        return 0;
+    }
+}

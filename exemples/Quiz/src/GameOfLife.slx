@@ -1,0 +1,188 @@
+import solix.system.Console;
+import solix.math.Random;
+import solix.core.StringBuilder;
+import solix.core.String;
+import solix.time.Stopwatch;
+
+class Board {
+    private int32 _width;
+    private int32 _height;
+    private bool[] _current;
+    private bool[] _next;
+
+    public Board(int32 width, int32 height) {
+        this._width = width;
+        this._height = height;
+        int32 total = width * height;
+        this._current = new bool[total];
+        this._next = new bool[total];
+    }
+
+    public int32 width() {
+        return this._width;
+    }
+
+    public int32 height() {
+        return this._height;
+    }
+
+    public void randomize(Random rng, int32 chance_percent) {
+        int32 total = this._width * this._height;
+        for (int32 i = 0; i < total; i = i + 1) {
+            int32 roll = rng.next_int(0, 100);
+            this._current[i] = (roll < chance_percent);
+            this._next[i] = false;
+        }
+    }
+
+    public void set_cell(int32 x, int32 y, bool alive) {
+        if (x >= 0 && x < this._width && y >= 0 && y < this._height) {
+            this._current[y * this._width + x] = alive;
+        }
+    }
+
+    public bool get_cell(int32 x, int32 y) {
+        int32 wx = (x % this._width + this._width) % this._width;
+        int32 wy = (y % this._height + this._height) % this._height;
+        return this._current[wy * this._width + wx];
+    }
+
+    public int32 count_neighbors(int32 x, int32 y) {
+        int32 count = 0;
+        for (int32 dy = -1; dy <= 1; dy = dy + 1) {
+            for (int32 dx = -1; dx <= 1; dx = dx + 1) {
+                if (dx == 0 && dy == 0) {
+                    continue;
+                }
+                if (this.get_cell(x + dx, y + dy)) {
+                    count = count + 1;
+                }
+            }
+        }
+        return count;
+    }
+
+    public int32 step() {
+        int32 live_count = 0;
+
+        for (int32 y = 0; y < this._height; y = y + 1) {
+            for (int32 x = 0; x < this._width; x = x + 1) {
+                int32 idx = y * this._width + x;
+                bool is_alive = this._current[idx];
+                int32 neighbors = this.count_neighbors(x, y);
+
+                bool next_state = false;
+                if (is_alive) {
+                    if (neighbors == 2 || neighbors == 3) {
+                        next_state = true;
+                    }
+                } else {
+                    if (neighbors == 3) {
+                        next_state = true;
+                    }
+                }
+
+                this._next[idx] = next_state;
+                if (next_state) {
+                    live_count = live_count + 1;
+                }
+            }
+        }
+
+        int32 total = this._width * this._height;
+        for (int32 i = 0; i < total; i = i + 1) {
+            this._current[i] = this._next[i];
+        }
+
+        return live_count;
+    }
+
+    public void render(StringBuilder buffer, int32 generation, int32 alive_count) {
+        buffer.clear();
+
+        buffer.append(new String("=== Conway's Game of Life (Solix) ==="));
+        buffer.append_char('\n');
+
+        buffer.append(new String("Generation: "))
+              .append_int((int64)generation)
+              .append(new String(" | Alive: "))
+              .append_int((int64)alive_count);
+        buffer.append_char('\n');
+
+        // Bordure supérieure
+        buffer.append_char('+');
+        for (int32 x = 0; x < this._width; x = x + 1) {
+            buffer.append_char('-');
+        }
+        buffer.append_char('+');
+        buffer.append_char('\n');
+
+        // Grille de jeu
+        for (int32 y = 0; y < this._height; y = y + 1) {
+            buffer.append_char('|');
+            for (int32 x = 0; x < this._width; x = x + 1) {
+                if (this._current[y * this._width + x]) {
+                    buffer.append_char('#');
+                } else {
+                    buffer.append_char(' ');
+                }
+            }
+            buffer.append_char('|');
+            buffer.append_char('\n');
+        }
+
+        // Bordure inférieure
+        buffer.append_char('+');
+        for (int32 x = 0; x < this._width; x = x + 1) {
+            buffer.append_char('-');
+        }
+        buffer.append_char('+');
+        buffer.append_char('\n');
+    }
+}
+
+class Game {
+    public static void run() {
+        int32 width = 40;
+        int32 height = 20;
+        int32 max_generations = 300;
+        int64 frame_delay_ms = 80L;
+
+        Random rng = new Random();
+        Board board = new Board(width, height);
+
+        board.randomize(rng, 25);
+
+        Console.clear();
+        StringBuilder render_buffer = new StringBuilder();
+
+        int32 generation = 0;
+        int32 alive = 0;
+
+        while (generation < max_generations) {
+            Console.set_cursor_position(1, 1);
+
+            board.render(render_buffer, generation, alive);
+            Console.print(render_buffer.to_string());
+
+            alive = board.step();
+            generation = generation + 1;
+
+            if (alive == 0) {
+                Console.warning(new String("\nAll cells died out. Simulation terminated.\n"));
+                break;
+            }
+
+            Stopwatch.sleep(frame_delay_ms);
+        }
+
+        Console.success(new String("\nSimulation finished.\n"));
+    }
+}
+
+class Main {
+    public static int32 main() {
+        Game.run();
+        return 0;
+    }
+}

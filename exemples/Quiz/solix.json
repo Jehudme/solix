@@ -1,0 +1,95 @@
+{
+  "author": "Jehud Othniel Metellus <jehudmetellus@outlook.com>",
+  "dependencies": [
+    {
+      "name": "solixlib@0.1.0",
+      "type": "project"
+    }
+  ],
+  "description": null,
+  "license": null,
+  "profiles": {
+    "GameOfLife": {
+      "asm_filename": "out.slxasm",
+      "compilation": {
+        "additional_dependencies": [
+          {
+            "type": "source",
+            "path": "src/GameOfLife.slx"
+          }
+        ],
+        "entry_point": "main",
+        "logs": {
+          "filename": "logs/debug.log",
+          "flush_level": "info",
+          "level": "info",
+          "pattern": "[%^%-8l%$] [%-12n] %v",
+          "sink": "STDOUT"
+        },
+        "multithreaded": false
+      },
+      "exe_filename": "out.slxbin",
+      "output_directory": "build/debug",
+      "relative_paths": true,
+      "runtime": {
+        "arguments": [],
+        "heap_size": null,
+        "stack_size": null
+      }
+    },
+    "MathQuiz": {
+      "asm_filename": "out.slxasm",
+      "compilation": {
+        "additional_dependencies": [
+          {
+            "type": "source",
+            "path": "src/MathQuiz.slx"
+          }
+        ],
+        "entry_point": "main",
+        "logs": {
+          "filename": "logs/release.log",
+          "flush_level": "warning",
+          "level": "warning",
+          "pattern": "[%^%-8l%$] [%-12n] %v",
+          "sink": "STDOUT"
+        },
+        "multithreaded": true
+      },
+      "exe_filename": "out.slxbin",
+      "output_directory": "build/release",
+      "relative_paths": true,
+      "runtime": {
+        "arguments": [],
+        "heap_size": null,
+        "stack_size": null
+      }
+    },
+    "test": {
+      "asm_filename": "out.slxasm",
+      "compilation": {
+        "additional_dependencies": [],
+        "entry_point": "main",
+        "logs": {
+          "filename": "logs/test.log",
+          "flush_level": "debug",
+          "level": "debug",
+          "pattern": "[%^%-8l%$] [%-12n] %v",
+          "sink": "STDOUT"
+        },
+        "multithreaded": false
+      },
+      "exe_filename": "out.slxbin",
+      "output_directory": "build/test",
+      "relative_paths": true,
+      "runtime": {
+        "arguments": [],
+        "heap_size": null,
+        "stack_size": null
+      }
+    }
+  },
+  "project": "Exemples",
+  "tags": [],
+  "version": "0.1.0"
+}
