@@ -68,3 +68,8 @@ else()
     )
 endif()
 
+
+install(
+    TARGETS solix
+    RUNTIME DESTINATION bin
+)

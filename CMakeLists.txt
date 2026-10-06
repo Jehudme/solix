@@ -42,3 +42,23 @@ add_subdirectory(core)
 add_subdirectory(cli)
 add_subdirectory(solixlib/native)
 add_subdirectory(tests)
+
+# Execute `solix install` on solixlib during cmake --install
+install(CODE "
+    # Resolve the installed solix executable path
+    set(SOLIX_BIN \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin/solix\")
+    if(NOT EXISTS \"\${SOLIX_BIN}\")
+        set(SOLIX_BIN \"$<TARGET_FILE:solix>\")
+    endif()
+
+    set(SOLIXLIB_PATH \"${CMAKE_CURRENT_SOURCE_DIR}/solixlib/project\")
+
+    message(STATUS \"Installing standard library into Solix registry from: \${SOLIXLIB_PATH}\")
+    execute_process(
+        COMMAND \${SOLIX_BIN} install \${SOLIXLIB_PATH} --force
+        RESULT_VARIABLE RES
+    )
+    if(NOT RES EQUAL 0)
+        message(WARNING \"Failed to auto-install solixlib package (exit code: \${RES})\")
+    endif()
+")
