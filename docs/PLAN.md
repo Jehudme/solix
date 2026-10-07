@@ -77,6 +77,11 @@
 | **Phase 47** | LSP Intelligence: Scope Completion, Member Dot-Access, Signature Help & Document Symbols | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 48** | Neovim IDE Plugin: Filetype Detection, Syntax Highlighting & `nvim-lspconfig` Setup | `P2 Medium` | `editors/neovim`, `docs` | - [ ] Deferred (Skipped) |
 | **Phase 49** | VS Code Extension: TextMate Grammar, Language Config, TypeScript Client & `.vsix` Packaging | `P2 Medium` | `editors/vscode`, `docs` | - [x] Completed & Merged |
+| **Phase 50** | LSP Core Fixes — Stable Source Resolution & Syntax Highlighting Overhaul | `P1 High` | `lsp`, `editors/vscode`, `docs` | - [x] Completed & Merged |
+| **Phase 51** | LSP Navigation & Multi-Step Definition Chaining Across All Constructs | `P1 High` | `lsp`, `tests`, `docs` | - [x] Completed & Merged |
+| **Phase 52** | Full Symbol Hover Formatting & Keyword Suppression | `P1 High` | `lsp`, `tests`, `docs` | - [x] Completed & Merged |
+| **Phase 53** | Context-Aware Autocompletion & Extension Packaging Verification | `P1 High` | `lsp`, `editors/vscode`, `tests`, `docs` | - [x] Completed & Merged |
+| **Phase 54** | LSP Multi-Project Manifest Discovery & Unbound Generic Scope Resolution | `P0 Blocker` | `lsp`, `core`, `tests`, `docs`, `editors/vscode` | - [x] Completed & Merged |
 
 ---
 
@@ -2460,6 +2465,33 @@ Rebuild and repackage the official VS Code extension (`solix-0.1.0.vsix`) and re
 - [x] Rebuild `editors/vscode/` and package new `.vsix`.
 - [x] Reinstall extension to `~/.vscode/extensions/solix.solix-0.1.0/`.
 - [x] Update `docs/spec/lsp/intelligence.md`.
+
+---
+
+## Phase 54: LSP Multi-Project Manifest Discovery & Unbound Generic Scope Resolution
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `lsp/src/server.cpp`, `core/src/processes/parser.cpp`, `tests/commands/TESTS.md`, `tests/commands/test_lsp_command.cpp`, `docs/spec/lsp/navigation.md`, `docs/spec/lsp/intelligence.md`, `editors/vscode/`
+- **Status**: - [x] Completed & Merged
+
+### Objective
+Resolve IDE language intelligence failures (no autocomplete, missing hover, broken definition jumps) in multi-file projects and uninstantiated generic classes:
+1. **Upward Project Discovery**: Search upwards from the opened file to discover the nearest `solix.json`, resolving multi-file projects (e.g. `solixlib`) even when the IDE workspace root is an ancestor repository.
+2. **Parser Range Correction**: Set precise `end_line` and `end_column` spans on `ClassDeclaration`, `MethodDeclaration`, `ConstructorDeclaration`, and `BlockStatement`.
+3. **Lexical Scope Resolution**: Enable hover, Go-to-Definition, and scope autocompletion for parameters, local variables, class fields, and chained member calls within uninstantiated generic template blueprints (`class HashSet<T>`).
+4. **Resilient AST Preservation**: Preserve previously valid parsed classes across transient parse errors during live typing, ensuring autocompletion remains responsive on every keystroke.
+
+### Action Items
+- [x] Implement upward manifest traversal in `LspServer::analyze_document`.
+- [x] Fix AST end coordinates for blocks, methods, constructors, and classes in `parser.cpp`.
+- [x] Implement `find_enclosing_class_at`, `find_enclosing_callable_at`, `find_symbol_in_scope`, and `resolve_member_access` in `lsp/src/server.cpp`.
+- [x] Add resilient AST class preservation across transient typing errors in `analyze_document`.
+- [x] Enable `this.` and chained field member autocompletion in `handle_completion`.
+- [x] Add Suite 14 test specifications in `tests/commands/TESTS.md`.
+- [x] Implement Catch2 unit tests in Suite 14 of `tests/commands/test_lsp_command.cpp`.
+- [x] Update documentation in `docs/spec/lsp/navigation.md` and `docs/spec/lsp/intelligence.md`.
+- [x] Rebuild, package, and reinstall `editors/vscode/solix-0.1.0.vsix` and update `~/.local/bin/solix`.
+
 
 
 
