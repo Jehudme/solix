@@ -10,8 +10,13 @@ class ParseError : public std::runtime_error {
 public:
   uint32_t line = 0;
   uint32_t column = 0;
-  ParseError(const std::string &msg, uint32_t line = 0, uint32_t column = 0)
-      : std::runtime_error(msg), line(line), column(column) {}
+  uint32_t end_line = 0;
+  uint32_t end_column = 0;
+  ParseError(const std::string &msg, uint32_t line = 0, uint32_t column = 0,
+             uint32_t end_line = 0, uint32_t end_column = 0)
+      : std::runtime_error(msg), line(line), column(column),
+        end_line(end_line ? end_line : line),
+        end_column(end_column ? end_column : column) {}
 };
 
 static std::string operator_token_to_string(TokenType type) {
@@ -128,7 +133,7 @@ public:
   const Token &consume(TokenType type, const std::string &message) {
     if (check(type))
       return advance();
-    throw ParseError(message, peek().line, peek().column);
+    throw ParseError(message, peek().line, peek().column, peek().end_line, peek().end_column);
   }
 
   // Expression parsing
@@ -1838,6 +1843,8 @@ void Parser::execute() {
         report.source_path = source_name;
         report.line = e.line;
         report.column = e.column;
+        report.end_line = e.end_line;
+        report.end_column = e.end_column;
         context.diagnostic->record_report(report);
       }
     } catch (const std::exception &e) {
@@ -1850,6 +1857,8 @@ void Parser::execute() {
         report.source_path = source_name;
         report.line = 0;
         report.column = 0;
+        report.end_line = 0;
+        report.end_column = 0;
         context.diagnostic->record_report(report);
       }
     }

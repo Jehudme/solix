@@ -73,6 +73,8 @@ void Assembler::throw_error(Node *node, const std::string &msg) {
     report.message = msg;
     report.line = node ? node->line : 0;
     report.column = node ? node->column : 0;
+    report.end_line = node ? node->end_line : 0;
+    report.end_column = node ? node->end_column : 0;
     if (node && node->source) {
       if (std::holds_alternative<std::filesystem::path>(*node->source)) {
         report.source_path =

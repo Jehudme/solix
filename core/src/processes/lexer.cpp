@@ -47,11 +47,11 @@ class LexerState {
     }
 
     void add_token(TokenType type) {
-        tokens.push_back({type, current_line, start_column, source_ref, std::nullptr_t{}});
+        tokens.push_back({type, current_line, start_column, current_line, current_column, source_ref, std::nullptr_t{}});
     }
 
     void add_token(TokenType type, Value value) {
-        tokens.push_back({type, current_line, start_column, source_ref, std::move(value)});
+        tokens.push_back({type, current_line, start_column, current_line, current_column, source_ref, std::move(value)});
     }
 
     void handle_string() {
@@ -365,7 +365,7 @@ public:
             }
         }
         
-        tokens.push_back({TokenType::EOF_TOKEN, current_line, current_column, source_ref, std::nullptr_t{}});
+        tokens.push_back({TokenType::EOF_TOKEN, current_line, current_column, current_line, current_column, source_ref, std::nullptr_t{}});
         return std::move(tokens);
     }
 };

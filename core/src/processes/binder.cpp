@@ -273,6 +273,8 @@ void Binder::record_error(Node *node, const std::string &msg) {
   report.source_path = src;
   report.line = line;
   report.column = col;
+  report.end_line = node ? node->end_line : 0;
+  report.end_column = node ? node->end_column : 0;
   context.diagnostic->record_report(report);
 }
 
@@ -300,6 +302,8 @@ void Binder::record_warning(Node *node, const std::string &msg, const std::strin
   report.source_path = src;
   report.line = line;
   report.column = col;
+  report.end_line = node ? node->end_line : 0;
+  report.end_column = node ? node->end_column : 0;
   if (context.diagnostic) {
     context.diagnostic->record_report(report);
   }

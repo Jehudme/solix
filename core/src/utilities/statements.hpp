@@ -110,6 +110,8 @@ struct Node {
     NodeType node_type;
     uint32_t line;
     uint32_t column;
+    uint32_t end_line;
+    uint32_t end_column;
     const Source* source;
     
     Node* parent = nullptr;
@@ -126,7 +128,8 @@ struct Node {
     std::vector<std::unique_ptr<Node>> children;
 
     Node(NodeType type, const Token& token) 
-        : node_type(type), line(token.line), column(token.column), source(token.source) {}
+        : node_type(type), line(token.line), column(token.column),
+          end_line(token.end_line), end_column(token.end_column), source(token.source) {}
     virtual ~Node() = default;
     virtual void accept(NodeVisitor& v) = 0;
     virtual std::unique_ptr<Node> clone() const = 0;

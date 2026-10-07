@@ -18,8 +18,10 @@ struct Report {
     std::string code;
     std::string message;
     std::string source_path;
-    int line;
-    int column;
+    int line{0};
+    int column{0};
+    int end_line{0};
+    int end_column{0};
 };
 
 struct CompilationContext;

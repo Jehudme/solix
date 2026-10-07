@@ -7,6 +7,8 @@ static Token make_dummy_token(const Node* node) {
     t.type = TokenType::UNKNOWN_TOKEN;
     t.line = node->line;
     t.column = node->column;
+    t.end_line = node->end_line;
+    t.end_column = node->end_column;
     t.source = node->source;
     return t;
 }

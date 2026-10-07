@@ -111,11 +111,19 @@ inline const std::unordered_map<std::string_view, TokenType> keywords = {
 };
 
 struct Token {
-  TokenType type;
-  uint32_t line;
-  uint32_t column;
-  const Source* source;
-  Value value;
+  TokenType type{TokenType::UNKNOWN_TOKEN};
+  uint32_t line{0};
+  uint32_t column{0};
+  uint32_t end_line{0};
+  uint32_t end_column{0};
+  const Source* source{nullptr};
+  Value value{std::nullptr_t{}};
+
+  Token() = default;
+  Token(TokenType t, uint32_t l, uint32_t c, const Source* src, Value val = std::nullptr_t{})
+      : type(t), line(l), column(c), end_line(l), end_column(c), source(src), value(std::move(val)) {}
+  Token(TokenType t, uint32_t l, uint32_t c, uint32_t el, uint32_t ec, const Source* src, Value val = std::nullptr_t{})
+      : type(t), line(l), column(c), end_line(el), end_column(ec), source(src), value(std::move(val)) {}
 };
 
 } // namespace solix
