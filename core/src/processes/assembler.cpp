@@ -505,6 +505,7 @@ void Assembler::compile_boot_sequence() {
   std::string entry_point = context.options.entry_point;
   MethodDeclaration *entry_method = nullptr;
   if (!entry_point.empty()) {
+    std::vector<MethodDeclaration *> candidate_entries;
     for (const auto &[source, nodes] : context.nodes) {
       for (const auto &node : nodes) {
         if (node->node_type == NodeType::CLASS_DECL) {
@@ -515,9 +516,10 @@ void Assembler::compile_boot_sequence() {
           for (const auto &child : class_decl->children) {
             if (child->node_type == NodeType::METHOD_DECL) {
               auto *method = static_cast<MethodDeclaration *>(child.get());
+              if (!method->template_parameters.empty())
+                continue;
               if (method->method_name == entry_point) {
-                entry_method = method;
-                break;
+                candidate_entries.push_back(method);
               }
             }
           }
@@ -527,13 +529,34 @@ void Assembler::compile_boot_sequence() {
             continue; // SHIELD
 
           if (method->method_name == entry_point) {
-            entry_method = method;
-            break;
+            candidate_entries.push_back(method);
           }
         }
       }
-      if (entry_method)
-        break;
+    }
+
+    if (candidate_entries.size() > 1) {
+      std::ostringstream ss;
+      ss << "Ambiguous entry point '" << entry_point << "': multiple candidates found:";
+      for (auto *cand : candidate_entries) {
+        std::string src_name = "<unknown>";
+        if (cand->source) {
+          if (std::holds_alternative<std::filesystem::path>(*cand->source)) {
+            src_name = std::get<std::filesystem::path>(*cand->source).string();
+          } else {
+            src_name = std::get<std::string>(*cand->source);
+          }
+        }
+        std::string container_info = "free function";
+        if (cand->parent && cand->parent->node_type == NodeType::CLASS_DECL) {
+          container_info = "class '" + static_cast<ClassDeclaration *>(cand->parent)->class_name + "'";
+        }
+        ss << "\n  - " << src_name << ":" << cand->line << ":" << cand->column
+           << " (in " << container_info << " '" << cand->method_name << "')";
+      }
+      throw_error(candidate_entries.front(), ss.str());
+    } else if (candidate_entries.size() == 1) {
+      entry_method = candidate_entries.front();
     }
   }
 
