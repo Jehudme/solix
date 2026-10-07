@@ -2520,7 +2520,7 @@ Resolve package declaration intelligence, same-package import tolerance, and pac
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `lsp/src/server.cpp`, `tests/commands/TESTS.md`, `tests/commands/test_lsp_command.cpp`, `docs/spec/lsp/intelligence.md`, `editors/vscode/`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Provide comprehensive type alias intelligence, general alias scope completion, and import statement autocompletion:
@@ -2530,13 +2530,13 @@ Provide comprehensive type alias intelligence, general alias scope completion, a
 4. **Extension Packaging Verification**: Rebuild `solix-0.1.0.vsix` and reinstall into VS Code.
 
 ### Action Items
-- [ ] Implement `CompletionContext::ALIAS_TARGET` in `lsp/src/server.cpp` to suggest types after `alias <Name> = `.
-- [ ] Add `AliasStatement` items to general scope and type completions in `handle_completion`.
-- [ ] Implement `CompletionContext::IMPORT_STMT` in `lsp/src/server.cpp` to suggest known packages and types.
-- [ ] Define test specifications in `tests/commands/TESTS.md`.
-- [ ] Implement Catch2 unit tests in `tests/commands/test_lsp_command.cpp`.
-- [ ] Update documentation in `docs/spec/lsp/intelligence.md`.
-- [ ] Rebuild, package, and install `solix-0.1.0.vsix`.
+- [x] Implement `CompletionContext::ALIAS_TARGET` in `lsp/src/server.cpp` to suggest types after `alias <Name> = `.
+- [x] Add `AliasStatement` items to general scope and type completions in `handle_completion`.
+- [x] Implement `CompletionContext::IMPORT_STMT` in `lsp/src/server.cpp` to suggest known packages and types.
+- [x] Define test specifications in `tests/commands/TESTS.md`.
+- [x] Implement Catch2 unit tests in `tests/commands/test_lsp_command.cpp`.
+- [x] Update documentation in `docs/spec/lsp/intelligence.md`.
+- [x] Rebuild, package, and install `solix-0.1.0.vsix`.
 
 
 
