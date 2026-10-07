@@ -59,7 +59,7 @@
 | **Phase 32.9** | Standard Library: Complete Boxed Primitives (`Byte`..`ULong`, `Float`), Boxed Operator Overloads & `Optional<T>` Functional Parity (`map`, `flat_map`) | `P0 Blocker` | `solixlib/core`, `docs`, `tests` | - [x] Complete |
 | **Phase 32.10** | Standard Library: Collection Ergonomics (Copy Constructors, Array Initializers, `map`, `reduce`) & String Primitive Constructors | `P1 High` | `solixlib/collections`, `solixlib/core`, `docs`, `tests` | - [x] Complete |
 | **Phase 32.11** | Standard Library: Chrono & Time Ergonomics (Duration/Instant Operator Overloading, `DateTime.format` Pattern Formatting) | `P1 High` | `solixlib/time`, `docs`, `tests` | - [x] Complete |
-| **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, `StreamReader`, `StreamWriter`, `BufferedReader`) & Object-Oriented `Path` (`operator/`) | `P1 High` | `solixlib/io`, `solixlib/native`, `docs`, `tests` | - [ ] Planned |
+| **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, `StreamReader`, `StreamWriter`, `BufferedReader`) & Object-Oriented `Path` (`operator/`) | `P1 High` | `solixlib/io`, `solixlib/native`, `docs`, `tests` | - [x] Complete |
 | **Phase 33.1** | Standard Library: Documentation Schema Standardization & Developer Guides (Operator Overloading & Native C++ Interop Guides) | `P2 Medium` | `docs/spec/solixlib`, `docs/guide` | - [ ] Planned |
 | **Phase 34** | Standard Library: `solix.system.Environment` (OS, Env, Subprocesses) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 35** | Core Compiler & Runtime: Language Intrinsics (`assert`, `exit`, Hardcoded Built-ins) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
@@ -1872,7 +1872,7 @@ Eliminate boilerplate and rigid APIs in `solix.time`:
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `solixlib/project/src/solix/io/IStream.slx`, `FileStream.slx`, `MemoryStream.slx`, `TextReader.slx`, `TextWriter.slx`, `BufferedReader.slx`, `BinaryReader.slx`, `BinaryWriter.slx`, `solixlib/project/src/solix/io/filesystem/Path.slx`, `solixlib/native/src/io_stream.cpp`, `tests/solixlib/test_streams.cpp`, `docs/spec/solixlib/streams.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Eliminate heap exhaustion memory hazards on large files by providing streaming abstractions, and modernize path manipulation into an object-oriented API:
@@ -1891,11 +1891,11 @@ Eliminate heap exhaustion memory hazards on large files by providing streaming a
   - `class Path`: `public Path operator/(Path other)`, `public Path operator/(String other)`, `to_string()`, and static helpers.
 
 ### Action Items
-- [ ] Implement native I/O stream bindings in `solixlib/native/src/io_stream.cpp` wrapping OS file descriptors.
-- [ ] Author Solix stream classes (`IStream.slx`, `FileStream.slx`, `MemoryStream.slx`, `BufferedReader.slx`, `TextReader.slx`, `TextWriter.slx`, `BinaryReader.slx`, `BinaryWriter.slx`).
-- [ ] Upgrade `Path.slx` to an instantiable object with `operator/` and fluent methods.
-- [ ] Author unit tests in `tests/solixlib/test_streams.cpp`.
-- [ ] Author formal spec in `docs/spec/solixlib/streams.md`.
+- [x] Implement native I/O stream bindings in `solixlib/native/src/io_stream.cpp` wrapping OS file descriptors.
+- [x] Author Solix stream classes (`IStream.slx`, `FileStream.slx`, `MemoryStream.slx`, `BufferedReader.slx`, `TextReader.slx`, `TextWriter.slx`, `BinaryReader.slx`, `BinaryWriter.slx`).
+- [x] Upgrade `Path.slx` to an instantiable object with `operator/` and fluent methods.
+- [x] Author unit tests in `tests/solixlib/test_streams.cpp`.
+- [x] Author formal spec in `docs/spec/solixlib/streams.md`.
 
 ---
 
