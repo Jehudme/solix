@@ -598,25 +598,25 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 11.1: Go-to-Definition for Local Variables [NOT IMPLEMENTED]
+#### Case 11.1: Go-to-Definition for Local Variables [IMPLEMENTED]
 - **Request**: `textDocument/definition` at position of a local variable reference.
 - **Expected**: Returns `Location` pointing to line/column of variable declaration.
 
-#### Case 11.2: Go-to-Definition for Class Declarations & Methods [NOT IMPLEMENTED]
+#### Case 11.2: Go-to-Definition for Class Declarations & Methods [IMPLEMENTED]
 - **Request**: `textDocument/definition` at method call or class instantiation.
 - **Expected**: Returns `Location` pointing to target method or class declaration.
 
-#### Case 11.3: Go-to-Type-Definition for Instance Expressions [NOT IMPLEMENTED]
+#### Case 11.3: Go-to-Type-Definition for Instance Expressions [IMPLEMENTED]
 - **Request**: `textDocument/typeDefinition` at variable usage.
 - **Expected**: Returns `Location` pointing to declaring class of variable's resolved type.
 
-#### Case 11.4: Hover Tooltip for Variables, Methods, and Primitives [NOT IMPLEMENTED]
+#### Case 11.4: Hover Tooltip for Variables, Methods, and Primitives [IMPLEMENTED]
 - **Request**: `textDocument/hover` at variable, method, or primitive type reference.
 - **Expected**: Returns `Hover` object with markdown formatted signature, doc comments, or type information.
 
 ### Negative Test Scenarios
 
-#### Case 11.5: Definition and Hover on Whitespace / Unresolved Tokens [NOT IMPLEMENTED]
+#### Case 11.5: Definition and Hover on Whitespace / Unresolved Tokens [IMPLEMENTED]
 - **Request**: `textDocument/definition` and `textDocument/hover` at empty space or comment.
 - **Expected**: Returns `null` response without crashing or emitting error diagnostics.
 

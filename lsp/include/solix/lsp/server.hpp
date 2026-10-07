@@ -10,6 +10,8 @@
 #include "solix/lsp/transport.hpp"
 #include "solix/lsp/document_store.hpp"
 #include "solix/lsp/protocol.hpp"
+#include "solix/lsp/spatial_index.hpp"
+#include "solix/compilation.hpp"
 
 namespace solix::lsp {
 
@@ -41,6 +43,9 @@ private:
     void handle_did_change(const nlohmann::json& params);
     void handle_did_close(const nlohmann::json& params);
     void handle_did_save(const nlohmann::json& params);
+    void handle_definition(const nlohmann::json& id, const nlohmann::json& params);
+    void handle_type_definition(const nlohmann::json& id, const nlohmann::json& params);
+    void handle_hover(const nlohmann::json& id, const nlohmann::json& params);
 
     void load_project_dependencies();
 
@@ -54,6 +59,11 @@ private:
     std::atomic<bool> is_shutdown_{false};
     std::atomic<bool> should_exit_{false};
     int exit_code_{0};
+
+    // Cached compilation context and spatial index
+    std::shared_ptr<CompilationContext> last_context_;
+    std::shared_ptr<CompilationOptions> last_opts_;
+    AstSpatialIndex spatial_index_;
 };
 
 } // namespace solix::lsp

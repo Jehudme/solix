@@ -2872,11 +2872,14 @@ void Binder::visit(MethodCallExpression &n) {
         evaluated_type = {"void", 0};
         return;
       }
+      n.resolved_declaration = method_decl;
+      if (member_access) {
+        member_access->resolved_declaration = method_decl;
+      }
       if (!check_access(method_decl, current_resolve_class, &n)) {
         evaluated_type = {"void", 0};
         return;
       }
-      n.resolved_declaration = method_decl;
       if (method_decl->node_type == NodeType::METHOD_DECL) {
         auto *m = static_cast<MethodDeclaration *>(method_decl);
         if (m->is_virtual && member_access &&
@@ -3128,6 +3131,9 @@ void Binder::visit(MethodCallExpression &n) {
       }
 
       n.resolved_declaration = method_decl;
+      if (id) {
+        id->resolved_declaration = method_decl;
+      }
       if (method_decl->node_type == NodeType::METHOD_DECL) {
         auto *m = static_cast<MethodDeclaration *>(method_decl);
         if (m->is_virtual && id->name != "super") {

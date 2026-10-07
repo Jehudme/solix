@@ -20,6 +20,9 @@ std::string uri_to_path(const std::string& uri) {
 }
 
 std::string path_to_uri(const std::string& path) {
+    if (path.empty()) {
+        return "";
+    }
     std::filesystem::path p = std::filesystem::absolute(path).lexically_normal();
     std::string generic = p.generic_string();
 #if defined(_WIN32)

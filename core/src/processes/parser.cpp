@@ -495,7 +495,7 @@ std::unique_ptr<Node> ParserState::parse_call_or_access() {
       std::string prop = std::get<std::string>(name.value);
       log_trace("Parsed member access: .{}", prop);
       expr =
-          std::make_unique<MemberAccessExpression>(dot, std::move(expr), prop);
+          std::make_unique<MemberAccessExpression>(name, std::move(expr), prop);
     } else if (match(TokenType::PUNCTUATION_DOUBLE_COLON)) {
       Token d_colon = previous();
       Token name =
@@ -1177,8 +1177,13 @@ std::unique_ptr<Node> ParserState::parse_variable_declaration(bool is_const,
     decls.push_back(std::move(decl));
   } while (match(TokenType::PUNCTUATION_COMMA));
 
-  consume(TokenType::PUNCTUATION_SEMICOLON,
+  Token semi = consume(TokenType::PUNCTUATION_SEMICOLON,
           "Expected ';' after variable declaration");
+
+  for (auto &d : decls) {
+    d->end_line = semi.end_line;
+    d->end_column = semi.end_column;
+  }
 
   if (decls.size() == 1) {
     return std::move(decls[0]);

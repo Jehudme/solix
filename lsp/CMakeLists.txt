@@ -1,6 +1,7 @@
 add_library(solix_lsp_core STATIC
     src/protocol.cpp
     src/transport.cpp
+    src/spatial_index.cpp
     src/server.cpp
 )
 

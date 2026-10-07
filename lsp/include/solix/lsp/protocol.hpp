@@ -82,6 +82,32 @@ struct TextDocumentContentChangeEvent {
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(TextDocumentContentChangeEvent, text)
 };
 
+struct MarkupContent {
+    std::string kind{"markdown"}; // "plaintext" or "markdown"
+    std::string value;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(MarkupContent, kind, value)
+};
+
+struct Hover {
+    MarkupContent contents;
+    std::optional<Range> range;
+};
+
+inline void to_json(nlohmann::json& j, const Hover& h) {
+    j = nlohmann::json{{"contents", h.contents}};
+    if (h.range.has_value()) {
+        j["range"] = h.range.value();
+    }
+}
+
+inline void from_json(const nlohmann::json& j, Hover& h) {
+    h.contents = j.at("contents").get<MarkupContent>();
+    if (j.contains("range") && !j["range"].is_null()) {
+        h.range = j.at("range").get<Range>();
+    }
+}
+
 // Converts file:// URI to std::filesystem::path or local path string
 std::string uri_to_path(const std::string& uri);
 
