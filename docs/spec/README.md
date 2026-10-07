@@ -14,6 +14,7 @@ This directory contains the formal specification of the Solix programming langua
 | [**Type System & Static Semantics**](types.md) | Primitive types with ranges and defaults, implicit widening conversions, explicit narrowing casts, reference types, null safety, array types, type compatibility, nominal subtyping, method override rules, templates and generics, and type name resolution order |
 | [**VM Instruction Set Architecture**](vm_isa.md) | Stack-based VM architecture, flat heap memory model, ARC object header format, all 90 opcodes with encodings and stack effects, call frame layout, object and array memory layout, ARC reference-counting semantics, and trampoline-based exception unwinding |
 | [**Native Interoperability**](runtime/native_interop.md) | Dynamic shared library loader, C-ABI `NativeFunctionPtr`, dual registry architecture, registration hooks (`solix_register_natives`), dynamic fallback symbol resolution, and heap marshaling |
+| [**Compiler Diagnostics & Error Reporting**](diagnostics.md) | Consistent compiler diagnostics format, error codes (`E_LEX`, `E_PARSE`, `E_BIND`, `E_ASM`), source path, line, column, and caret reporting |
 
 ### Statements, Declarations & Expressions
 
@@ -58,6 +59,7 @@ docs/spec/
 ├── lexical.md                  ← Lexical Grammar Specification
 ├── types.md                    ← Type System & Static Semantics
 ├── vm_isa.md                   ← VM Instruction Set Architecture
+├── diagnostics.md              ← Compiler Diagnostics & Error Reporting Specification
 ├── cli/
 │   ├── README.md               ← CLI & Toolchain reference index
 │   ├── compile.md              ← solix compile specification
