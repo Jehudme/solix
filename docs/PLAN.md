@@ -57,7 +57,7 @@
 | **Phase 32.7** | Standard Library: Structural Consolidation & Encapsulation (`Exceptions.slx`, `Interfaces.slx`, Node Encapsulation) | `P0 Blocker` | `solixlib`, `docs`, `tests` | - [x] Complete |
 | **Phase 32.8** | Standard Library: Polymorphic Generic Collection Hierarchy & Interface Re-binding (`IList<T>`, `IMap<K, V>`, `ISet<T>`) | `P0 Blocker` | `solixlib/collections`, `docs`, `tests` | - [x] Complete |
 | **Phase 32.9** | Standard Library: Complete Boxed Primitives (`Byte`..`ULong`, `Float`), Boxed Operator Overloads & `Optional<T>` Functional Parity (`map`, `flat_map`) | `P0 Blocker` | `solixlib/core`, `docs`, `tests` | - [x] Complete |
-| **Phase 32.10** | Standard Library: Collection Ergonomics (Copy Constructors, Array Initializers, `map`, `reduce`) & String Primitive Constructors | `P1 High` | `solixlib/collections`, `solixlib/core`, `docs`, `tests` | - [ ] Planned |
+| **Phase 32.10** | Standard Library: Collection Ergonomics (Copy Constructors, Array Initializers, `map`, `reduce`) & String Primitive Constructors | `P1 High` | `solixlib/collections`, `solixlib/core`, `docs`, `tests` | - [x] Complete |
 | **Phase 32.11** | Standard Library: Chrono & Time Ergonomics (Duration/Instant Operator Overloading, `DateTime.format` Pattern Formatting) | `P1 High` | `solixlib/time`, `docs`, `tests` | - [ ] Planned |
 | **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, `StreamReader`, `StreamWriter`, `BufferedReader`) & Object-Oriented `Path` (`operator/`) | `P1 High` | `solixlib/io`, `solixlib/native`, `docs`, `tests` | - [ ] Planned |
 | **Phase 33.1** | Standard Library: Documentation Schema Standardization & Developer Guides (Operator Overloading & Native C++ Interop Guides) | `P2 Medium` | `docs/spec/solixlib`, `docs/guide` | - [ ] Planned |
@@ -1831,7 +1831,7 @@ Complete boxed primitive type coverage, implement operator overloads on boxed ty
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `solixlib/project/src/solix/collections/List.slx`, `LinkedList.slx`, `HashSet.slx`, `TreeSet.slx`, `Stack.slx`, `Queue.slx`, `Deque.slx`, `solixlib/project/src/solix/core/String.slx`, `tests/solixlib/test_collections.cpp`, `docs/spec/solixlib/collections.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Complete
 
 ### Objective
 Modernize collection instantiation ergonomics and functional transformations:
@@ -1840,11 +1840,11 @@ Modernize collection instantiation ergonomics and functional transformations:
 3. Add primitive conversion constructors to `String.slx`: `String(int32)`, `String(float64)`, `String(bool)`, `String(char)`.
 
 ### Action Items
-- [ ] Add `List(T[] items)` and `List(ICollection<T> other)` copy/initializer constructors to collections.
-- [ ] Implement `map<U>` and `reduce` in `List.slx`.
-- [ ] Add overloaded constructors in `String.slx`.
-- [ ] Author unit tests verifying initialization from arrays/collections and functional mapping.
-- [ ] Update collection specifications in `docs/spec/solixlib/`.
+- [x] Add `List(T[] items)` and `List(ICollection<T> other)` copy/initializer constructors to collections.
+- [x] Implement `map<U>` and `reduce` in `List.slx`.
+- [x] Add overloaded constructors in `String.slx`.
+- [x] Author unit tests verifying initialization from arrays/collections and functional mapping.
+- [x] Update collection specifications in `docs/spec/solixlib/`.
 
 ---
 
