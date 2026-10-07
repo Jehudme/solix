@@ -4753,5 +4753,87 @@ public class Main {
 ```
 *Expected Result*: VM throws clean runtime exception `Call to unknown native function: MissingNative_non_existent_function`.
 
+---
+
+## Suite 50: Language Intrinsics (`assert`, `exit`)
+
+### Case 50.1: Basic Boolean Assertion Passing Silently [NOT IMPLEMENTED]
+```solix
+class Main {
+    public static int32 main() {
+        assert true;
+        assert(1 + 1 == 2);
+        return 0;
+    }
+}
+```
+*Expected Result*: Compiles and executes cleanly, returning 0 without raising any error.
+
+---
+
+### Case 50.2: Assertion with Custom Textual Message Passing Silently [NOT IMPLEMENTED]
+```solix
+class Main {
+    public static int32 main() {
+        assert(10 > 5, "Arithmetic consistency holds");
+        return 0;
+    }
+}
+```
+*Expected Result*: Compiles and executes cleanly without overhead when condition evaluates to true.
+
+---
+
+### Case 50.3: Failed Assertion Throws AssertionError Runtime Exception [NOT IMPLEMENTED]
+```solix
+class Main {
+    public static int32 main() {
+        assert(2 + 2 == 5, "Math verification failed");
+        return 0;
+    }
+}
+```
+*Expected Result*: Runtime execution fails throwing an exception containing `AssertionError` and `Math verification failed`.
+
+---
+
+### Case 50.4: Immediate Process Termination via `exit(code)` Intrinsics [NOT IMPLEMENTED]
+```solix
+class Main {
+    public static int32 main() {
+        exit(42);
+        return 0;
+    }
+}
+```
+*Expected Result*: Execution immediately halts and returns exit code 42, bypassing the subsequent return statement.
+
+---
+
+### Case 50.5: Negative: Assert Condition Non-Boolean Type Mismatch Rejected at Compile Time [NOT IMPLEMENTED]
+```solix
+class Main {
+    public static int32 main() {
+        assert 123;
+        return 0;
+    }
+}
+```
+*Expected Result*: Compilation fails reporting that assert condition must be of type `bool`.
+
+---
+
+### Case 50.6: Negative: Exit Code Non-Integer Type Mismatch Rejected at Compile Time [NOT IMPLEMENTED]
+```solix
+class Main {
+    public static int32 main() {
+        exit "fatal";
+        return 0;
+    }
+}
+```
+*Expected Result*: Compilation fails reporting that exit code must be an integer type.
+
+
 
 
