@@ -131,6 +131,10 @@ Renders rich markdown documentation and type signature tooltips when hovering ov
   ```solix
   alias Callback = (int32) -> void
   ```
+- **Package Statements**: Displays package declaration:
+  ```solix
+  package my.service;
+  ```
 
 ### Keyword Suppression
 Hover requests targeting Solix keywords (`if`, `class`, `public`, `return`, `new`, `extends`, `implements`, etc.) are explicitly suppressed and return `null` (`{"result": null}`), preventing redundant tooltip popups on syntax elements.

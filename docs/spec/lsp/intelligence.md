@@ -45,6 +45,10 @@ The language server inspects the lexical tokens leading up to the cursor to refi
 5. **Switch Cases (`case <cursor>`)**:
    - Inspects the enclosing `switch` condition variable type.
    - If switching over an `enum`, suggests enum members (e.g. `Color.RED`, `Color.GREEN`, `Color.BLUE`) with `CompletionItemKind::EnumMember`.
+6. **Package Declarations (`package <cursor>`)**:
+   - Offers package name completions inferred from file directory path relative to project root or `src/` (e.g. `src/net/http/Client.slx` -> `net.http`).
+   - Suggests known package names declared across all compilation units in the workspace with `CompletionItemKind::Module`.
+   - Package suggestions are suppressed in general scope or method body contexts.
 
 ---
 
