@@ -70,7 +70,7 @@
 | **Phase 40** | Function Declaration Scope Rules (`static` Prohibited Outside Classes; Non-`static` Free Functions Allowed as Entry Points) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 41** | Diagnostic Logging Level Demotion (`log_debug` -> `log_trace` & Phase Pipeline Timing) | `P2 Medium` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 42** | CLI Toolchain: `version` Subcommand & `--version` Flag | `P2 Medium` | `cli`, `tests`, `docs` | - [x] Completed & Merged |
-| **Phase 43** | Entry Point Resolution Disambiguation (Exhaustive Scan, Duplicate/Ambiguity Detection with File, Row, Col) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 43** | Entry Point Resolution Disambiguation (Exhaustive Scan, Duplicate/Ambiguity Detection with File, Row, Col) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 44** | Standard Library: Friendly Primitive Aliases (`Primitives.slx` with Wildcard Re-export) | `P2 Medium` | `solixlib/core`, `core`, `tests`, `docs` | - [ ] Planned |
 
 ---
@@ -2214,16 +2214,16 @@ Add a first-class `version` CLI subcommand and `--version` / `-v` flag to the So
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `core/src/processes/assembler.cpp`, `tests/statements/`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Replace the first-match entry point locator in `Assembler` with an exhaustive search across all compilation units. If multiple candidate functions matching the entry point name exist (e.g. `com.example1.main` and `com.example2.main`), reject compilation with an informative error detailing all candidate locations (file path, line, and column).
 
 ### Action Items
-- [ ] Update `Assembler` to collect all entry point candidate functions instead of breaking on the first match.
-- [ ] If candidates count > 1, emit compiler error `Ambiguous entry point 'main': multiple candidates found:` listing each candidate's source file, line, and column.
-- [ ] Add unit tests in `tests/statements/` for single entry point (success) and ambiguous entry points (compile error with candidate locations).
-- [ ] Update `docs/spec/` toolchain/runtime specification.
+- [x] Update `Assembler` to collect all entry point candidate functions instead of breaking on the first match.
+- [x] If candidates count > 1, emit compiler error `Ambiguous entry point 'main': multiple candidates found:` listing each candidate's source file, line, and column.
+- [x] Add unit tests in `tests/statements/` for single entry point (success) and ambiguous entry points (compile error with candidate locations).
+- [x] Update `docs/spec/statements/declarations/method_declaration.md` toolchain/runtime specification.
 
 ---
 
