@@ -1922,7 +1922,7 @@ Standardize markdown documentation schemas across all standard library modules a
 
 - **Priority**: `P2 Medium`
 - **Affected Modules**: `solixlib/project/src/solix/system/Environment.slx`, `Process.slx`, `ProcessResult.slx`, `solixlib/native/src/system.cpp`, `tests/solixlib/test_environment.cpp`, `docs/spec/solixlib/environment.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Provide access to host runtime environment variables, command-line arguments, operating system identification, and child subprocess spawning. Natively backed by established lightweight cross-platform C/C++ libraries (e.g. `reproc` or `subprocess.h`) for guaranteed pipe redirection and process lifecycle handling across Linux, macOS, and Windows.
@@ -1958,11 +1958,11 @@ Provide access to host runtime environment variables, command-line arguments, op
   - `docs/spec/solixlib/environment.md`: Environment variable security and process lifecycle.
 
 ### Action Items
-- [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Implement `solixlib/native/src/system.cpp` with cross-platform process execution.
-- [ ] Author `Environment.slx`, `Process.slx`, `ProcessResult.slx`.
-- [ ] Implement Catch2 test suite `tests/solixlib/test_environment.cpp`.
-- [ ] Author `docs/spec/solixlib/environment.md`.
+- [x] Define test specification in `tests/solixlib/TESTS.md`.
+- [x] Implement `solixlib/native/src/system.cpp` with cross-platform process execution.
+- [x] Author `Environment.slx`, `Process.slx`, `ProcessResult.slx`.
+- [x] Implement Catch2 test suite `tests/solixlib/test_environment.cpp`.
+- [x] Author `docs/spec/solixlib/environment.md`.
 
 ---
 
