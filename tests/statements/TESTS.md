@@ -4879,7 +4879,7 @@ class Main {
 
 ## Suite 52: String Literal Escape Sequence Decoding
 
-### Case 52.1: Common Whitespace and Punctuation Escapes (`\n`, `\t`, `\r`, `\"`, `\\`) [NOT IMPLEMENTED]
+### Case 52.1: Common Whitespace and Punctuation Escapes (`\n`, `\t`, `\r`, `\"`, `\\`) [IMPLEMENTED]
 ```solix
 class Main {
     public static int32 main() {
@@ -4896,7 +4896,7 @@ class Main {
 
 ---
 
-### Case 52.2: Hexadecimal Escape Sequences (`\xHH`) and Null Character (`\0`) [NOT IMPLEMENTED]
+### Case 52.2: Hexadecimal Escape Sequences (`\xHH`) and Null Character (`\0`) [IMPLEMENTED]
 ```solix
 class Main {
     public static int32 main() {
@@ -4914,7 +4914,7 @@ class Main {
 
 ---
 
-### Case 52.3: Negative: Unterminated Hex Escape in String Literal [NOT IMPLEMENTED]
+### Case 52.3: Negative: Unterminated Hex Escape in String Literal [IMPLEMENTED]
 ```solix
 class Main {
     public static int32 main() {

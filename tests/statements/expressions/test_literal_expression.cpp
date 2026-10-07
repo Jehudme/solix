@@ -60,4 +60,42 @@ void test() {
 )";
         assert_compile_error(code, "Unterminated string literal");
     }
+
+    SECTION("Case 52.1: Common Whitespace and Punctuation Escapes") {
+        std::string code = R"(
+static int32 main() {
+    char[] s = "hello\nworld\ttab\\slash\"quote";
+    if (s[5] != (char)10) return 1; // '\n'
+    if (s[11] != (char)9) return 2; // '\t'
+    if (s[15] != (char)92) return 3; // '\\'
+    if (s[21] != (char)34) return 4; // '\"'
+    return 0;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
+    SECTION("Case 52.2: Hexadecimal Escape Sequences and Null Character") {
+        std::string code = R"(
+static int32 main() {
+    char[] s = "A\x42C\0D";
+    if (s[0] != 'A') return 1;
+    if (s[1] != 'B') return 2; // \x42 == 'B'
+    if (s[2] != 'C') return 3;
+    if (s[3] != '\0') return 4; // \0 == 0
+    if (s[4] != 'D') return 5;
+    return 0;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
+    SECTION("Case 52.3: Negative: Unterminated Hex Escape in String Literal") {
+        std::string code = R"(
+void test() {
+    char[] s = "bad\x4";
+}
+)";
+        assert_compile_error(code, "Invalid hex character in string literal");
+    }
 }
