@@ -1708,3 +1708,321 @@ TEST_CASE("Suite 14: LSP Generic Blueprint Scope Resolution & Manifest Discovery
     std::filesystem::remove_all(test_dir);
 }
 
+TEST_CASE("Suite 15: LSP Package Declaration Autocompletion & Same-Package Import Tolerance", "[lsp][commands]") {
+    std::string test_dir = "/tmp/solix_test_lsp_suite15_" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
+    std::filesystem::create_directories(test_dir + "/src/net/http");
+    std::filesystem::create_directories(test_dir + "/models");
+
+    SECTION("Case 15.1: Package Declaration Autocompletion Inferred from Directory Path") {
+        std::stringstream in;
+        std::stringstream out;
+        JsonRpcTransport transport(out, in);
+
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 1},
+            {"method", "initialize"},
+            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+        });
+
+        std::string client_code = "package ";
+        std::string file_uri = "file://" + test_dir + "/src/net/http/Client.slx";
+
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", file_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", client_code}
+            }}
+        });
+
+        // Request completion after "package " at line 0, char 8
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 10},
+            {"method", "textDocument/completion"},
+            {"params", {{"textDocument", {{"uri", file_uri}}}, {"position", {{"line", 0}, {"character", 8}}}}}
+        });
+
+        transport.write_message({{"jsonrpc", "2.0"}, {"id", 99}, {"method", "shutdown"}, {"params", nlohmann::json::object()}});
+        transport.send_notification("exit", nlohmann::json::object());
+
+        LspServer server(in, out);
+        REQUIRE(server.run() == 0);
+
+        JsonRpcTransport reader(out, in);
+        std::map<int, nlohmann::json> responses;
+        while (auto msg = reader.read_message()) {
+            if (msg.value().contains("id") && msg.value()["id"].is_number()) {
+                responses[msg.value()["id"].get<int>()] = msg.value();
+            }
+        }
+
+        REQUIRE(responses.count(10));
+        auto comp_items = responses[10]["result"]["items"];
+        std::vector<std::string> labels;
+        for (const auto& item : comp_items) {
+            labels.push_back(item["label"].get<std::string>());
+        }
+
+        REQUIRE(std::find(labels.begin(), labels.end(), "net.http") != labels.end());
+    }
+
+    SECTION("Case 15.2: Same-Package Explicit Import Resolution") {
+        std::stringstream in;
+        std::stringstream out;
+        JsonRpcTransport transport(out, in);
+
+        std::string manifest_code = R"({
+  "project": "models_proj",
+  "version": "0.1.0",
+  "dependencies": [
+    { "type": "source", "path": "User.slx" }
+  ]
+})";
+        std::ofstream j(test_dir + "/models/solix.json");
+        j << manifest_code;
+        j.close();
+
+        std::string user_code = "package app.models;\npublic class User { public int32 id; }\n";
+        std::ofstream u(test_dir + "/models/User.slx");
+        u << user_code;
+        u.close();
+
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 1},
+            {"method", "initialize"},
+            {"params", {{"rootUri", "file://" + test_dir + "/models"}, {"capabilities", nlohmann::json::object()}}}
+        });
+
+        std::string account_code = "package app.models;\nimport app.models.User;\npublic class Account { public User u; }\n";
+        std::string file_uri = "file://" + test_dir + "/models/Account.slx";
+
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", file_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", account_code}
+            }}
+        });
+
+        // Go to definition on "User" at line 1, char 20
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 20},
+            {"method", "textDocument/definition"},
+            {"params", {{"textDocument", {{"uri", file_uri}}}, {"position", {{"line", 1}, {"character", 20}}}}}
+        });
+
+        transport.write_message({{"jsonrpc", "2.0"}, {"id", 99}, {"method", "shutdown"}, {"params", nlohmann::json::object()}});
+        transport.send_notification("exit", nlohmann::json::object());
+
+        LspServer server(in, out);
+        REQUIRE(server.run() == 0);
+
+        JsonRpcTransport reader(out, in);
+        std::map<int, nlohmann::json> responses;
+        std::vector<nlohmann::json> diags;
+        while (auto msg = reader.read_message()) {
+            if (msg.value().value("method", "") == "textDocument/publishDiagnostics") {
+                diags.push_back(msg.value());
+            } else if (msg.value().contains("id") && msg.value()["id"].is_number()) {
+                responses[msg.value()["id"].get<int>()] = msg.value();
+            }
+        }
+
+        // Diagnostics for Account.slx should have 0 errors
+        REQUIRE_FALSE(diags.empty());
+        auto d_list = diags[0]["params"]["diagnostics"];
+        REQUIRE(d_list.empty());
+
+        REQUIRE(responses.count(20));
+        auto r20 = responses[20]["result"];
+        REQUIRE_FALSE(r20.is_null());
+        REQUIRE(r20["uri"].get<std::string>().find("User.slx") != std::string::npos);
+    }
+
+    SECTION("Case 15.3: Same-Package Wildcard Import Resolution") {
+        std::stringstream in;
+        std::stringstream out;
+        JsonRpcTransport transport(out, in);
+
+        std::string manifest_code = R"({
+  "project": "demo_proj",
+  "version": "0.1.0",
+  "dependencies": [
+    { "type": "source", "path": "Alpha.slx" }
+  ]
+})";
+        std::ofstream j(test_dir + "/models/solix.json");
+        j << manifest_code;
+        j.close();
+
+        std::string alpha_code = "package pkg.demo;\npublic class Alpha {}\n";
+        std::ofstream a(test_dir + "/models/Alpha.slx");
+        a << alpha_code;
+        a.close();
+
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 1},
+            {"method", "initialize"},
+            {"params", {{"rootUri", "file://" + test_dir + "/models"}, {"capabilities", nlohmann::json::object()}}}
+        });
+
+        std::string beta_code = "package pkg.demo;\nimport pkg.demo.*;\npublic class Beta { public Alpha a; }\n";
+        std::string file_uri = "file://" + test_dir + "/models/Beta.slx";
+
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", file_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", beta_code}
+            }}
+        });
+
+        transport.write_message({{"jsonrpc", "2.0"}, {"id", 99}, {"method", "shutdown"}, {"params", nlohmann::json::object()}});
+        transport.send_notification("exit", nlohmann::json::object());
+
+        LspServer server(in, out);
+        REQUIRE(server.run() == 0);
+
+        JsonRpcTransport reader(out, in);
+        std::vector<nlohmann::json> diags;
+        while (auto msg = reader.read_message()) {
+            if (msg.value().value("method", "") == "textDocument/publishDiagnostics") {
+                diags.push_back(msg.value());
+            }
+        }
+
+        REQUIRE_FALSE(diags.empty());
+        auto d_list = diags[0]["params"]["diagnostics"];
+        REQUIRE(d_list.empty());
+    }
+
+    SECTION("Case 15.4: Package Statement Hover and Definition Navigation") {
+        std::stringstream in;
+        std::stringstream out;
+        JsonRpcTransport transport(out, in);
+
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 1},
+            {"method", "initialize"},
+            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+        });
+
+        std::string svc_code = "package my.service;\npublic class Svc {}\n";
+        std::string file_uri = "file://" + test_dir + "/Svc.slx";
+
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", file_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", svc_code}
+            }}
+        });
+
+        // Hover on "package my.service" at line 0, char 12
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 30},
+            {"method", "textDocument/hover"},
+            {"params", {{"textDocument", {{"uri", file_uri}}}, {"position", {{"line", 0}, {"character", 12}}}}}
+        });
+
+        // Go to definition on package statement at line 0, char 12
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 31},
+            {"method", "textDocument/definition"},
+            {"params", {{"textDocument", {{"uri", file_uri}}}, {"position", {{"line", 0}, {"character", 12}}}}}
+        });
+
+        transport.write_message({{"jsonrpc", "2.0"}, {"id", 99}, {"method", "shutdown"}, {"params", nlohmann::json::object()}});
+        transport.send_notification("exit", nlohmann::json::object());
+
+        LspServer server(in, out);
+        REQUIRE(server.run() == 0);
+
+        JsonRpcTransport reader(out, in);
+        std::map<int, nlohmann::json> responses;
+        while (auto msg = reader.read_message()) {
+            if (msg.value().contains("id") && msg.value()["id"].is_number()) {
+                responses[msg.value()["id"].get<int>()] = msg.value();
+            }
+        }
+
+        REQUIRE(responses.count(30));
+        auto r30 = responses[30]["result"];
+        REQUIRE_FALSE(r30.is_null());
+        std::string md30 = r30["contents"]["value"];
+        REQUIRE(md30.find("package my.service") != std::string::npos);
+
+        REQUIRE(responses.count(31));
+        auto r31 = responses[31]["result"];
+        REQUIRE_FALSE(r31.is_null());
+        REQUIRE(r31["range"]["start"]["line"].get<int>() == 0);
+    }
+
+    SECTION("Case 15.5: Package Autocompletion Rejection Outside Package Keyword Context") {
+        std::stringstream in;
+        std::stringstream out;
+        JsonRpcTransport transport(out, in);
+
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 1},
+            {"method", "initialize"},
+            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+        });
+
+        std::string src = "package foo;\npublic class Cls {\n    public void test() {\n        \n    }\n}\n";
+        std::string file_uri = "file://" + test_dir + "/Cls.slx";
+
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", file_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", src}
+            }}
+        });
+
+        // Request completion inside test() at line 3, char 8
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 40},
+            {"method", "textDocument/completion"},
+            {"params", {{"textDocument", {{"uri", file_uri}}}, {"position", {{"line", 3}, {"character", 8}}}}}
+        });
+
+        transport.write_message({{"jsonrpc", "2.0"}, {"id", 99}, {"method", "shutdown"}, {"params", nlohmann::json::object()}});
+        transport.send_notification("exit", nlohmann::json::object());
+
+        LspServer server(in, out);
+        REQUIRE(server.run() == 0);
+
+        JsonRpcTransport reader(out, in);
+        std::map<int, nlohmann::json> responses;
+        while (auto msg = reader.read_message()) {
+            if (msg.value().contains("id") && msg.value()["id"].is_number()) {
+                responses[msg.value()["id"].get<int>()] = msg.value();
+            }
+        }
+
+        REQUIRE(responses.count(40));
+        auto comp_items = responses[40]["result"]["items"];
+        for (const auto& item : comp_items) {
+            REQUIRE(item["label"].get<std::string>() != "net.http");
+        }
+    }
+
+    std::filesystem::remove_all(test_dir);
+}
+

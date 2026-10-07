@@ -758,32 +758,32 @@ This document is the master test specification for the Solix CLI command suite (
  
 ### Positive Test Scenarios
  
-#### Case 15.1: Package Declaration Autocompletion Inferred from Directory Path [NOT IMPLEMENTED]
+#### Case 15.1: Package Declaration Autocompletion Inferred from Directory Path [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Setup**: Project containing files at `src/net/http/Client.slx`.
 - **Input**: `textDocument/completion` on `package ` at line 0 in `src/net/http/Client.slx`.
 - **Expected**: Suggests package names inferred from directory path (e.g. `net.http`) and known project packages.
  
-#### Case 15.2: Same-Package Explicit Import Resolution [NOT IMPLEMENTED]
+#### Case 15.2: Same-Package Explicit Import Resolution [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Setup**: Two files sharing package `app.models`: `User.slx` declaring `public class User` and `Account.slx` referencing `User` via `import app.models.User;`.
 - **Input**: `textDocument/didOpen` on `Account.slx` and `textDocument/definition` on `User`.
 - **Expected**: Diagnostics list is empty; definition jumps across files to `User.slx`.
  
-#### Case 15.3: Same-Package Wildcard Import Resolution [NOT IMPLEMENTED]
+#### Case 15.3: Same-Package Wildcard Import Resolution [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Setup**: Two files in package `pkg.demo`: `Alpha.slx` and `Beta.slx` importing `import pkg.demo.*;`.
 - **Input**: `textDocument/didOpen` on `Beta.slx` referencing `Alpha`.
 - **Expected**: Diagnostics list is empty; compiles and binds cleanly.
  
-#### Case 15.4: Package Statement Hover and Definition Navigation [NOT IMPLEMENTED]
+#### Case 15.4: Package Statement Hover and Definition Navigation [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Input**: `textDocument/hover` and `textDocument/definition` on `package my.service;`.
 - **Expected**: Hover shows `package my.service`, definition targets the package statement span.
  
 ### Negative Test Scenarios
  
-#### Case 15.5: Package Autocompletion Rejection Outside Package Keyword Context [NOT IMPLEMENTED]
+#### Case 15.5: Package Autocompletion Rejection Outside Package Keyword Context [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Input**: `textDocument/completion` in method body or class scope.
 - **Expected**: Does not offer package name completions in place of general identifiers or types.
