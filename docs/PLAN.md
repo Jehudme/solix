@@ -2375,18 +2375,18 @@ Create, bundle, and document the official Solix VS Code extension providing rich
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `core/src/processes/lexer.cpp`, `lsp/src/server.cpp`, `editors/vscode/syntaxes/solix.tmLanguage.json`, `tests/commands/TESTS.md`, `tests/commands/test_lsp_command.cpp`, `docs/spec/lsp/`
-- **Status**: - [ ] In Progress
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Resolve the critical dangling pointer bug in `Token.source` that breaks Go-to-Definition across files in VS Code, and update the TextMate grammar (`solix.tmLanguage.json`) to highlight all Solix keywords (`implements`, `extends`, `operator`, `assert`, `exit`, `weak`, `instanceof`, `sizeof`), properly styling class identifiers distinctly from general keywords.
 
 ### Action Items
-- [ ] Fix Lexer source pointer stability in `core/src/processes/lexer.cpp` (bind `Token.source` to permanent storage or map source names safely).
-- [ ] Update `make_location_from_node` in `lsp/src/server.cpp` to reliably resolve source file paths even across multiple files.
-- [ ] Expand TextMate syntax grammar (`editors/vscode/syntaxes/solix.tmLanguage.json`) with missing keywords and dedicated `entity.name.type.class.solix` coloring for classes after `class` / `interface` / `extends` / `implements`.
-- [ ] Update `tests/commands/TESTS.md` with new test scenarios for multi-file definition resolution and TextMate grammar completeness.
-- [ ] Add unit tests in `tests/commands/test_lsp_command.cpp` verifying multi-file Go-to-Definition.
-- [ ] Document grammar and location resolution specifications in `docs/spec/lsp/protocol.md`.
+- [x] Fix Lexer source pointer stability in `core/src/processes/lexer.cpp` (bind `Token.source` to permanent storage or map source names safely).
+- [x] Update `make_location_from_node` in `lsp/src/server.cpp` to reliably resolve source file paths even across multiple files.
+- [x] Expand TextMate syntax grammar (`editors/vscode/syntaxes/solix.tmLanguage.json`) with missing keywords and dedicated `entity.name.type.class.solix` coloring for classes after `class` / `interface` / `extends` / `implements`.
+- [x] Update `tests/commands/TESTS.md` with new test scenarios for multi-file definition resolution and TextMate grammar completeness.
+- [x] Add unit tests in `tests/commands/test_lsp_command.cpp` verifying multi-file Go-to-Definition.
+- [x] Document grammar and location resolution specifications in `docs/spec/lsp/protocol.md`.
 
 ---
 
