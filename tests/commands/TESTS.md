@@ -542,12 +542,12 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 9.1: Version Subcommand [NOT IMPLEMENTED]
+#### Case 9.1: Version Subcommand [IMPLEMENTED]
 - **Command**: `solix version`
 - **Setup**: None.
 - **Expected**: Exits 0; outputs Solix version string (e.g. `Solix version 0.1.0`).
 
-#### Case 9.2: Version Top-Level Flag (`--version` / `-v`) [NOT IMPLEMENTED]
+#### Case 9.2: Version Top-Level Flag (`--version` / `-v`) [IMPLEMENTED]
 - **Command**: `solix --version` and `solix -v`
 - **Setup**: None.
 - **Expected**: Exits 0; outputs Solix version string.
