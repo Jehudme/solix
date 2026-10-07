@@ -62,7 +62,7 @@
 | **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, `StreamReader`, `StreamWriter`, `BufferedReader`) & Object-Oriented `Path` (`operator/`) | `P1 High` | `solixlib/io`, `solixlib/native`, `docs`, `tests` | - [x] Complete |
 | **Phase 33.1** | Standard Library: Documentation Schema Standardization & Developer Guides (Operator Overloading & Native C++ Interop Guides) | `P2 Medium` | `docs/spec/solixlib`, `docs/guide` | - [ ] Planned |
 | **Phase 34** | Standard Library: `solix.system.Environment` (OS, Env, Subprocesses) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
-| **Phase 35** | Core Compiler & Runtime: Language Intrinsics (`assert`, `exit`, Hardcoded Built-ins) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 35** | Core Compiler & Runtime: Language Intrinsics (`assert`, `exit`, Hardcoded Built-ins) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 36** | Standard Library: `solix.crypto` (Base64, Hex, SHA-256, MD5) | `P3 Low` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 37** | Standard Library: `solix.net` (TCP & UDP Sockets, Lightweight `HttpClient`) | `P3 Low` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 
@@ -1970,7 +1970,7 @@ Provide access to host runtime environment variables, command-line arguments, op
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `core/src/processes/lexer.cpp`, `core/src/processes/parser.cpp`, `core/src/processes/binder.cpp`, `core/src/processes/assembler.cpp`, `core/src/runtime.cpp`, `tests/statements/expressions/test_intrinsics.cpp`, `docs/spec/statements/intrinsics.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Implement built-in hardcoded language expressions in the Solix core compiler and VM (modeled similarly to `instanceof` and `sizeof`), specifically `assert(condition, message)` and `exit(code)`. Enable zero-dependency language-level assertions that throw `AssertionError` (or abort) and immediate program termination without requiring library imports.
@@ -1999,11 +1999,11 @@ Implement built-in hardcoded language expressions in the Solix core compiler and
   - `docs/spec/statements/intrinsics.md`: Specification of `assert` and `exit` keywords, bytecode semantics, and compilation rules.
 
 ### Action Items
-- [ ] Define test specification in `tests/statements/TESTS.md`.
-- [ ] Add `assert` and `exit` tokens in `core/src/utilities/token.hpp` and lexer.
-- [ ] Implement AST nodes, parser rules, binder validation, assembler bytecode, and VM runtime dispatch.
-- [ ] Implement Catch2 unit tests in `tests/statements/expressions/test_intrinsics.cpp`.
-- [ ] Author `docs/spec/statements/intrinsics.md`.
+- [x] Define test specification in `tests/statements/TESTS.md`.
+- [x] Add `assert` and `exit` tokens in `core/src/utilities/token.hpp` and lexer.
+- [x] Implement AST nodes, parser rules, binder validation, assembler bytecode, and VM runtime dispatch.
+- [x] Implement Catch2 unit tests in `tests/statements/expressions/test_intrinsics.cpp`.
+- [x] Author `docs/spec/statements/intrinsics.md`.
 
 ---
 
