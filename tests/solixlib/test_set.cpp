@@ -155,7 +155,7 @@ TEST_CASE("Standard Library - solix.collections.Set", "[solixlib][collections][s
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
             import solix.collections.TreeSet;
-            import solix.collections.TreeSetIterator;
+            import solix.collections.IIterator;
             import solix.core.String;
 
             class Main {
@@ -177,7 +177,7 @@ TEST_CASE("Standard Library - solix.collections.Set", "[solixlib][collections][s
                     if (tree.last() != 50) return 4;
 
                     // In-order iteration must produce 10, 20, 30, 40, 50
-                    TreeSetIterator<int32> it = tree.iterator();
+                    IIterator<int32> it = tree.iterator();
                     int32 expected = 10;
                     while (it.has_next()) {
                         int32 item = it.next();
@@ -276,6 +276,69 @@ TEST_CASE("Standard Library - solix.collections.Set", "[solixlib][collections][s
             }
         )";
 
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
+
+    SECTION("Case 10.7: Generic set interface polymorphism (ISet<T>)") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.collections.ISet;
+            import solix.collections.HashSet;
+            import solix.collections.TreeSet;
+
+            class Main {
+                private static int32 test_set_contract(ISet<int32> set) {
+                    set.add(10);
+                    set.add(20);
+                    set.add(30);
+
+                    if (set.size() != 3) return 1;
+                    if (!set.contains(20)) return 2;
+
+                    bool added = set.add(20);
+                    if (added) return 3;
+
+                    bool removed = set.remove(20);
+                    if (!removed) return 4;
+                    if (set.size() != 2) return 5;
+                    if (set.contains(20)) return 6;
+
+                    set.clear();
+                    if (!set.is_empty()) return 7;
+                    if (set.size() != 0) return 8;
+
+                    return 0;
+                }
+
+                public static int32 main() {
+                    // Test polymorphic dispatch to HashSet
+                    HashSet<int32> hs = new HashSet<int32>();
+                    int32 res1 = test_set_contract(hs);
+                    if (res1 != 0) return res1;
+
+                    // Test polymorphic dispatch to TreeSet
+                    TreeSet<int32> ts = new TreeSet<int32>([](int32 a, int32 b) => a - b);
+                    int32 res2 = test_set_contract(ts);
+                    if (res2 != 0) return 10 + res2;
+
+                    // Test cross-set algebra: HashSet union_with TreeSet via ISet<T>
+                    HashSet<int32> s1 = new HashSet<int32>();
+                    s1.add(1);
+                    s1.add(2);
+
+                    TreeSet<int32> s2 = new TreeSet<int32>([](int32 a, int32 b) => a - b);
+                    s2.add(2);
+                    s2.add(3);
+
+                    s1.union_with(s2);
+                    if (s1.size() != 3) return 20;
+                    if (!s1.contains(1) || !s1.contains(2) || !s1.contains(3)) return 21;
+
+                    return 0;
+                }
+            }
+        )";
+        assert_compile_sources_success(sources);
         REQUIRE(run_solixlib_sources(sources) == 0);
     }
 }

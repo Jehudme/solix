@@ -107,7 +107,7 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 7.5 [IMPLEMENTED]**: `IDeque` contract double-ended queue operations (`add_first`, `add_last`, `remove_first`, `remove_last`, `peek_first`, `peek_last`) and string representation (`tests/solixlib/test_collections_core.cpp`).
 - [x] **Case 7.6 [IMPLEMENTED]**: Negative: Calling `next()` on exhausted iterator throws `NoSuchElementException` (`tests/solixlib/test_collections_core.cpp`).
 - [x] **Case 7.7 [IMPLEMENTED]**: Unified `Interfaces.slx` collection contracts and internal node encapsulation (`LinkedListNode`, `HashMapEntry`, `TreeMapNode`) (`tests/solixlib/test_collections_core.cpp`).
-- [ ] **Case 7.8 [NOT IMPLEMENTED]**: Generic collection hierarchy and polymorphic interface dispatch (`IList<T>`, `ICollection<T>`, `IIterable<T>`, `IIterator<T>`) (`tests/solixlib/test_collections_core.cpp`).
+- [x] **Case 7.8 [IMPLEMENTED]**: Generic collection hierarchy and polymorphic interface dispatch (`IList<T>`, `ICollection<T>`, `IIterable<T>`, `IIterator<T>`) (`tests/solixlib/test_collections_core.cpp`).
 
 ---
 
@@ -132,7 +132,7 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 9.5 [IMPLEMENTED]**: `TreeMap<K, V>` node removal (leaf, internal, root), dictionary clearing, `for_each` lambda iteration, and membership queries (`tests/solixlib/test_map.cpp`).
 - [x] **Case 9.6 [IMPLEMENTED]**: Negative: `HashMap<K, V>.get()` with missing key throws `KeyNotFoundException` (`tests/solixlib/test_map.cpp`).
 - [x] **Case 9.7 [IMPLEMENTED]**: Negative: `TreeMap<K, V>.get()` with missing key throws `KeyNotFoundException` and `first_key()` on empty map throws `NoSuchElementException` (`tests/solixlib/test_map.cpp`).
-- [ ] **Case 9.8 [NOT IMPLEMENTED]**: Generic associative map interface polymorphism (`IMap<K, V>`) dispatching across `HashMap<K, V>` and `TreeMap<K, V>` (`tests/solixlib/test_map.cpp`).
+- [x] **Case 9.8 [IMPLEMENTED]**: Generic associative map interface polymorphism (`IMap<K, V>`) dispatching across `HashMap<K, V>` and `TreeMap<K, V>` (`tests/solixlib/test_map.cpp`).
 
 ---
 
@@ -144,7 +144,7 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 10.4 [IMPLEMENTED]**: `TreeSet<T>` ordered uniqueness, boundary lookups (`first()`, `last()`), in-order iterator traversal, and `for_each` lambda iteration (`tests/solixlib/test_set.cpp`).
 - [x] **Case 10.5 [IMPLEMENTED]**: `TreeSet<T>` node removal, duplicate rejections, and `union_with` (`tests/solixlib/test_set.cpp`).
 - [x] **Case 10.6 [IMPLEMENTED]**: Negative: `TreeSet<T>` `first()` and `last()` on empty set throw `NoSuchElementException` (`tests/solixlib/test_set.cpp`).
-- [ ] **Case 10.7 [NOT IMPLEMENTED]**: Generic set interface polymorphism (`ISet<T>`) dispatching across `HashSet<T>` and `TreeSet<T>` (`tests/solixlib/test_set.cpp`).
+- [x] **Case 10.7 [IMPLEMENTED]**: Generic set interface polymorphism (`ISet<T>`) dispatching across `HashSet<T>` and `TreeSet<T>` (`tests/solixlib/test_set.cpp`).
 
 ---
 

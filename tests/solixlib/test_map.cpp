@@ -277,4 +277,52 @@ TEST_CASE("Standard Library - solix.collections.Map", "[solixlib][collections][m
 
         REQUIRE(run_solixlib_sources(sources) == 0);
     }
+
+    SECTION("Case 9.8: Generic associative map interface polymorphism (IMap<K, V>)") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.collections.IMap;
+            import solix.collections.HashMap;
+            import solix.collections.TreeMap;
+
+            class Main {
+                private static int32 test_map_contract(IMap<int32, int32> map) {
+                    map.put(1, 100);
+                    map.put(2, 200);
+                    map.put(3, 300);
+
+                    if (map.size() != 3) return 1;
+                    if (!map.contains_key(2)) return 2;
+                    if (map.get(2) != 200) return 3;
+
+                    int32 removed = map.remove(2);
+                    if (removed != 200) return 4;
+                    if (map.size() != 2) return 5;
+                    if (map.contains_key(2)) return 6;
+
+                    map.clear();
+                    if (!map.is_empty()) return 7;
+                    if (map.size() != 0) return 8;
+
+                    return 0;
+                }
+
+                public static int32 main() {
+                    // Test polymorphic dispatch to HashMap
+                    HashMap<int32, int32> hm = new HashMap<int32, int32>();
+                    int32 res1 = test_map_contract(hm);
+                    if (res1 != 0) return res1;
+
+                    // Test polymorphic dispatch to TreeMap
+                    TreeMap<int32, int32> tm = new TreeMap<int32, int32>([](int32 a, int32 b) => a - b);
+                    int32 res2 = test_map_contract(tm);
+                    if (res2 != 0) return 10 + res2;
+
+                    return 0;
+                }
+            }
+        )";
+        assert_compile_sources_success(sources);
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
 }
