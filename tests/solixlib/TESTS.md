@@ -183,3 +183,13 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 12.7 [IMPLEMENTED]**: Negative: `File.delete()` on non-existent file throws `FileNotFoundException` (`tests/solixlib/test_filesystem.cpp`).
 - [x] **Case 12.8 [IMPLEMENTED]**: Negative: `Directory.delete()` on non-empty directory without recursive flag throws `IOException` (`tests/solixlib/test_filesystem.cpp`).
 - [x] **Case 12.9 [IMPLEMENTED]**: Negative: `Directory.list_files()` on non-existent directory throws `DirectoryNotFoundException` (`tests/solixlib/test_filesystem.cpp`).
+
+---
+
+## 13. Streams & Object-Oriented Path (`solix.io`: `IStream`, `FileStream`, `MemoryStream`, `BufferedReader`, `StreamReader`, `StreamWriter`, `Path /`)
+
+- [ ] **Case 13.1 [NOT IMPLEMENTED]**: `Path` object-oriented operations and division operator `operator/(Path)` and `operator/(String)` (`tests/solixlib/test_streams.cpp`).
+- [ ] **Case 13.2 [NOT IMPLEMENTED]**: `MemoryStream` reading, writing, seeking, position, length, and `to_array()` (`tests/solixlib/test_streams.cpp`).
+- [ ] **Case 13.3 [NOT IMPLEMENTED]**: `FileStream` reading, writing, seeking, position, and lifecycle (`tests/solixlib/test_streams.cpp`).
+- [ ] **Case 13.4 [NOT IMPLEMENTED]**: `BufferedReader` line-by-line reading without OOM memory hazards (`tests/solixlib/test_streams.cpp`).
+- [ ] **Case 13.5 [NOT IMPLEMENTED]**: `StreamReader` and `StreamWriter` sequential text reading and writing (`tests/solixlib/test_streams.cpp`).
