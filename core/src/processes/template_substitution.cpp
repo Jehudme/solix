@@ -119,6 +119,13 @@ void TemplateSubstitutionVisitor::visit(ReturnStatement& n) {
 }
 void TemplateSubstitutionVisitor::visit(BreakStatement& n) {}
 void TemplateSubstitutionVisitor::visit(ContinueStatement& n) {}
+void TemplateSubstitutionVisitor::visit(AssertStatement& n) {
+    if (n.condition) n.condition->accept(*this);
+    if (n.message) n.message->accept(*this);
+}
+void TemplateSubstitutionVisitor::visit(ExitStatement& n) {
+    if (n.exit_code) n.exit_code->accept(*this);
+}
 void TemplateSubstitutionVisitor::visit(AliasStatement& n) {
     substitute_type(n.target_type);
 }

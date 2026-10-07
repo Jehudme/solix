@@ -337,6 +337,13 @@ std::string Assembler::disassemble() const {
       ss << "slot=" << slot << ", mask=0x" << std::hex << mask << std::dec;
       break;
     }
+    case OpCode::ASSERT: {
+      uint8_t has_msg = (pc < bcode.size()) ? bcode[pc++] : 0;
+      uint32_t line = read_u32_local(pc);
+      uint32_t col = read_u32_local(pc);
+      ss << "has_msg=" << static_cast<int>(has_msg) << ", line=" << line << ", col=" << col;
+      break;
+    }
     default:
       break;
     }
@@ -2394,5 +2401,24 @@ void Assembler::visit(ThrowStatement& n) {
         exception_cleanup_patches.back().push_back(bytecode().size());
     }
     emit_int32(0xFFFFFFFF); // Will be patched by the containing BlockStatement to point to its cleanup segment!
+}
+
+void Assembler::visit(AssertStatement& n) {
+    compile_expression(n.condition.get());
+    if (n.message) {
+        compile_expression(n.message.get());
+        emit_byte(static_cast<uint8_t>(OpCode::ASSERT));
+        emit_byte(1);
+    } else {
+        emit_byte(static_cast<uint8_t>(OpCode::ASSERT));
+        emit_byte(0);
+    }
+    emit_int32(n.line);
+    emit_int32(n.column);
+}
+
+void Assembler::visit(ExitStatement& n) {
+    compile_expression(n.exit_code.get());
+    emit_byte(static_cast<uint8_t>(OpCode::EXIT));
 }
 } // namespace solix

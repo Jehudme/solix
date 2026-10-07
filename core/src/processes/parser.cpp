@@ -165,6 +165,8 @@ public:
   std::unique_ptr<Node> parse_switch_statement();
   std::unique_ptr<Node> parse_try_statement();
   std::unique_ptr<Node> parse_throw_statement();
+  std::unique_ptr<Node> parse_assert_statement();
+  std::unique_ptr<Node> parse_exit_statement();
   std::unique_ptr<Node> parse_expression_statement();
   std::unique_ptr<Node> parse_variable_declaration(bool is_const, bool is_ref);
 
@@ -879,6 +881,10 @@ std::unique_ptr<Node> ParserState::parse_statement() {
     return parse_break_statement();
   if (match(TokenType::KEYWORD_CONTINUE))
     return parse_continue_statement();
+  if (match(TokenType::KEYWORD_ASSERT))
+    return parse_assert_statement();
+  if (match(TokenType::KEYWORD_EXIT))
+    return parse_exit_statement();
 
   if (match(TokenType::KEYWORD_CONST)) {
     return parse_variable_declaration(true, false);
@@ -1923,5 +1929,37 @@ std::unique_ptr<Node> ParserState::parse_throw_statement() {
     consume(TokenType::PUNCTUATION_SEMICOLON, "Expected ';' after throw expression");
     
     return std::make_unique<ThrowStatement>(throw_tok, std::move(expr));
+}
+
+std::unique_ptr<Node> ParserState::parse_assert_statement() {
+  Token assert_tok = previous();
+  log_trace("Parsing 'assert' statement at line {}", assert_tok.line);
+
+  bool has_paren = match(TokenType::PUNCTUATION_OPEN_PAREN);
+  auto condition = parse_expression();
+  std::unique_ptr<Node> message = nullptr;
+  if (match(TokenType::PUNCTUATION_COMMA)) {
+    message = parse_expression();
+  }
+  if (has_paren) {
+    consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after assert condition");
+  }
+  consume(TokenType::PUNCTUATION_SEMICOLON, "Expected ';' after assert statement");
+
+  return std::make_unique<AssertStatement>(assert_tok, std::move(condition), std::move(message));
+}
+
+std::unique_ptr<Node> ParserState::parse_exit_statement() {
+  Token exit_tok = previous();
+  log_trace("Parsing 'exit' statement at line {}", exit_tok.line);
+
+  bool has_paren = match(TokenType::PUNCTUATION_OPEN_PAREN);
+  auto code = parse_expression();
+  if (has_paren) {
+    consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after exit code");
+  }
+  consume(TokenType::PUNCTUATION_SEMICOLON, "Expected ';' after exit statement");
+
+  return std::make_unique<ExitStatement>(exit_tok, std::move(code));
 }
 } // namespace solix

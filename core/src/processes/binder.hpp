@@ -70,6 +70,8 @@ public:
     void visit(ReturnStatement& node) override;
     void visit(BreakStatement& node) override;
     void visit(ContinueStatement& node) override;
+    void visit(AssertStatement& node) override;
+    void visit(ExitStatement& node) override;
     void visit(PackageStatement& node) override;
     void visit(AliasStatement& node) override;
     void visit(ImportStatement& node) override;

@@ -22,6 +22,7 @@ enum class NodeType {
     BLOCK, IF_STMT, FOR_STMT, WHILE_STMT, DO_WHILE_STMT, SWITCH_STMT, CASE_STMT,
     TRY_STMT, CATCH_CLAUSE, THROW_STMT,
     VAR_DECL, EXPR_STMT, RETURN_STMT, BREAK_STMT, CONTINUE_STMT,
+    ASSERT_STMT, EXIT_STMT,
 
     // Top Level
     PACKAGE_STMT, ALIAS_STMT, IMPORT_STMT, ENUM_DECL, CLASS_DECL, FIELD_DECL, CONSTRUCTOR_DECL, METHOD_DECL
@@ -566,6 +567,34 @@ struct ContinueStatement : public Node {
     void accept(NodeVisitor& v) override { v.visit(*this); }
 
     ContinueStatement(const Token& t) : Node(NodeType::CONTINUE_STMT, t) {}
+};
+
+struct AssertStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
+    std::unique_ptr<Node> condition;
+    std::unique_ptr<Node> message;
+
+    AssertStatement(const Token& t, std::unique_ptr<Node> cond, std::unique_ptr<Node> msg = nullptr)
+        : Node(NodeType::ASSERT_STMT, t), condition(std::move(cond)), message(std::move(msg)) {
+        if (condition) condition->parent = this;
+        if (message) message->parent = this;
+    }
+};
+
+struct ExitStatement : public Node {
+    std::unique_ptr<Node> clone() const override;
+
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
+    std::unique_ptr<Node> exit_code;
+
+    ExitStatement(const Token& t, std::unique_ptr<Node> code)
+        : Node(NodeType::EXIT_STMT, t), exit_code(std::move(code)) {
+        if (exit_code) exit_code->parent = this;
+    }
 };
 
 // ==========================================

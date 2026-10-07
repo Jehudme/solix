@@ -408,6 +408,8 @@ vm_dispatch:
     case 96: goto op_CALL_INTERFACE;
     case 97: goto op_DEFINE_ITABLE;
     case 98: goto op_DEC_REF_SLOT;
+    case 99: goto op_ASSERT;
+    case 100: goto op_EXIT;
     default: goto op_HALT;
   }
 #else
@@ -510,7 +512,9 @@ vm_dispatch:
       &&op_PACK_CLOSURE,
       &&op_CALL_INTERFACE,
       &&op_DEFINE_ITABLE,
-      &&op_DEC_REF_SLOT
+      &&op_DEC_REF_SLOT,
+      &&op_ASSERT,
+      &&op_EXIT
   };
 
 #define DISPATCH() goto *dispatch_table[code[program_counter++]]
@@ -1490,6 +1494,52 @@ op_DEC_REF_SLOT:
         }
       }
       DISPATCH();
+  }
+  op_ASSERT:
+  {
+      uint8_t has_msg = code[program_counter++];
+      uint32_t line_num = read_u32(bytecode, program_counter);
+      uint32_t col_num = read_u32(bytecode, program_counter);
+      uint64_t msg_val = has_msg ? POP() : 0;
+      uint64_t cond = POP();
+      if (cond == 0) {
+          std::string msg;
+          if (has_msg && msg_val > 0 && msg_val < memory.heap.size()) {
+              uint64_t char_addr = msg_val;
+              uint32_t len = static_cast<uint32_t>(memory.heap[char_addr - 1] >> 32);
+              if (len == 0 || len > 100000) {
+                  uint64_t field0 = memory.heap[msg_val];
+                  if (field0 > 0 && field0 < memory.heap.size()) {
+                      uint32_t f_len = static_cast<uint32_t>(memory.heap[field0 - 1] >> 32);
+                      if (f_len > 0 && f_len <= 100000) {
+                          char_addr = field0;
+                          len = f_len;
+                      }
+                  }
+              }
+              for (uint32_t i = 0; i < len; ++i) {
+                  msg.push_back(static_cast<char>(memory.heap[char_addr + i]));
+              }
+          }
+          std::string err = "AssertionError";
+          if (!msg.empty()) {
+              err += ": " + msg;
+          }
+          err += " (at line " + std::to_string(line_num) + ", column " + std::to_string(col_num) + ")";
+          throw std::runtime_error(err);
+      }
+      DISPATCH();
+  }
+  op_EXIT:
+  {
+      SYNC_SP();
+      uint64_t code_val = 0;
+      if (sp > stack) {
+          code_val = POP();
+          SYNC_SP();
+      }
+      exit_code = static_cast<int32_t>(code_val);
+      return;
   }
 #undef PUSH
 #undef POP

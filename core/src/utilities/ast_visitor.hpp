@@ -35,6 +35,8 @@ struct ExpressionStatement;
 struct ReturnStatement;
 struct BreakStatement;
 struct ContinueStatement;
+struct AssertStatement;
+struct ExitStatement;
 struct PackageStatement;
 struct AliasStatement;
 struct ImportStatement;
@@ -81,6 +83,8 @@ struct NodeVisitor {
     virtual void visit(ReturnStatement& node) = 0;
     virtual void visit(BreakStatement& node) = 0;
     virtual void visit(ContinueStatement& node) = 0;
+    virtual void visit(AssertStatement& node) = 0;
+    virtual void visit(ExitStatement& node) = 0;
     virtual void visit(PackageStatement& node) = 0;
     virtual void visit(AliasStatement& node) = 0;
     virtual void visit(ImportStatement& node) {}

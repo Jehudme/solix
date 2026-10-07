@@ -329,6 +329,25 @@ std::unique_ptr<Node> ContinueStatement::clone() const {
     return cloned;
 }
 
+std::unique_ptr<Node> AssertStatement::clone() const {
+    auto cloned = std::make_unique<AssertStatement>(
+        make_dummy_token(this),
+        condition ? condition->clone() : nullptr,
+        message ? message->clone() : nullptr
+    );
+    copy_children(this, cloned.get());
+    return cloned;
+}
+
+std::unique_ptr<Node> ExitStatement::clone() const {
+    auto cloned = std::make_unique<ExitStatement>(
+        make_dummy_token(this),
+        exit_code ? exit_code->clone() : nullptr
+    );
+    copy_children(this, cloned.get());
+    return cloned;
+}
+
 // ==========================================
 // Top Level Declarations
 // ==========================================

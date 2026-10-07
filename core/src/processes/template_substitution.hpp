@@ -48,6 +48,8 @@ public:
     void visit(ReturnStatement& n) override;
     void visit(BreakStatement& n) override;
     void visit(ContinueStatement& n) override;
+    void visit(AssertStatement& n) override;
+    void visit(ExitStatement& n) override;
     void visit(PackageStatement& n) override {}
     void visit(AliasStatement& n) override;
 

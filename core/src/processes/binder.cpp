@@ -3861,6 +3861,31 @@ void Binder::visit(ContinueStatement &n) {
   }
 }
 
+void Binder::visit(AssertStatement &n) {
+  if (current_pass == BinderPass::BIND_EXECUTION) {
+    TypeInfo condition_type = evaluate_expression(n.condition.get());
+    if (condition_type.name != "bool" || condition_type.array_depth > 0) {
+      record_error(&n, fmt::format("Assert condition must be of type 'bool', got '{}'", condition_type.to_string()));
+    }
+    if (n.message) {
+      evaluate_expression(n.message.get());
+    }
+  }
+}
+
+void Binder::visit(ExitStatement &n) {
+  if (current_pass == BinderPass::BIND_EXECUTION) {
+    TypeInfo code_type = evaluate_expression(n.exit_code.get());
+    if (code_type.array_depth > 0 ||
+        (code_type.name != "int32" && code_type.name != "int64" &&
+         code_type.name != "int16" && code_type.name != "int8" &&
+         code_type.name != "uint32" && code_type.name != "uint64" &&
+         code_type.name != "uint16" && code_type.name != "uint8")) {
+      record_error(&n, fmt::format("Exit code must be an integer type, got '{}'", code_type.to_string()));
+    }
+  }
+}
+
 void Binder::visit(PackageStatement &n) {
   if (current_pass == BinderPass::REGISTER_GLOBALS) {
     current_package = n.package_name + ".";
