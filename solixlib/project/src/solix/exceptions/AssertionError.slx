@@ -1,9 +1,0 @@
-package solix.exceptions;
-
-public class AssertionError extends Exception {
-    public AssertionError() : super("") {}
-
-    public AssertionError(char[] message) : super(message) {}
-
-    public AssertionError(char[] message, Exception cause) : super(message, cause) {}
-}

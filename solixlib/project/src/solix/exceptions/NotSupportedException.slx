@@ -1,9 +1,0 @@
-package solix.exceptions;
-
-public class NotSupportedException extends RuntimeException {
-    public NotSupportedException() : super("") {}
-
-    public NotSupportedException(char[] message) : super(message) {}
-
-    public NotSupportedException(char[] message, Exception cause) : super(message, cause) {}
-}

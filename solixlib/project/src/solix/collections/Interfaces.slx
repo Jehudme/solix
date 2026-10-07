@@ -1,0 +1,73 @@
+package solix.collections;
+
+import solix.core.IStringable;
+import solix.core.String;
+
+public interface IIterator {
+    bool has_next();
+    IStringable next();
+}
+
+public interface IIterable {
+    IIterator iterator();
+}
+
+public interface IReadOnlyCollection extends IIterable, IStringable {
+    int32 size();
+    bool is_empty();
+    bool contains(IStringable item);
+    String to_string();
+}
+
+public interface ICollection extends IIterable, IStringable {
+    int32 size();
+    bool is_empty();
+    bool contains(IStringable item);
+    void clear();
+    IStringable[] to_array();
+    String to_string();
+}
+
+public interface IList extends ICollection {
+    IStringable get(int32 index);
+    void set(int32 index, IStringable item);
+    void add(IStringable item);
+    void insert(int32 index, IStringable item);
+    bool remove(IStringable item);
+    IStringable remove_at(int32 index);
+    int32 index_of(IStringable item);
+}
+
+public interface IDeque extends ICollection {
+    void add_first(IStringable item);
+    void add_last(IStringable item);
+    IStringable remove_first();
+    IStringable remove_last();
+    IStringable peek_first();
+    IStringable peek_last();
+}
+
+public interface ISet extends ICollection {
+    bool add(IStringable item);
+    bool remove(IStringable item);
+    void union_with(ICollection other);
+    void intersect_with(ICollection other);
+    void difference_with(ICollection other);
+    bool is_subset_of(ICollection other);
+    bool is_superset_of(ICollection other);
+}
+
+public interface IMap extends IStringable {
+    int32 size();
+    bool is_empty();
+    void clear();
+    bool contains_key(IStringable key);
+    bool contains_value(IStringable value);
+    IStringable get(IStringable key);
+    IStringable get_or_default(IStringable key, IStringable default_val);
+    void put(IStringable key, IStringable value);
+    IStringable remove(IStringable key);
+    List<IStringable> keys();
+    List<IStringable> values();
+    List<IStringable> entries();
+}

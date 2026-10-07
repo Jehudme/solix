@@ -5,6 +5,18 @@ import solix.core.String;
 import solix.exceptions.IndexOutOfBoundsException;
 import solix.exceptions.NoSuchElementException;
 
+class LinkedListNode<T> {
+    public T value;
+    public LinkedListNode<T> prev;
+    public LinkedListNode<T> next;
+
+    public LinkedListNode(T val) {
+        this.value = val;
+        this.prev = null;
+        this.next = null;
+    }
+}
+
 public class LinkedListIterator<T> {
     private LinkedListNode<T> _current;
 

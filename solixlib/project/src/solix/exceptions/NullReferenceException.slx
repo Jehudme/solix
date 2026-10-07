@@ -1,9 +1,0 @@
-package solix.exceptions;
-
-public class NullReferenceException extends RuntimeException {
-    public NullReferenceException() : super("") {}
-
-    public NullReferenceException(char[] message) : super(message) {}
-
-    public NullReferenceException(char[] message, Exception cause) : super(message, cause) {}
-}

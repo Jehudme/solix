@@ -87,119 +87,15 @@
     },
     {
       "type": "source",
-      "path": "src/solix/exceptions/Exception.slx"
+      "path": "src/solix/exceptions/Exceptions.slx"
     },
     {
       "type": "source",
-      "path": "src/solix/exceptions/RuntimeException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/IllegalArgumentException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/ArgumentNullException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/ArgumentOutOfRangeException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/IndexOutOfBoundsException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/NullReferenceException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/ArithmeticException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/DivideByZeroException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/OverflowException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/InvalidOperationException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/FormatException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/NotSupportedException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/TimeoutException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/NoSuchElementException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/KeyNotFoundException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/IOException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/FileNotFoundException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/DirectoryNotFoundException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/SocketException.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/exceptions/AssertionError.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/collections/IIterator.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/collections/IIterable.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/collections/IReadOnlyCollection.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/collections/ICollection.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/collections/IList.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/collections/IDeque.slx"
+      "path": "src/solix/collections/Interfaces.slx"
     },
     {
       "type": "source",
       "path": "src/solix/collections/Collections.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/collections/LinkedListNode.slx"
     },
     {
       "type": "source",
@@ -219,27 +115,11 @@
     },
     {
       "type": "source",
-      "path": "src/solix/collections/IMap.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/collections/HashMapEntry.slx"
-    },
-    {
-      "type": "source",
       "path": "src/solix/collections/HashMap.slx"
     },
     {
       "type": "source",
-      "path": "src/solix/collections/TreeMapNode.slx"
-    },
-    {
-      "type": "source",
       "path": "src/solix/collections/TreeMap.slx"
-    },
-    {
-      "type": "source",
-      "path": "src/solix/collections/ISet.slx"
     },
     {
       "type": "source",

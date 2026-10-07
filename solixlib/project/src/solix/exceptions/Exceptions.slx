@@ -1,0 +1,260 @@
+package solix.exceptions;
+
+public class Exception {
+    public char[] message;
+    public Exception cause;
+
+    public Exception() {
+        this.message = "";
+        this.cause = null;
+    }
+
+    public Exception(char[] message) {
+        this.message = message;
+        this.cause = null;
+    }
+
+    public Exception(char[] message, Exception cause) {
+        this.message = message;
+        this.cause = cause;
+    }
+
+    public char[] get_message() {
+        return this.message;
+    }
+
+    public Exception get_cause() {
+        return this.cause;
+    }
+
+    public char[] to_string() {
+        return this.message;
+    }
+}
+
+public class RuntimeException extends Exception {
+    public RuntimeException() : super("") {}
+    public RuntimeException(char[] message) : super(message) {}
+    public RuntimeException(char[] message, Exception cause) : super(message, cause) {}
+}
+
+public class IllegalArgumentException extends RuntimeException {
+    public IllegalArgumentException() : super("") {}
+    public IllegalArgumentException(char[] message) : super(message) {}
+    public IllegalArgumentException(char[] param_name, char[] message) : super(message) {}
+    public IllegalArgumentException(char[] message, Exception cause) : super(message, cause) {}
+}
+
+public class ArgumentNullException extends IllegalArgumentException {
+    public char[] param_name;
+
+    public ArgumentNullException() : super("") {
+        this.param_name = "";
+    }
+
+    public ArgumentNullException(char[] param_name) : super(param_name) {
+        this.param_name = param_name;
+    }
+
+    public ArgumentNullException(char[] param_name, char[] message) : super(message) {
+        this.param_name = param_name;
+    }
+
+    public char[] get_param_name() {
+        return this.param_name;
+    }
+}
+
+public class ArgumentOutOfRangeException extends IllegalArgumentException {
+    public char[] param_name;
+
+    public ArgumentOutOfRangeException() : super("") {
+        this.param_name = "";
+    }
+
+    public ArgumentOutOfRangeException(char[] param_name) : super(param_name) {
+        this.param_name = param_name;
+    }
+
+    public ArgumentOutOfRangeException(char[] param_name, char[] message) : super(message) {
+        this.param_name = param_name;
+    }
+
+    public char[] get_param_name() {
+        return this.param_name;
+    }
+}
+
+public class IndexOutOfBoundsException extends RuntimeException {
+    public int32 index;
+    public int32 lower_bound;
+    public int32 upper_bound;
+
+    public IndexOutOfBoundsException() : super("") {
+        this.index = 0;
+        this.lower_bound = 0;
+        this.upper_bound = 0;
+    }
+
+    public IndexOutOfBoundsException(char[] message) : super(message) {
+        this.index = 0;
+        this.lower_bound = 0;
+        this.upper_bound = 0;
+    }
+
+    public IndexOutOfBoundsException(int32 index, int32 lower_bound, int32 upper_bound) : super("") {
+        this.index = index;
+        this.lower_bound = lower_bound;
+        this.upper_bound = upper_bound;
+    }
+
+    public IndexOutOfBoundsException(char[] message, int32 index, int32 lower_bound, int32 upper_bound) : super(message) {
+        this.index = index;
+        this.lower_bound = lower_bound;
+        this.upper_bound = upper_bound;
+    }
+
+    public int32 get_index() {
+        return this.index;
+    }
+
+    public int32 get_lower_bound() {
+        return this.lower_bound;
+    }
+
+    public int32 get_upper_bound() {
+        return this.upper_bound;
+    }
+}
+
+public class NullReferenceException extends RuntimeException {
+    public NullReferenceException() : super("") {}
+    public NullReferenceException(char[] message) : super(message) {}
+    public NullReferenceException(char[] message, Exception cause) : super(message, cause) {}
+}
+
+public class InvalidOperationException extends RuntimeException {
+    public InvalidOperationException() : super("") {}
+    public InvalidOperationException(char[] message) : super(message) {}
+    public InvalidOperationException(char[] message, Exception cause) : super(message, cause) {}
+}
+
+public class NotSupportedException extends RuntimeException {
+    public NotSupportedException() : super("") {}
+    public NotSupportedException(char[] message) : super(message) {}
+    public NotSupportedException(char[] message, Exception cause) : super(message, cause) {}
+}
+
+public class KeyNotFoundException extends RuntimeException {
+    public KeyNotFoundException() : super("") {}
+    public KeyNotFoundException(char[] message) : super(message) {}
+    public KeyNotFoundException(char[] message, Exception cause) : super(message, cause) {}
+}
+
+public class NoSuchElementException extends RuntimeException {
+    public NoSuchElementException() : super("") {}
+    public NoSuchElementException(char[] message) : super(message) {}
+    public NoSuchElementException(char[] message, Exception cause) : super(message, cause) {}
+}
+
+public class ArithmeticException extends RuntimeException {
+    public ArithmeticException() : super("") {}
+    public ArithmeticException(char[] message) : super(message) {}
+    public ArithmeticException(char[] message, Exception cause) : super(message, cause) {}
+}
+
+public class DivideByZeroException extends ArithmeticException {
+    public DivideByZeroException() : super("") {}
+    public DivideByZeroException(char[] message) : super(message) {}
+    public DivideByZeroException(char[] message, Exception cause) : super(message, cause) {}
+}
+
+public class OverflowException extends ArithmeticException {
+    public OverflowException() : super("") {}
+    public OverflowException(char[] message) : super(message) {}
+    public OverflowException(char[] message, Exception cause) : super(message, cause) {}
+}
+
+public class FormatException extends RuntimeException {
+    public FormatException() : super("") {}
+    public FormatException(char[] message) : super(message) {}
+    public FormatException(char[] message, Exception cause) : super(message, cause) {}
+}
+
+public class IOException extends Exception {
+    public IOException() : super("") {}
+    public IOException(char[] message) : super(message) {}
+    public IOException(char[] message, Exception cause) : super(message, cause) {}
+}
+
+public class FileNotFoundException extends IOException {
+    public char[] file_path;
+
+    public FileNotFoundException() : super("") {
+        this.file_path = "";
+    }
+
+    public FileNotFoundException(char[] message) : super(message) {
+        this.file_path = "";
+    }
+
+    public FileNotFoundException(char[] file_path, char[] message) : super(message) {
+        this.file_path = file_path;
+    }
+
+    public char[] get_file_path() {
+        return this.file_path;
+    }
+}
+
+public class DirectoryNotFoundException extends IOException {
+    public char[] dir_path;
+
+    public DirectoryNotFoundException() : super("") {
+        this.dir_path = "";
+    }
+
+    public DirectoryNotFoundException(char[] message) : super(message) {
+        this.dir_path = "";
+    }
+
+    public DirectoryNotFoundException(char[] dir_path, char[] message) : super(message) {
+        this.dir_path = dir_path;
+    }
+
+    public char[] get_dir_path() {
+        return this.dir_path;
+    }
+}
+
+public class SocketException extends IOException {
+    public int32 error_code;
+
+    public SocketException() : super("") {
+        this.error_code = 0;
+    }
+
+    public SocketException(char[] message) : super(message) {
+        this.error_code = 0;
+    }
+
+    public SocketException(char[] message, int32 error_code) : super(message) {
+        this.error_code = error_code;
+    }
+
+    public int32 get_error_code() {
+        return this.error_code;
+    }
+}
+
+public class TimeoutException extends RuntimeException {
+    public TimeoutException() : super("") {}
+    public TimeoutException(char[] message) : super(message) {}
+    public TimeoutException(char[] message, Exception cause) : super(message, cause) {}
+}
+
+public class AssertionError extends Exception {
+    public AssertionError() : super("") {}
+    public AssertionError(char[] message) : super(message) {}
+    public AssertionError(char[] message, Exception cause) : super(message, cause) {}
+}

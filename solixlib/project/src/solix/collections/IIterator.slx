@@ -1,8 +1,0 @@
-package solix.collections;
-
-import solix.core.IStringable;
-
-public interface IIterator {
-    bool has_next();
-    IStringable next();
-}

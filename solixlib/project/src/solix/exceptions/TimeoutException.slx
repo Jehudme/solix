@@ -1,9 +1,0 @@
-package solix.exceptions;
-
-public class TimeoutException extends RuntimeException {
-    public TimeoutException() : super("") {}
-
-    public TimeoutException(char[] message) : super(message) {}
-
-    public TimeoutException(char[] message, Exception cause) : super(message, cause) {}
-}
