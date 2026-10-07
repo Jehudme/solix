@@ -75,7 +75,7 @@
 | **Phase 45** | LSP Core Architecture, JSON-RPC Transport & Live Project Diagnostics | `P1 High` | `lsp`, `cli`, `core`, `tests`, `docs` | - [ ] Planned |
 | **Phase 46** | LSP Navigation & Inspection (`definition`, `typeDefinition`, `hover`, AST Spatial Index) | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [ ] Planned |
 | **Phase 47** | LSP Intelligence: Scope Completion, Member Dot-Access, Signature Help & Document Symbols | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [ ] Planned |
-| **Phase 48** | Neovim IDE Plugin: Filetype Detection, Syntax Highlighting & `nvim-lspconfig` Setup | `P2 Medium` | `editors/neovim`, `docs` | - [ ] Planned |
+| **Phase 48** | Neovim IDE Plugin: Filetype Detection, Syntax Highlighting & `nvim-lspconfig` Setup | `P2 Medium` | `editors/neovim`, `docs` | - [ ] Deferred (Skipped) |
 | **Phase 49** | VS Code Extension: TextMate Grammar, Language Config, TypeScript Client & `.vsix` Packaging | `P2 Medium` | `editors/vscode`, `docs` | - [ ] Planned |
 
 ---
@@ -2334,7 +2334,7 @@ Deliver productive authoring features: scope-aware autocompletion, dot-member ac
 
 - **Priority**: `P2 Medium`
 - **Affected Modules**: `editors/neovim/`, `docs/guide/`
-- **Status**: - [ ] Planned
+- **Status**: - [ ] Deferred (Skipped)
 
 ### Objective
 Create a dedicated Neovim integration package providing instant filetype detection (`*.slx`), syntax highlighting, indentation, and a zero-configuration setup for Neovim's built-in LSP client (`vim.lsp` / `nvim-lspconfig`).
