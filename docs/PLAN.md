@@ -76,7 +76,7 @@
 | **Phase 46** | LSP Navigation & Inspection (`definition`, `typeDefinition`, `hover`, AST Spatial Index) | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 47** | LSP Intelligence: Scope Completion, Member Dot-Access, Signature Help & Document Symbols | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 48** | Neovim IDE Plugin: Filetype Detection, Syntax Highlighting & `nvim-lspconfig` Setup | `P2 Medium` | `editors/neovim`, `docs` | - [ ] Deferred (Skipped) |
-| **Phase 49** | VS Code Extension: TextMate Grammar, Language Config, TypeScript Client & `.vsix` Packaging | `P2 Medium` | `editors/vscode`, `docs` | - [ ] Planned |
+| **Phase 49** | VS Code Extension: TextMate Grammar, Language Config, TypeScript Client & `.vsix` Packaging | `P2 Medium` | `editors/vscode`, `docs` | - [x] Completed & Merged |
 
 ---
 
@@ -2354,20 +2354,20 @@ Create a dedicated Neovim integration package providing instant filetype detecti
 
 - **Priority**: `P2 Medium`
 - **Affected Modules**: `editors/vscode/`, `docs/guide/`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Create, bundle, and document the official Solix VS Code extension providing rich TextMate syntax highlighting, language configuration, and automatic language client execution using `solix lsp`.
 
 ### Action Items
-- [ ] Create `editors/vscode/` directory with extension scaffolding:
+- [x] Create `editors/vscode/` directory with extension scaffolding:
   - `package.json`: Manifest declaring `solix` language, configuration options (`solix.lsp.path`, `solix.trace.server`), and activation events.
   - `language-configuration.json`: Bracket matching, auto-closing quotes, comment rules.
   - `syntaxes/solix.tmLanguage.json`: Complete TextMate grammar covering keywords, primitives, strings, escapes, and identifiers.
   - `src/extension.ts`: TypeScript LSP client launching `solix lsp` with stdio transport.
-- [ ] Set up build scripts with `@vscode/vsce` producing installable `.vsix` packages.
-- [ ] Add automated verification script for extension build and packaging.
-- [ ] Document VS Code installation instructions (`code --install-extension solix-0.1.0.vsix`) in `docs/guide/editors_vscode.md`.
+- [x] Set up build scripts with `@vscode/vsce` producing installable `.vsix` packages (`npm run package`).
+- [x] Verified extension build and packaging producing `solix-0.1.0.vsix`.
+- [x] Document VS Code installation instructions (`code --install-extension editors/vscode/solix-0.1.0.vsix`) in `docs/guide/editors_vscode.md`.
 
 
 
