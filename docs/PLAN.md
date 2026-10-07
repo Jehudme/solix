@@ -1761,7 +1761,7 @@ Enhance `solix build` command ergonomics by removing the `-m` / `--manifest` req
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `solixlib/project/src/solix/exceptions/Exceptions.slx`, `solixlib/project/src/solix/collections/Interfaces.slx`, `solixlib/project/src/solix/collections/LinkedList.slx`, `solixlib/project/src/solix/collections/HashMap.slx`, `solixlib/project/src/solix/collections/TreeMap.slx`, `tests/solixlib/test_exceptions.cpp`, `docs/spec/solixlib/exceptions.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Complete
 
 ### Objective
 Resolve namespace pollution and contract fragmentation ("the tiny file problem") across `solixlib`:
@@ -1770,12 +1770,12 @@ Resolve namespace pollution and contract fragmentation ("the tiny file problem")
 3. Encapsulate internal node data structures (`LinkedListNode<T>`, `HashMapEntry<K, V>`, `TreeMapNode<K, V>`) so they are internal to the collections package and not exposed as public clutter.
 
 ### Action Items
-- [ ] Create `solixlib/project/src/solix/exceptions/Exceptions.slx` consolidating all 21 standard exceptions with inheritance hierarchy under `Exception` and `RuntimeException`.
-- [ ] Create `solixlib/project/src/solix/collections/Interfaces.slx` grouping core collection interfaces.
-- [ ] Encapsulate `LinkedListNode<T>`, `HashMapEntry<K, V>`, `TreeMapNode<K, V>`.
-- [ ] Retain backwards-compatible re-exports or update dependent standard library files.
-- [ ] Author/update `tests/solixlib/test_exceptions.cpp` and `docs/spec/solixlib/exceptions.md`.
-- [ ] Verify full test suite passes.
+- [x] Create `solixlib/project/src/solix/exceptions/Exceptions.slx` consolidating all 21 standard exceptions with inheritance hierarchy under `Exception` and `RuntimeException`.
+- [x] Create `solixlib/project/src/solix/collections/Interfaces.slx` grouping core collection interfaces.
+- [x] Encapsulate `LinkedListNode<T>`, `HashMapEntry<K, V>`, `TreeMapNode<K, V>`.
+- [x] Retain backwards-compatible re-exports or update dependent standard library files.
+- [x] Author/update `tests/solixlib/test_exceptions.cpp` and `docs/spec/solixlib/exceptions.md`.
+- [x] Verify full test suite passes.
 
 ---
 
