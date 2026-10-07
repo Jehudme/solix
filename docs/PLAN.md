@@ -72,6 +72,11 @@
 | **Phase 42** | CLI Toolchain: `version` Subcommand & `--version` Flag | `P2 Medium` | `cli`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 43** | Entry Point Resolution Disambiguation (Exhaustive Scan, Duplicate/Ambiguity Detection with File, Row, Col) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 44** | Standard Library: Friendly Primitive Aliases (`Primitives.slx` with Wildcard Re-export) | `P2 Medium` | `solixlib/core`, `core`, `tests`, `docs` | - [x] Completed & Merged |
+| **Phase 45** | LSP Core Architecture, JSON-RPC Transport & Live Project Diagnostics | `P1 High` | `lsp`, `cli`, `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 46** | LSP Navigation & Inspection (`definition`, `typeDefinition`, `hover`, AST Spatial Index) | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 47** | LSP Intelligence: Scope Completion, Member Dot-Access, Signature Help & Document Symbols | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 48** | Neovim IDE Plugin: Filetype Detection, Syntax Highlighting & `nvim-lspconfig` Setup | `P2 Medium` | `editors/neovim`, `docs` | - [ ] Planned |
+| **Phase 49** | VS Code Extension: TextMate Grammar, Language Config, TypeScript Client & `.vsix` Packaging | `P2 Medium` | `editors/vscode`, `docs` | - [ ] Planned |
 
 ---
 
@@ -2242,6 +2247,124 @@ Ensure that type aliases can be re-exported and imported via wildcard (`import s
 - [x] Update `solixlib/project/solix.json` manifest.
 - [x] Add unit tests in `tests/solixlib/test_primitives.cpp` verifying code using `import solix.core.Primitives;` and wildcard imports.
 - [x] Document primitive aliases in `docs/spec/solixlib/primitives.md`.
+
+---
+
+## Phase 45: LSP Core Architecture, JSON-RPC Transport & Live Project Diagnostics
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `lsp/` (new module), `cli/src/commands/lsp.cpp`, `CMakeLists.txt`, `tests/lsp/`, `docs/spec/lsp/`
+- **Status**: - [ ] Planned
+
+### Objective
+Establish the foundational C++ Language Server architecture communicating via JSON-RPC 2.0 over standard I/O (`stdin`/`stdout`). Ensure 100% native compatibility with the Solix project manifest system (`solix.json`, `PackageManager`, `DependencyResolver`) so that dependencies and source files across the active project are automatically indexed, and live diagnostics (`publishDiagnostics`) are emitted as the user edits files.
+
+### Action Items
+- [ ] Create `lsp/` module with CMake target `solix_lsp_core` and standalone binary `solix-lsp`.
+- [ ] Implement robust JSON-RPC 2.0 header-framing transport reading `Content-Length: <len>\r\n\r\n` and serializing responses using `nlohmann::json`.
+- [ ] Implement LSP lifecycle protocol: `initialize`, `initialized`, `shutdown`, `exit`.
+- [ ] Implement document synchronization: `textDocument/didOpen`, `textDocument/didChange`, `textDocument/didClose`, `textDocument/didSave` maintaining an in-memory virtual document cache.
+- [ ] Integrate Solix project manifest discovery:
+  - On `initialize`, inspect `rootUri` / `workspaceFolders` to locate `solix.json`.
+  - Use `solix::cli::DependencyResolver` to resolve all project and package dependencies (including `solixlib` and local sources).
+  - Feed in-memory buffer overrides into `CompilationOptions::sources`.
+- [ ] Implement live diagnostics publisher (`textDocument/publishDiagnostics`):
+  - Execute debounced frontend analysis (`Lexer` -> `Parser` -> `Binder`).
+  - Convert `solix::Report` instances into LSP `Diagnostic` objects (uniform line, column, severity, code, message).
+  - Clear squiggles when syntax and semantic errors are resolved.
+- [ ] Add CLI subcommand `solix lsp` in `cli/src/commands/lsp.cpp`.
+- [ ] Add automated tests in `tests/lsp/test_lsp_transport.cpp` and `test_lsp_diagnostics.cpp` validating JSON-RPC exchange and error squiggly reporting.
+- [ ] Document LSP architecture in `docs/spec/lsp/protocol.md`.
+
+---
+
+## Phase 46: LSP Navigation & Inspection (Definitions, Type-Definitions & Hover)
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `lsp/`, `core/include/solix/`, `core/src/`, `tests/lsp/`, `docs/spec/lsp/`
+- **Status**: - [ ] Planned
+
+### Objective
+Provide fast code navigation and symbol inspection. Build an in-memory AST Spatial Index map to resolve definitions, type definitions, and markdown hover documentation across all files and project dependencies.
+
+### Action Items
+- [ ] Implement AST Spatial Index / Interval Lookup querying AST nodes by `(source_path, line, column)`.
+- [ ] Implement Go-to-Definition (`textDocument/definition`):
+  - Resolves identifiers, method calls, constructors, field accesses, and type references to their exact declaration source file, line, and column.
+  - Supports jumping across project dependencies and standard library modules (`solixlib`).
+- [ ] Implement Go-to-Type-Definition (`textDocument/typeDefinition`):
+  - Inspects resolved type of variables/expressions and navigates to the declaration of the underlying `class` or `enum`.
+- [ ] Implement Hover Tooltips (`textDocument/hover`):
+  - Formats markdown tooltips displaying symbol kinds, variable types, function signatures, and doc comments.
+  - Displays type alias expansions (e.g. `alias int = int32`).
+- [ ] Add automated tests in `tests/lsp/test_lsp_navigation.cpp` verifying definition jump coordinates and hover text.
+- [ ] Document navigation capabilities in `docs/spec/lsp/navigation.md`.
+
+---
+
+## Phase 47: LSP Intelligence (Completions, Signature Help & Document Symbols)
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `lsp/`, `core/src/processes/binder.cpp`, `tests/lsp/`, `docs/spec/lsp/`
+- **Status**: - [ ] Planned
+
+### Objective
+Deliver productive authoring features: scope-aware autocompletion, dot-member access suggestions, signature parameter help, and document symbol hierarchy.
+
+### Action Items
+- [ ] Implement Code Completion (`textDocument/completion`):
+  - **Member Access (`receiver.` / `this.` / `Class.`):** Evaluates receiver type and suggests visible methods and fields.
+  - **Package Imports (`import solix.`):** Enumerate available packages from project manifest dependencies and registry.
+  - **Scope Completion:** Suggests local variables, parameters, visible class members, and Solix language keywords.
+- [ ] Implement Signature Help (`textDocument/signatureHelp`):
+  - Triggered by `(` and `,`.
+  - Identifies active method overload and parameter index.
+- [ ] Implement Document Symbols Outline (`textDocument/documentSymbol`):
+  - Emits hierarchical `DocumentSymbol` trees (classes, interfaces, enums, methods, fields) for editor breadcrumbs and symbol finders.
+- [ ] Add automated unit tests in `tests/lsp/test_lsp_completion.cpp` and `test_lsp_symbols.cpp`.
+- [ ] Document completion and outline features in `docs/spec/lsp/completion.md`.
+
+---
+
+## Phase 48: Neovim IDE Plugin & Syntax Highlighting
+
+- **Priority**: `P2 Medium`
+- **Affected Modules**: `editors/neovim/`, `docs/guide/`
+- **Status**: - [ ] Planned
+
+### Objective
+Create a dedicated Neovim integration package providing instant filetype detection (`*.slx`), syntax highlighting, indentation, and a zero-configuration setup for Neovim's built-in LSP client (`vim.lsp` / `nvim-lspconfig`).
+
+### Action Items
+- [ ] Create `editors/neovim/` directory with standard Vim/Neovim plugin layout:
+  - `ftdetect/solix.lua`: Auto-detects `*.slx` as `filetype=solix`.
+  - `syntax/solix.vim`: Full syntax highlighting for keywords, primitive types, operators, strings, comments, and numbers.
+  - `indent/solix.vim`: Smart 4-space indentation rules for braces, loops, and classes.
+- [ ] Provide `nvim-lspconfig` integration snippet and configuration guide.
+- [ ] Test plugin in a clean Neovim headless instance verifying filetype detection and LSP connection.
+- [ ] Document Neovim setup in `docs/guide/editors_neovim.md`.
+
+---
+
+## Phase 49: VS Code Extension & Packaging
+
+- **Priority**: `P2 Medium`
+- **Affected Modules**: `editors/vscode/`, `docs/guide/`
+- **Status**: - [ ] Planned
+
+### Objective
+Create, bundle, and document the official Solix VS Code extension providing rich TextMate syntax highlighting, language configuration, and automatic language client execution using `solix lsp`.
+
+### Action Items
+- [ ] Create `editors/vscode/` directory with extension scaffolding:
+  - `package.json`: Manifest declaring `solix` language, configuration options (`solix.lsp.path`, `solix.trace.server`), and activation events.
+  - `language-configuration.json`: Bracket matching, auto-closing quotes, comment rules.
+  - `syntaxes/solix.tmLanguage.json`: Complete TextMate grammar covering keywords, primitives, strings, escapes, and identifiers.
+  - `src/extension.ts`: TypeScript LSP client launching `solix lsp` with stdio transport.
+- [ ] Set up build scripts with `@vscode/vsce` producing installable `.vsix` packages.
+- [ ] Add automated verification script for extension build and packaging.
+- [ ] Document VS Code installation instructions (`code --install-extension solix-0.1.0.vsix`) in `docs/guide/editors_vscode.md`.
+
 
 
 
