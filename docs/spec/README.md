@@ -46,6 +46,7 @@ This directory contains the formal specification of the Solix programming langua
 | [**Filesystem**](solixlib/filesystem.md) | `Path`, `File`, and `Directory` cross-platform I/O and directory management |
 | [**Streams & Path Operators**](solixlib/streams.md) | `IStream`, `FileStream`, `MemoryStream`, `BufferedReader`, `StreamReader`, `StreamWriter`, and `Path` operators |
 | [**System Environment & Processes**](solixlib/environment.md) | `Environment`, `Process`, and `ProcessResult` cross-platform environment variables and child processes |
+| [**Cryptography & Encodings**](solixlib/crypto.md) | `Base64`, `Hex`, and `Hash` (SHA-256, SHA-1, MD5) cryptographic hashes and binary encodings |
 
 ---
 
@@ -68,7 +69,8 @@ docs/spec/
 ├── solixlib/
 │   ├── scaffolding.md          ← solixlib layout & packaging specification
 │   ├── streams.md              ← Streams and Path operators specification
-│   └── environment.md          ← System environment and processes specification
+│   ├── environment.md          ← System environment and processes specification
+│   └── crypto.md               ← Cryptography and binary encodings specification
 └── statements/
     ├── README.md               ← Statements reference index
     ├── modules/
