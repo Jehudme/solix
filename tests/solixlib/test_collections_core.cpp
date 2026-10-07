@@ -603,4 +603,49 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
         
         REQUIRE(run_solixlib_sources(sources) == 0);
     }
+
+    SECTION("Case 7.7: Unified Interfaces.slx collection contracts and encapsulated node structures") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.collections.*;
+            import solix.core.Int;
+            import solix.core.String;
+
+            class Main {
+                public static int32 main() {
+                    // Test LinkedList encapsulation
+                    LinkedList<int32> list = new LinkedList<int32>();
+                    list.add_last(10);
+                    list.add_last(20);
+                    list.add_first(5);
+                    if (list.size() != 3) return 1;
+                    if (list.get(0) != 5) return 2;
+                    if (list.get(1) != 10) return 3;
+                    if (list.get(2) != 20) return 4;
+
+                    // Test HashMap encapsulation
+                    HashMap<int32, int32> map = new HashMap<int32, int32>();
+                    map.put(1, 100);
+                    map.put(2, 200);
+                    if (map.size() != 2) return 5;
+                    if (map.get(1) != 100) return 6;
+                    if (map.get(2) != 200) return 7;
+
+                    // Test TreeMap encapsulation
+                    TreeMap<int32, int32> tree = new TreeMap<int32, int32>();
+                    tree.put(5, 50);
+                    tree.put(1, 10);
+                    tree.put(9, 90);
+                    if (tree.size() != 3) return 8;
+                    if (tree.first_key() != 1) return 9;
+                    if (tree.last_key() != 9) return 10;
+
+                    return 0;
+                }
+            }
+        )";
+        assert_compile_sources_success(sources);
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
 }
+

@@ -27,7 +27,7 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 1.11 [IMPLEMENTED]**: `SocketException` error code storage and retrieval (`tests/solixlib/test_exceptions.cpp`).
 - [x] **Case 1.12 [IMPLEMENTED]**: `AssertionError` instantiation and catching via base `Exception` (`tests/solixlib/test_exceptions.cpp`).
 - [x] **Case 1.13 [IMPLEMENTED]**: Nested `try-catch-finally` ensuring `finally` blocks execute during exception unwinding (`tests/solixlib/test_exceptions.cpp`).
-- [ ] **Case 1.14 [NOT IMPLEMENTED]**: Unified `Exceptions.slx` multi-exception hierarchy packaging, imports, and cross-inheritance validation (`tests/solixlib/test_exceptions.cpp`).
+- [x] **Case 1.14 [IMPLEMENTED]**: Unified `Exceptions.slx` multi-exception hierarchy packaging, imports, and cross-inheritance validation (`tests/solixlib/test_exceptions.cpp`).
 
 ---
 
@@ -106,7 +106,7 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 7.4 [IMPLEMENTED]**: `IList` contract index-based access, mutation, insertion, element removal, and index lookups (`tests/solixlib/test_collections_core.cpp`).
 - [x] **Case 7.5 [IMPLEMENTED]**: `IDeque` contract double-ended queue operations (`add_first`, `add_last`, `remove_first`, `remove_last`, `peek_first`, `peek_last`) and string representation (`tests/solixlib/test_collections_core.cpp`).
 - [x] **Case 7.6 [IMPLEMENTED]**: Negative: Calling `next()` on exhausted iterator throws `NoSuchElementException` (`tests/solixlib/test_collections_core.cpp`).
-- [ ] **Case 7.7 [NOT IMPLEMENTED]**: Unified `Interfaces.slx` collection contracts and internal node encapsulation (`LinkedListNode`, `HashMapEntry`, `TreeMapNode`) (`tests/solixlib/test_collections_core.cpp`).
+- [x] **Case 7.7 [IMPLEMENTED]**: Unified `Interfaces.slx` collection contracts and internal node encapsulation (`LinkedListNode`, `HashMapEntry`, `TreeMapNode`) (`tests/solixlib/test_collections_core.cpp`).
 
 ---
 

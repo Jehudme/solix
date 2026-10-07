@@ -304,4 +304,50 @@ TEST_CASE("Standard Library - solix.exceptions", "[solixlib][exceptions]") {
         assert_compile_sources_success(sources);
         REQUIRE(run_solixlib_sources(sources) == 0);
     }
+
+    SECTION("Case 1.14: Unified Exceptions.slx multi-exception hierarchy packaging and cross-inheritance") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.exceptions.*;
+
+            class Main {
+                public static int32 main() {
+                    int32 score = 0;
+
+                    // 1. DivideByZero -> ArithmeticException -> RuntimeException
+                    try {
+                        throw new DivideByZeroException("zero div");
+                    } catch (ArithmeticException ae) {
+                        score += 1;
+                    }
+
+                    // 2. FileNotFound -> IOException -> Exception
+                    try {
+                        throw new FileNotFoundException("data.bin", "file missing");
+                    } catch (IOException ioe) {
+                        score += 10;
+                    }
+
+                    // 3. ArgumentNull -> IllegalArgument -> RuntimeException
+                    try {
+                        throw new ArgumentNullException("key", "null key");
+                    } catch (IllegalArgumentException iae) {
+                        score += 100;
+                    }
+
+                    // 4. TimeoutException -> RuntimeException
+                    try {
+                        throw new TimeoutException("operation timed out");
+                    } catch (RuntimeException re) {
+                        score += 1000;
+                    }
+
+                    return score == 1111 ? 0 : 1;
+                }
+            }
+        )";
+        assert_compile_sources_success(sources);
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
 }
+
