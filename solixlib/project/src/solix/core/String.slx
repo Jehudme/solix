@@ -95,6 +95,10 @@ public class String implements IStringable, IHashable {
         return to_int(s);
     }
 
+    public static int64 parse_long(String s) {
+        return to_long(s);
+    }
+
     public static float64 parse_double(String s) {
         return to_double(s);
     }
@@ -227,6 +231,10 @@ public class String implements IStringable, IHashable {
             buf[len1 + j] = other.data[j];
         }
         return new String(buf);
+    }
+
+    public String operator+(String other) {
+        return this.concat(other);
     }
 
 
@@ -416,6 +424,14 @@ public class String implements IStringable, IHashable {
             if (this.data[i] != other.data[i]) return false;
         }
         return true;
+    }
+
+    public bool operator==(String other) {
+        return this.equals(other);
+    }
+
+    public bool operator!=(String other) {
+        return !this.equals(other);
     }
 
     public bool equals_chars(char[] other) {

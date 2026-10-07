@@ -99,6 +99,7 @@ Node *Binder::instantiate_template(const std::string &template_name,
             mangled_name);
   auto clone_ptr = blueprint->clone();
   Node *clone = clone_ptr.get();
+  clone->parent = blueprint->parent;
 
   if (clone->node_type == NodeType::CLASS_DECL) {
     static_cast<ClassDeclaration *>(clone)->template_parameters.clear();
@@ -148,6 +149,7 @@ Node *Binder::instantiate_template(const std::string &template_name,
     current_class = cls;
 
     for (const auto &child : cls->children) {
+      if (child) child->parent = cls;
       if (child && child->node_type == NodeType::FIELD_DECL) {
         auto *field = static_cast<FieldDeclaration *>(child.get());
         field->type_info = resolve_type(field->type_info, field);
@@ -160,7 +162,9 @@ Node *Binder::instantiate_template(const std::string &template_name,
         }
       } else if (child && child->node_type == NodeType::METHOD_DECL) {
         auto *method = static_cast<MethodDeclaration *>(child.get());
-        method->return_type = resolve_type(method->return_type, method);
+        if (method->template_parameters.empty()) {
+          method->return_type = resolve_type(method->return_type, method);
+        }
       }
     }
 
@@ -222,7 +226,12 @@ Node *Binder::instantiate_template(const std::string &template_name,
       BinderPass old = current_pass;
       current_pass = BinderPass::BIND_EXECUTION;
       current_package = my_prefix;
+      ClassDeclaration *saved_class = current_class;
+      if (!current_class && clone->parent && clone->parent->node_type == NodeType::CLASS_DECL) {
+        current_class = static_cast<ClassDeclaration *>(clone->parent);
+      }
       bind_tree(clone);
+      current_class = saved_class;
       current_pass = old;
     }
   }
@@ -765,9 +774,6 @@ void Binder::process_imports() {
 }
 
 TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
-  if (raw_type.name.empty()) {
-    return raw_type;
-  }
   if (raw_type.is_function_pointer) {
     TypeInfo result = raw_type;
     if (raw_type.return_type) {
@@ -779,6 +785,9 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
     }
     result.name = result.to_string();
     return result;
+  }
+  if (raw_type.name.empty()) {
+    return raw_type;
   }
   if (raw_type.name == "void" || raw_type.name == "bool" ||
       raw_type.name == "char" || raw_type.name == "int8" ||
@@ -916,6 +925,7 @@ void Binder::bind_types_and_memory() {
   for (const auto &[name, node] : get_symbols()) {
     if (node->node_type == NodeType::METHOD_DECL) {
       auto *method = static_cast<MethodDeclaration *>(node);
+      if (!method->template_parameters.empty()) continue;
       current_class =
           method->parent && method->parent->node_type == NodeType::CLASS_DECL
               ? static_cast<ClassDeclaration *>(method->parent)
@@ -1541,6 +1551,10 @@ void Binder::bind_tree(Node *root) {
       return;
     }
     current_method = static_cast<MethodDeclaration *>(root);
+    if (!current_class && current_method->parent &&
+        current_method->parent->node_type == NodeType::CLASS_DECL) {
+      current_class = static_cast<ClassDeclaration *>(current_method->parent);
+    }
     local_variable_index = 0;
 
     current_method->return_type =
@@ -3955,8 +3969,10 @@ void Binder::visit(ClassDeclaration &n) {
   } else if (current_pass == BinderPass::REGISTER_MEMBERS) {
     std::string my_prefix = current_prefix + n.class_name + ".";
     current_class = &n;
-    for (const auto &child : n.children)
+    for (const auto &child : n.children) {
+      if (child) child->parent = &n;
       register_members(child.get(), my_prefix);
+    }
     current_class = nullptr;
   }
 }

@@ -261,4 +261,173 @@ TEST_CASE("Standard Library - solix.core.Primitives & Types", "[solixlib][primit
         assert_compile_sources_success(sources);
         REQUIRE(run_solixlib_sources(sources) == 0);
     }
+
+    SECTION("Case 4.8: Complete boxed integral and floating-point types") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.core.Byte;
+            import solix.core.Short;
+            import solix.core.Long;
+            import solix.core.UByte;
+            import solix.core.UShort;
+            import solix.core.UInt;
+            import solix.core.ULong;
+            import solix.core.Float;
+            import solix.core.String;
+
+            class Main {
+                public static int32 main() {
+                    // Byte
+                    Byte b = new Byte((int8)42);
+                    if (b.value() != 42) return 1;
+                    if (Byte.MIN_VALUE != -128 || Byte.MAX_VALUE != 127) return 2;
+                    if (Byte.parse(new String("100")) != 100) return 3;
+
+                    // Short
+                    Short s = new Short((int16)1234);
+                    if (s.value() != 1234) return 4;
+                    if (Short.MIN_VALUE != -32768 || Short.MAX_VALUE != 32767) return 5;
+                    if (Short.parse(new String("5000")) != 5000) return 6;
+
+                    // Long
+                    Long l = new Long(9000000000L);
+                    if (l.value() != 9000000000L) return 7;
+                    if (Long.parse(new String("1234567890123")) != 1234567890123L) return 8;
+
+                    // UByte
+                    UByte ub = new UByte((uint8)200);
+                    if (ub.value() != (uint8)200) return 9;
+                    if (UByte.MIN_VALUE != (uint8)0 || UByte.MAX_VALUE != (uint8)255) return 10;
+
+                    // UShort
+                    UShort us = new UShort((uint16)60000);
+                    if (us.value() != (uint16)60000) return 11;
+                    if (UShort.MIN_VALUE != (uint16)0 || UShort.MAX_VALUE != (uint16)65535) return 12;
+
+                    // UInt
+                    UInt ui = new UInt((uint32)3000000000);
+                    if (ui.value() != (uint32)3000000000) return 13;
+
+                    // ULong
+                    ULong ul = new ULong((uint64)10000000000);
+                    if (ul.value() != (uint64)10000000000) return 14;
+
+                    // Float
+                    Float f = new Float((float32)3.14);
+                    if (f.value() < (float32)3.13 || f.value() > (float32)3.15) return 15;
+
+                    return 0;
+                }
+            }
+        )";
+        assert_compile_sources_success(sources);
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
+
+    SECTION("Case 4.9: Operator overloading on boxed primitives and String") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.core.Int;
+            import solix.core.Long;
+            import solix.core.Double;
+            import solix.core.Byte;
+            import solix.core.String;
+
+            class Main {
+                public static int32 main() {
+                    // Int arithmetic & comparisons
+                    Int i1 = new Int(10);
+                    Int i2 = new Int(20);
+                    Int iAdd = i1 + i2;
+                    if (iAdd.value() != 30) return 1;
+
+                    Int iSub = i2 - i1;
+                    if (iSub.value() != 10) return 2;
+
+                    Int iMul = i1 * i2;
+                    if (iMul.value() != 200) return 3;
+
+                    Int iDiv = i2 / i1;
+                    if (iDiv.value() != 2) return 4;
+
+                    if (!(i1 < i2)) return 5;
+                    if (!(i2 > i1)) return 6;
+                    if (!(i1 <= i2)) return 7;
+                    if (!(i2 >= i1)) return 8;
+                    if (i1 == i2) return 9;
+                    if (!(i1 != i2)) return 10;
+
+                    // Long arithmetic
+                    Long l1 = new Long(100L);
+                    Long l2 = new Long(200L);
+                    Long l3 = l1 + l2;
+                    if (l3.value() != 300L) return 11;
+                    if (l1 >= l2) return 12;
+
+                    // Double arithmetic
+                    Double d1 = new Double(1.5);
+                    Double d2 = new Double(2.5);
+                    Double d3 = d1 + d2;
+                    if (d3.value() != 4.0) return 13;
+                    if (d1 >= d2) return 14;
+
+                    // Byte arithmetic
+                    Byte b1 = new Byte((int8)5);
+                    Byte b2 = new Byte((int8)10);
+                    Byte b3 = b1 + b2;
+                    if (b3.value() != 15) return 15;
+
+                    // String concatenation and equality
+                    String s1 = new String("hello ");
+                    String s2 = new String("world");
+                    String s3 = s1 + s2;
+                    if (!s3.equals_chars("hello world")) return 16;
+                    if (s1 == s2) return 17;
+                    if (!(s1 != s2)) return 18;
+
+                    return 0;
+                }
+            }
+        )";
+        assert_compile_sources_success(sources);
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
+
+    SECTION("Case 4.10: Functional parity for Optional<T> (map, flat_map)") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.core.Optional;
+
+            class Main {
+                public static int32 main() {
+                    Optional<int32> opt = new Optional<int32>(21);
+
+                    // map on present value
+                    Optional<int32> doubled = opt.map<int32>([](int32 x) => x * 2);
+                    if (!doubled.has_value() || doubled.value() != 42) return 1;
+
+                    // map on empty optional
+                    Optional<int32> empty = new Optional<int32>();
+                    Optional<int32> empty_map = empty.map<int32>([](int32 x) => x * 2);
+                    if (empty_map.has_value()) return 2;
+
+                    // flat_map chaining
+                    Optional<int32> flat = opt.flat_map<int32>([](int32 x) => new Optional<int32>(x + 10));
+                    if (!flat.has_value() || flat.value() != 31) return 3;
+
+                    // flat_map returning empty
+                    Optional<int32> flat_empty = opt.flat_map<int32>([](int32 x) => new Optional<int32>());
+                    if (flat_empty.has_value()) return 4;
+
+                    // flat_map on empty
+                    Optional<int32> from_empty_flat = empty.flat_map<int32>([](int32 x) => new Optional<int32>(x + 10));
+                    if (from_empty_flat.has_value()) return 5;
+
+                    return 0;
+                }
+            }
+        )";
+        assert_compile_sources_success(sources);
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
 }

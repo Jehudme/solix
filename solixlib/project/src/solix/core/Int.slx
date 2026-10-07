@@ -35,6 +35,48 @@ public class Int implements IStringable, IHashable {
         return 0;
     }
 
+    public Int operator+(Int other) {
+        return new Int(this._value + other._value);
+    }
+
+    public Int operator-(Int other) {
+        return new Int(this._value - other._value);
+    }
+
+    public Int operator*(Int other) {
+        return new Int(this._value * other._value);
+    }
+
+    public Int operator/(Int other) {
+        return new Int(this._value / other._value);
+    }
+
+    public bool operator==(Int other) {
+        if (other == null) return false;
+        return this._value == other._value;
+    }
+
+    public bool operator!=(Int other) {
+        if (other == null) return true;
+        return this._value != other._value;
+    }
+
+    public bool operator<(Int other) {
+        return this._value < other._value;
+    }
+
+    public bool operator<=(Int other) {
+        return this._value <= other._value;
+    }
+
+    public bool operator>(Int other) {
+        return this._value > other._value;
+    }
+
+    public bool operator>=(Int other) {
+        return this._value >= other._value;
+    }
+
     public static int32 parse(String s) {
         return String.parse_int(s);
     }

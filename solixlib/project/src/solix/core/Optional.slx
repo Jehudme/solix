@@ -53,6 +53,20 @@ public class Optional<T> implements IStringable {
         return new Optional<T>();
     }
 
+    public Optional<U> map<U>(U(*)(T) mapper) {
+        if (this._has_value) {
+            return new Optional<U>(mapper(this._value));
+        }
+        return new Optional<U>();
+    }
+
+    public Optional<U> flat_map<U>(Optional<U>(*)(T) mapper) {
+        if (this._has_value) {
+            return mapper(this._value);
+        }
+        return new Optional<U>();
+    }
+
     public String to_string() {
         if (!this._has_value) {
             return new String("Optional.empty");

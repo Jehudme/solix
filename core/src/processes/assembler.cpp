@@ -1324,7 +1324,15 @@ void Assembler::visit(AssignmentExpression &node) {
   auto *assign = &node;
   if (assign->overloaded_operator) {
     compile_expression(assign->target.get());
+    if (is_reference_type(assign->target->expression_type) &&
+        !produces_retained_reference(assign->target.get())) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    }
     compile_expression(assign->value.get());
+    if (is_reference_type(assign->value->expression_type) &&
+        !produces_retained_reference(assign->value.get())) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    }
 
     auto *method =
         static_cast<MethodDeclaration *>(assign->overloaded_operator);
@@ -1513,7 +1521,15 @@ void Assembler::visit(BinaryExpression &node) {
   auto *bin = &node;
   if (bin->overloaded_operator) {
     compile_expression(bin->left.get());
+    if (is_reference_type(bin->left->expression_type) &&
+        !produces_retained_reference(bin->left.get())) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    }
     compile_expression(bin->right.get());
+    if (is_reference_type(bin->right->expression_type) &&
+        !produces_retained_reference(bin->right.get())) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    }
 
     auto *method = static_cast<MethodDeclaration *>(bin->overloaded_operator);
 

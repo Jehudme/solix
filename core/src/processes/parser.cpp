@@ -451,7 +451,9 @@ std::unique_ptr<Node> ParserState::parse_call_or_access() {
         else if (tokens[temp]->type == TokenType::PUNCTUATION_SEMICOLON) {
           valid_template = false;
           break;
-        } else if (tokens[temp]->type == TokenType::PUNCTUATION_OPEN_BRACE) {
+        } else if (tokens[temp]->type == TokenType::PUNCTUATION_OPEN_BRACE ||
+                   tokens[temp]->type == TokenType::OPERATOR_LOGICAL_OR ||
+                   tokens[temp]->type == TokenType::OPERATOR_LOGICAL_AND) {
           valid_template = false;
           break;
         }

@@ -34,6 +34,48 @@ public class Double implements IStringable {
         return 0;
     }
 
+    public Double operator+(Double other) {
+        return new Double(this._value + other._value);
+    }
+
+    public Double operator-(Double other) {
+        return new Double(this._value - other._value);
+    }
+
+    public Double operator*(Double other) {
+        return new Double(this._value * other._value);
+    }
+
+    public Double operator/(Double other) {
+        return new Double(this._value / other._value);
+    }
+
+    public bool operator==(Double other) {
+        if (other == null) return false;
+        return this._value == other._value;
+    }
+
+    public bool operator!=(Double other) {
+        if (other == null) return true;
+        return this._value != other._value;
+    }
+
+    public bool operator<(Double other) {
+        return this._value < other._value;
+    }
+
+    public bool operator<=(Double other) {
+        return this._value <= other._value;
+    }
+
+    public bool operator>(Double other) {
+        return this._value > other._value;
+    }
+
+    public bool operator>=(Double other) {
+        return this._value >= other._value;
+    }
+
     public static float64 parse(String s) {
         return String.parse_double(s);
     }

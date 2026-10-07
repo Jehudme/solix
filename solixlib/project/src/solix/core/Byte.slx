@@ -1,0 +1,87 @@
+package solix.core;
+
+import solix.exceptions.FormatException;
+
+public class Byte implements IStringable, IHashable {
+    public static int8 MIN_VALUE = -128;
+    public static int8 MAX_VALUE = 127;
+
+    private int8 _value;
+
+    public Byte(int8 val) {
+        this._value = val;
+    }
+
+    public int8 value() {
+        return this._value;
+    }
+
+    public String to_string() {
+        return String.value_of((int32)this._value);
+    }
+
+    public int32 hash_code() {
+        return (int32)this._value;
+    }
+
+    public bool equals(Byte other) {
+        if (other == null) return false;
+        return this._value == other._value;
+    }
+
+    public int32 compare_to(Byte other) {
+        if (this._value < other._value) return -1;
+        if (this._value > other._value) return 1;
+        return 0;
+    }
+
+    public Byte operator+(Byte other) {
+        return new Byte((int8)(this._value + other._value));
+    }
+
+    public Byte operator-(Byte other) {
+        return new Byte((int8)(this._value - other._value));
+    }
+
+    public Byte operator*(Byte other) {
+        return new Byte((int8)(this._value * other._value));
+    }
+
+    public Byte operator/(Byte other) {
+        return new Byte((int8)(this._value / other._value));
+    }
+
+    public bool operator==(Byte other) {
+        if (other == null) return false;
+        return this._value == other._value;
+    }
+
+    public bool operator!=(Byte other) {
+        if (other == null) return true;
+        return this._value != other._value;
+    }
+
+    public bool operator<(Byte other) {
+        return this._value < other._value;
+    }
+
+    public bool operator<=(Byte other) {
+        return this._value <= other._value;
+    }
+
+    public bool operator>(Byte other) {
+        return this._value > other._value;
+    }
+
+    public bool operator>=(Byte other) {
+        return this._value >= other._value;
+    }
+
+    public static int8 parse(String s) {
+        int32 v = String.parse_int(s);
+        if (v < -128 || v > 127) {
+            throw new FormatException("Byte value out of range");
+        }
+        return (int8)v;
+    }
+}
