@@ -11,7 +11,7 @@ namespace solix {
 Node *Binder::instantiate_template(const std::string &template_name,
                                    const std::vector<TypeInfo> &type_args,
                                    Node *error_node) {
-  log_debug("Attempting to instantiate template '{}' with {} type arguments",
+  log_trace("Attempting to instantiate template '{}' with {} type arguments",
             template_name, type_args.size());
 
   if (!template_registry.count(template_name)) {
@@ -33,7 +33,7 @@ Node *Binder::instantiate_template(const std::string &template_name,
   mangled_name += ">";
 
   if (global_scope.symbols.count(mangled_name)) {
-    log_debug(
+    log_trace(
         "Template instantiation for '{}' retrieved from cache/global_scope",
         mangled_name);
     return global_scope.symbols[mangled_name];
@@ -96,7 +96,7 @@ Node *Binder::instantiate_template(const std::string &template_name,
               type_args[i].to_string());
   }
 
-  log_debug("Cloning AST blueprint for template '{}' -> '{}'", template_name,
+  log_trace("Cloning AST blueprint for template '{}' -> '{}'", template_name,
             mangled_name);
   auto clone_ptr = blueprint->clone();
   Node *clone = clone_ptr.get();
@@ -128,7 +128,7 @@ Node *Binder::instantiate_template(const std::string &template_name,
   if (last_dot != std::string::npos)
     my_prefix = template_name.substr(0, last_dot + 1);
 
-  log_debug("Running mini-pipeline passes on newly instantiated template '{}'",
+  log_trace("Running mini-pipeline passes on newly instantiated template '{}'",
             mangled_name);
 
   if (clone->node_type == NodeType::CLASS_DECL) {
@@ -243,7 +243,7 @@ Node *Binder::instantiate_template(const std::string &template_name,
   }
   current_package = current_pkg_copy;
 
-  log_debug("Successfully instantiated template: {}", mangled_name);
+  log_trace("Successfully instantiated template: {}", mangled_name);
   return global_scope.resolve(mangled_name);
 }
 
@@ -708,7 +708,7 @@ void Binder::process_imports() {
         if (matches.size() == 1) {
           known_packages.insert(matches[0]);
           wildcard_imported_packages.insert(matches[0]);
-          log_debug("Wildcard import resolved '{}' -> '{}'", target_pkg,
+          log_trace("Wildcard import resolved '{}' -> '{}'", target_pkg,
                     matches[0]);
         } else if (matches.size() > 1) {
           std::string cand_str;
@@ -735,7 +735,7 @@ void Binder::process_imports() {
           known_packages.insert(sym->mangled_name.substr(0, dot + 1));
           wildcard_imported_packages.insert(sym->mangled_name.substr(0, dot + 1));
         }
-        log_debug("Symbol import resolved: '{}' -> '{}'", n->symbol_name,
+        log_trace("Symbol import resolved: '{}' -> '{}'", n->symbol_name,
                   sym->mangled_name);
       } else {
         std::string tmpl = resolve_template_name(query, n);
@@ -746,7 +746,7 @@ void Binder::process_imports() {
             known_packages.insert(tmpl.substr(0, dot + 1));
             wildcard_imported_packages.insert(tmpl.substr(0, dot + 1));
           }
-          log_debug("Template import resolved: '{}' -> '{}'", n->symbol_name,
+          log_trace("Template import resolved: '{}' -> '{}'", n->symbol_name,
                     tmpl);
         } else {
           std::string pkg_dot = n->package_name + ".";
@@ -815,7 +815,7 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
   if (!resolved && !result.type_args.empty()) {
     std::string template_name = resolve_template_name(result.name, error_node);
     if (!template_name.empty()) {
-      log_debug("Resolving type arguments for potential template '{}'",
+      log_trace("Resolving type arguments for potential template '{}'",
                 template_name);
       std::vector<TypeInfo> resolved_args;
       for (const auto &arg : result.type_args) {
@@ -827,7 +827,7 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
       if (resolved) {
         result.name = resolved->mangled_name;
         result.type_args.clear();
-        log_debug("Resolved instantiated template type to '{}'", result.name);
+        log_trace("Resolved instantiated template type to '{}'", result.name);
       }
     }
   }
@@ -859,7 +859,7 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
 // ─── Pass 2: Type & Memory Binding ──────────────────────────────────────────
 
 void Binder::bind_types_and_memory() {
-  log_debug("Starting Pass 2: Type and Memory Binding...");
+  log_trace("Starting Pass 2: Type and Memory Binding...");
   static_variable_index = 1;
 
   auto get_symbols = [this]() {
@@ -921,7 +921,7 @@ void Binder::bind_types_and_memory() {
 
       if (field->is_static || !field->parent) {
         field->memory_index = static_variable_index++;
-        log_debug("Bound static field '{}' to static index {}", name,
+        log_trace("Bound static field '{}' to static index {}", name,
                   field->memory_index);
       }
       current_class = nullptr;
@@ -955,7 +955,7 @@ void Binder::bind_types_and_memory() {
       auto *cls = static_cast<ClassDeclaration *>(node);
       if (!cls->is_primitive && cls->vtable_id == -1) {
         cls->vtable_id = next_vtable_id++;
-        log_debug("Assigned vtable_id {} to class/interface '{}'", cls->vtable_id,
+        log_trace("Assigned vtable_id {} to class/interface '{}'", cls->vtable_id,
                   cls->mangled_name);
       }
     }
@@ -1382,7 +1382,7 @@ int Binder::calculate_layout(ClassDeclaration *cls) {
   layout_in_progress.erase(cls->mangled_name);
   cls->instance_size = offset;
   layout_calculated.insert(cls->mangled_name);
-  log_debug("Class '{}' instance layout computed: size = {} words",
+  log_trace("Class '{}' instance layout computed: size = {} words",
             cls->mangled_name, cls->instance_size);
   return cls->instance_size;
 }
@@ -1390,11 +1390,11 @@ int Binder::calculate_layout(ClassDeclaration *cls) {
 // ─── Binder::execute ─────────────────────────────────────────────────────────
 
 void Binder::execute() {
-  log_debug("Starting Semantic Analysis (Binding)...");
+  log_trace("Starting Semantic Analysis (Binding)...");
 
   setup_builtins();
 
-  log_debug("Pass 1a: Registering package and top-level symbols...");
+  log_trace("Pass 1a: Registering package and top-level symbols...");
   std::vector<Source> initial_sources;
   for (const auto &[source, _] : context.nodes) {
     initial_sources.push_back(source);
@@ -1421,7 +1421,7 @@ void Binder::execute() {
 
   process_imports();
 
-  log_debug("Pass 1b: Registering class members and signatures...");
+  log_trace("Pass 1b: Registering class members and signatures...");
   for (const auto &src : initial_sources) {
     auto it = context.nodes.find(src);
     if (it == context.nodes.end()) continue;
@@ -1438,16 +1438,16 @@ void Binder::execute() {
     }
   }
 
-  log_debug("Pass 1 complete. Registered {} global symbols, {} templates in "
+  log_trace("Pass 1 complete. Registered {} global symbols, {} templates in "
             "registry.",
             global_scope.symbols.size(), template_registry.size());
 
   bind_types_and_memory();
 
-  log_debug("Memory mapping complete. Total static variables: {}",
+  log_trace("Memory mapping complete. Total static variables: {}",
             static_variable_index);
 
-  log_debug("Pass 3: Binding statement execution logic and bodies...");
+  log_trace("Pass 3: Binding statement execution logic and bodies...");
   current_pass = BinderPass::BIND_EXECUTION;
   std::vector<Source> user_sources;
   for (const auto &[source, _] : context.nodes) {
@@ -1477,7 +1477,7 @@ void Binder::execute() {
   // Pass 2 (bind_types_and_memory) and thus never had bind_tree called.
   // New instantiations can be triggered during each bind_tree call (e.g. nested
   // generics), so we repeat until no new templates are discovered.
-  log_debug("Pass 3b: Binding deferred template instantiations...");
+  log_trace("Pass 3b: Binding deferred template instantiations...");
   current_pass = BinderPass::BIND_EXECUTION;
   {
     Source tmpl_key = std::string("__instantiated_templates");
@@ -1500,7 +1500,7 @@ void Binder::execute() {
           else if (n->node_type == NodeType::ALIAS_STMT)
             mname = static_cast<AliasStatement *>(n)->alias_name;
           if (!mname.empty() && !bound_templates.count(mname)) {
-            log_debug("Pass 3b: binding deferred template '{}'", mname);
+            log_trace("Pass 3b: binding deferred template '{}'", mname);
             bound_templates.insert(mname);
             current_package = "";
             bind_tree(n);
@@ -1520,7 +1520,7 @@ void Binder::execute() {
     throw BindError(all_errors);
   }
 
-  log_debug("Semantic Analysis completed successfully.");
+  log_trace("Semantic Analysis completed successfully.");
 }
 
 // ─── Pass 3 Tree Traversal ───────────────────────────────────────────────────
@@ -1557,7 +1557,7 @@ void Binder::bind_tree(Node *root) {
     if (!cls->package_context.empty()) {
       current_package = cls->package_context;
     }
-    log_debug("Binding AST tree for class '{}'", cls->class_name);
+    log_trace("Binding AST tree for class '{}'", cls->class_name);
     current_class = cls;
   } else if (root->node_type == NodeType::METHOD_DECL) {
     auto *mth = static_cast<MethodDeclaration *>(root);
@@ -1576,7 +1576,7 @@ void Binder::bind_tree(Node *root) {
 
     current_method->return_type =
         resolve_type(current_method->return_type, current_method);
-    log_debug("Binding method '{}' (return type: '{}')",
+    log_trace("Binding method '{}' (return type: '{}')",
               current_method->method_name,
               current_method->return_type.to_string());
 
@@ -1692,14 +1692,14 @@ void Binder::bind_tree(Node *root) {
     }
 
     current_method->frame_size = local_variable_index;
-    log_debug("Method '{}' frame size resolved to {} words",
+    log_trace("Method '{}' frame size resolved to {} words",
               current_method->method_name, current_method->frame_size);
     exit_scope();
     return;
   } else if (root->node_type == NodeType::CONSTRUCTOR_DECL) {
     auto *ctor = static_cast<ConstructorDeclaration *>(root);
     local_variable_index = 0;
-    log_debug("Binding constructor for class '{}'", ctor->class_name);
+    log_trace("Binding constructor for class '{}'", ctor->class_name);
 
     SymbolTable constructor_scope;
     enter_scope(&constructor_scope);
@@ -1749,7 +1749,7 @@ void Binder::bind_tree(Node *root) {
     super_allowed = false;
 
     ctor->frame_size = local_variable_index;
-    log_debug("Constructor for '{}' frame size resolved to {} words",
+    log_trace("Constructor for '{}' frame size resolved to {} words",
               ctor->class_name, ctor->frame_size);
     exit_scope();
     return;
@@ -2196,7 +2196,7 @@ void Binder::visit(BinaryExpression &n) {
       n.expression_type =
           static_cast<MethodDeclaration *>(method_decl)->return_type;
       evaluated_type = n.expression_type;
-      log_debug("Resolved overloaded binary operator: {}", mangled);
+      log_trace("Resolved overloaded binary operator: {}", mangled);
       return;
     }
 
@@ -2339,7 +2339,7 @@ void Binder::visit(AssignmentExpression &n) {
         n.expression_type =
             static_cast<MethodDeclaration *>(method_decl)->return_type;
         evaluated_type = n.expression_type;
-        log_debug("Resolved overloaded assignment operator: {}", mangled);
+        log_trace("Resolved overloaded assignment operator: {}", mangled);
         return;
       }
     }
@@ -2884,7 +2884,7 @@ void Binder::visit(MethodCallExpression &n) {
         n.expression_type = {"void", 0};
       }
       evaluated_type = n.expression_type;
-      log_debug("Resolved member method call: '{}' (virtual: {})", mangled_name,
+      log_trace("Resolved member method call: '{}' (virtual: {})", mangled_name,
                 n.is_virtual_call);
       return;
     } else {
@@ -3134,7 +3134,7 @@ void Binder::visit(MethodCallExpression &n) {
         n.expression_type = {"void", 0};
       }
       evaluated_type = n.expression_type;
-      log_debug("Resolved local/global method call: '{}' (virtual: {})",
+      log_trace("Resolved local/global method call: '{}' (virtual: {})",
                 mangled_name.empty() ? base_name : mangled_name,
                 n.is_virtual_call);
       return;
@@ -3145,7 +3145,7 @@ void Binder::visit(MethodCallExpression &n) {
 void Binder::visit(NewInstanceExpression &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
     n.type_info = resolve_type(n.type_info, &n);
-    log_debug("Binding new instance instantiation for type '{}'",
+    log_trace("Binding new instance instantiation for type '{}'",
               n.type_info.to_string());
     Node *resolved_cls = global_scope.resolve(n.type_info.name);
     if (resolved_cls && resolved_cls->node_type == NodeType::CLASS_DECL) {
@@ -3898,7 +3898,7 @@ void Binder::visit(PackageStatement &n) {
     known_packages.insert(current_package);
     n.mangled_name = n.package_name;
     global_scope.define(n.mangled_name, &n);
-    log_debug("Configured active package: '{}'", n.package_name);
+    log_trace("Configured active package: '{}'", n.package_name);
   } else if (current_pass == BinderPass::REGISTER_MEMBERS) {
     current_package = n.package_name + ".";
     current_prefix = current_package;
@@ -3913,7 +3913,7 @@ void Binder::visit(AliasStatement &n) {
       std::string full_name = current_prefix + n.alias_name;
       n.package_context = current_prefix;
       template_registry[full_name] = &n;
-      log_debug("Registered alias template blueprint: '{}' (params: {})",
+      log_trace("Registered alias template blueprint: '{}' (params: {})",
                 full_name, n.template_parameters.size());
     }
     return;
@@ -3925,7 +3925,7 @@ void Binder::visit(AliasStatement &n) {
       record_error(&n, "Duplicate declaration of alias '" + n.alias_name + "'");
     n.mangled_name = full_name;
     global_scope.define(full_name, &n);
-    log_debug("Registered global alias: '{}'", full_name);
+    log_trace("Registered global alias: '{}'", full_name);
   }
 }
 
@@ -3951,7 +3951,7 @@ void Binder::visit(EnumDeclaration &n) {
       record_error(&n, "Duplicate global symbol: " + full_name);
     n.mangled_name = full_name;
     global_scope.define(full_name, &n);
-    log_debug("Registered global enum: '{}'", full_name);
+    log_trace("Registered global enum: '{}'", full_name);
     std::string my_prefix = full_name + ".";
     for (const auto &child : n.children) {
       if (child)
@@ -3971,7 +3971,7 @@ void Binder::visit(ClassDeclaration &n) {
       std::string full_name = current_prefix + n.class_name;
       n.package_context = current_prefix;
       template_registry[full_name] = &n;
-      log_debug("Registered class template blueprint: '{}' (params: {})",
+      log_trace("Registered class template blueprint: '{}' (params: {})",
                 full_name, n.template_parameters.size());
     }
     return;
@@ -3983,7 +3983,7 @@ void Binder::visit(ClassDeclaration &n) {
       record_error(&n, "Duplicate global symbol: " + full_name);
     n.mangled_name = full_name;
     global_scope.define(full_name, &n);
-    log_debug("Registered global class: '{}'", full_name);
+    log_trace("Registered global class: '{}'", full_name);
 
     bool has_ctor = false;
     for (const auto &child : n.children) {
@@ -4068,7 +4068,7 @@ void Binder::visit(ConstructorDeclaration &n) {
     n.mangled_name = full_name;
     n.package_context = current_package;
     global_scope.define(full_name, &n);
-    log_debug("Registered class constructor: '{}'", full_name);
+    log_trace("Registered class constructor: '{}'", full_name);
   }
 }
 
@@ -4078,7 +4078,7 @@ void Binder::visit(MethodDeclaration &n) {
       std::string full_name = current_prefix + n.method_name;
       n.package_context = current_package;
       template_registry[full_name] = &n;
-      log_debug("Registered method template blueprint: '{}' (params: {})",
+      log_trace("Registered method template blueprint: '{}' (params: {})",
                 full_name, n.template_parameters.size());
     }
     return;
@@ -4103,7 +4103,7 @@ void Binder::visit(MethodDeclaration &n) {
     n.mangled_name = full_name;
     n.package_context = current_package;
     global_scope.define(full_name, &n);
-    log_debug("Registered method signature: '{}'", full_name);
+    log_trace("Registered method signature: '{}'", full_name);
   }
 }
 

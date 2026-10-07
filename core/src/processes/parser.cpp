@@ -72,11 +72,6 @@ public:
       process->log_trace(format, std::forward<Args>(args)...);
   }
 
-  template <typename... Args>
-  void log_debug(const std::string &format, Args &&...args) {
-    if (process)
-      process->log_debug(format, std::forward<Args>(args)...);
-  }
 
   template <typename... Args>
   void log_info(const std::string &format, Args &&...args) {
@@ -460,7 +455,7 @@ std::unique_ptr<Node> ParserState::parse_call_or_access() {
       }
       if (valid_template && temp < tokens.size() &&
           tokens[temp]->type == TokenType::PUNCTUATION_OPEN_PAREN) {
-        log_debug(
+        log_trace(
             "Parsing explicit template arguments for method call at line {}",
             peek().line);
         advance(); // consume '<'
@@ -1162,7 +1157,7 @@ std::unique_ptr<Node> ParserState::parse_variable_declaration(bool is_const,
       throw ParseError("Methods cannot be declared inside another method", name_tok.line, name_tok.column);
     }
     std::string v_name = std::get<std::string>(name_tok.value);
-    log_debug("Parsing local variable declaration '{}' of type '{}' at line {}",
+    log_trace("Parsing local variable declaration '{}' of type '{}' at line {}",
               v_name, type.to_string(), start.line);
 
     auto decl =
@@ -1274,7 +1269,7 @@ std::unique_ptr<Node> ParserState::parse_package_statement() {
   }
   consume(TokenType::PUNCTUATION_SEMICOLON,
           "Expected ';' after package declaration");
-  log_debug("Declared package: {}", name_str);
+  log_trace("Declared package: {}", name_str);
   return std::make_unique<PackageStatement>(pkg, name_str);
 }
 
@@ -1299,7 +1294,7 @@ std::unique_ptr<Node> ParserState::parse_alias_statement() {
   consume(TokenType::PUNCTUATION_SEMICOLON,
           "Expected ';' after alias declaration");
 
-  log_debug("Declared alias '{}' = '{}' (generics count: {})", a_name,
+  log_trace("Declared alias '{}' = '{}' (generics count: {})", a_name,
             type.to_string(), tparams.size());
   auto decl = std::make_unique<AliasStatement>(alias, a_name, std::move(type));
   decl->template_parameters = tparams;
@@ -1323,7 +1318,7 @@ std::unique_ptr<Node> ParserState::parse_import_statement() {
   consume(TokenType::PUNCTUATION_SEMICOLON, "Expected ';' after import statement");
 
   if (is_wildcard) {
-    log_debug("Declared wildcard import: '{}.*'", full_path);
+    log_trace("Declared wildcard import: '{}.*'", full_path);
     return std::make_unique<ImportStatement>(import_tok, full_path, "*");
   }
 
@@ -1331,11 +1326,11 @@ std::unique_ptr<Node> ParserState::parse_import_statement() {
   if (last_dot != std::string::npos) {
     std::string pkg = full_path.substr(0, last_dot);
     std::string sym = full_path.substr(last_dot + 1);
-    log_debug("Declared symbol import: '{}' from '{}'", sym, pkg);
+    log_trace("Declared symbol import: '{}' from '{}'", sym, pkg);
     return std::make_unique<ImportStatement>(import_tok, pkg, sym);
   }
 
-  log_debug("Declared import: '{}'", full_path);
+  log_trace("Declared import: '{}'", full_path);
   return std::make_unique<ImportStatement>(import_tok, full_path, "");
 }
 
@@ -1381,7 +1376,7 @@ std::unique_ptr<Node> ParserState::parse_interface_declaration(TokenType modifie
     } while (match(TokenType::PUNCTUATION_COMMA));
     consume(TokenType::OPERATOR_GREATER_THAN,
             "Expected '>' after template parameters");
-    log_debug("Interface '{}' template parameters count: {}", iface_name,
+    log_trace("Interface '{}' template parameters count: {}", iface_name,
               decl->template_parameters.size());
   }
 
@@ -1448,7 +1443,7 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
     } while (match(TokenType::PUNCTUATION_COMMA));
     consume(TokenType::OPERATOR_GREATER_THAN,
             "Expected '>' after template parameters");
-    log_debug("Class '{}' template parameters count: {}", cls_name,
+    log_trace("Class '{}' template parameters count: {}", cls_name,
               decl->template_parameters.size());
   }
 
@@ -1456,7 +1451,7 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
     TypeInfo base_type = parse_type_info();
     decl->base_class_name = base_type.to_string();
     decl->base_class_type = base_type;
-    log_debug("Class '{}' extends '{}'", cls_name, decl->base_class_name);
+    log_trace("Class '{}' extends '{}'", cls_name, decl->base_class_name);
   }
   if (match(TokenType::KEYWORD_IMPLEMENTS)) {
     do {
@@ -1545,7 +1540,7 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
         throw ParseError("Constructor name '" + std::get<std::string>(peek().value) + "' does not match enclosing class '" + decl->class_name + "'", peek().line, peek().column);
       }
       Token ctor_name = advance();
-      log_debug("Parsing constructor for '{}' at line {}", decl->class_name,
+      log_trace("Parsing constructor for '{}' at line {}", decl->class_name,
                 ctor_name.line);
       auto ctor =
           std::make_unique<ConstructorDeclaration>(ctor_name, decl->class_name);
@@ -1647,7 +1642,7 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
     child->parent = decl.get();
   }
 
-  log_debug("Completed parsing class '{}' with {} members", cls_name,
+  log_trace("Completed parsing class '{}' with {} members", cls_name,
             decl->children.size());
   return decl;
 }
@@ -1732,12 +1727,12 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
     }
     name_str += ">";
     tparams.clear();
-    log_debug("Detected explicit template specialization method signature: {}",
+    log_trace("Detected explicit template specialization method signature: {}",
               name_str);
   }
 
   if (match(TokenType::PUNCTUATION_OPEN_PAREN)) {
-    log_debug("Parsing method declaration '{}' returning '{}' at line {}",
+    log_trace("Parsing method declaration '{}' returning '{}' at line {}",
               name_str, type.to_string(), name.line);
     auto method =
         std::make_unique<MethodDeclaration>(name, name_str, std::move(type));
@@ -1788,7 +1783,7 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
     if (!is_inside_class && modifier != TokenType::KEYWORD_INTERNAL) {
       throw ParseError("Variable declarations with access modifiers must be inside a class body", name.line, name.column);
     }
-    log_debug("Parsing field declaration '{}' of type '{}' at line {}",
+    log_trace("Parsing field declaration '{}' of type '{}' at line {}",
               name_str, type.to_string(), name.line);
     auto field =
         std::make_unique<FieldDeclaration>(name, name_str, std::move(type));
@@ -1808,7 +1803,7 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
 }
 
 void Parser::execute() {
-  log_debug("Starting Syntax Analysis (Parsing)...");
+  log_trace("Starting Syntax Analysis (Parsing)...");
 
   for (const auto &[source, token_lists] : context.tokens) {
     if (token_lists.empty())
@@ -1827,7 +1822,7 @@ void Parser::execute() {
       source_name = std::get<std::string>(source);
     }
 
-    log_debug("Parsing source file: {}", source_name);
+    log_trace("Parsing source file: {}", source_name);
 
     try {
       while (!state.is_at_end()) {
@@ -1859,11 +1854,11 @@ void Parser::execute() {
       }
     }
 
-    log_debug("Completed parsing {}: generated {} top-level AST nodes",
+    log_trace("Completed parsing {}: generated {} top-level AST nodes",
               source_name, context.nodes[source].size());
   }
 
-  log_debug("Syntax Analysis completed.");
+  log_trace("Syntax Analysis completed.");
 }
 
 

@@ -371,7 +371,7 @@ public:
 };
 
 void Lexer::execute() {
-    log_debug("Starting Lexical Analysis...");
+    log_trace("Starting Lexical Analysis...");
     size_t total_files = context.options.sources.size();
     size_t file_index = 0;
 
@@ -449,11 +449,11 @@ void Lexer::execute() {
             }
         }
         
-        log_debug("Tokenized {} with {} tokens", source_name, tokens.size());
+        log_trace("Tokenized {} with {} tokens", source_name, tokens.size());
         context.tokens[source].push_back(std::move(tokens));
     }
     
-    log_debug("Lexical Analysis completed.");
+    log_trace("Lexical Analysis completed.");
 }
 
 } // namespace solix

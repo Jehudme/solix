@@ -24,18 +24,29 @@ std::vector<uint8_t> run(CompilationOptions& options) {
             file_count, file_count == 1 ? "" : "s");
     }
     
+    auto stage_start = std::chrono::steady_clock::now();
     Lexer lexer(context, "Lexer");
     lexer.execute();
     if (context.diagnostic->has_errors()) {
         throw CompilationFailedException("Lexical analysis failed with errors");
     }
+    auto stage_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - stage_start).count();
+    if (context.diagnostic->get_root_logger()) {
+        context.diagnostic->get_root_logger()->debug("Lexer completed in {} ms.", stage_elapsed);
+    }
     
+    stage_start = std::chrono::steady_clock::now();
     Parser parser(context, "Parser");
     parser.execute();
     if (context.diagnostic->has_errors()) {
         throw CompilationFailedException("Syntax analysis failed with errors");
     }
+    stage_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - stage_start).count();
+    if (context.diagnostic->get_root_logger()) {
+        context.diagnostic->get_root_logger()->debug("Parser completed in {} ms.", stage_elapsed);
+    }
     
+    stage_start = std::chrono::steady_clock::now();
     Binder binder(context, "Binder");
     try {
         binder.execute();
@@ -45,7 +56,12 @@ std::vector<uint8_t> run(CompilationOptions& options) {
     if (context.diagnostic->has_errors()) {
         throw CompilationFailedException("Semantic analysis failed with errors");
     }
+    stage_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - stage_start).count();
+    if (context.diagnostic->get_root_logger()) {
+        context.diagnostic->get_root_logger()->debug("Binder completed in {} ms.", stage_elapsed);
+    }
     
+    stage_start = std::chrono::steady_clock::now();
     Assembler assembler(context, "Assembler");
     try {
         assembler.execute();
@@ -54,6 +70,10 @@ std::vector<uint8_t> run(CompilationOptions& options) {
     }
     if (context.diagnostic->has_errors()) {
         throw CompilationFailedException("Assembly failed with errors");
+    }
+    stage_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - stage_start).count();
+    if (context.diagnostic->get_root_logger()) {
+        context.diagnostic->get_root_logger()->debug("Assembler completed in {} ms.", stage_elapsed);
     }
     
     if (options.assembly_output_path.has_value()) {
