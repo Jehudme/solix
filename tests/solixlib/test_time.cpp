@@ -172,4 +172,92 @@ TEST_CASE("Standard Library - solix.time.Chrono", "[solixlib][time]") {
         assert_compile_sources_success(sources);
         REQUIRE(run_solixlib_sources(sources) == 0);
     }
+
+    SECTION("Case 6.7: Operator overloading on Duration and Instant") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.time.Duration;
+            import solix.time.Instant;
+
+            class Main {
+                public static int32 main() {
+                    Duration d1 = Duration.from_seconds(10L);
+                    Duration d2 = Duration.from_seconds(5L);
+
+                    // Duration binary arithmetic
+                    Duration sum = d1 + d2;
+                    if (sum.to_seconds() != 15L) return 1;
+
+                    Duration diff = d1 - d2;
+                    if (diff.to_seconds() != 5L) return 2;
+
+                    Duration prod = d2 * 3L;
+                    if (prod.to_seconds() != 15L) return 3;
+
+                    Duration quot = d1 / 2L;
+                    if (quot.to_seconds() != 5L) return 4;
+
+                    // Duration comparisons
+                    if (!(d1 == Duration.from_seconds(10L))) return 5;
+                    if (d1 != Duration.from_seconds(10L)) return 6;
+                    if (!(d2 < d1)) return 7;
+                    if (!(d2 <= d1)) return 8;
+                    if (!(d1 > d2)) return 9;
+                    if (!(d1 >= d2)) return 10;
+
+                    // Instant arithmetic & difference
+                    Instant t1 = new Instant(1000000000L);
+                    Instant t2 = new Instant(3000000000L);
+
+                    Duration elapsed = t2 - t1;
+                    if (elapsed.to_seconds() != 2L) return 11;
+
+                    Instant fwd = t1 + Duration.from_seconds(5L);
+                    if (fwd.to_nanoseconds() != 6000000000L) return 12;
+
+                    Instant back = t2 - Duration.from_seconds(1L);
+                    if (back.to_nanoseconds() != 2000000000L) return 13;
+
+                    // Instant comparisons
+                    if (!(t1 < t2)) return 14;
+                    if (!(t1 <= t2)) return 15;
+                    if (!(t2 > t1)) return 16;
+                    if (!(t2 >= t1)) return 17;
+                    if (t1 == t2) return 18;
+                    if (!(t1 != t2)) return 19;
+
+                    return 0;
+                }
+            }
+        )";
+        assert_compile_sources_success(sources);
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
+
+    SECTION("Case 6.8: DateTime custom pattern formatting") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.time.DateTime;
+            import solix.core.String;
+
+            class Main {
+                public static int32 main() {
+                    DateTime dt = DateTime.from_epoch_millis(1700000000000L, true);
+
+                    String s1 = dt.format(new String("yyyy-MM-dd HH:mm:ss"));
+                    if (!s1.equals(new String("2023-11-14 22:13:20"))) return 1;
+
+                    String s2 = dt.format(new String("yyyy/MM/dd"));
+                    if (!s2.equals(new String("2023/11/14"))) return 2;
+
+                    String s3 = dt.format(new String("HH:mm:ss.SSS"));
+                    if (!s3.equals(new String("22:13:20.000"))) return 3;
+
+                    return 0;
+                }
+            }
+        )";
+        assert_compile_sources_success(sources);
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
 }

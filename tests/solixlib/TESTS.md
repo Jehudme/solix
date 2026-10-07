@@ -99,6 +99,8 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 6.4 [IMPLEMENTED]**: `Stopwatch` lifecycle (start, stop, reset, restart, elapsed duration querying) (`tests/solixlib/test_time.cpp`).
 - [x] **Case 6.5 [IMPLEMENTED]**: Sleep duration validation via native sleep binding (`tests/solixlib/test_time.cpp`).
 - [x] **Case 6.6 [IMPLEMENTED]**: Negative: invalid `DateTime` date bounds validation throws `IllegalArgumentException` (`tests/solixlib/test_time.cpp`).
+- [ ] **Case 6.7 [NOT IMPLEMENTED]**: Operator overloading on `Duration` (`+`, `-`, `*`, `/`, `==`, `!=`, `<`, `<=`, `>`, `>=`) and `Instant` (`- Instant -> Duration`, `+ Duration -> Instant`, `- Duration -> Instant`, `==`, `!=`, `<`, `<=`, `>`, `>=`) (`tests/solixlib/test_time.cpp`).
+- [ ] **Case 6.8 [NOT IMPLEMENTED]**: `DateTime.format(String pattern)` custom pattern formatting supporting `yyyy`, `MM`, `dd`, `HH`, `mm`, `ss`, `SSS` (`tests/solixlib/test_time.cpp`).
 
 ---
 
