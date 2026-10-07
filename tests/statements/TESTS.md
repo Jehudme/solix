@@ -4925,6 +4925,40 @@ class Main {
 ```
 *Expected Result*: Compilation fails reporting an unterminated or invalid hex escape sequence in string literal.
 
+---
+
+## Suite 53: Function Declaration Scope Rules
+
+### Case 53.1: Free Function Entry Point Without `static` [NOT IMPLEMENTED]
+```solix
+int32 helper(int32 x) {
+    return x * 2;
+}
+
+int32 main() {
+    return helper(21) == 42 ? 0 : 1;
+}
+```
+*Expected Result*: Top-level free functions outside a class are permitted without the `static` keyword, and non-`static` free `main()` is accepted as a valid executable entry point.
+
+---
+
+### Case 53.2: Rejection of `static` on Free Function Outside Class [NOT IMPLEMENTED]
+```solix
+static int32 compute() {
+    return 10;
+}
+
+int32 main() {
+    return compute();
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+'static' modifier is not allowed on functions outside of a class
+```
+
+
 
 
 
