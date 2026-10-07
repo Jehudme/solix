@@ -55,12 +55,56 @@ class LexerState {
     }
 
     void handle_string() {
+        std::string parsed_string;
         while (peek() != '"' && !is_at_end()) {
             if (peek() == '\n') {
                 current_line++;
                 current_column = 1;
+                parsed_string.push_back(advance());
+                continue;
             }
-            advance();
+            if (peek() == '\\') {
+                advance(); // consume '\'
+                if (is_at_end()) {
+                    add_token(TokenType::UNKNOWN_TOKEN, std::string("Unterminated string literal"));
+                    return;
+                }
+                char esc = advance();
+                switch (esc) {
+                    case 'n': parsed_string.push_back('\n'); break;
+                    case 't': parsed_string.push_back('\t'); break;
+                    case 'r': parsed_string.push_back('\r'); break;
+                    case '\\': parsed_string.push_back('\\'); break;
+                    case '\'': parsed_string.push_back('\''); break;
+                    case '\"': parsed_string.push_back('\"'); break;
+                    case '0': parsed_string.push_back('\0'); break;
+                    case 'x': {
+                        int hex_val = 0;
+                        for (int i = 0; i < 2; ++i) {
+                            if (is_at_end()) {
+                                add_token(TokenType::UNKNOWN_TOKEN, std::string("Unterminated hex escape in string literal"));
+                                return;
+                            }
+                            char h = advance();
+                            hex_val <<= 4;
+                            if (h >= '0' && h <= '9') hex_val |= (h - '0');
+                            else if (h >= 'a' && h <= 'f') hex_val |= (h - 'a' + 10);
+                            else if (h >= 'A' && h <= 'F') hex_val |= (h - 'A' + 10);
+                            else {
+                                add_token(TokenType::UNKNOWN_TOKEN, std::string("Invalid hex character in string literal"));
+                                return;
+                            }
+                        }
+                        parsed_string.push_back(static_cast<char>(hex_val));
+                        break;
+                    }
+                    default:
+                        parsed_string.push_back(esc);
+                        break;
+                }
+            } else {
+                parsed_string.push_back(advance());
+            }
         }
 
         if (is_at_end()) {
@@ -69,7 +113,6 @@ class LexerState {
         }
 
         advance(); // consume closing quote
-        std::string parsed_string = source_code.substr(start_pos + 1, current_pos - start_pos - 2);
         add_token(TokenType::STRING, parsed_string);
     }
 
