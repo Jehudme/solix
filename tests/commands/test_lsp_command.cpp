@@ -1454,3 +1454,257 @@ TEST_CASE("Suite 13: LSP Hover Signatures & Keyword Suppression", "[lsp][hover]"
         REQUIRE(send_hover(1111, 11, 8).is_null());
     }
 }
+
+TEST_CASE("Suite 14: LSP Generic Blueprint Scope Resolution & Manifest Discovery", "[lsp][commands]") {
+    std::string test_dir = "/tmp/solix_test_lsp_suite14_" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
+    std::filesystem::create_directories(test_dir + "/sub/src");
+
+    std::string helper_code = "package sub.pkg;\npublic class Helper { public int32 get_num() { return 42; } }\n";
+    std::string main_code = "package sub.pkg;\nimport sub.pkg.Helper;\npublic class Main { public int32 run() { return new Helper().get_num(); } }\n";
+    std::string manifest_code = R"({
+  "project": "sub_proj",
+  "version": "0.1.0",
+  "dependencies": [
+    { "type": "source", "path": "src/Helper.slx" }
+  ],
+  "profiles": { "debug": { "compilation": { "entry_point": "run" } } }
+})";
+
+    {
+        std::ofstream h(test_dir + "/sub/src/Helper.slx");
+        h << helper_code;
+        std::ofstream m(test_dir + "/sub/src/Main.slx");
+        m << main_code;
+        std::ofstream j(test_dir + "/sub/solix.json");
+        j << manifest_code;
+    }
+
+    SECTION("Case 14.1: Upward Manifest Discovery from Nested File Path") {
+        std::stringstream in;
+        std::stringstream out;
+        JsonRpcTransport transport(out, in);
+
+        // Initialize with ancestor directory test_dir (does NOT contain solix.json itself)
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 1},
+            {"method", "initialize"},
+            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+        });
+
+        // Open sub/src/Main.slx
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", "file://" + test_dir + "/sub/src/Main.slx"},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", main_code}
+            }}
+        });
+
+        transport.write_message({{"jsonrpc", "2.0"}, {"id", 2}, {"method", "shutdown"}, {"params", nlohmann::json::object()}});
+        transport.send_notification("exit", nlohmann::json::object());
+
+        LspServer server(in, out);
+        REQUIRE(server.run() == 0);
+
+        JsonRpcTransport reader(out, in);
+        auto init_resp = reader.read_message();
+        REQUIRE(init_resp.has_value());
+
+        // Read publishDiagnostics: should have 0 errors because Helper.slx was resolved via upward solix.json discovery
+        auto diag_msg = reader.read_message();
+        REQUIRE(diag_msg.has_value());
+        if (diag_msg.value().value("method", "") == "textDocument/publishDiagnostics") {
+            auto diags = diag_msg.value()["params"]["diagnostics"];
+            REQUIRE(diags.empty());
+        }
+    }
+
+    SECTION("Case 14.2 & 14.3: Generic Blueprint Scope Parameter & Chained Member Hover/Definition") {
+        std::stringstream in;
+        std::stringstream out;
+        JsonRpcTransport transport(out, in);
+
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 1},
+            {"method", "initialize"},
+            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+        });
+
+        std::string generic_code =
+            "public class InnerService {\n"                          // 0
+            "    public bool is_ready() { return true; }\n"          // 1
+            "}\n"                                                    // 2
+            "public class MyBox<T> {\n"                              // 3
+            "    private InnerService _svc;\n"                       // 4
+            "    public bool contains(T item) {\n"                   // 5
+            "        return this._svc.is_ready();\n"                 // 6
+            "    }\n"                                                // 7
+            "}\n";                                                   // 8
+
+        std::string file_uri = "file://" + test_dir + "/GenericBox.slx";
+
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", file_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", generic_code}
+            }}
+        });
+
+        // Hover on "item" parameter at line 5, char 27
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 10},
+            {"method", "textDocument/hover"},
+            {"params", {{"textDocument", {{"uri", file_uri}}}, {"position", {{"line", 5}, {"character", 27}}}}}
+        });
+
+        // Definition on "item" parameter at line 5, char 27
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 11},
+            {"method", "textDocument/definition"},
+            {"params", {{"textDocument", {{"uri", file_uri}}}, {"position", {{"line", 5}, {"character", 27}}}}}
+        });
+
+        // Hover on "is_ready" member call at line 6, char 27
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 12},
+            {"method", "textDocument/hover"},
+            {"params", {{"textDocument", {{"uri", file_uri}}}, {"position", {{"line", 6}, {"character", 27}}}}}
+        });
+
+        // Definition on "is_ready" at line 6, char 27
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 13},
+            {"method", "textDocument/definition"},
+            {"params", {{"textDocument", {{"uri", file_uri}}}, {"position", {{"line", 6}, {"character", 27}}}}}
+        });
+
+        transport.write_message({{"jsonrpc", "2.0"}, {"id", 99}, {"method", "shutdown"}, {"params", nlohmann::json::object()}});
+        transport.send_notification("exit", nlohmann::json::object());
+
+        LspServer server(in, out);
+        REQUIRE(server.run() == 0);
+
+        JsonRpcTransport reader(out, in);
+        std::map<int, nlohmann::json> responses;
+        while (auto msg = reader.read_message()) {
+            if (msg.value().contains("id") && msg.value()["id"].is_number()) {
+                responses[msg.value()["id"].get<int>()] = msg.value();
+            }
+        }
+
+        // Hover on item
+        REQUIRE(responses.count(10));
+        auto r10 = responses[10]["result"];
+        REQUIRE_FALSE(r10.is_null());
+        std::string md10 = r10["contents"]["value"];
+        REQUIRE(md10.find("T item") != std::string::npos);
+
+        // Definition on item -> line 5
+        REQUIRE(responses.count(11));
+        auto r11 = responses[11]["result"];
+        REQUIRE_FALSE(r11.is_null());
+        REQUIRE(r11["range"]["start"]["line"].get<int>() == 5);
+
+        // Hover on is_ready -> public bool is_ready()
+        REQUIRE(responses.count(12));
+        auto r12 = responses[12]["result"];
+        REQUIRE_FALSE(r12.is_null());
+        std::string md12 = r12["contents"]["value"];
+        REQUIRE(md12.find("bool is_ready()") != std::string::npos);
+
+        // Definition on is_ready -> line 1
+        REQUIRE(responses.count(13));
+        auto r13 = responses[13]["result"];
+        REQUIRE_FALSE(r13.is_null());
+        REQUIRE(r13["range"]["start"]["line"].get<int>() == 1);
+    }
+
+    SECTION("Case 14.4: Resilient this. Completion in Generic Classes During Live Editing") {
+        std::stringstream in;
+        std::stringstream out;
+        JsonRpcTransport transport(out, in);
+
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 1},
+            {"method", "initialize"},
+            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+        });
+
+        std::string base_code =
+            "public class ItemBox<T> {\n"                             // 0
+            "    private int32 _count;\n"                             // 1
+            "    public void add(T item) {\n"                         // 2
+            "    }\n"                                                 // 3
+            "}\n";                                                    // 4
+
+        std::string file_uri = "file://" + test_dir + "/ItemBox.slx";
+
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", file_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", base_code}
+            }}
+        });
+
+        // Edit to type "        this." at line 3 (transient syntax error)
+        std::string edited_code =
+            "public class ItemBox<T> {\n"                             // 0
+            "    private int32 _count;\n"                             // 1
+            "    public void add(T item) {\n"                         // 2
+            "        this.\n"                                         // 3
+            "    }\n"                                                 // 4
+            "}\n";                                                    // 5
+
+        transport.send_notification("textDocument/didChange", {
+            {"textDocument", {{"uri", file_uri}, {"version", 2}}},
+            {"contentChanges", {{{"text", edited_code}}}}
+        });
+
+        // Request completion after "this." at line 3, char 13
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 20},
+            {"method", "textDocument/completion"},
+            {"params", {{"textDocument", {{"uri", file_uri}}}, {"position", {{"line", 3}, {"character", 13}}}}}
+        });
+
+        transport.write_message({{"jsonrpc", "2.0"}, {"id", 99}, {"method", "shutdown"}, {"params", nlohmann::json::object()}});
+        transport.send_notification("exit", nlohmann::json::object());
+
+        LspServer server(in, out);
+        REQUIRE(server.run() == 0);
+
+        JsonRpcTransport reader(out, in);
+        std::map<int, nlohmann::json> responses;
+        while (auto msg = reader.read_message()) {
+            if (msg.value().contains("id") && msg.value()["id"].is_number()) {
+                responses[msg.value()["id"].get<int>()] = msg.value();
+            }
+        }
+
+        REQUIRE(responses.count(20));
+        auto comp_items = responses[20]["result"]["items"];
+        std::vector<std::string> labels;
+        for (const auto& item : comp_items) {
+            labels.push_back(item["label"].get<std::string>());
+        }
+
+        REQUIRE(std::find(labels.begin(), labels.end(), "_count") != labels.end());
+        REQUIRE(std::find(labels.begin(), labels.end(), "add") != labels.end());
+    }
+
+    std::filesystem::remove_all(test_dir);
+}
+
