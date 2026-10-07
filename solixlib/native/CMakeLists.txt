@@ -8,6 +8,7 @@ add_library(solixlib_native SHARED
     src/io_fs.cpp
     src/io_stream.cpp
     src/system.cpp
+    src/crypto.cpp
 )
 
 

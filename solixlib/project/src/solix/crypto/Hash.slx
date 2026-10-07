@@ -1,0 +1,48 @@
+package solix.crypto;
+
+import solix.core.String;
+
+public class Hash {
+    private static native int8[] native_sha256(int8[] data);
+    private static native char[] native_sha256_hex(char[] text);
+    private static native int8[] native_sha1(int8[] data);
+    private static native char[] native_sha1_hex(char[] text);
+    private static native int8[] native_md5(int8[] data);
+    private static native char[] native_md5_hex(char[] text);
+
+    public static int8[] sha256(int8[] data) {
+        if (data == null) return new int8[0];
+        return native_sha256(data);
+    }
+
+    public static String sha256_hex(String text) {
+        if (text == null || text.data == null) return "";
+        char[] res = native_sha256_hex(text.data);
+        if (res == null) return "";
+        return new String(res);
+    }
+
+    public static int8[] sha1(int8[] data) {
+        if (data == null) return new int8[0];
+        return native_sha1(data);
+    }
+
+    public static String sha1_hex(String text) {
+        if (text == null || text.data == null) return "";
+        char[] res = native_sha1_hex(text.data);
+        if (res == null) return "";
+        return new String(res);
+    }
+
+    public static int8[] md5(int8[] data) {
+        if (data == null) return new int8[0];
+        return native_md5(data);
+    }
+
+    public static String md5_hex(String text) {
+        if (text == null || text.data == null) return "";
+        char[] res = native_md5_hex(text.data);
+        if (res == null) return "";
+        return new String(res);
+    }
+}

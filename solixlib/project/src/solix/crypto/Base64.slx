@@ -1,0 +1,47 @@
+package solix.crypto;
+
+import solix.core.String;
+import solix.exceptions.FormatException;
+
+public class Base64 {
+    private static native char[] native_encode(int8[] data);
+    private static native int8[] native_decode(char[] base64);
+    private static native char[] native_encode_string(char[] text);
+    private static native char[] native_decode_to_string(char[] base64);
+
+    public static String encode(int8[] data) {
+        if (data == null) return "";
+        char[] res = native_encode(data);
+        if (res == null) return "";
+        return new String(res);
+    }
+
+    public static String encode_string(String text) {
+        if (text == null || text.data == null) return "";
+        char[] res = native_encode_string(text.data);
+        if (res == null) return "";
+        return new String(res);
+    }
+
+    public static int8[] decode(String base64) {
+        if (base64 == null || base64.data == null) {
+            return new int8[0];
+        }
+        int8[] res = native_decode(base64.data);
+        if (res == null) {
+            throw new FormatException("Invalid Base64 format");
+        }
+        return res;
+    }
+
+    public static String decode_to_string(String base64) {
+        if (base64 == null || base64.data == null) {
+            return "";
+        }
+        char[] res = native_decode_to_string(base64.data);
+        if (res == null) {
+            throw new FormatException("Invalid Base64 format");
+        }
+        return new String(res);
+    }
+}
