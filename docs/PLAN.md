@@ -71,7 +71,7 @@
 | **Phase 41** | Diagnostic Logging Level Demotion (`log_debug` -> `log_trace` & Phase Pipeline Timing) | `P2 Medium` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 42** | CLI Toolchain: `version` Subcommand & `--version` Flag | `P2 Medium` | `cli`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 43** | Entry Point Resolution Disambiguation (Exhaustive Scan, Duplicate/Ambiguity Detection with File, Row, Col) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
-| **Phase 44** | Standard Library: Friendly Primitive Aliases (`Primitives.slx` with Wildcard Re-export) | `P2 Medium` | `solixlib/core`, `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 44** | Standard Library: Friendly Primitive Aliases (`Primitives.slx` with Wildcard Re-export) | `P2 Medium` | `solixlib/core`, `core`, `tests`, `docs` | - [x] Completed & Merged |
 
 ---
 
@@ -2231,17 +2231,17 @@ Replace the first-match entry point locator in `Assembler` with an exhaustive se
 
 - **Priority**: `P2 Medium`
 - **Affected Modules**: `core/src/processes/binder.cpp`, `solixlib/project/src/solix/core/Primitives.slx`, `tests/solixlib/`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Ensure that type aliases can be re-exported and imported via wildcard (`import solix.core.primitives.*` / `import solix.core.*`). Introduce `Primitives.slx` containing friendly aliases: `alias int = int32;`, `alias long = int64;`, `alias short = int16;`, `alias byte = int8;`, `alias ubyte = uint8;`, `alias ushort = uint16;`, `alias uint = uint32;`, `alias ulong = uint64;`, `alias float = float32;`, `alias double = float64;`.
 
 ### Action Items
-- [ ] Verify and harden Binder wildcard import resolution for `AliasStatement` symbols.
-- [ ] Create `solixlib/project/src/solix/core/Primitives.slx` declaring friendly primitive type aliases.
-- [ ] Update `solixlib/project/solix.json` manifest.
-- [ ] Add unit tests in `tests/solixlib/test_primitives.cpp` verifying code using `import solix.core.Primitives;` and wildcard imports.
-- [ ] Document primitive aliases in `docs/spec/solixlib/primitives.md`.
+- [x] Verify and harden Binder wildcard import resolution for `AliasStatement` symbols.
+- [x] Create `solixlib/project/src/solix/core/Primitives.slx` declaring friendly primitive type aliases.
+- [x] Update `solixlib/project/solix.json` manifest.
+- [x] Add unit tests in `tests/solixlib/test_primitives.cpp` verifying code using `import solix.core.Primitives;` and wildcard imports.
+- [x] Document primitive aliases in `docs/spec/solixlib/primitives.md`.
 
 
 
