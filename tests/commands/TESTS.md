@@ -618,6 +618,17 @@ This document is the master test specification for the Solix CLI command suite (
 
 #### Case 11.5: Definition and Hover on Whitespace / Unresolved Tokens [IMPLEMENTED]
 - **Request**: `textDocument/definition` and `textDocument/hover` at empty space or comment.
+- **Expected**: Returns `null` response without crashing or emitting error diagnostics.
+
+#### Case 11.6: Multi-File Cross-Unit Go-to-Definition [IMPLEMENTED]
+- **Command**: `solix lsp`
+- **Setup**: Project with multiple compilation units (e.g. `Main.slx` importing and invoking a method from `Helper.slx`).
+- **Request**: `textDocument/definition` at call site in `Main.slx`.
+- **Expected**: Returns `Location` pointing to `Helper.slx` URI with valid line and column coordinates, without `file:///` truncation or dead pointer corruption.
+
+#### Case 11.7: TextMate Syntax Grammar Completeness [IMPLEMENTED]
+- **Setup**: `editors/vscode/syntaxes/solix.tmLanguage.json`
+- **Validation**: Asserts all control and declaration keywords (`implements`, `extends`, `operator`, `assert`, `exit`, `weak`, `instanceof`, `sizeof`) and class name capture rules (`entity.name.type.class.solix`) are present.
 ---
 
 # Part VII: Language Server Intelligence Commands

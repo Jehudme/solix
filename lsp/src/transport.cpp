@@ -7,6 +7,7 @@ JsonRpcTransport::JsonRpcTransport(std::istream& in, std::ostream& out)
     : in_(in), out_(out) {}
 
 std::optional<nlohmann::json> JsonRpcTransport::read_message() {
+    in_.clear();
     size_t content_length = 0;
     std::string line;
 
@@ -49,6 +50,7 @@ std::optional<nlohmann::json> JsonRpcTransport::read_message() {
 }
 
 void JsonRpcTransport::write_message(const nlohmann::json& message) {
+    out_.clear();
     std::string body = message.dump();
     out_ << "Content-Length: " << body.size() << "\r\n\r\n" << body;
     out_.flush();

@@ -426,7 +426,19 @@ void Lexer::execute() {
             }
         }
 
-        LexerState state(content, &source);
+        // Find persistent Source pointer in context.options.sources
+        const Source* persistent_source = nullptr;
+        for (const auto& [src_key, _] : context.options.sources) {
+            if (src_key == source) {
+                persistent_source = &src_key;
+                break;
+            }
+        }
+        if (!persistent_source) {
+            persistent_source = &source;
+        }
+
+        LexerState state(content, persistent_source);
         TokenList tokens = state.tokenize();
 
         if (context.diagnostic) {

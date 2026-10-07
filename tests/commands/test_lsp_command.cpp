@@ -419,6 +419,105 @@ TEST_CASE("Suite 11: LSP Navigation & Inspection (Definitions, Type-Definitions 
         REQUIRE(null_resp.value().value("id", 0) == 105);
         REQUIRE(null_resp.value()["result"].is_null());
     }
+
+    SECTION("Case 11.6: Multi-File Cross-Unit Go-to-Definition") {
+        std::stringstream in_s;
+        std::stringstream out_s;
+        LspServer srv(in_s, out_s);
+        JsonRpcTransport rdr(out_s, in_s);
+
+        std::string helper_uri = "file:///test/Helper.slx";
+        std::string main_uri = "file:///test/Main.slx";
+
+        std::string helper_src =
+            "class ExternalHelper {\n"
+            "    public void externalAction() {}\n"
+            "}\n";
+
+        std::string main_src =
+            "class App {\n"
+            "    public void run() {\n"
+            "        ExternalHelper eh = new ExternalHelper();\n"
+            "        eh.externalAction();\n"
+            "    }\n"
+            "}\n";
+
+        nlohmann::json open_helper = {
+            {"jsonrpc", "2.0"},
+            {"method", "textDocument/didOpen"},
+            {"params", {
+                {"textDocument", {
+                    {"uri", helper_uri},
+                    {"languageId", "solix"},
+                    {"version", 1},
+                    {"text", helper_src}
+                }}
+            }}
+        };
+        srv.process_message(open_helper);
+
+        nlohmann::json open_main = {
+            {"jsonrpc", "2.0"},
+            {"method", "textDocument/didOpen"},
+            {"params", {
+                {"textDocument", {
+                    {"uri", main_uri},
+                    {"languageId", "solix"},
+                    {"version", 1},
+                    {"text", main_src}
+                }}
+            }}
+        };
+        srv.process_message(open_main);
+
+        // Drain publishDiagnostics notifications from open_helper and open_main
+        auto diag1 = rdr.read_message();
+        REQUIRE(diag1.has_value());
+        auto diag2 = rdr.read_message();
+        REQUIRE(diag2.has_value());
+
+        // Go to definition of 'externalAction' in Main.slx (line 3, character 12)
+        nlohmann::json def_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 106},
+            {"method", "textDocument/definition"},
+            {"params", {
+                {"textDocument", {{"uri", main_uri}}},
+                {"position", {{"line", 3}, {"character", 12}}}
+            }}
+        };
+        srv.process_message(def_req);
+
+        auto def_resp = rdr.read_message();
+        REQUIRE(def_resp.has_value());
+        REQUIRE(def_resp.value().value("id", 0) == 106);
+        REQUIRE_FALSE(def_resp.value()["result"].is_null());
+
+        const auto& result = def_resp.value()["result"];
+        REQUIRE(result.contains("uri"));
+        std::string target_uri = result["uri"];
+        // Must point to Helper.slx, NOT empty or file:///
+        REQUIRE(target_uri.find("Helper.slx") != std::string::npos);
+        REQUIRE(result.contains("range"));
+        REQUIRE(result["range"]["start"]["line"] == 1);
+    }
+
+    SECTION("Case 11.7: TextMate Syntax Grammar Completeness") {
+        std::filesystem::path tm_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "editors" / "vscode" / "syntaxes" / "solix.tmLanguage.json";
+        std::ifstream f(tm_path);
+        REQUIRE(f.is_open());
+        nlohmann::json tm;
+        f >> tm;
+
+        std::string json_str = tm.dump();
+        // Verify key declaration and control keywords exist
+        REQUIRE(json_str.find("implements") != std::string::npos);
+        REQUIRE(json_str.find("extends") != std::string::npos);
+        REQUIRE(json_str.find("operator") != std::string::npos);
+        REQUIRE(json_str.find("assert") != std::string::npos);
+        REQUIRE(json_str.find("exit") != std::string::npos);
+        REQUIRE(json_str.find("entity.name.type.class.solix") != std::string::npos);
+    }
 }
 
 TEST_CASE("Suite 12: LSP Intelligence (Completions, Signature Help & Document Symbols)", "[lsp][intelligence]") {

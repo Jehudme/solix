@@ -13,6 +13,9 @@
       "include": "#numbers"
     },
     {
+      "include": "#class-declaration"
+    },
+    {
       "include": "#keywords"
     },
     {
@@ -88,15 +91,30 @@
         }
       ]
     },
+    "class-declaration": {
+      "patterns": [
+        {
+          "match": "\\b(class|interface|enum)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "keyword.declaration.solix"
+            },
+            "2": {
+              "name": "entity.name.type.class.solix"
+            }
+          }
+        }
+      ]
+    },
     "keywords": {
       "patterns": [
         {
           "name": "keyword.control.solix",
-          "match": "\\b(if|else|while|do|for|switch|case|default|break|continue|return|throw|try|catch|finally)\\b"
+          "match": "\\b(if|else|while|do|for|switch|case|default|break|continue|return|throw|try|catch|finally|assert|exit)\\b"
         },
         {
           "name": "keyword.declaration.solix",
-          "match": "\\b(class|interface|enum|struct|alias|package|import|function)\\b"
+          "match": "\\b(class|interface|enum|struct|alias|package|import|function|implements|extends|operator)\\b"
         },
         {
           "name": "storage.modifier.solix",

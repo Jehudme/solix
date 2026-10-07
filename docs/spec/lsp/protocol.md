@@ -113,3 +113,28 @@ Errors and warnings captured by `solix::Diagnostic` are transformed into LSP dia
 
 - **Coordinates**: Converted from 1-indexed compiler source positions to LSP 0-indexed positions.
 - **Spans**: Utilizes accurate start and end token coordinates (`end_line`, `end_column`).
+
+---
+
+## 5. Navigation & Spatial AST Indexing
+
+The Language Server populates a spatial interval index (`SpatialAstIndex`) mapping source coordinate intervals `(line, column) -> Node*` across all parsed compilation units.
+
+### 5.1 Definition & Type-Definition Resolution (`textDocument/definition`, `textDocument/typeDefinition`)
+- **Single- & Multi-File Resolution**: When navigating definitions across distinct source units (e.g. `Main.slx` calling a method in `Helper.slx`), target nodes are resolved to their originating file URI via `node->source` and context-registered AST sources.
+- **Dangling Source Guard**: Persistent compilation options (`last_opts_`) guarantee source string pointers remain valid across interactive requests without memory corruption.
+- **Fallbacks**: If AST nodes lack exact source pointers, the server queries registered compilation unit paths to construct well-formed `file://` URIs.
+
+### 5.2 Hover Tooltips (`textDocument/hover`)
+- Hover requests inspect AST nodes at target line/column coordinates and render Markdown-formatted symbol representations, method signatures, and type structures.
+- Whitespace and unmapped token spans safely resolve to `null` responses.
+
+---
+
+## 6. Syntax Grammar & TextMate Scopes
+
+The Solix VS Code extension embeds `solix.tmLanguage.json` for syntax tokenization.
+
+- **Class Declarations**: Matches `class|interface` declarations, styling the declared type identifier with `entity.name.type.class.solix`.
+- **Reserved Keywords**: Comprehensive keyword coverage including `implements`, `extends`, `operator`, `assert`, `exit`, `weak`, `instanceof`, `sizeof`, control flow (`match`, `case`, `defer`, `return`, `throw`), and type keywords (`int8` through `uint64`, `f32`, `f64`, `bool`, `string`, `void`, `auto`).
+

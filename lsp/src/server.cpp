@@ -353,7 +353,7 @@ Range node_to_lsp_range(Node* node) {
     return r;
 }
 
-Location make_location_from_node(Node* node) {
+Location make_location_from_node(Node* node, CompilationContext* ctx = nullptr) {
     Location loc;
     if (!node) return loc;
 
@@ -367,6 +367,35 @@ Location make_location_from_node(Node* node) {
             }
         } catch (...) {}
     }
+
+    if (path.empty() && ctx) {
+        // Fallback: search which compilation unit owns this AST node
+        for (const auto& [src, nodes] : ctx->nodes) {
+            bool found = false;
+            for (const auto& root : nodes) {
+                if (root.get() == node) {
+                    found = true;
+                    break;
+                }
+                for (const auto& child : root->children) {
+                    if (child.get() == node) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) break;
+            }
+            if (found) {
+                if (std::holds_alternative<std::filesystem::path>(src)) {
+                    path = std::get<std::filesystem::path>(src).string();
+                } else if (std::holds_alternative<std::string>(src)) {
+                    path = std::get<std::string>(src);
+                }
+                break;
+            }
+        }
+    }
+
     loc.uri = path_to_uri(path);
     loc.range = node_to_lsp_range(node);
     return loc;
@@ -482,7 +511,7 @@ void LspServer::handle_definition(const nlohmann::json& id, const nlohmann::json
         return;
     }
 
-    Location loc = make_location_from_node(target);
+    Location loc = make_location_from_node(target, last_context_.get());
     nlohmann::json loc_json = loc;
     transport_.send_response(id, loc_json);
 }
@@ -562,7 +591,7 @@ void LspServer::handle_type_definition(const nlohmann::json& id, const nlohmann:
         return;
     }
 
-    Location loc = make_location_from_node(type_decl);
+    Location loc = make_location_from_node(type_decl, last_context_.get());
     nlohmann::json loc_json = loc;
     transport_.send_response(id, loc_json);
 }
