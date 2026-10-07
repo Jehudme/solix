@@ -74,7 +74,7 @@
 | **Phase 44** | Standard Library: Friendly Primitive Aliases (`Primitives.slx` with Wildcard Re-export) | `P2 Medium` | `solixlib/core`, `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 45** | LSP Core Architecture, JSON-RPC Transport & Live Project Diagnostics | `P1 High` | `lsp`, `cli`, `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 46** | LSP Navigation & Inspection (`definition`, `typeDefinition`, `hover`, AST Spatial Index) | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [x] Completed & Merged |
-| **Phase 47** | LSP Intelligence: Scope Completion, Member Dot-Access, Signature Help & Document Symbols | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 47** | LSP Intelligence: Scope Completion, Member Dot-Access, Signature Help & Document Symbols | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 48** | Neovim IDE Plugin: Filetype Detection, Syntax Highlighting & `nvim-lspconfig` Setup | `P2 Medium` | `editors/neovim`, `docs` | - [ ] Deferred (Skipped) |
 | **Phase 49** | VS Code Extension: TextMate Grammar, Language Config, TypeScript Client & `.vsix` Packaging | `P2 Medium` | `editors/vscode`, `docs` | - [ ] Planned |
 
@@ -2310,23 +2310,23 @@ Provide fast code navigation and symbol inspection. Build an in-memory AST Spati
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `lsp/`, `core/src/processes/binder.cpp`, `tests/lsp/`, `docs/spec/lsp/`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Deliver productive authoring features: scope-aware autocompletion, dot-member access suggestions, signature parameter help, and document symbol hierarchy.
 
 ### Action Items
-- [ ] Implement Code Completion (`textDocument/completion`):
+- [x] Implement Code Completion (`textDocument/completion`):
   - **Member Access (`receiver.` / `this.` / `Class.`):** Evaluates receiver type and suggests visible methods and fields.
   - **Package Imports (`import solix.`):** Enumerate available packages from project manifest dependencies and registry.
   - **Scope Completion:** Suggests local variables, parameters, visible class members, and Solix language keywords.
-- [ ] Implement Signature Help (`textDocument/signatureHelp`):
+- [x] Implement Signature Help (`textDocument/signatureHelp`):
   - Triggered by `(` and `,`.
   - Identifies active method overload and parameter index.
-- [ ] Implement Document Symbols Outline (`textDocument/documentSymbol`):
+- [x] Implement Document Symbols Outline (`textDocument/documentSymbol`):
   - Emits hierarchical `DocumentSymbol` trees (classes, interfaces, enums, methods, fields) for editor breadcrumbs and symbol finders.
-- [ ] Add automated unit tests in `tests/lsp/test_lsp_completion.cpp` and `test_lsp_symbols.cpp`.
-- [ ] Document completion and outline features in `docs/spec/lsp/completion.md`.
+- [x] Add automated unit tests in `tests/commands/test_lsp_command.cpp` (Suite 12).
+- [x] Document completion and outline features in `docs/spec/lsp/intelligence.md`.
 
 ---
 
