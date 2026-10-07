@@ -77,6 +77,8 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 4.8 [IMPLEMENTED]**: Complete boxed integral types (`Byte`, `Short`, `Long`, `UByte`, `UShort`, `UInt`, `ULong`) and floating-point `Float` with bounds, parsing, hashing, and stringification (`tests/solixlib/test_primitives.cpp`).
 - [x] **Case 4.9 [IMPLEMENTED]**: Operator overloading on boxed primitives (`Int`, `Long`, `Double`, `Float`, `Byte`, `Short`) and `String` (`+`, `-`, `*`, `/`, `==`, `!=`, `<`, `>`, `<=`, `>=`) (`tests/solixlib/test_primitives.cpp`).
 - [x] **Case 4.10 [IMPLEMENTED]**: Functional parity for `Optional<T>`: `map<U>()` value transformation and `flat_map<U>()` monadic chaining (`tests/solixlib/test_primitives.cpp`).
+- [ ] **Case 4.11 [NOT IMPLEMENTED]**: Friendly Primitive Type Aliases: `int`, `long`, `short`, `byte`, `ubyte`, `ushort`, `uint`, `ulong`, `float`, `double` via `import solix.core.Primitives;` and wildcard `import solix.core.*;` (`tests/solixlib/test_primitives.cpp`).
+- [ ] **Case 4.12 [NOT IMPLEMENTED]**: Arithmetic and function signature typing with friendly primitive aliases across multiple modules (`tests/solixlib/test_primitives.cpp`).
 
 ---
 
