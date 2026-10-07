@@ -346,9 +346,18 @@ string_body    ::= printable_ascii_char_except_backslash_and_double_quote
                  | escape_sequence
 ```
 
-The same escape sequences defined in §8 apply inside string literals. The `\'` escape is valid in strings (produces a literal single-quote character) but is not required. The `\"` escape is required to embed a double-quote inside a string.
+The same escape sequences defined in §8 apply inside string literals (`\n`, `\t`, `\r`, `\\`, `\'`, `\"`, `\0`, `\xHH`). The lexer decodes these sequences directly into their corresponding byte values when constructing the token literal representation:
+- `\n` decodes to ASCII byte `0x0A` (line feed)
+- `\t` decodes to ASCII byte `0x09` (horizontal tab)
+- `\r` decodes to ASCII byte `0x0D` (carriage return)
+- `\\` decodes to ASCII byte `0x5C` (`\`)
+- `\"` decodes to ASCII byte `0x22` (`"`)
+- `\'` decodes to ASCII byte `0x27` (`'`)
+- `\0` decodes to ASCII byte `0x00` (null byte)
+- `\xHH` decodes to the exact hexadecimal byte value denoted by two hex digits `HH`. Any invalid hexadecimal character following `\x` causes a lexical error (`E_LEX: Invalid hex character in string literal`).
 
-String literals may span multiple source lines only if each embedded newline is represented by an explicit `\n` escape sequence; a raw line terminator inside a string literal is a lexical error.
+String literals may span multiple source lines only if each embedded newline is represented by an explicit `\n` escape sequence; a raw unescaped line terminator inside a string literal is a lexical error.
+
 
 ---
 
