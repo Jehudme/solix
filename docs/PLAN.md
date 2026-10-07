@@ -54,7 +54,13 @@
 | **Phase 32.4** | Emergency Refactor: Generic Associative Containers (`KeyValuePair<K, V>`, `HashMap<K, V>`, `TreeMap<K, V>`, `HashSet<T>`, `TreeSet<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [x] Complete |
 | **Phase 32.5** | Emergency Refactor: Align Filesystem (`File.slx`, `Directory.slx`) with `List<String>`, Update `test_filesystem.cpp`, Specs & Regression | `P0 Blocker` | `solixlib/io`, `docs`, `tests` | - [x] Complete |
 | **Phase 32.6** | CLI Build Ergonomics & Manifest Dependency Alignment (Positional Target & `name@version` Dependencies) | `P0 Blocker` | `cli`, `docs`, `tests` | - [x] Complete |
-| **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, Readers/Writers) | `P1 High` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
+| **Phase 32.7** | Standard Library: Structural Consolidation & Encapsulation (`Exceptions.slx`, `Interfaces.slx`, Node Encapsulation) | `P0 Blocker` | `solixlib`, `docs`, `tests` | - [ ] Planned |
+| **Phase 32.8** | Standard Library: Polymorphic Generic Collection Hierarchy & Interface Re-binding (`IList<T>`, `IMap<K, V>`, `ISet<T>`) | `P0 Blocker` | `solixlib/collections`, `docs`, `tests` | - [ ] Planned |
+| **Phase 32.9** | Standard Library: Complete Boxed Primitives (`Byte`..`ULong`, `Float`), Boxed Operator Overloads & `Optional<T>` Functional Parity (`map`, `flat_map`) | `P0 Blocker` | `solixlib/core`, `docs`, `tests` | - [ ] Planned |
+| **Phase 32.10** | Standard Library: Collection Ergonomics (Copy Constructors, Array Initializers, `map`, `reduce`) & String Primitive Constructors | `P1 High` | `solixlib/collections`, `solixlib/core`, `docs`, `tests` | - [ ] Planned |
+| **Phase 32.11** | Standard Library: Chrono & Time Ergonomics (Duration/Instant Operator Overloading, `DateTime.format` Pattern Formatting) | `P1 High` | `solixlib/time`, `docs`, `tests` | - [ ] Planned |
+| **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, `StreamReader`, `StreamWriter`, `BufferedReader`) & Object-Oriented `Path` (`operator/`) | `P1 High` | `solixlib/io`, `solixlib/native`, `docs`, `tests` | - [ ] Planned |
+| **Phase 33.1** | Standard Library: Documentation Schema Standardization & Developer Guides (Operator Overloading & Native C++ Interop Guides) | `P2 Medium` | `docs/spec/solixlib`, `docs/guide` | - [ ] Planned |
 | **Phase 34** | Standard Library: `solix.system.Environment` (OS, Env, Subprocesses) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 35** | Core Compiler & Runtime: Language Intrinsics (`assert`, `exit`, Hardcoded Built-ins) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
 | **Phase 36** | Standard Library: `solix.crypto` (Base64, Hex, SHA-256, MD5) | `P3 Low` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
@@ -1751,48 +1757,164 @@ Enhance `solix build` command ergonomics by removing the `-m` / `--manifest` req
 
 ---
 
-## Phase 33: Standard Library — `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, Readers/Writers)
+## Phase 32.7: Standard Library — Structural Consolidation & Encapsulation
 
-- **Priority**: `P1 High`
-- **Affected Modules**: `solixlib/project/src/solix/io/IStream.slx`, `FileStream.slx`, `MemoryStream.slx`, `TextReader.slx`, `TextWriter.slx`, `BinaryReader.slx`, `BinaryWriter.slx`, `solixlib/native/src/io_stream.cpp`, `tests/solixlib/test_streams.cpp`, `docs/spec/solixlib/streams.md`
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `solixlib/project/src/solix/exceptions/Exceptions.slx`, `solixlib/project/src/solix/collections/Interfaces.slx`, `solixlib/project/src/solix/collections/LinkedList.slx`, `solixlib/project/src/solix/collections/HashMap.slx`, `solixlib/project/src/solix/collections/TreeMap.slx`, `tests/solixlib/test_exceptions.cpp`, `docs/spec/solixlib/exceptions.md`
 - **Status**: - [ ] Planned
 
 ### Objective
-Implement the low-level byte-oriented and character-oriented streaming architecture: `IStream`, `FileStream`, `MemoryStream`, `TextReader`/`TextWriter`, and binary serializers `BinaryReader`/`BinaryWriter`.
+Resolve namespace pollution and contract fragmentation ("the tiny file problem") across `solixlib`:
+1. Consolidate 21 separate 5-line exception files into a single, cohesive `solix.exceptions.Exceptions` (`Exceptions.slx`) module containing `Exception`, `RuntimeException`, `IllegalArgumentException`, `ArgumentNullException`, `ArgumentOutOfRangeException`, `IndexOutOfBoundsException`, `NullReferenceException`, `InvalidOperationException`, `NotSupportedException`, `KeyNotFoundException`, `NoSuchElementException`, `DivideByZeroException`, `ArithmeticException`, `OverflowException`, `FormatException`, `IOException`, `FileNotFoundException`, `DirectoryNotFoundException`, `SocketException`, `TimeoutException`, `AssertionError`.
+2. Consolidate fragmented collection contracts (`IIterable`, `IIterator`, `ICollection`, `IList`, `IDeque`, `ISet`, `IMap`, `IReadOnlyCollection`) into a unified `solix.collections.Interfaces` (`Interfaces.slx`).
+3. Encapsulate internal node data structures (`LinkedListNode<T>`, `HashMapEntry<K, V>`, `TreeMapNode<K, V>`) so they are internal to the collections package and not exposed as public clutter.
 
-### Interconnection & Layering
-- **Builds On**: `String` (Phase 23), byte arrays, and `filesystem` (Phase 32).
-- **Exception Integration**: Throws `InvalidOperationException` on reading from closed stream, `IndexOutOfBoundsException` on buffer offsets.
-- **Downstream Use**: Network socket streams (Phase 37), Cryptographic hashing (Phase 36).
+### Action Items
+- [ ] Create `solixlib/project/src/solix/exceptions/Exceptions.slx` consolidating all 21 standard exceptions with inheritance hierarchy under `Exception` and `RuntimeException`.
+- [ ] Create `solixlib/project/src/solix/collections/Interfaces.slx` grouping core collection interfaces.
+- [ ] Encapsulate `LinkedListNode<T>`, `HashMapEntry<K, V>`, `TreeMapNode<K, V>`.
+- [ ] Retain backwards-compatible re-exports or update dependent standard library files.
+- [ ] Author/update `tests/solixlib/test_exceptions.cpp` and `docs/spec/solixlib/exceptions.md`.
+- [ ] Verify full test suite passes.
+
+---
+
+## Phase 32.8: Standard Library — Polymorphic Generic Collection Hierarchy & Interface Re-binding
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `solixlib/project/src/solix/collections/Interfaces.slx`, `List.slx`, `LinkedList.slx`, `Stack.slx`, `Queue.slx`, `Deque.slx`, `PriorityQueue.slx`, `CircularBuffer.slx`, `HashSet.slx`, `TreeSet.slx`, `HashMap.slx`, `TreeMap.slx`, `tests/solixlib/test_collections.cpp`, `docs/spec/solixlib/collections.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Restore polymorphic collection framework broken by the previous refactor:
+1. Make all core collection interfaces generic: `IIterable<T>`, `IIterator<T>`, `ICollection<T>`, `IList<T>`, `IDeque<T>`, `ISet<T>`, `IMap<K, V>`, `IReadOnlyCollection<T>`.
+2. Re-bind all concrete collection classes to their respective generic interfaces:
+   - `List<T>` implements `IList<T>`, `ICollection<T>`, `IIterable<T>`, `IStringable`
+   - `LinkedList<T>` implements `IList<T>`, `IDeque<T>`, `ICollection<T>`, `IIterable<T>`, `IStringable`
+   - `HashSet<T>` and `TreeSet<T>` implement `ISet<T>`, `ICollection<T>`, `IIterable<T>`, `IStringable`
+   - `HashMap<K, V>` and `TreeMap<K, V>` implement `IMap<K, V>`, `IStringable`
+   - Linear containers (`Stack<T>`, `Queue<T>`, `Deque<T>`, `PriorityQueue<T>`, `CircularBuffer<T>`) implement `ICollection<T>`, `IIterable<T>`, `IStringable`
+3. Verify interface-based polymorphic dispatch, allowing methods to accept `IList<T>`, `ICollection<T>`, or `IMap<K, V>` transparently.
+
+### Action Items
+- [ ] Update `Interfaces.slx` to define generic contracts (`IIterable<T>`, `ICollection<T>`, `IList<T>`, `ISet<T>`, `IMap<K, V>`, etc.).
+- [ ] Update each concrete collection class to declare interface implementations and match method signatures.
+- [ ] Add unit tests verifying polymorphic passing (`void process(IList<int32> list)` receiving `List<int32>` and `LinkedList<int32>`).
+- [ ] Update `docs/spec/solixlib/collections.md`.
+
+---
+
+## Phase 32.9: Standard Library — Complete Boxed Primitives, Boxed Operator Overloads & `Optional<T>` Parity
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `solixlib/project/src/solix/core/Byte.slx`, `Short.slx`, `Long.slx`, `UByte.slx`, `UShort.slx`, `UInt.slx`, `ULong.slx`, `Float.slx`, `Int.slx`, `Double.slx`, `String.slx`, `Optional.slx`, `tests/solixlib/test_core.cpp`, `docs/spec/solixlib/primitives.md`, `docs/spec/solixlib/optional.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Complete boxed primitive type coverage, implement operator overloads on boxed types and `String`, and upgrade `Optional<T>` with functional combinators:
+1. Implement missing boxed primitive classes: `Byte` (`int8`), `Short` (`int16`), `Long` (`int64`), `UByte` (`uint8`), `UShort` (`uint16`), `UInt` (`uint32`), `ULong` (`uint64`), and `Float` (`float32`), matching existing `Int`, `Double`, `Bool`, `Char`.
+2. Implement arithmetic, comparison, and equality operator overloads on boxed types: `operator+`, `operator-`, `operator*`, `operator/`, `operator==`, `operator!=`, `operator<`, `operator>`, `operator<=`, `operator>=`.
+3. Implement `operator+` (concatenation) and `operator==` / `operator!=` on `String`.
+4. Extend `Optional<T>` with `map<U>` and `flat_map<U>` functional transformation methods.
+
+### Action Items
+- [ ] Author boxed wrappers for all remaining primitives (`Byte`, `Short`, `Long`, `UByte`, `UShort`, `UInt`, `ULong`, `Float`).
+- [ ] Implement arithmetic and comparison operator overloads on all numeric boxed types.
+- [ ] Add `operator+` and `operator==` to `String.slx`.
+- [ ] Implement `map<U>` and `flat_map<U>` in `Optional.slx`.
+- [ ] Add tests in `tests/solixlib/test_core.cpp` verifying boxed operators, boxed types, and `Optional` transformations.
+- [ ] Update specifications in `docs/spec/solixlib/`.
+
+---
+
+## Phase 32.10: Standard Library — Collection Ergonomics, Constructors & Functional Combinators
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `solixlib/project/src/solix/collections/List.slx`, `LinkedList.slx`, `HashSet.slx`, `TreeSet.slx`, `Stack.slx`, `Queue.slx`, `Deque.slx`, `solixlib/project/src/solix/core/String.slx`, `tests/solixlib/test_collections.cpp`, `docs/spec/solixlib/collections.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Modernize collection instantiation ergonomics and functional transformations:
+1. Add copy constructors and array-initializer constructors to `List<T>`, `LinkedList<T>`, `HashSet<T>`, `TreeSet<T>`, etc.: `List(T[] items)`, `List(ICollection<T> other)`.
+2. Add functional combinators to `List<T>`: `map<U>` and `reduce`.
+3. Add primitive conversion constructors to `String.slx`: `String(int32)`, `String(float64)`, `String(bool)`, `String(char)`.
+
+### Action Items
+- [ ] Add `List(T[] items)` and `List(ICollection<T> other)` copy/initializer constructors to collections.
+- [ ] Implement `map<U>` and `reduce` in `List.slx`.
+- [ ] Add overloaded constructors in `String.slx`.
+- [ ] Author unit tests verifying initialization from arrays/collections and functional mapping.
+- [ ] Update collection specifications in `docs/spec/solixlib/`.
+
+---
+
+## Phase 32.11: Standard Library — Chrono & Time Ergonomics (Operators & DateTime Formatting)
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `solixlib/project/src/solix/time/Duration.slx`, `Instant.slx`, `DateTime.slx`, `tests/solixlib/test_chrono.cpp`, `docs/spec/solixlib/chrono.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Eliminate boilerplate and rigid APIs in `solix.time`:
+1. Implement operator overloads for `Duration`: `operator+`, `operator-`, `operator*`, `operator/`, `operator==`, `operator!=`, `operator<`, `operator>`.
+2. Implement operator overloads for `Instant`: `operator-(Instant other) -> Duration`, `operator+(Duration d) -> Instant`, `operator-(Duration d) -> Instant`, `operator==`, `operator!=`, `operator<`, `operator>`.
+3. Add custom format token parsing to `DateTime`: `format(String pattern)` supporting `yyyy`, `MM`, `dd`, `HH`, `mm`, `ss`.
+
+### Action Items
+- [ ] Add operator overloads to `Duration.slx` and `Instant.slx`.
+- [ ] Implement `DateTime.format(String pattern)` parser.
+- [ ] Add unit tests in `tests/solixlib/test_chrono.cpp` testing expressions like `t2 - t1`, `d1 + d2`, and custom formatted strings.
+- [ ] Update `docs/spec/solixlib/chrono.md`.
+
+---
+
+## Phase 33: Standard Library — `solix.io.Streams` & Object-Oriented `Path` (`IStream`, `FileStream`, `MemoryStream`, Readers/Writers, `BufferedReader`, `Path / Path`)
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `solixlib/project/src/solix/io/IStream.slx`, `FileStream.slx`, `MemoryStream.slx`, `TextReader.slx`, `TextWriter.slx`, `BufferedReader.slx`, `BinaryReader.slx`, `BinaryWriter.slx`, `solixlib/project/src/solix/io/filesystem/Path.slx`, `solixlib/native/src/io_stream.cpp`, `tests/solixlib/test_streams.cpp`, `docs/spec/solixlib/streams.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Eliminate heap exhaustion memory hazards on large files by providing streaming abstractions, and modernize path manipulation into an object-oriented API:
+1. Implement `IStream`, `FileStream`, `MemoryStream`, `TextReader`/`TextWriter`, `BufferedReader`, `BinaryReader`/`BinaryWriter`.
+2. Upgrade `Path` into an object supporting operator overloading: `public Path operator/(Path other)` and `public Path operator/(String other)` for intuitive, cross-platform path concatenation.
 
 ### Submodule Architecture & Types
 - **Solix Surface**:
-  - `interface IStream`:
-    - `int read(byte[] buffer, int offset, int count)`
-    - `void write(byte[] buffer, int offset, int count)`
-    - `long seek(long offset, int origin)` (Origin: Begin, Current, End)
-    - `void flush()`, `void close()`
-    - `long length()`, `long position()`
+  - `interface IStream`: `read(byte[] buffer, int offset, int count)`, `write(byte[] buffer, int offset, int count)`, `seek(long offset, int origin)`, `flush()`, `close()`, `length()`, `position()`.
   - `class FileStream implements IStream`: file modes (Read, Write, Append, ReadWrite).
   - `class MemoryStream implements IStream`: in-memory resizable byte array stream with `byte[] to_array()`.
+  - `class BufferedReader`: buffered block-reading for high performance over large text files without OOM panics.
   - `class TextReader`: `read_line() -> String`, `read_to_end() -> String`, `peek() -> int`.
   - `class TextWriter`: `write(String s)`, `write_line(String s)`, `flush()`.
-  - `class BinaryReader`: `read_int()`, `read_double()`, `read_bool()`, `read_string()`.
-  - `class BinaryWriter`: `write_int(int v)`, `write_double(double v)`, `write_string(String s)`.
-
-### Identified Test & Documentation Deliverables
-- **1. Identified Test Deliverables (`tests/solixlib/TESTS.md` & `tests/solixlib/test_streams.cpp`)**:
-  - **Positive Tests**: `MemoryStream` write, seek to 0, read back byte buffers; `TextWriter` and `TextReader` line-by-line round-trip; binary serialization and deserialization of mixed primitive values.
-  - **Negative Tests**: Reading from a closed stream throws `InvalidOperationException`; writing to a read-only stream throws `InvalidOperationException`.
-- **2. Identified Documentation Deliverables**:
-  - `docs/spec/solixlib/streams.md`: Stream lifecycle, seeking rules, and buffering mechanisms.
+  - `class BinaryReader` & `class BinaryWriter`: typed primitive stream serialization.
+  - `class Path`: `public Path operator/(Path other)`, `public Path operator/(String other)`, `to_string()`, and static helpers.
 
 ### Action Items
-- [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Implement `solixlib/native/src/io_stream.cpp` wrapping OS file descriptors.
-- [ ] Author `IStream.slx`, `FileStream.slx`, `MemoryStream.slx`, `TextReader.slx`, `TextWriter.slx`, `BinaryReader.slx`, `BinaryWriter.slx`.
-- [ ] Implement Catch2 test suite `tests/solixlib/test_streams.cpp`.
-- [ ] Author `docs/spec/solixlib/streams.md`.
+- [ ] Implement native I/O stream bindings in `solixlib/native/src/io_stream.cpp` wrapping OS file descriptors.
+- [ ] Author Solix stream classes (`IStream.slx`, `FileStream.slx`, `MemoryStream.slx`, `BufferedReader.slx`, `TextReader.slx`, `TextWriter.slx`, `BinaryReader.slx`, `BinaryWriter.slx`).
+- [ ] Upgrade `Path.slx` to an instantiable object with `operator/` and fluent methods.
+- [ ] Author unit tests in `tests/solixlib/test_streams.cpp`.
+- [ ] Author formal spec in `docs/spec/solixlib/streams.md`.
+
+---
+
+## Phase 33.1: Standard Library — Documentation Schema Standardization & Developer Guides
+
+- **Priority**: `P2 Medium`
+- **Affected Modules**: `docs/spec/solixlib/`, `docs/guide/05_operator_overloading.md`, `docs/guide/06_native_interoperability.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Standardize markdown documentation schemas across all standard library modules and add missing comprehensive developer guides:
+1. Enforce uniform schema across `docs/spec/solixlib/*.md` (Class Signature, Constructors, Operators, Methods, Examples, Exceptions).
+2. Author developer guide `docs/guide/05_operator_overloading.md` covering operator overloading in Solix.
+3. Author developer guide `docs/guide/06_native_interoperability.md` covering C++ native plugin registration (`solix_register_natives`).
+
+### Action Items
+- [ ] Audit and normalize all markdown files in `docs/spec/solixlib/` to follow the standardized schema.
+- [ ] Author `docs/guide/05_operator_overloading.md`.
+- [ ] Author `docs/guide/06_native_interoperability.md`.
 
 ---
 
