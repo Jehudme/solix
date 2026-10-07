@@ -2498,7 +2498,7 @@ Resolve IDE language intelligence failures (no autocomplete, missing hover, brok
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `lsp/src/server.cpp`, `lsp/src/spatial_index.cpp`, `core/src/processes/binder.cpp`, `tests/commands/TESTS.md`, `tests/commands/test_lsp_command.cpp`, `docs/spec/lsp/intelligence.md`, `docs/spec/lsp/navigation.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Resolve package declaration intelligence, same-package import tolerance, and package hover/navigation:
@@ -2507,12 +2507,12 @@ Resolve package declaration intelligence, same-package import tolerance, and pac
 3. **Package Statement Hover & Definition**: Provide hover info and navigation for `package` declarations (`package <name>;`).
 
 ### Action Items
-- [ ] Implement `CompletionContext::PACKAGE_DECL` in `lsp/src/server.cpp` with directory path heuristic and known project package suggestions.
-- [ ] Update `core/src/processes/binder.cpp` to tolerate and resolve same-package imports.
-- [ ] Index `PackageStatement` in `lsp/src/spatial_index.cpp` and support hover in `format_hover_for_node` and navigation in `handle_definition`.
-- [ ] Define test specifications in `tests/commands/TESTS.md`.
-- [ ] Implement Catch2 unit tests in `tests/commands/test_lsp_command.cpp`.
-- [ ] Update documentation in `docs/spec/lsp/intelligence.md` and `docs/spec/lsp/navigation.md`.
+- [x] Implement `CompletionContext::PACKAGE_DECL` in `lsp/src/server.cpp` with directory path heuristic and known project package suggestions.
+- [x] Update `core/src/processes/binder.cpp` to tolerate and resolve same-package imports.
+- [x] Index `PackageStatement` in `lsp/src/spatial_index.cpp` and support hover in `format_hover_for_node` and navigation in `handle_definition`.
+- [x] Define test specifications in `tests/commands/TESTS.md`.
+- [x] Implement Catch2 unit tests in `tests/commands/test_lsp_command.cpp`.
+- [x] Update documentation in `docs/spec/lsp/intelligence.md` and `docs/spec/lsp/navigation.md`.
 
 ---
 
