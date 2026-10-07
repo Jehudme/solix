@@ -147,5 +147,50 @@ int32 main() {
 )";
         assert_compile_error(code, "'static' modifier is not allowed on functions outside of a class");
     }
+
+    SECTION("Case 54.1: Single Unambiguous Entry Point Execution") {
+        std::unordered_map<std::string, std::string> sources = {
+            {"service.slx", R"(
+package app.service;
+
+public class Service {
+    public static int32 run_service() {
+        return 42;
+    }
+}
+)"},
+            {"main.slx", R"(
+package app;
+import app.service.*;
+
+int32 main() {
+    return Service.run_service() == 42 ? 0 : 1;
+}
+)"}
+        };
+        CHECK(run_sources(sources) == 0);
+    }
+
+    SECTION("Case 54.2: Ambiguous Entry Point Detection Across Modules") {
+        std::unordered_map<std::string, std::string> sources = {
+            {"mod_a.slx", R"(
+package app.alpha;
+
+int32 main() {
+    return 1;
+}
+)"},
+            {"mod_b.slx", R"(
+package app.beta;
+
+int32 main() {
+    return 2;
+}
+)"}
+        };
+        assert_compile_sources_error(sources, "Ambiguous entry point 'main': multiple candidates found:");
+        assert_compile_sources_error(sources, "mod_a.slx");
+        assert_compile_sources_error(sources, "mod_b.slx");
+    }
 }
 

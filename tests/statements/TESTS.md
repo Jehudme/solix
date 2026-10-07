@@ -4962,13 +4962,15 @@ int32 main() {
 
 ## Suite 54: Entry Point Resolution Disambiguation
 
-### Case 54.1: Single Unambiguous Entry Point Execution [NOT IMPLEMENTED]
+### Case 54.1: Single Unambiguous Entry Point Execution [IMPLEMENTED]
 ```solix
-// pkg1.slx
+// service.slx
 package app.service;
 
-int32 run_service() {
-    return 42;
+public class Service {
+    public static int32 run_service() {
+        return 42;
+    }
 }
 
 // main.slx
@@ -4976,14 +4978,14 @@ package app;
 import app.service.*;
 
 int32 main() {
-    return run_service() == 42 ? 0 : 1;
+    return Service.run_service() == 42 ? 0 : 1;
 }
 ```
 *Expected Result*: Compiles and executes cleanly with exit code 0 when an unambiguous entry point `main` is found.
 
 ---
 
-### Case 54.2: Ambiguous Entry Point Detection Across Modules [NOT IMPLEMENTED]
+### Case 54.2: Ambiguous Entry Point Detection Across Modules [IMPLEMENTED]
 ```solix
 // mod_a.slx
 package app.alpha;
