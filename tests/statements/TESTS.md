@@ -4757,7 +4757,7 @@ public class Main {
 
 ## Suite 50: Language Intrinsics (`assert`, `exit`)
 
-### Case 50.1: Basic Boolean Assertion Passing Silently [NOT IMPLEMENTED]
+### Case 50.1: Basic Boolean Assertion Passing Silently [IMPLEMENTED]
 ```solix
 class Main {
     public static int32 main() {
@@ -4771,7 +4771,7 @@ class Main {
 
 ---
 
-### Case 50.2: Assertion with Custom Textual Message Passing Silently [NOT IMPLEMENTED]
+### Case 50.2: Assertion with Custom Textual Message Passing Silently [IMPLEMENTED]
 ```solix
 class Main {
     public static int32 main() {
@@ -4784,7 +4784,7 @@ class Main {
 
 ---
 
-### Case 50.3: Failed Assertion Throws AssertionError Runtime Exception [NOT IMPLEMENTED]
+### Case 50.3: Failed Assertion Throws AssertionError Runtime Exception [IMPLEMENTED]
 ```solix
 class Main {
     public static int32 main() {
@@ -4797,7 +4797,7 @@ class Main {
 
 ---
 
-### Case 50.4: Immediate Process Termination via `exit(code)` Intrinsics [NOT IMPLEMENTED]
+### Case 50.4: Immediate Process Termination via `exit(code)` Intrinsics [IMPLEMENTED]
 ```solix
 class Main {
     public static int32 main() {
@@ -4810,7 +4810,7 @@ class Main {
 
 ---
 
-### Case 50.5: Negative: Assert Condition Non-Boolean Type Mismatch Rejected at Compile Time [NOT IMPLEMENTED]
+### Case 50.5: Negative: Assert Condition Non-Boolean Type Mismatch Rejected at Compile Time [IMPLEMENTED]
 ```solix
 class Main {
     public static int32 main() {
@@ -4823,7 +4823,7 @@ class Main {
 
 ---
 
-### Case 50.6: Negative: Exit Code Non-Integer Type Mismatch Rejected at Compile Time [NOT IMPLEMENTED]
+### Case 50.6: Negative: Exit Code Non-Integer Type Mismatch Rejected at Compile Time [IMPLEMENTED]
 ```solix
 class Main {
     public static int32 main() {
