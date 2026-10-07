@@ -5,6 +5,7 @@
 #include <sstream>
 #include <filesystem>
 #include <fstream>
+#include <set>
 
 using namespace solix::lsp;
 
@@ -2025,4 +2026,404 @@ TEST_CASE("Suite 15: LSP Package Declaration Autocompletion & Same-Package Impor
 
     std::filesystem::remove_all(test_dir);
 }
+
+TEST_CASE("Suite 16: Type Alias Declarations, Scope Completion & Import Autocompletion", "[lsp][alias][import]") {
+    std::string test_dir = "/tmp/solix_lsp_suite16_" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
+    std::filesystem::create_directories(test_dir + "/sub/pkg");
+
+    SECTION("Case 16.1: Alias Target Completion") {
+        std::stringstream in;
+        std::stringstream out;
+        JsonRpcTransport transport(out, in);
+
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 1},
+            {"method", "initialize"},
+            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+        });
+
+        std::string models_code = "public class User {}\npublic enum Status { ACTIVE, INACTIVE }\nalias IdType = int64;\n";
+        std::string models_uri = "file://" + test_dir + "/Models.slx";
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", models_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", models_code}
+            }}
+        });
+
+        std::string alias_code = "alias MyAlias = ";
+        std::string alias_uri = "file://" + test_dir + "/AliasTest.slx";
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", alias_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", alias_code}
+            }}
+        });
+
+        // Request completion after "alias MyAlias = " at line 0, char 16
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 10},
+            {"method", "textDocument/completion"},
+            {"params", {{"textDocument", {{"uri", alias_uri}}}, {"position", {{"line", 0}, {"character", 16}}}}}
+        });
+
+        transport.write_message({{"jsonrpc", "2.0"}, {"id", 99}, {"method", "shutdown"}, {"params", nlohmann::json::object()}});
+        transport.send_notification("exit", nlohmann::json::object());
+
+        LspServer server(in, out);
+        REQUIRE(server.run() == 0);
+
+        JsonRpcTransport reader(out, in);
+        std::map<int, nlohmann::json> responses;
+        while (auto msg = reader.read_message()) {
+            if (msg.value().contains("id") && msg.value()["id"].is_number()) {
+                responses[msg.value()["id"].get<int>()] = msg.value();
+            }
+        }
+
+        REQUIRE(responses.count(10));
+        auto comp_items = responses[10]["result"]["items"];
+        std::set<std::string> labels;
+        for (const auto& it : comp_items) {
+            labels.insert(it["label"].get<std::string>());
+        }
+
+        REQUIRE(labels.count("int32"));
+        REQUIRE(labels.count("string"));
+        REQUIRE(labels.count("User"));
+        REQUIRE(labels.count("Status"));
+        REQUIRE(labels.count("IdType"));
+    }
+
+    SECTION("Case 16.2: Alias Symbol Scope Completion") {
+        std::stringstream in;
+        std::stringstream out;
+        JsonRpcTransport transport(out, in);
+
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 1},
+            {"method", "initialize"},
+            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+        });
+
+        std::string src = "alias Number = int64;\npublic class Calc {\n    public void run() {\n        \n    }\n}\n";
+        std::string file_uri = "file://" + test_dir + "/Calc.slx";
+
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", file_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", src}
+            }}
+        });
+
+        // Request completion inside run() at line 3, char 8
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 20},
+            {"method", "textDocument/completion"},
+            {"params", {{"textDocument", {{"uri", file_uri}}}, {"position", {{"line", 3}, {"character", 8}}}}}
+        });
+
+        transport.write_message({{"jsonrpc", "2.0"}, {"id", 99}, {"method", "shutdown"}, {"params", nlohmann::json::object()}});
+        transport.send_notification("exit", nlohmann::json::object());
+
+        LspServer server(in, out);
+        REQUIRE(server.run() == 0);
+
+        JsonRpcTransport reader(out, in);
+        std::map<int, nlohmann::json> responses;
+        while (auto msg = reader.read_message()) {
+            if (msg.value().contains("id") && msg.value()["id"].is_number()) {
+                responses[msg.value()["id"].get<int>()] = msg.value();
+            }
+        }
+
+        REQUIRE(responses.count(20));
+        auto comp_items = responses[20]["result"]["items"];
+        bool found_number_alias = false;
+        for (const auto& it : comp_items) {
+            if (it["label"].get<std::string>() == "Number") {
+                found_number_alias = true;
+                REQUIRE(it["kind"].get<int>() == 18); // Reference
+                REQUIRE(it.contains("detail"));
+                REQUIRE(it["detail"].get<std::string>().find("alias Number = int64") != std::string::npos);
+            }
+        }
+        REQUIRE(found_number_alias);
+    }
+
+    SECTION("Case 16.3: Import Statement Package Completion") {
+        std::stringstream in;
+        std::stringstream out;
+        JsonRpcTransport transport(out, in);
+
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 1},
+            {"method", "initialize"},
+            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+        });
+
+        std::string pkg_code = "package sub.pkg;\npublic class Helper {}\n";
+        std::string pkg_uri = "file://" + test_dir + "/sub/pkg/Helper.slx";
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", pkg_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", pkg_code}
+            }}
+        });
+
+        std::string imp_code = "import ";
+        std::string imp_uri = "file://" + test_dir + "/Main.slx";
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", imp_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", imp_code}
+            }}
+        });
+
+        // Request completion after "import " at line 0, char 7
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 30},
+            {"method", "textDocument/completion"},
+            {"params", {{"textDocument", {{"uri", imp_uri}}}, {"position", {{"line", 0}, {"character", 7}}}}}
+        });
+
+        transport.write_message({{"jsonrpc", "2.0"}, {"id", 99}, {"method", "shutdown"}, {"params", nlohmann::json::object()}});
+        transport.send_notification("exit", nlohmann::json::object());
+
+        LspServer server(in, out);
+        REQUIRE(server.run() == 0);
+
+        JsonRpcTransport reader(out, in);
+        std::map<int, nlohmann::json> responses;
+        while (auto msg = reader.read_message()) {
+            if (msg.value().contains("id") && msg.value()["id"].is_number()) {
+                responses[msg.value()["id"].get<int>()] = msg.value();
+            }
+        }
+
+        REQUIRE(responses.count(30));
+        auto comp_items = responses[30]["result"]["items"];
+        std::set<std::string> labels;
+        for (const auto& it : comp_items) {
+            labels.insert(it["label"].get<std::string>());
+        }
+
+        REQUIRE(labels.count("sub.pkg"));
+        REQUIRE(labels.count("solix.core"));
+    }
+
+    SECTION("Case 16.4: Import Statement Member Completion") {
+        std::stringstream in;
+        std::stringstream out;
+        JsonRpcTransport transport(out, in);
+
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 1},
+            {"method", "initialize"},
+            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+        });
+
+        std::string pkg_code = "package sub.pkg;\npublic class Helper {}\npublic enum Status { OK, ERR }\n";
+        std::string pkg_uri = "file://" + test_dir + "/sub/pkg/Helper.slx";
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", pkg_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", pkg_code}
+            }}
+        });
+
+        std::string imp_code = "import sub.pkg.";
+        std::string imp_uri = "file://" + test_dir + "/Main.slx";
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", imp_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", imp_code}
+            }}
+        });
+
+        // Request completion on "import sub.pkg." at line 0, char 15
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 40},
+            {"method", "textDocument/completion"},
+            {"params", {{"textDocument", {{"uri", imp_uri}}}, {"position", {{"line", 0}, {"character", 15}}}}}
+        });
+
+        transport.write_message({{"jsonrpc", "2.0"}, {"id", 99}, {"method", "shutdown"}, {"params", nlohmann::json::object()}});
+        transport.send_notification("exit", nlohmann::json::object());
+
+        LspServer server(in, out);
+        REQUIRE(server.run() == 0);
+
+        JsonRpcTransport reader(out, in);
+        std::map<int, nlohmann::json> responses;
+        while (auto msg = reader.read_message()) {
+            if (msg.value().contains("id") && msg.value()["id"].is_number()) {
+                responses[msg.value()["id"].get<int>()] = msg.value();
+            }
+        }
+
+        REQUIRE(responses.count(40));
+        auto comp_items = responses[40]["result"]["items"];
+        std::set<std::string> labels;
+        for (const auto& it : comp_items) {
+            labels.insert(it["label"].get<std::string>());
+        }
+
+        REQUIRE(labels.count("*"));
+        REQUIRE(labels.count("Helper"));
+        REQUIRE(labels.count("Status"));
+    }
+
+    SECTION("Case 16.5: Import Statement Hover and Definition Navigation") {
+        std::stringstream in;
+        std::stringstream out;
+        JsonRpcTransport transport(out, in);
+
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 1},
+            {"method", "initialize"},
+            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+        });
+
+        std::string helper_code = "package sub.pkg;\npublic class Helper {}\n";
+        std::string helper_path = test_dir + "/sub/pkg/Helper.slx";
+        std::string helper_uri = "file://" + helper_path;
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", helper_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", helper_code}
+            }}
+        });
+
+        std::string main_code = "package sub.pkg;\nimport sub.pkg.Helper;\npublic class Main {}\n";
+        std::string main_uri = "file://" + test_dir + "/Main.slx";
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", main_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", main_code}
+            }}
+        });
+
+        // Hover on "import sub.pkg.Helper;" at line 1, char 10
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 50},
+            {"method", "textDocument/hover"},
+            {"params", {{"textDocument", {{"uri", main_uri}}}, {"position", {{"line", 1}, {"character", 10}}}}}
+        });
+
+        // Go to definition on "Helper" in "import sub.pkg.Helper;" at line 1, char 18
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 51},
+            {"method", "textDocument/definition"},
+            {"params", {{"textDocument", {{"uri", main_uri}}}, {"position", {{"line", 1}, {"character", 18}}}}}
+        });
+
+        transport.write_message({{"jsonrpc", "2.0"}, {"id", 99}, {"method", "shutdown"}, {"params", nlohmann::json::object()}});
+        transport.send_notification("exit", nlohmann::json::object());
+
+        LspServer server(in, out);
+        REQUIRE(server.run() == 0);
+
+        JsonRpcTransport reader(out, in);
+        std::map<int, nlohmann::json> responses;
+        while (auto msg = reader.read_message()) {
+            if (msg.value().contains("id") && msg.value()["id"].is_number()) {
+                responses[msg.value()["id"].get<int>()] = msg.value();
+            }
+        }
+
+        REQUIRE(responses.count(50));
+        auto r50 = responses[50]["result"];
+        REQUIRE_FALSE(r50.is_null());
+        std::string md50 = r50["contents"]["value"];
+        REQUIRE(md50.find("import sub.pkg.Helper") != std::string::npos);
+
+        REQUIRE(responses.count(51));
+        auto r51 = responses[51]["result"];
+        REQUIRE_FALSE(r51.is_null());
+        REQUIRE(r51["uri"].get<std::string>() == helper_uri);
+    }
+
+    SECTION("Case 16.6: Alias Declaration Name Completion Suppression") {
+        std::stringstream in;
+        std::stringstream out;
+        JsonRpcTransport transport(out, in);
+
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 1},
+            {"method", "initialize"},
+            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+        });
+
+        std::string alias_code = "alias ";
+        std::string alias_uri = "file://" + test_dir + "/AliasTest.slx";
+        transport.send_notification("textDocument/didOpen", {
+            {"textDocument", {
+                {"uri", alias_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", alias_code}
+            }}
+        });
+
+        // Request completion after "alias " at line 0, char 6
+        transport.write_message({
+            {"jsonrpc", "2.0"},
+            {"id", 60},
+            {"method", "textDocument/completion"},
+            {"params", {{"textDocument", {{"uri", alias_uri}}}, {"position", {{"line", 0}, {"character", 6}}}}}
+        });
+
+        transport.write_message({{"jsonrpc", "2.0"}, {"id", 99}, {"method", "shutdown"}, {"params", nlohmann::json::object()}});
+        transport.send_notification("exit", nlohmann::json::object());
+
+        LspServer server(in, out);
+        REQUIRE(server.run() == 0);
+
+        JsonRpcTransport reader(out, in);
+        std::map<int, nlohmann::json> responses;
+        while (auto msg = reader.read_message()) {
+            if (msg.value().contains("id") && msg.value()["id"].is_number()) {
+                responses[msg.value()["id"].get<int>()] = msg.value();
+            }
+        }
+
+        REQUIRE(responses.count(60));
+        auto comp_items = responses[60]["result"]["items"];
+        REQUIRE(comp_items.empty());
+    }
+
+    std::filesystem::remove_all(test_dir);
+}
+
 

@@ -798,31 +798,31 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 16.1: Alias Target Completion [NOT IMPLEMENTED]
+#### Case 16.1: Alias Target Completion [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Setup**: Project containing class `User`, enum `Status`, and existing alias `IdType`.
 - **Input**: `textDocument/completion` on `alias MyInt = ` at cursor position after `=`.
 - **Expected**: Offers primitive types (`int32`, `string`, etc.), classes (`User`), enums (`Status`), and existing aliases (`IdType`).
 
-#### Case 16.2: Alias Symbol Scope Completion [NOT IMPLEMENTED]
+#### Case 16.2: Alias Symbol Scope Completion [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Setup**: File declaring `alias Number = int64;`.
 - **Input**: `textDocument/completion` inside a method or function body.
 - **Expected**: Completion item list includes `Number` with kind `Reference` or `TypeParameter` and detail `alias Number = int64`.
 
-#### Case 16.3: Import Statement Package Completion [NOT IMPLEMENTED]
+#### Case 16.3: Import Statement Package Completion [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Setup**: Project containing package `sub.pkg` and standard library packages.
 - **Input**: `textDocument/completion` on `import ` after the `import` keyword.
 - **Expected**: Offers known package paths such as `sub.pkg`, `solix.core`, etc.
 
-#### Case 16.4: Import Statement Member Completion [NOT IMPLEMENTED]
+#### Case 16.4: Import Statement Member Completion [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Setup**: Project with package `sub.pkg` containing class `Helper` and enum `Status`.
 - **Input**: `textDocument/completion` on `import sub.pkg.` with cursor immediately following the dot.
 - **Expected**: Offers members `Helper`, `Status`, and wildcard `*`.
 
-#### Case 16.5: Import Statement Hover and Definition Navigation [NOT IMPLEMENTED]
+#### Case 16.5: Import Statement Hover and Definition Navigation [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Setup**: File containing `import sub.pkg.Helper;` referencing class `Helper` in another file.
 - **Input**: `textDocument/hover` and `textDocument/definition` on `import sub.pkg.Helper;`.
@@ -830,7 +830,7 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Negative Test Scenarios
 
-#### Case 16.6: Alias Declaration Name Completion Suppression [NOT IMPLEMENTED]
+#### Case 16.6: Alias Declaration Name Completion Suppression [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Input**: `textDocument/completion` after `alias ` before the `=` sign (e.g. `alias `).
 - **Expected**: Suppresses general type completions so naming the alias does not suggest types.
