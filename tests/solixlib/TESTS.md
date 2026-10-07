@@ -73,6 +73,9 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 4.5 [IMPLEMENTED]**: Negative: accessing `Optional.empty().value()` throws `InvalidOperationException` (`tests/solixlib/test_primitives.cpp`).
 - [x] **Case 4.6 [IMPLEMENTED]**: `Optional<T>` functional operations: `if_present(consumer)` callback execution and `filter(predicate)` matching/discarding (`tests/solixlib/test_primitives.cpp`).
 - [x] **Case 4.7 [IMPLEMENTED]**: Negative: `Int.parse()` and `Double.parse()` with non-numeric inputs throw `FormatException` (`tests/solixlib/test_primitives.cpp`).
+- [ ] **Case 4.8 [NOT IMPLEMENTED]**: Complete boxed integral types (`Byte`, `Short`, `Long`, `UByte`, `UShort`, `UInt`, `ULong`) and floating-point `Float` with bounds, parsing, hashing, and stringification (`tests/solixlib/test_primitives.cpp`).
+- [ ] **Case 4.9 [NOT IMPLEMENTED]**: Operator overloading on boxed primitives (`Int`, `Long`, `Double`, `Float`, `Byte`, `Short`) and `String` (`+`, `-`, `*`, `/`, `==`, `!=`, `<`, `>`, `<=`, `>=`) (`tests/solixlib/test_primitives.cpp`).
+- [ ] **Case 4.10 [NOT IMPLEMENTED]**: Functional parity for `Optional<T>`: `map<U>()` value transformation and `flat_map<U>()` monadic chaining (`tests/solixlib/test_primitives.cpp`).
 
 ---
 
