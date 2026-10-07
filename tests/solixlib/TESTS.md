@@ -61,7 +61,7 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 3.7 [IMPLEMENTED]**: Static conversions: `value_of()` for integer, float, bool, and char (`tests/solixlib/test_string.cpp`).
 - [x] **Case 3.8 [IMPLEMENTED]**: `StringBuilder` capacity growth, chaining, insertions, deletions, reversals (`tests/solixlib/test_string.cpp`).
 - [x] **Case 3.9 [IMPLEMENTED]**: Interoperability with `Console`: printing `String` and custom `IStringable` (`tests/solixlib/test_string.cpp`).
-- [ ] **Case 3.10 [NOT IMPLEMENTED]**: Primitive conversion constructors: `String(int32)`, `String(float64)`, `String(bool)`, `String(char)` (`tests/solixlib/test_string.cpp`).
+- [x] **Case 3.10 [IMPLEMENTED]**: Primitive conversion constructors: `String(int32)`, `String(float64)`, `String(bool)`, `String(char)` (`tests/solixlib/test_string.cpp`).
 
 ---
 
@@ -124,9 +124,9 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 8.5 [IMPLEMENTED]**: Generic `Algorithms` collection utilities (`swap<T>`, `reverse<T>`, `fill<T>`, comparator-based `sort<T>`, comparator-based `binary_search<T>`) (`tests/solixlib/test_list.cpp`).
 - [x] **Case 8.6 [IMPLEMENTED]**: Negative: `List<T>` invalid negative capacity and out-of-bounds index access throw `IllegalArgumentException` and `IndexOutOfBoundsException` (`tests/solixlib/test_list.cpp`).
 - [x] **Case 8.7 [IMPLEMENTED]**: Negative: `LinkedList<T>` empty deque operations throw `NoSuchElementException` and out-of-bounds indexing throws `IndexOutOfBoundsException` (`tests/solixlib/test_list.cpp`).
-- [ ] **Case 8.8 [NOT IMPLEMENTED]**: `List<T>` array initializers `List(T[] items)` and copy constructors `List(ICollection<T> other)` (`tests/solixlib/test_list.cpp`).
-- [ ] **Case 8.9 [NOT IMPLEMENTED]**: Functional combinators on `List<T>`: `map<U>(transform)` and `reduce(accumulator)` (`tests/solixlib/test_list.cpp`).
-- [ ] **Case 8.10 [NOT IMPLEMENTED]**: Collection copy and array constructors across container ecosystem (`LinkedList`, `HashSet`, `TreeSet`, `Stack`, `Queue`, `Deque`) (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.8 [IMPLEMENTED]**: `List<T>` array initializers `List(T[] items)` and copy constructors `List(ICollection<T> other)` (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.9 [IMPLEMENTED]**: Functional combinators on `List<T>`: `map<U>(transform)` and `reduce(accumulator)` (`tests/solixlib/test_list.cpp`).
+- [x] **Case 8.10 [IMPLEMENTED]**: Collection copy and array constructors across container ecosystem (`LinkedList`, `HashSet`, `TreeSet`, `Stack`, `Queue`, `Deque`) (`tests/solixlib/test_list.cpp`).
 
 ---
 

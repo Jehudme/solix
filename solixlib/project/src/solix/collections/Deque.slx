@@ -35,6 +35,14 @@ public class Deque<T> implements IDeque<T>, ICollection<T>, IIterable<T>, IStrin
         this._items = new LinkedList<T>();
     }
 
+    public Deque(T[] items) {
+        this._items = new LinkedList<T>(items);
+    }
+
+    public Deque(ICollection<T> other) {
+        this._items = new LinkedList<T>(other);
+    }
+
     public void add_first(T item) {
         this._items.add_first(item);
     }

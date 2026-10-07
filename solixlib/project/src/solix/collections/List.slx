@@ -51,6 +51,42 @@ public class List<T> implements IList<T>, ICollection<T>, IIterable<T>, IStringa
         this._size = 0;
     }
 
+    public List(T[] items) {
+        if (items == null) {
+            this._data = new T[16];
+            this._size = 0;
+        } else {
+            int32 cap = items.length;
+            if (cap < 4) {
+                cap = 4;
+            }
+            this._data = new T[cap];
+            this._size = items.length;
+            for (int32 i = 0; i < items.length; i = i + 1) {
+                this._data[i] = items[i];
+            }
+        }
+    }
+
+    public List(ICollection<T> other) {
+        if (other == null) {
+            this._data = new T[16];
+            this._size = 0;
+        } else {
+            int32 cap = other.size();
+            if (cap < 4) {
+                cap = 4;
+            }
+            this._data = new T[cap];
+            this._size = 0;
+            IIterator<T> it = other.iterator();
+            while (it.has_next()) {
+                this._data[this._size] = it.next();
+                this._size = this._size + 1;
+            }
+        }
+    }
+
     public int32 size() {
         return this._size;
     }
@@ -205,6 +241,33 @@ public class List<T> implements IList<T>, ICollection<T>, IIterable<T>, IStringa
             }
         }
         return result;
+    }
+
+    public List<U> map<U>(U(*)(T) transform) {
+        List<U> result = new List<U>(this._size);
+        for (int32 i = 0; i < this._size; i = i + 1) {
+            result.add(transform(this._data[i]));
+        }
+        return result;
+    }
+
+    public T reduce(T initial_value, T(*)(T, T) accumulator) {
+        T current = initial_value;
+        for (int32 i = 0; i < this._size; i = i + 1) {
+            current = accumulator(current, this._data[i]);
+        }
+        return current;
+    }
+
+    public T reduce(T(*)(T, T) accumulator) {
+        if (this._size == 0) {
+            throw new NoSuchElementException("Cannot reduce an empty list");
+        }
+        T current = this._data[0];
+        for (int32 i = 1; i < this._size; i = i + 1) {
+            current = accumulator(current, this._data[i]);
+        }
+        return current;
     }
 
     public IIterator<T> iterator() {

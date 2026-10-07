@@ -37,6 +37,29 @@ struct TypeInfo {
     std::shared_ptr<TypeInfo> return_type = nullptr;
     std::vector<TypeInfo> param_types;
 
+    TypeInfo() = default;
+    TypeInfo(std::string n, int depth = 0) : name(std::move(n)), array_depth(depth) {}
+    TypeInfo(const TypeInfo& other)
+        : name(other.name),
+          array_depth(other.array_depth),
+          type_args(other.type_args),
+          is_function_pointer(other.is_function_pointer),
+          return_type(other.return_type ? std::make_shared<TypeInfo>(*other.return_type) : nullptr),
+          param_types(other.param_types) {}
+    TypeInfo(TypeInfo&&) noexcept = default;
+    TypeInfo& operator=(const TypeInfo& other) {
+        if (this != &other) {
+            name = other.name;
+            array_depth = other.array_depth;
+            type_args = other.type_args;
+            is_function_pointer = other.is_function_pointer;
+            return_type = other.return_type ? std::make_shared<TypeInfo>(*other.return_type) : nullptr;
+            param_types = other.param_types;
+        }
+        return *this;
+    }
+    TypeInfo& operator=(TypeInfo&&) noexcept = default;
+
     bool operator==(const TypeInfo& other) const {
         if (is_function_pointer != other.is_function_pointer) return false;
         if (array_depth != other.array_depth) return false;

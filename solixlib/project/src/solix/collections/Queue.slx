@@ -35,6 +35,14 @@ public class Queue<T> implements IReadOnlyCollection<T>, IIterable<T>, IStringab
         this._items = new LinkedList<T>();
     }
 
+    public Queue(T[] items) {
+        this._items = new LinkedList<T>(items);
+    }
+
+    public Queue(ICollection<T> other) {
+        this._items = new LinkedList<T>(other);
+    }
+
     public void enqueue(T item) {
         this._items.add_last(item);
     }

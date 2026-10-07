@@ -255,4 +255,37 @@ TEST_CASE("Standard Library - solix.core.String & StringBuilder", "[solixlib][st
         assert_compile_sources_success(sources);
         REQUIRE(run_solixlib_sources(sources) == 0);
     }
+
+    SECTION("Case 3.10: Primitive conversion constructors for String") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.core.String;
+
+            class Main {
+                public static int32 main() {
+                    String sInt = new String(42);
+                    if (!sInt.equals(new String("42"))) return 1;
+
+                    String sLong = new String(1234567890123L);
+                    if (!sLong.equals(new String("1234567890123"))) return 2;
+
+                    String sBoolT = new String(true);
+                    if (!sBoolT.equals(new String("true"))) return 3;
+
+                    String sBoolF = new String(false);
+                    if (!sBoolF.equals(new String("false"))) return 4;
+
+                    String sChar = new String('X');
+                    if (!sChar.equals(new String("X"))) return 5;
+
+                    String sFloat = new String(3.14);
+                    if (!sFloat.starts_with(new String("3.14"))) return 6;
+
+                    return 0;
+                }
+            }
+        )";
+        assert_compile_sources_success(sources);
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
 }

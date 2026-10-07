@@ -39,6 +39,14 @@ public class Stack<T> implements IReadOnlyCollection<T>, IIterable<T>, IStringab
         this._items = new List<T>(initial_capacity);
     }
 
+    public Stack(T[] items) {
+        this._items = new List<T>(items);
+    }
+
+    public Stack(ICollection<T> other) {
+        this._items = new List<T>(other);
+    }
+
     public void push(T item) {
         this._items.add(item);
     }

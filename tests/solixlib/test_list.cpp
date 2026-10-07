@@ -375,4 +375,112 @@ TEST_CASE("Standard Library - solix.collections.List", "[solixlib][collections][
 
         REQUIRE(run_solixlib_sources(sources) == 0);
     }
+
+    SECTION("Case 8.8: List array initializer and collection copy constructors") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.collections.List;
+
+            class Main {
+                public static int32 main() {
+                    int32[] arr = new int32[3];
+                    arr[0] = 10;
+                    arr[1] = 20;
+                    arr[2] = 30;
+
+                    List<int32> list = new List<int32>(arr);
+                    if (list.size() != 3) return 1;
+                    if (list.get(0) != 10 || list.get(1) != 20 || list.get(2) != 30) return 2;
+
+                    List<int32> copy = new List<int32>(list);
+                    if (copy.size() != 3) return 3;
+                    if (copy.get(0) != 10 || copy.get(2) != 30) return 4;
+
+                    copy.set(0, 99);
+                    if (list.get(0) != 10) return 5;
+
+                    return 0;
+                }
+            }
+        )";
+
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
+
+    SECTION("Case 8.9: Functional combinators map and reduce on List") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.collections.List;
+
+            class Main {
+                public static int32 main() {
+                    List<int32> list = new List<int32>();
+                    list.add(1);
+                    list.add(2);
+                    list.add(3);
+                    list.add(4);
+
+                    List<int32> doubled = list.map<int32>([](int32 x) => x * 2);
+                    if (doubled.size() != 4) return 1;
+                    if (doubled.get(0) != 2 || doubled.get(3) != 8) return 2;
+
+                    int32 sum = list.reduce([](int32 acc, int32 x) => acc + x);
+                    if (sum != 10) return 3;
+
+                    int32 sumInit = list.reduce(100, [](int32 acc, int32 x) => acc + x);
+                    if (sumInit != 110) return 4;
+
+                    return 0;
+                }
+            }
+        )";
+
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
+
+    SECTION("Case 8.10: Container ecosystem array and copy constructors") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.collections.LinkedList;
+            import solix.collections.HashSet;
+            import solix.collections.TreeSet;
+            import solix.collections.Stack;
+            import solix.collections.Queue;
+            import solix.collections.Deque;
+
+            class Main {
+                public static int32 main() {
+                    int32[] arr = new int32[3];
+                    arr[0] = 1;
+                    arr[1] = 2;
+                    arr[2] = 3;
+
+                    LinkedList<int32> ll = new LinkedList<int32>(arr);
+                    if (ll.size() != 3 || ll.get(0) != 1 || ll.get(2) != 3) return 1;
+
+                    HashSet<int32> hs = new HashSet<int32>(arr);
+                    if (hs.size() != 3 || !hs.contains(2)) return 2;
+
+                    TreeSet<int32> ts = new TreeSet<int32>(arr);
+                    if (ts.size() != 3 || !ts.contains(3)) return 3;
+
+                    Stack<int32> st = new Stack<int32>(arr);
+                    if (st.size() != 3 || st.peek() != 3) return 4;
+
+                    Queue<int32> q = new Queue<int32>(arr);
+                    if (q.size() != 3 || q.peek() != 1) return 5;
+
+                    Deque<int32> dq = new Deque<int32>(arr);
+                    if (dq.size() != 3 || dq.peek_first() != 1 || dq.peek_last() != 3) return 6;
+
+                    LinkedList<int32> llCopy = new LinkedList<int32>(ll);
+                    if (llCopy.size() != 3) return 7;
+
+                    return 0;
+                }
+            }
+        )";
+
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
 }

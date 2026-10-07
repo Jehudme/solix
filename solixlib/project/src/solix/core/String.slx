@@ -30,6 +30,28 @@ public class String implements IStringable, IHashable {
         }
     }
 
+    public String(int32 val) {
+        this.data = native_from_int((int64)val);
+    }
+
+    public String(int64 val) {
+        this.data = native_from_int(val);
+    }
+
+    public String(float64 val) {
+        this.data = native_from_double(val, 6);
+    }
+
+    public String(bool val) {
+        this.data = native_from_bool(val);
+    }
+
+    public String(char val) {
+        char[] buf = new char[1];
+        buf[0] = val;
+        this.data = buf;
+    }
+
     public String(char[] chars, int32 offset, int32 count) {
         if (chars == null) {
             throw new ArgumentNullException("chars", "Character array cannot be null");

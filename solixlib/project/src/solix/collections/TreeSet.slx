@@ -38,6 +38,25 @@ public class TreeSet<T> implements ISet<T>, IReadOnlyCollection<T>, IIterable<T>
         this._map = new TreeMap<T, bool>(comparator);
     }
 
+    public TreeSet(T[] items) {
+        this._map = new TreeMap<T, bool>();
+        if (items != null) {
+            for (int32 i = 0; i < items.length; i = i + 1) {
+                this.add(items[i]);
+            }
+        }
+    }
+
+    public TreeSet(ICollection<T> other) {
+        this._map = new TreeMap<T, bool>();
+        if (other != null) {
+            IIterator<T> it = other.iterator();
+            while (it.has_next()) {
+                this.add(it.next());
+            }
+        }
+    }
+
     public int32 size() {
         return this._map.size();
     }

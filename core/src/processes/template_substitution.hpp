@@ -71,11 +71,13 @@ private:
         }
         if (type.is_function_pointer) {
             if (type.return_type) {
+                type.return_type = std::make_shared<TypeInfo>(*type.return_type);
                 substitute_type(*type.return_type);
             }
             for (auto& param : type.param_types) {
                 substitute_type(param);
             }
+            type.name = type.to_string();
         }
     }
 };
