@@ -73,7 +73,7 @@
 | **Phase 43** | Entry Point Resolution Disambiguation (Exhaustive Scan, Duplicate/Ambiguity Detection with File, Row, Col) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 44** | Standard Library: Friendly Primitive Aliases (`Primitives.slx` with Wildcard Re-export) | `P2 Medium` | `solixlib/core`, `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 45** | LSP Core Architecture, JSON-RPC Transport & Live Project Diagnostics | `P1 High` | `lsp`, `cli`, `core`, `tests`, `docs` | - [x] Completed & Merged |
-| **Phase 46** | LSP Navigation & Inspection (`definition`, `typeDefinition`, `hover`, AST Spatial Index) | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 46** | LSP Navigation & Inspection (`definition`, `typeDefinition`, `hover`, AST Spatial Index) | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 47** | LSP Intelligence: Scope Completion, Member Dot-Access, Signature Help & Document Symbols | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [ ] Planned |
 | **Phase 48** | Neovim IDE Plugin: Filetype Detection, Syntax Highlighting & `nvim-lspconfig` Setup | `P2 Medium` | `editors/neovim`, `docs` | - [ ] Deferred (Skipped) |
 | **Phase 49** | VS Code Extension: TextMate Grammar, Language Config, TypeScript Client & `.vsix` Packaging | `P2 Medium` | `editors/vscode`, `docs` | - [ ] Planned |
@@ -2285,24 +2285,24 @@ Establish the foundational C++ Language Server architecture communicating via JS
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `lsp/`, `core/include/solix/`, `core/src/`, `tests/lsp/`, `docs/spec/lsp/`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Provide fast code navigation and symbol inspection. Build an in-memory AST Spatial Index map to resolve definitions, type definitions, and markdown hover documentation across all files and project dependencies.
 
 ### Action Items
-- [ ] **AST Spatial Index Engine**: Build interval-based lookup data structure mapping `(source_path, line, col)` to the most specific enclosing AST `Node*`.
-- [ ] Implement Go-to-Definition (`textDocument/definition`):
+- [x] **AST Spatial Index Engine**: Build interval-based lookup data structure mapping `(source_path, line, col)` to the most specific enclosing AST `Node*`.
+- [x] Implement Go-to-Definition (`textDocument/definition`):
   - Resolves identifiers, method calls, constructors, field accesses, and type references to their exact declaration source file, line, and column.
   - Supports jumping across project dependencies and standard library modules (`solixlib`).
-- [ ] Implement Go-to-Type-Definition (`textDocument/typeDefinition`):
+- [x] Implement Go-to-Type-Definition (`textDocument/typeDefinition`):
   - Inspects resolved type of variables/expressions and navigates to the declaration of the underlying `class` or `enum`.
-- [ ] Implement Hover Tooltips (`textDocument/hover`):
+- [x] Implement Hover Tooltips (`textDocument/hover`):
   - Formats markdown tooltips displaying symbol kinds, variable types, function signatures, and doc comments.
   - Displays type alias expansions (e.g. `alias int = int32`).
-- [ ] Handle uninstantiated and instantiated template generics navigation cleanly.
-- [ ] Add automated tests in `tests/lsp/test_lsp_navigation.cpp` verifying definition jump coordinates and hover text.
-- [ ] Document navigation capabilities in `docs/spec/lsp/navigation.md`.
+- [x] Handle uninstantiated and instantiated template generics navigation cleanly.
+- [x] Add automated tests in `tests/commands/test_lsp_command.cpp` verifying definition jump coordinates and hover text.
+- [x] Document navigation capabilities in `docs/spec/lsp/navigation.md`.
 
 ---
 
