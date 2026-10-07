@@ -44,6 +44,7 @@ This directory contains the formal specification of the Solix programming langua
 | [**Collections: Sets**](solixlib/set.md) | `HashSet` hash table and `TreeSet` Red-Black tree distinct element sets |
 | [**Collections: Linear**](solixlib/linear_collections.md) | `Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, and `BitSet` |
 | [**Filesystem**](solixlib/filesystem.md) | `Path`, `File`, and `Directory` cross-platform I/O and directory management |
+| [**Streams & Path Operators**](solixlib/streams.md) | `IStream`, `FileStream`, `MemoryStream`, `BufferedReader`, `StreamReader`, `StreamWriter`, and `Path` operators |
 
 ---
 
@@ -64,7 +65,8 @@ docs/spec/
 │   ├── package.md              ← Local package management specification
 │   └── manifest.md             ← solix.json project manifest schema
 ├── solixlib/
-│   └── scaffolding.md          ← solixlib layout & packaging specification
+│   ├── scaffolding.md          ← solixlib layout & packaging specification
+│   └── streams.md              ← Streams and Path operators specification
 └── statements/
     ├── README.md               ← Statements reference index
     ├── modules/
