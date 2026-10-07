@@ -402,6 +402,19 @@ Location make_location_from_node(Node* node, CompilationContext* ctx = nullptr) 
     return loc;
 }
 
+// Forward declarations of anonymous-namespace helpers used by format_hover_for_node
+Node* find_type_declaration(const std::string& full_type_name, CompilationContext* context);
+
+static std::string access_modifier_str(TokenType t) {
+    switch (t) {
+        case TokenType::KEYWORD_PUBLIC:    return "public";
+        case TokenType::KEYWORD_PRIVATE:   return "private";
+        case TokenType::KEYWORD_PROTECTED: return "protected";
+        case TokenType::KEYWORD_INTERNAL:  return "internal";
+        default:                           return "";
+    }
+}
+
 std::string format_hover_for_node(Node* node, CompilationContext* ctx) {
     if (!node) return "";
     std::string md;
@@ -409,37 +422,143 @@ std::string format_hover_for_node(Node* node, CompilationContext* ctx) {
     switch (node->node_type) {
         case NodeType::VAR_DECL: {
             auto* v = static_cast<VariableDeclaration*>(node);
-            md = "```solix\n" + (v->is_const ? std::string("const ") : "") + v->type_info.to_string() + " " + v->var_name + "\n```";
+            std::string sig;
+            if (v->is_const) sig += "const ";
+            if (v->is_weak) sig += "weak ";
+            sig += v->type_info.to_string();
+            if (v->is_reference_type) sig += "&";
+            sig += " " + v->var_name;
+            md = "```solix\n" + sig + "\n```";
             break;
         }
         case NodeType::FIELD_DECL: {
             auto* f = static_cast<FieldDeclaration*>(node);
-            md = "```solix\n" + (f->is_static ? std::string("static ") : "") + f->type_info.to_string() + " " + f->field_name + "\n```";
+            std::string sig = access_modifier_str(f->access_modifier);
+            if (!sig.empty()) sig += " ";
+            if (f->is_static) sig += "static ";
+            if (f->is_const) sig += "const ";
+            if (f->is_weak) sig += "weak ";
+            sig += f->type_info.to_string();
+            if (f->is_reference_type) sig += "&";
+            sig += " " + f->field_name;
+            md = "```solix\n" + sig + "\n```";
             break;
         }
         case NodeType::METHOD_DECL: {
             auto* m = static_cast<MethodDeclaration*>(node);
-            md = "```solix\n" + (m->is_static ? std::string("static ") : "") + m->return_type.to_string() + " " + m->method_name + "(";
+            std::string sig = access_modifier_str(m->access_modifier);
+            if (!sig.empty()) sig += " ";
+            if (m->is_static) sig += "static ";
+            if (m->is_inline) sig += "inline ";
+            if (m->is_native) sig += "native ";
+            if (m->is_virtual) sig += "virtual ";
+            if (m->is_override) sig += "override ";
+            if (m->is_abstract) sig += "abstract ";
+            sig += m->return_type.to_string() + " " + m->method_name + "(";
             for (size_t i = 0; i < m->parameters.size(); ++i) {
-                if (i > 0) md += ", ";
-                md += m->parameters[i]->type_info.to_string() + " " + m->parameters[i]->var_name;
+                if (i > 0) sig += ", ";
+                sig += m->parameters[i]->type_info.to_string();
+                if (m->parameters[i]->is_reference_type) sig += "&";
+                sig += " " + m->parameters[i]->var_name;
             }
-            md += ")\n```";
+            sig += ")";
+            md = "```solix\n" + sig + "\n```";
+            break;
+        }
+        case NodeType::CONSTRUCTOR_DECL: {
+            auto* c = static_cast<ConstructorDeclaration*>(node);
+            std::string sig = access_modifier_str(c->access_modifier);
+            if (!sig.empty()) sig += " ";
+            sig += c->class_name + "(";
+            for (size_t i = 0; i < c->parameters.size(); ++i) {
+                if (i > 0) sig += ", ";
+                sig += c->parameters[i]->type_info.to_string();
+                if (c->parameters[i]->is_reference_type) sig += "&";
+                sig += " " + c->parameters[i]->var_name;
+            }
+            sig += ")";
+            md = "```solix\n" + sig + "\n```";
             break;
         }
         case NodeType::CLASS_DECL: {
             auto* c = static_cast<ClassDeclaration*>(node);
-            md = "```solix\n" + (c->is_interface ? std::string("interface ") : std::string("class ")) + c->class_name + "\n```";
+            std::string sig = access_modifier_str(c->access_modifier);
+            if (!sig.empty()) sig += " ";
+            if (c->is_abstract && !c->is_interface) sig += "abstract ";
+            sig += (c->is_interface ? std::string("interface ") : std::string("class "));
+            sig += c->class_name;
+            if (!c->template_parameters.empty()) {
+                sig += "<";
+                for (size_t i = 0; i < c->template_parameters.size(); ++i) {
+                    if (i > 0) sig += ", ";
+                    sig += c->template_parameters[i];
+                }
+                sig += ">";
+            }
+            if (!c->base_class_name.empty()) {
+                sig += " extends " + c->base_class_name;
+            }
+            if (!c->implemented_interfaces.empty()) {
+                sig += " implements ";
+                for (size_t i = 0; i < c->implemented_interfaces.size(); ++i) {
+                    if (i > 0) sig += ", ";
+                    sig += c->implemented_interfaces[i];
+                }
+            }
+            md = "```solix\n" + sig + "\n```";
             break;
         }
         case NodeType::ENUM_DECL: {
             auto* e = static_cast<EnumDeclaration*>(node);
-            md = "```solix\nenum " + e->enum_name + "\n```";
+            std::string sig = access_modifier_str(e->access_modifier);
+            if (!sig.empty()) sig += " ";
+            sig += "enum " + e->enum_name;
+            md = "```solix\n" + sig + "\n```";
             break;
         }
         case NodeType::ALIAS_STMT: {
             auto* a = static_cast<AliasStatement*>(node);
             md = "```solix\nalias " + a->alias_name + " = " + a->target_type.to_string() + "\n```";
+            break;
+        }
+        case NodeType::NEW_INSTANCE: {
+            auto* ni = static_cast<NewInstanceExpression*>(node);
+            // Show the constructor signature if we can find it
+            if (ctx) {
+                Node* cls_node = find_type_declaration(ni->type_info.name, ctx);
+                if (cls_node && cls_node->node_type == NodeType::CLASS_DECL) {
+                    auto* cls = static_cast<ClassDeclaration*>(cls_node);
+                    for (const auto& ch : cls->children) {
+                        if (ch && ch->node_type == NodeType::CONSTRUCTOR_DECL) {
+                            return format_hover_for_node(ch.get(), ctx);
+                        }
+                    }
+                }
+            }
+            md = "```solix\nnew " + ni->type_info.to_string() + "()\n```";
+            break;
+        }
+        case NodeType::MEMBER_ACCESS: {
+            auto* mem = static_cast<MemberAccessExpression*>(node);
+            if (mem->resolved_declaration) {
+                return format_hover_for_node(mem->resolved_declaration, ctx);
+            }
+            if (mem->parent && mem->parent->resolved_declaration) {
+                return format_hover_for_node(mem->parent->resolved_declaration, ctx);
+            }
+            if (!mem->expression_type.name.empty()) {
+                md = "```solix\n" + mem->expression_type.to_string() + " " + mem->member_name + "\n```";
+            }
+            break;
+        }
+        case NodeType::METHOD_CALL: {
+            auto* mc = static_cast<MethodCallExpression*>(node);
+            if (mc->callee && mc->callee->resolved_declaration) {
+                return format_hover_for_node(mc->callee->resolved_declaration, ctx);
+            }
+            if (!mc->expression_type.name.empty()) {
+                md = "```solix\n" + mc->expression_type.to_string() + "\n```";
+            }
             break;
         }
         case NodeType::IDENTIFIER: {
@@ -453,6 +572,9 @@ std::string format_hover_for_node(Node* node, CompilationContext* ctx) {
             break;
         }
         default: {
+            if (node->resolved_declaration) {
+                return format_hover_for_node(node->resolved_declaration, ctx);
+            }
             if (!node->expression_type.name.empty()) {
                 md = "```solix\n" + node->expression_type.to_string() + "\n```";
             }
@@ -807,6 +929,22 @@ void LspServer::handle_hover(const nlohmann::json& id, const nlohmann::json& par
     int character = params["position"].value("character", 0) + 1;
 
     std::string file_path = uri_to_path(uri);
+
+    // Suppress hover on keywords and punctuation
+    auto doc_opt = docs_.get_document_text(uri);
+    std::string source_text = doc_opt.value_or("");
+    if (source_text.empty() && last_opts_) {
+        auto it = last_opts_->sources.find(file_path);
+        if (it != last_opts_->sources.end()) {
+            source_text = it->second.value_or("");
+        }
+    }
+    std::string word = get_word_at_position(source_text, line, character);
+    if (!word.empty() && is_keyword(word)) {
+        transport_.send_response(id, nullptr);
+        return;
+    }
+
     Node* hit = spatial_index_.find_node_at(file_path, line, character);
 
     if (!hit) {
