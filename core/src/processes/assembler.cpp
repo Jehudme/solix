@@ -576,7 +576,8 @@ void Assembler::compile_boot_sequence() {
   }
 
   if (entry_method) {
-    if (!entry_method->is_static) {
+    bool is_class_member = (entry_method->parent != nullptr && entry_method->parent->node_type == NodeType::CLASS_DECL);
+    if (is_class_member && !entry_method->is_static) {
       throw_error(nullptr,
                   "Entry point '" + entry_point + "' must be static.");
     }

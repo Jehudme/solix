@@ -218,7 +218,12 @@ Node *Binder::instantiate_template(const std::string &template_name,
     static_cast<MethodDeclaration *>(clone)->package_context = my_prefix;
     static_cast<MethodDeclaration *>(clone)->method_name =
         mangled_name.substr(my_prefix.length());
+    ClassDeclaration *saved_class = current_class;
+    if (!current_class && clone->parent && clone->parent->node_type == NodeType::CLASS_DECL) {
+      current_class = static_cast<ClassDeclaration *>(clone->parent);
+    }
     register_members(clone, my_prefix);
+    current_class = saved_class;
     if (!global_scope.symbols.count(mangled_name)) {
       global_scope.define(mangled_name, clone);
     }
@@ -4079,6 +4084,9 @@ void Binder::visit(MethodDeclaration &n) {
     return;
   }
   if (current_pass == BinderPass::REGISTER_MEMBERS) {
+    if (current_class == nullptr && n.is_static) {
+      record_error(&n, "'static' modifier is not allowed on functions outside of a class");
+    }
     for (const auto &param : n.parameters) {
       auto *var_decl = static_cast<VariableDeclaration *>(param.get());
       var_decl->type_info = resolve_type(var_decl->type_info, var_decl);

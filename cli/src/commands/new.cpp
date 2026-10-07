@@ -119,7 +119,7 @@ void setup_new_command(CLI::App &app) {
                     std::cerr << "Error: Could not create file " << main_file.string() << std::endl;
                     cli_exit(1);
                 }
-                slx_out << "static int32 " << *entry_str << "() {\n";
+                slx_out << "int32 " << *entry_str << "() {\n";
                 slx_out << "    return 0;\n";
                 slx_out << "}\n";
                 slx_out.close();
