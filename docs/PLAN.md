@@ -2261,18 +2261,21 @@ Establish the foundational C++ Language Server architecture communicating via JS
 
 ### Action Items
 - [ ] Create `lsp/` module with CMake target `solix_lsp_core` and standalone binary `solix-lsp`.
+- [ ] **Compiler Prerequisite — AST & Token Span Hardening (`core/`)**:
+  - Enrich `Token` and `Node` with ending column / length (`end_line`, `end_column`) so LSP ranges accurately highlight the entire identifier or expression rather than just a single start point.
+  - Add basic error recovery synchronization in `ParserState` (e.g. skip to semicolon on statement parse errors) so syntax errors in one function don't abort parsing the rest of the file.
 - [ ] Implement robust JSON-RPC 2.0 header-framing transport reading `Content-Length: <len>\r\n\r\n` and serializing responses using `nlohmann::json`.
 - [ ] Implement LSP lifecycle protocol: `initialize`, `initialized`, `shutdown`, `exit`.
 - [ ] Implement document synchronization: `textDocument/didOpen`, `textDocument/didChange`, `textDocument/didClose`, `textDocument/didSave` maintaining an in-memory virtual document cache.
 - [ ] Integrate Solix project manifest discovery:
   - On `initialize`, inspect `rootUri` / `workspaceFolders` to locate `solix.json`.
-  - Use `solix::cli::DependencyResolver` to resolve all project and package dependencies (including `solixlib` and local sources).
+  - Use `solix::cli::DependencyManager` and `DependencyResolver` to resolve all project and package dependencies (including `solixlib` and local sources).
   - Feed in-memory buffer overrides into `CompilationOptions::sources`.
 - [ ] Implement live diagnostics publisher (`textDocument/publishDiagnostics`):
   - Execute debounced frontend analysis (`Lexer` -> `Parser` -> `Binder`).
   - Convert `solix::Report` instances into LSP `Diagnostic` objects (uniform line, column, severity, code, message).
   - Clear squiggles when syntax and semantic errors are resolved.
-- [ ] Add CLI subcommand `solix lsp` in `cli/src/commands/lsp.cpp`.
+- [ ] Add CLI subcommand `solix lsp` in `cli/src/commands/lsp.cpp` linking with `solix_lsp_core`.
 - [ ] Add automated tests in `tests/lsp/test_lsp_transport.cpp` and `test_lsp_diagnostics.cpp` validating JSON-RPC exchange and error squiggly reporting.
 - [ ] Document LSP architecture in `docs/spec/lsp/protocol.md`.
 
@@ -2288,7 +2291,7 @@ Establish the foundational C++ Language Server architecture communicating via JS
 Provide fast code navigation and symbol inspection. Build an in-memory AST Spatial Index map to resolve definitions, type definitions, and markdown hover documentation across all files and project dependencies.
 
 ### Action Items
-- [ ] Implement AST Spatial Index / Interval Lookup querying AST nodes by `(source_path, line, column)`.
+- [ ] **AST Spatial Index Engine**: Build interval-based lookup data structure mapping `(source_path, line, col)` to the most specific enclosing AST `Node*`.
 - [ ] Implement Go-to-Definition (`textDocument/definition`):
   - Resolves identifiers, method calls, constructors, field accesses, and type references to their exact declaration source file, line, and column.
   - Supports jumping across project dependencies and standard library modules (`solixlib`).
@@ -2297,6 +2300,7 @@ Provide fast code navigation and symbol inspection. Build an in-memory AST Spati
 - [ ] Implement Hover Tooltips (`textDocument/hover`):
   - Formats markdown tooltips displaying symbol kinds, variable types, function signatures, and doc comments.
   - Displays type alias expansions (e.g. `alias int = int32`).
+- [ ] Handle uninstantiated and instantiated template generics navigation cleanly.
 - [ ] Add automated tests in `tests/lsp/test_lsp_navigation.cpp` verifying definition jump coordinates and hover text.
 - [ ] Document navigation capabilities in `docs/spec/lsp/navigation.md`.
 
