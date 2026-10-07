@@ -10,6 +10,8 @@ if(WIN32)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS NOMINMAX)
 endif()
 
+add_compile_definitions(SOLIX_VERSION="${PROJECT_VERSION}")
+
 
 include(FetchContent)
 

@@ -21,6 +21,7 @@ add_library(solix_cli_core STATIC
     src/commands/build.cpp
     src/commands/new.cpp
     src/commands/package.cpp
+    src/commands/version.cpp
 )
 
 add_library(solix_launcher_core ALIAS solix_cli_core)
