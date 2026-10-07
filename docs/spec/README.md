@@ -96,7 +96,8 @@ docs/spec/
     │   ├── continue_statement.md
     │   ├── return_statement.md
     │   ├── throw_statement.md
-    │   └── try_catch_finally_statement.md
+    │   ├── try_catch_finally_statement.md
+    │   └── intrinsics.md
     └── expressions/
         ├── assignment_expression.md
         ├── ternary_expression.md

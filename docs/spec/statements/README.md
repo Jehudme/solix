@@ -38,6 +38,7 @@ Each document focuses strictly on the architecture and mechanics of the construc
 - [`return_statement.md`](control_flow/return_statement.md) — Frame termination, return values, receiver/parameter cleanup
 - [`throw_statement.md`](control_flow/throw_statement.md) — `std.Exception` hierarchy enforcement & cleanup trampolining
 - [`try_catch_finally_statement.md`](control_flow/try_catch_finally_statement.md) — Exception matching tables, parameter binding, `finally` guarantees
+- [`intrinsics.md`](control_flow/intrinsics.md) — Language intrinsics `assert` invariant validation and `exit` process termination
 
 ### Part IV: Expressions & Operators (`expressions/`)
 - [`assignment_expression.md`](expressions/assignment_expression.md) — Lvalue mutations & ARC ownership transfers
