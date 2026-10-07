@@ -198,8 +198,8 @@ Each test scenario is assigned a permanent identifier and status tag:
 
 ## 14. System Environment & Processes (`solix.system`: `Environment`, `Process`, `ProcessResult`)
 
-- [ ] **Case 14.1 [NOT IMPLEMENTED]**: Setting and retrieving environment variables (`Environment.get_env`, `Environment.set_env`, `Environment.get_all_env`) (`tests/solixlib/test_environment.cpp`).
-- [ ] **Case 14.2 [NOT IMPLEMENTED]**: Operating system identification and host hardware inspection (`Environment.os_name`, `Environment.is_linux`, `Environment.processor_count`) (`tests/solixlib/test_environment.cpp`).
-- [ ] **Case 14.3 [NOT IMPLEMENTED]**: Synchronous child process execution via `Process.run()` with standard output capture (`tests/solixlib/test_environment.cpp`).
-- [ ] **Case 14.4 [NOT IMPLEMENTED]**: Lifecycle child process management with `Process` (`start()`, `wait_for_exit()`, `get_standard_output()`) (`tests/solixlib/test_environment.cpp`).
-- [ ] **Case 14.5 [NOT IMPLEMENTED]**: Negative: Spawning non-existent command returns non-zero exit code without crashing parent process (`tests/solixlib/test_environment.cpp`).
+- [x] **Case 14.1 [IMPLEMENTED]**: Setting and retrieving environment variables (`Environment.get_env`, `Environment.set_env`, `Environment.get_all_env`) (`tests/solixlib/test_environment.cpp`).
+- [x] **Case 14.2 [IMPLEMENTED]**: Operating system identification and host hardware inspection (`Environment.os_name`, `Environment.is_linux`, `Environment.processor_count`) (`tests/solixlib/test_environment.cpp`).
+- [x] **Case 14.3 [IMPLEMENTED]**: Synchronous child process execution via `Process.run()` with standard output capture (`tests/solixlib/test_environment.cpp`).
+- [x] **Case 14.4 [IMPLEMENTED]**: Lifecycle child process management with `Process` (`start()`, `wait_for_exit()`, `get_standard_output()`) (`tests/solixlib/test_environment.cpp`).
+- [x] **Case 14.5 [IMPLEMENTED]**: Negative: Spawning non-existent command returns non-zero exit code without crashing parent process (`tests/solixlib/test_environment.cpp`).
