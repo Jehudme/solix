@@ -2,6 +2,8 @@
 
 The `solix.exceptions` package provides the foundational, unified object-oriented exception hierarchy for the Solix programming language standard library (`solixlib`). All standard library submodules, runtime assertions, error propagation mechanisms, and user-defined exceptions build on this hierarchy.
 
+All 21 standard exception types are consolidated and encapsulated within `solix/exceptions/Exceptions.slx`, allowing lightweight unified compilation and single-import usability (`import solix.exceptions.*;` or importing specific exception classes).
+
 ---
 
 ## 1. Class Inheritance Hierarchy

@@ -4,6 +4,8 @@
 
 The `solix.collections` module establishes the core structural abstractions and foundation for the Solix collection framework. It defines unified iteration protocols, read-only and mutable collection contracts, list/deque specifications, and collection utilities such as canonical string formatting.
 
+All collection interfaces (`IIterator`, `IIterable`, `IReadOnlyCollection`, `ICollection`, `IList`, `IDeque`, `ISet`, `IMap`) are consolidated within `solix/collections/Interfaces.slx`. Concrete implementations strictly encapsulate internal node and bucket structures (e.g. `LinkedListNode`, `HashMapEntry`, `TreeMapNode`) within their implementation modules.
+
 All collections in Solix inherit from `ICollection`, which extends both `IIterable` and `IStringable`.
 
 ---
