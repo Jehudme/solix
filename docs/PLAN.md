@@ -68,7 +68,7 @@
 | **Phase 38** | Compiler Diagnostics & Error Reporting Consistency (Uniform Path, Row, Column, Caret) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 39** | Lexer Escape Sequence Decoding (`\n`, `\t`, `\r`, `\\`, `\"`, `\0`, `\xHH`) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 40** | Function Declaration Scope Rules (`static` Prohibited Outside Classes; Non-`static` Free Functions Allowed as Entry Points) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
-| **Phase 41** | Diagnostic Logging Level Demotion (`log_debug` -> `log_trace` & Phase Pipeline Timing) | `P2 Medium` | `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 41** | Diagnostic Logging Level Demotion (`log_debug` -> `log_trace` & Phase Pipeline Timing) | `P2 Medium` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 42** | CLI Toolchain: `version` Subcommand & `--version` Flag | `P2 Medium` | `cli`, `tests`, `docs` | - [ ] Planned |
 | **Phase 43** | Entry Point Resolution Disambiguation (Exhaustive Scan, Duplicate/Ambiguity Detection with File, Row, Col) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
 | **Phase 44** | Standard Library: Friendly Primitive Aliases (`Primitives.slx` with Wildcard Re-export) | `P2 Medium` | `solixlib/core`, `core`, `tests`, `docs` | - [ ] Planned |
@@ -2181,15 +2181,15 @@ Enforce the language rule that functions declared outside of a class cannot use 
 
 - **Priority**: `P2 Medium`
 - **Affected Modules**: `core/src/processes/`, `core/src/compilation.cpp`, `core/src/utilities/diagnostic.cpp`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Demote verbose compiler debug logs (`log_debug`) to trace level (`log_trace`) so that normal debug logging is uncluttered. In `core/src/compilation.cpp`, add timing instrumentation for each compiler stage (Lexer, Parser, Binder, Assembler) reporting stage completion and duration.
 
 ### Action Items
-- [ ] Audit and convert fine-grained AST/symbol `log_debug` invocations to `log_trace`.
-- [ ] Measure and log elapsed execution time per stage in `core/src/compilation.cpp`.
-- [ ] Verify clean CLI compile output.
+- [x] Audit and convert fine-grained AST/symbol `log_debug` invocations to `log_trace`.
+- [x] Measure and log elapsed execution time per stage in `core/src/compilation.cpp`.
+- [x] Verify clean CLI compile output.
 
 ---
 
