@@ -812,7 +812,9 @@ std::unique_ptr<Node> ParserState::parse_block() {
       }
     }
   }
-  consume(TokenType::PUNCTUATION_CLOSE_BRACE, "Expected '}' after block");
+  Token close_brace = consume(TokenType::PUNCTUATION_CLOSE_BRACE, "Expected '}' after block");
+  block->end_line = close_brace.line;
+  block->end_column = close_brace.column;
   log_trace("Exiting block statement at line {} with {} statements", brace.line,
             block->children.size());
   return block;
@@ -1631,6 +1633,8 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
         (*it)->parent = body.get();
         body->children.insert(body->children.begin(), std::move(*it));
       }
+      ctor->end_line = body->end_line;
+      ctor->end_column = body->end_column;
       ctor->children.push_back(std::move(body));
       decl->children.push_back(std::move(ctor));
     } else {
@@ -1646,7 +1650,9 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
       decl->children.push_back(std::move(member));
     }
   }
-  consume(TokenType::PUNCTUATION_CLOSE_BRACE, "Expected '}' after class body");
+  Token close_brace = consume(TokenType::PUNCTUATION_CLOSE_BRACE, "Expected '}' after class body");
+  decl->end_line = close_brace.line;
+  decl->end_column = close_brace.column;
 
   for (auto &child : decl->children) {
     child->parent = decl.get();
@@ -1785,6 +1791,8 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
       if (auto* b = dynamic_cast<BlockStatement*>(block.get())) {
           b->block_kind = BlockKind::FUNCTION_BODY;
       }
+      method->end_line = block->end_line;
+      method->end_column = block->end_column;
       block->parent = method.get();
       method->children.push_back(std::move(block));
     }

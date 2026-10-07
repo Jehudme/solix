@@ -201,16 +201,37 @@ void LspServer::analyze_document(const std::string& target_uri) {
     opts.log_level = CompilationOptions::LogLevel::OFF;
     opts.flush_level = CompilationOptions::LogLevel::OFF;
 
-    // 1. If solix.json exists, resolve project dependencies first
-    if (!manifest_.is_null() && manifest_.is_object()) {
+    // 1. Discover project manifest (check upwards from target_p, falling back to workspace_root_)
+    std::filesystem::path current_proj_root = workspace_root_;
+    nlohmann::json current_manifest = manifest_;
+
+    std::filesystem::path search_dir = target_p.parent_path();
+    while (!search_dir.empty()) {
+        std::filesystem::path candidate = search_dir / "solix.json";
+        if (std::filesystem::exists(candidate)) {
+            current_proj_root = search_dir;
+            std::ifstream mf(candidate);
+            if (mf.is_open()) {
+                try {
+                    current_manifest = nlohmann::json();
+                    mf >> current_manifest;
+                } catch (...) {}
+            }
+            break;
+        }
+        if (search_dir == search_dir.parent_path()) break;
+        search_dir = search_dir.parent_path();
+    }
+
+    if (!current_manifest.is_null() && current_manifest.is_object()) {
         std::string profile_name = "debug";
         nlohmann::json active_profile = nlohmann::json::object();
-        if (manifest_.contains("profiles") && manifest_["profiles"].is_object() && manifest_["profiles"].contains(profile_name)) {
-            active_profile = manifest_["profiles"][profile_name];
+        if (current_manifest.contains("profiles") && current_manifest["profiles"].is_object() && current_manifest["profiles"].contains(profile_name)) {
+            active_profile = current_manifest["profiles"][profile_name];
         }
 
         solix::cli::DependencyManager dep_mgr;
-        dep_mgr.resolve_all(manifest_, workspace_root_, active_profile, opts, &dependency_roots_);
+        dep_mgr.resolve_all(current_manifest, current_proj_root, active_profile, opts, &dependency_roots_);
     }
 
     // 2. Ingest all open documents from the DocumentStore (in-memory overrides disk)
@@ -303,6 +324,37 @@ void LspServer::analyze_document(const std::string& target_uri) {
         diags_by_uri[rep_uri].push_back(d);
     }
 
+    // Preserve previously known valid classes if the current parse cycle encountered syntax errors
+    if (last_context_) {
+        for (const auto& [prev_src, prev_nodes] : last_context_->nodes) {
+            auto it = context.nodes.find(prev_src);
+            if (it == context.nodes.end() || it->second.empty()) {
+                for (const auto& pn : prev_nodes) {
+                    if (pn) context.nodes[prev_src].push_back(pn->clone());
+                }
+            } else {
+                for (const auto& pn : prev_nodes) {
+                    if (pn && pn->node_type == NodeType::CLASS_DECL) {
+                        auto* prev_cd = static_cast<ClassDeclaration*>(pn.get());
+                        bool found = false;
+                        for (const auto& cur_n : it->second) {
+                            if (cur_n && cur_n->node_type == NodeType::CLASS_DECL) {
+                                auto* cur_cd = static_cast<ClassDeclaration*>(cur_n.get());
+                                if (cur_cd->class_name == prev_cd->class_name) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!found) {
+                            it->second.push_back(prev_cd->clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Cache compilation context and spatial index
     last_context_ = std::make_shared<CompilationContext>(*last_opts_);
     // Copy nodes and symbols
@@ -359,32 +411,48 @@ Location make_location_from_node(Node* node, CompilationContext* ctx = nullptr) 
     if (!node) return loc;
 
     std::string path;
-    if (node->source && !node->source->valueless_by_exception()) {
-        try {
-            if (std::holds_alternative<std::filesystem::path>(*node->source)) {
-                path = std::get<std::filesystem::path>(*node->source).string();
-            } else if (std::holds_alternative<std::string>(*node->source)) {
-                path = std::get<std::string>(*node->source);
-            }
-        } catch (...) {}
+    Node* cur = node;
+    while (cur && path.empty()) {
+        if (cur->source && !cur->source->valueless_by_exception()) {
+            try {
+                if (std::holds_alternative<std::filesystem::path>(*cur->source)) {
+                    path = std::get<std::filesystem::path>(*cur->source).string();
+                } else if (std::holds_alternative<std::string>(*cur->source)) {
+                    path = std::get<std::string>(*cur->source);
+                }
+            } catch (...) {}
+        }
+        cur = cur->parent;
     }
 
     if (path.empty() && ctx) {
-        // Fallback: search which compilation unit owns this AST node
+        std::function<bool(Node*)> contains_node = [&](Node* n) -> bool {
+            if (!n) return false;
+            if (n == node) return true;
+            if (n->node_type == NodeType::METHOD_DECL) {
+                auto* m = static_cast<MethodDeclaration*>(n);
+                for (const auto& p : m->parameters) {
+                    if (p.get() == node) return true;
+                }
+            } else if (n->node_type == NodeType::CONSTRUCTOR_DECL) {
+                auto* c = static_cast<ConstructorDeclaration*>(n);
+                for (const auto& p : c->parameters) {
+                    if (p.get() == node) return true;
+                }
+            }
+            for (const auto& ch : n->children) {
+                if (contains_node(ch.get())) return true;
+            }
+            return false;
+        };
+
         for (const auto& [src, nodes] : ctx->nodes) {
             bool found = false;
             for (const auto& root : nodes) {
-                if (root.get() == node) {
+                if (contains_node(root.get())) {
                     found = true;
                     break;
                 }
-                for (const auto& child : root->children) {
-                    if (child.get() == node) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) break;
             }
             if (found) {
                 if (std::holds_alternative<std::filesystem::path>(src)) {
@@ -727,6 +795,192 @@ Node* find_overridden_method(MethodDeclaration* method, CompilationContext* cont
     return nullptr;
 }
 
+ClassDeclaration* find_enclosing_class_at(const std::string& file_path, int line, CompilationContext* context) {
+    if (!context || file_path.empty() || line <= 0) return nullptr;
+    std::string norm_target = std::filesystem::path(file_path).lexically_normal().string();
+
+    for (const auto& [src, nodes] : context->nodes) {
+        std::string src_path;
+        if (std::holds_alternative<std::filesystem::path>(src)) {
+            src_path = std::get<std::filesystem::path>(src).lexically_normal().string();
+        } else if (std::holds_alternative<std::string>(src)) {
+            src_path = std::filesystem::path(std::get<std::string>(src)).lexically_normal().string();
+        }
+        if (src_path != norm_target) continue;
+
+        for (const auto& n : nodes) {
+            if (n && n->node_type == NodeType::CLASS_DECL) {
+                auto* cd = static_cast<ClassDeclaration*>(n.get());
+                uint32_t uline = static_cast<uint32_t>(line);
+                if (uline >= cd->line && (cd->end_line == 0 || uline <= cd->end_line)) {
+                    return cd;
+                }
+            }
+        }
+    }
+    return nullptr;
+}
+
+Node* find_enclosing_callable_at(const std::string& file_path, int line, CompilationContext* context) {
+    ClassDeclaration* cd = find_enclosing_class_at(file_path, line, context);
+    if (!cd) return nullptr;
+
+    uint32_t uline = static_cast<uint32_t>(line);
+    for (const auto& ch : cd->children) {
+        if (!ch) continue;
+        if (ch->node_type == NodeType::METHOD_DECL) {
+            auto* md = static_cast<MethodDeclaration*>(ch.get());
+            if (uline >= md->line && (md->end_line == 0 || uline <= md->end_line)) {
+                return md;
+            }
+        } else if (ch->node_type == NodeType::CONSTRUCTOR_DECL) {
+            auto* ctor = static_cast<ConstructorDeclaration*>(ch.get());
+            if (uline >= ctor->line && (ctor->end_line == 0 || uline <= ctor->end_line)) {
+                return ctor;
+            }
+        }
+    }
+    return nullptr;
+}
+
+Node* find_symbol_in_scope(const std::string& name, const std::string& file_path, int line, CompilationContext* context) {
+    if (name.empty() || !context) return nullptr;
+
+    std::function<Node*(Node*)> scan_locals = [&](Node* n) -> Node* {
+        if (!n) return nullptr;
+        if (n->node_type == NodeType::VAR_DECL) {
+            auto* vd = static_cast<VariableDeclaration*>(n);
+            if (vd->var_name == name) return vd;
+        }
+        for (const auto& child : n->children) {
+            Node* found = scan_locals(child.get());
+            if (found) return found;
+        }
+        return nullptr;
+    };
+
+    // 1. Check enclosing callable (Method or Constructor)
+    Node* callable = find_enclosing_callable_at(file_path, line, context);
+    if (callable) {
+        if (callable->node_type == NodeType::METHOD_DECL) {
+            auto* md = static_cast<MethodDeclaration*>(callable);
+            for (const auto& param : md->parameters) {
+                if (param && param->var_name == name) return param.get();
+            }
+            for (const auto& ch : md->children) {
+                Node* found = scan_locals(ch.get());
+                if (found) return found;
+            }
+        } else if (callable->node_type == NodeType::CONSTRUCTOR_DECL) {
+            auto* ctor = static_cast<ConstructorDeclaration*>(callable);
+            for (const auto& param : ctor->parameters) {
+                if (param && param->var_name == name) return param.get();
+            }
+            for (const auto& ch : ctor->children) {
+                Node* found = scan_locals(ch.get());
+                if (found) return found;
+            }
+        }
+    }
+
+    // 2. Check enclosing class
+    ClassDeclaration* enc_cls = find_enclosing_class_at(file_path, line, context);
+    if (enc_cls) {
+        for (const auto& member : enc_cls->children) {
+            if (!member) continue;
+            if (member->node_type == NodeType::FIELD_DECL) {
+                auto* fd = static_cast<FieldDeclaration*>(member.get());
+                if (fd->field_name == name) return fd;
+            } else if (member->node_type == NodeType::METHOD_DECL) {
+                auto* m = static_cast<MethodDeclaration*>(member.get());
+                if (m->method_name == name) return m;
+            }
+        }
+    }
+
+    // 3. Check all classes in context
+    for (const auto& [src, nodes] : context->nodes) {
+        for (const auto& n : nodes) {
+            if (!n || n->node_type != NodeType::CLASS_DECL) continue;
+            auto* cd = static_cast<ClassDeclaration*>(n.get());
+            for (const auto& member : cd->children) {
+                if (!member) continue;
+                if (member->node_type == NodeType::FIELD_DECL) {
+                    auto* fd = static_cast<FieldDeclaration*>(member.get());
+                    if (fd->field_name == name) return fd;
+                } else if (member->node_type == NodeType::METHOD_DECL) {
+                    auto* m = static_cast<MethodDeclaration*>(member.get());
+                    if (m->method_name == name) return m;
+                }
+            }
+        }
+    }
+
+    // 4. Check types
+    return find_type_declaration(name, context);
+}
+
+Node* resolve_member_access(MemberAccessExpression* mem, const std::string& file_path, int line, CompilationContext* ctx) {
+    if (!mem || !ctx) return nullptr;
+    if (mem->resolved_declaration) return mem->resolved_declaration;
+
+    std::string receiver_type_name;
+    if (mem->object) {
+        if (mem->object->resolved_declaration) {
+            Node* d = mem->object->resolved_declaration;
+            if (d->node_type == NodeType::VAR_DECL) receiver_type_name = static_cast<VariableDeclaration*>(d)->type_info.name;
+            else if (d->node_type == NodeType::FIELD_DECL) receiver_type_name = static_cast<FieldDeclaration*>(d)->type_info.name;
+        } else if (!mem->object->expression_type.name.empty()) {
+            receiver_type_name = mem->object->expression_type.name;
+        } else if (mem->object->node_type == NodeType::IDENTIFIER) {
+            auto* id = static_cast<IdentifierNode*>(mem->object.get());
+            if (id->name == "this") {
+                auto* enc = find_enclosing_class_at(file_path, line, ctx);
+                if (enc) receiver_type_name = enc->class_name;
+            } else {
+                Node* sym = find_symbol_in_scope(id->name, file_path, line, ctx);
+                if (sym) {
+                    if (sym->node_type == NodeType::VAR_DECL) receiver_type_name = static_cast<VariableDeclaration*>(sym)->type_info.name;
+                    else if (sym->node_type == NodeType::FIELD_DECL) receiver_type_name = static_cast<FieldDeclaration*>(sym)->type_info.name;
+                }
+            }
+        } else if (mem->object->node_type == NodeType::MEMBER_ACCESS) {
+            Node* parent_member = resolve_member_access(static_cast<MemberAccessExpression*>(mem->object.get()), file_path, line, ctx);
+            if (parent_member) {
+                if (parent_member->node_type == NodeType::FIELD_DECL) {
+                    receiver_type_name = static_cast<FieldDeclaration*>(parent_member)->type_info.name;
+                } else if (parent_member->node_type == NodeType::METHOD_DECL) {
+                    receiver_type_name = static_cast<MethodDeclaration*>(parent_member)->return_type.name;
+                }
+            }
+        }
+    }
+
+    if (receiver_type_name.empty()) return nullptr;
+
+    auto lt = receiver_type_name.find('<');
+    if (lt != std::string::npos) {
+        receiver_type_name = receiver_type_name.substr(0, lt);
+    }
+
+    Node* type_decl = find_type_declaration(receiver_type_name, ctx);
+    if (!type_decl || type_decl->node_type != NodeType::CLASS_DECL) return nullptr;
+
+    auto* cd = static_cast<ClassDeclaration*>(type_decl);
+    for (const auto& ch : cd->children) {
+        if (!ch) continue;
+        if (ch->node_type == NodeType::METHOD_DECL) {
+            auto* md = static_cast<MethodDeclaration*>(ch.get());
+            if (md->method_name == mem->member_name) return md;
+        } else if (ch->node_type == NodeType::FIELD_DECL) {
+            auto* fd = static_cast<FieldDeclaration*>(ch.get());
+            if (fd->field_name == mem->member_name) return fd;
+        }
+    }
+
+    return nullptr;
+}
+
 } // namespace
 
 void LspServer::handle_definition(const nlohmann::json& id, const nlohmann::json& params) {
@@ -820,15 +1074,12 @@ void LspServer::handle_definition(const nlohmann::json& id, const nlohmann::json
                     target = hit->parent->resolved_declaration;
                 }
                 if (!target && hit->node_type == NodeType::MEMBER_ACCESS) {
-                    auto* mem = static_cast<MemberAccessExpression*>(hit);
-                    if (mem->parent && mem->parent->resolved_declaration) {
-                        target = mem->parent->resolved_declaration;
-                    }
+                    target = resolve_member_access(static_cast<MemberAccessExpression*>(hit), file_path, line, last_context_.get());
                 }
                 if (!target && hit->node_type == NodeType::METHOD_CALL) {
                     auto* mc = static_cast<MethodCallExpression*>(hit);
-                    if (mc->callee && mc->callee->resolved_declaration) {
-                        target = mc->callee->resolved_declaration;
+                    if (mc->callee && mc->callee->node_type == NodeType::MEMBER_ACCESS) {
+                        target = resolve_member_access(static_cast<MemberAccessExpression*>(mc->callee.get()), file_path, line, last_context_.get());
                     }
                 }
                 if (!target) {
@@ -840,6 +1091,10 @@ void LspServer::handle_definition(const nlohmann::json& id, const nlohmann::json
                 }
             }
         }
+    }
+
+    if (!target && !word.empty()) {
+        target = find_symbol_in_scope(word, file_path, line, last_context_.get());
     }
 
     if (!target) {
@@ -958,17 +1213,33 @@ void LspServer::handle_hover(const nlohmann::json& id, const nlohmann::json& par
         }
     }
 
-    if (!hit && !word.empty()) {
+    if (hit && hit->node_type == NodeType::MEMBER_ACCESS) {
+        Node* resolved_mem = resolve_member_access(static_cast<MemberAccessExpression*>(hit), file_path, line, last_context_.get());
+        if (resolved_mem) hit = resolved_mem;
+    } else if (hit && hit->node_type == NodeType::METHOD_CALL) {
+        auto* mc = static_cast<MethodCallExpression*>(hit);
+        if (mc->callee && mc->callee->node_type == NodeType::MEMBER_ACCESS) {
+            Node* resolved_mem = resolve_member_access(static_cast<MemberAccessExpression*>(mc->callee.get()), file_path, line, last_context_.get());
+            if (resolved_mem) hit = resolved_mem;
+        }
+    }
+
+    std::string md_text;
+    if (hit) {
+        md_text = format_hover_for_node(hit, last_context_.get());
+    }
+
+    if (md_text.empty() && !word.empty()) {
+        hit = find_symbol_in_scope(word, file_path, line, last_context_.get());
+        if (hit) md_text = format_hover_for_node(hit, last_context_.get());
+    }
+
+    if (md_text.empty() && !word.empty()) {
         hit = find_type_declaration(word, last_context_.get());
+        if (hit) md_text = format_hover_for_node(hit, last_context_.get());
     }
 
-    if (!hit) {
-        transport_.send_response(id, nullptr);
-        return;
-    }
-
-    std::string md_text = format_hover_for_node(hit, last_context_.get());
-    if (md_text.empty()) {
+    if (!hit || md_text.empty()) {
         transport_.send_response(id, nullptr);
         return;
     }
@@ -1175,37 +1446,28 @@ void LspServer::handle_completion(const nlohmann::json& id, const nlohmann::json
             }
         }
 
-        // If spatial index did not directly resolve receiver, search context for local variable or class
-        if (target_class_name.empty() && last_context_) {
-            for (const auto& [src, nodes] : last_context_->nodes) {
-                for (const auto& node : nodes) {
-                    if (!node || node->node_type != NodeType::CLASS_DECL) continue;
-                    auto* cd = static_cast<ClassDeclaration*>(node.get());
-                    if (cd->class_name == receiver_name) {
-                        target_class_name = cd->class_name;
-                        break;
-                    }
-                    for (const auto& member : cd->children) {
-                        if (!member || member->node_type != NodeType::METHOD_DECL) continue;
-                        auto* md = static_cast<MethodDeclaration*>(member.get());
-                        for (const auto& child : md->children) {
-                            if (!child) continue;
-                            auto check_var = [&](Node* n) {
-                                if (n && n->node_type == NodeType::VAR_DECL) {
-                                    auto* vd = static_cast<VariableDeclaration*>(n);
-                                    if (vd->var_name == receiver_name) {
-                                        target_class_name = vd->type_info.name;
-                                    }
-                                }
-                            };
-                            check_var(child.get());
-                            for (const auto& nested : child->children) {
-                                check_var(nested.get());
-                            }
-                        }
-                    }
-                }
+        // 1. If receiver is "this", resolve to the enclosing class
+        if (receiver_name == "this") {
+            ClassDeclaration* enc = find_enclosing_class_at(file_path, line + 1, last_context_.get());
+            if (enc) {
+                target_class_name = enc->class_name;
             }
+        }
+
+        // 2. If spatial index did not directly resolve receiver, search scope for variable, field, method, or class
+        if (target_class_name.empty() && last_context_) {
+            Node* sym = find_symbol_in_scope(receiver_name, file_path, line + 1, last_context_.get());
+            if (sym) {
+                if (sym->node_type == NodeType::VAR_DECL) target_class_name = static_cast<VariableDeclaration*>(sym)->type_info.name;
+                else if (sym->node_type == NodeType::FIELD_DECL) target_class_name = static_cast<FieldDeclaration*>(sym)->type_info.name;
+                else if (sym->node_type == NodeType::METHOD_DECL) target_class_name = static_cast<MethodDeclaration*>(sym)->return_type.name;
+                else if (sym->node_type == NodeType::CLASS_DECL) target_class_name = static_cast<ClassDeclaration*>(sym)->class_name;
+            }
+        }
+
+        auto lt = target_class_name.find('<');
+        if (lt != std::string::npos) {
+            target_class_name = target_class_name.substr(0, lt);
         }
 
         if (!target_class_name.empty() && last_context_) {
@@ -1463,34 +1725,96 @@ void LspServer::handle_completion(const nlohmann::json& id, const nlohmann::json
 
     if (last_context_) {
         std::string file_path = uri_to_path(uri);
-        Node* hit = spatial_index_.find_node_at(file_path, line + 1, std::max(1, character));
-        // Find enclosing method
-        Node* curr = hit;
-        while (curr && curr->node_type != NodeType::METHOD_DECL && curr->node_type != NodeType::CLASS_DECL) {
-            curr = curr->parent;
-        }
 
-        if (curr && curr->node_type == NodeType::METHOD_DECL) {
-            auto* md = static_cast<MethodDeclaration*>(curr);
-            for (const auto& param : md->parameters) {
-                CompletionItem item;
-                item.label = param->var_name;
-                item.kind = static_cast<int>(CompletionItemKind::Variable);
-                item.detail = param->type_info.to_string();
-                item.insertText = param->var_name;
-                comp_list.items.push_back(item);
+        // 1. Enclosing callable (Method or Constructor): parameters and local variables
+        Node* callable = find_enclosing_callable_at(file_path, line + 1, last_context_.get());
+        if (callable) {
+            std::function<void(Node*)> add_locals = [&](Node* n) {
+                if (!n) return;
+                if (n->node_type == NodeType::VAR_DECL) {
+                    auto* vd = static_cast<VariableDeclaration*>(n);
+                    CompletionItem item;
+                    item.label = vd->var_name;
+                    item.kind = static_cast<int>(CompletionItemKind::Variable);
+                    item.detail = vd->type_info.to_string();
+                    item.insertText = vd->var_name;
+                    comp_list.items.push_back(item);
+                }
+                for (const auto& ch : n->children) {
+                    add_locals(ch.get());
+                }
+            };
+
+            if (callable->node_type == NodeType::METHOD_DECL) {
+                auto* md = static_cast<MethodDeclaration*>(callable);
+                for (const auto& param : md->parameters) {
+                    CompletionItem item;
+                    item.label = param->var_name;
+                    item.kind = static_cast<int>(CompletionItemKind::Variable);
+                    item.detail = param->type_info.to_string();
+                    item.insertText = param->var_name;
+                    comp_list.items.push_back(item);
+                }
+                for (const auto& ch : md->children) {
+                    add_locals(ch.get());
+                }
+            } else if (callable->node_type == NodeType::CONSTRUCTOR_DECL) {
+                auto* ctor = static_cast<ConstructorDeclaration*>(callable);
+                for (const auto& param : ctor->parameters) {
+                    CompletionItem item;
+                    item.label = param->var_name;
+                    item.kind = static_cast<int>(CompletionItemKind::Variable);
+                    item.detail = param->type_info.to_string();
+                    item.insertText = param->var_name;
+                    comp_list.items.push_back(item);
+                }
+                for (const auto& ch : ctor->children) {
+                    add_locals(ch.get());
+                }
             }
         }
 
-        // Add class names
+        // 2. Enclosing class: fields and methods
+        ClassDeclaration* enc_cls = find_enclosing_class_at(file_path, line + 1, last_context_.get());
+        if (enc_cls) {
+            for (const auto& member : enc_cls->children) {
+                if (!member) continue;
+                if (member->node_type == NodeType::FIELD_DECL) {
+                    auto* fd = static_cast<FieldDeclaration*>(member.get());
+                    CompletionItem item;
+                    item.label = fd->field_name;
+                    item.kind = static_cast<int>(CompletionItemKind::Field);
+                    item.detail = fd->type_info.to_string();
+                    item.insertText = fd->field_name;
+                    comp_list.items.push_back(item);
+                } else if (member->node_type == NodeType::METHOD_DECL) {
+                    auto* md = static_cast<MethodDeclaration*>(member.get());
+                    CompletionItem item;
+                    item.label = md->method_name;
+                    item.kind = static_cast<int>(CompletionItemKind::Method);
+                    item.detail = md->return_type.to_string() + " " + md->method_name + "()";
+                    item.insertText = md->method_name + "()";
+                    comp_list.items.push_back(item);
+                }
+            }
+        }
+
+        // 3. Add class and enum names across context
         for (const auto& [src, nodes] : last_context_->nodes) {
             for (const auto& n : nodes) {
                 if (n && n->node_type == NodeType::CLASS_DECL) {
                     auto* cd = static_cast<ClassDeclaration*>(n.get());
                     CompletionItem item;
                     item.label = cd->class_name;
-                    item.kind = static_cast<int>(CompletionItemKind::Class);
+                    item.kind = cd->is_interface ? static_cast<int>(CompletionItemKind::Interface) : static_cast<int>(CompletionItemKind::Class);
                     item.insertText = cd->class_name;
+                    comp_list.items.push_back(item);
+                } else if (n && n->node_type == NodeType::ENUM_DECL) {
+                    auto* ed = static_cast<EnumDeclaration*>(n.get());
+                    CompletionItem item;
+                    item.label = ed->enum_name;
+                    item.kind = static_cast<int>(CompletionItemKind::Enum);
+                    item.insertText = ed->enum_name;
                     comp_list.items.push_back(item);
                 }
             }
