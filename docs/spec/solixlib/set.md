@@ -6,13 +6,13 @@ The `solix.collections` set module provides mathematical set abstractions guaran
 1. `HashSet<T>`: High-performance hash table backed set providing average O(1) insertions, lookups, and deletions, with functional `for_each(void(*)(T) action)`.
 2. `TreeSet<T>`: Self-balancing binary search tree backed set maintaining elements in sorted order according to a comparator lambda `int32(*)(T, T)`, supporting boundary element queries (`first()`, `last()`), ordered iteration, and functional `for_each(void(*)(T) action)`.
 
-Both implementations implement `IStringable`, supporting canonical string formatting (`"[HashSet]"`, `"[TreeSet]"`).
+Both implementations implement `ISet<T>`, `IReadOnlyCollection<T>`, `IIterable<T>`, and `IStringable`, supporting polymorphic set processing and canonical string formatting (`"[HashSet]"`, `"[TreeSet]"`).
 
 ---
 
 ## 1. Class: `solix.collections.HashSet<T>`
 
-Hash-table backed distinct set implementation.
+Hash-table backed distinct set implementation. Implements `ISet<T>`, `IReadOnlyCollection<T>`, `IIterable<T>`, and `IStringable`.
 
 ### Constructors
 - `HashSet()`: Initializes an empty hash set with default initial capacity (16).
@@ -31,17 +31,21 @@ Hash-table backed distinct set implementation.
 - `List<T> to_list()`: Exports elements into a generic `List<T>`.
 - `void for_each(void(*)(T) action)`: Executes action on every element.
 - `void union_with(HashSet<T> other)`: Adds all elements from `other`.
+- `void union_with(ISet<T> other)`: Adds all elements from another set implementing `ISet<T>`.
 - `void intersect_with(HashSet<T> other)`: Retains only elements present in both sets.
+- `void intersect_with(ISet<T> other)`: Retains only elements present in both sets.
 - `void difference_with(HashSet<T> other)`: Removes all elements present in `other`.
+- `void difference_with(ISet<T> other)`: Removes all elements present in `other`.
 - `bool is_subset_of(HashSet<T> other)`: Returns true if all elements are contained in `other`.
 - `bool is_superset_of(HashSet<T> other)`: Returns true if all elements of `other` are contained in this set.
+- `IIterator<T> iterator()`: Obtains forward iterator implementing `IIterator<T>`.
 - `String to_string()`: Returns `"[HashSet]"`.
 
 ---
 
 ## 2. Class: `solix.collections.TreeSet<T>`
 
-Binary search tree backed ordered distinct set implementation.
+Binary search tree backed ordered distinct set implementation. Implements `ISet<T>`, `IReadOnlyCollection<T>`, `IIterable<T>`, and `IStringable`. Node structures are strictly encapsulated.
 
 ### Constructors
 - `TreeSet()`: Initializes an empty tree set with natural ordering.

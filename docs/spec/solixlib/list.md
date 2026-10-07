@@ -7,13 +7,13 @@ The `solix.collections` list module provides compile-time generic sequential dat
 2. `LinkedList<T>`: Doubly-linked node list implementing bidirectional node traversal, O(1) head/tail operations, `for_each` lambda iteration, and functional `filter` transformation.
 3. `Algorithms`: Generic static utility functions providing in-place reversing, swapping, filling, comparator-based sorting, and binary searching.
 
-Both collection types implement `IStringable` and provide standard bracketed string representations.
+Both collection types implement `IList<T>`, `ICollection<T>`, `IIterable<T>`, and `IStringable`, supporting polymorphic collection processing and canonical bracketed string representations.
 
 ---
 
 ## 1. Class: `solix.collections.List<T>`
 
-Compile-time generic resizable array container.
+Compile-time generic resizable array container. Implements `IList<T>`, `ICollection<T>`, `IIterable<T>`, and `IStringable`.
 
 ### Constructors
 - `List()`: Initializes list with default initial capacity of 16.
@@ -43,14 +43,14 @@ Compile-time generic resizable array container.
 - `to_array() -> T[]`: Returns snapshot copy of elements as a typed array.
 - `for_each(void(*)(T) action) -> void`: Iterates sequentially across all elements, invoking `action(item)` on each.
 - `filter(bool(*)(T) predicate) -> List<T>`: Returns a new `List<T>` containing all elements satisfying `predicate(item) == true`.
-- `iterator() -> ListIterator<T>`: Returns forward iterator with `has_next() -> bool` and `next() -> T`.
+- `iterator() -> IIterator<T>`: Returns forward iterator implementing `IIterator<T>`.
 - `to_string() -> String`: Standard bracketed representation `"[List]"`.
 
 ---
 
 ## 2. Class: `solix.collections.LinkedList<T>`
 
-Compile-time generic doubly-linked list supporting efficient node insertion and removal at both ends.
+Compile-time generic doubly-linked list supporting efficient node insertion and removal at both ends. Implements `IList<T>`, `IDeque<T>`, `ICollection<T>`, `IIterable<T>`, and `IStringable`. Node structures are strictly encapsulated.
 
 ### Constructors
 - `LinkedList()`: Initializes empty doubly-linked list.

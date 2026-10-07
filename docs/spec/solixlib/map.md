@@ -7,7 +7,7 @@ The `solix.collections` map module provides associative key-value mapping contai
 2. `HashMap<K, V>`: High-performance hash table with bucket chaining, dynamic load-factor monitoring, functional `for_each(void(*)(K, V) action)`, and automatic capacity expansion.
 3. `TreeMap<K, V>`: Self-balancing ordered binary search tree maintaining keys in sorted order according to a comparator lambda `int32(*)(K, K)`, supporting min/max key queries, ordered key traversal, and functional `for_each(void(*)(K, V) action)`.
 
-Both map implementations implement `IStringable`, supporting canonical string rendering (`"[HashMap]"`, `"[TreeMap]"`).
+Both map implementations implement `IMap<K, V>` and `IStringable`, supporting polymorphic dictionary operations and canonical string rendering (`"[HashMap]"`, `"[TreeMap]"`). Internal node structures are strictly encapsulated.
 
 ---
 
@@ -27,7 +27,7 @@ Encapsulates an association between a key of type `K` and a value of type `V`.
 
 ## 2. Class: `solix.collections.HashMap<K, V>`
 
-Hash table implementation using bucket chaining.
+Hash table implementation using bucket chaining. Implements `IMap<K, V>` and `IStringable`.
 
 ### Constructors
 - `HashMap()`: Initializes empty hash map with default capacity of 16 and default load factor threshold.
@@ -55,7 +55,7 @@ Hash table implementation using bucket chaining.
 
 ## 3. Class: `solix.collections.TreeMap<K, V>`
 
-Ordered binary search tree implementation.
+Ordered binary search tree implementation. Implements `IMap<K, V>` and `IStringable`.
 
 ### Constructors
 - `TreeMap()`: Initializes an empty tree map with default comparator.
