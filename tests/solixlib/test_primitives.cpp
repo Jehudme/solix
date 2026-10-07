@@ -430,4 +430,77 @@ TEST_CASE("Standard Library - solix.core.Primitives & Types", "[solixlib][primit
         assert_compile_sources_success(sources);
         REQUIRE(run_solixlib_sources(sources) == 0);
     }
+
+    SECTION("Case 4.11: Friendly Primitive Type Aliases via wildcard and direct import") {
+        auto sources = load_solixlib_sources();
+        sources["main.slx"] = R"(
+            import solix.core.*;
+
+            class Main {
+                public static int32 main() {
+                    int i = 42;
+                    long l = 100000;
+                    short s = 123;
+                    byte b = 10;
+                    ubyte ub = 200;
+                    ushort us = 50000;
+                    uint ui = 3000000;
+                    ulong ul = 9000000;
+                    float f = 3.14;
+                    double d = 6.28;
+
+                    if (i != 42) return 1;
+                    if (l != 100000) return 2;
+                    if (s != 123) return 3;
+                    if (b != 10) return 4;
+                    if (ub != 200) return 5;
+                    if (us != 50000) return 6;
+                    if (ui != 3000000) return 7;
+                    if (ul != 9000000) return 8;
+                    if (f < (float)3.13 || f > (float)3.15) return 9;
+                    if (d < 6.27 || d > 6.29) return 10;
+
+                    return 0;
+                }
+            }
+        )";
+        assert_compile_sources_success(sources);
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
+
+    SECTION("Case 4.12: Arithmetic and function signature typing with friendly primitive aliases") {
+        auto sources = load_solixlib_sources();
+        sources["math_ops.slx"] = R"(
+            package test.math;
+            import solix.core.*;
+
+            public class MathOps {
+                public static int add(int a, int b) {
+                    return a + b;
+                }
+
+                public static double multiply(double a, double b) {
+                    return a * b;
+                }
+            }
+        )";
+        sources["main.slx"] = R"(
+            import test.math.MathOps;
+            import solix.core.*;
+
+            class Main {
+                public static int32 main() {
+                    int sum = MathOps.add(15, 27);
+                    if (sum != 42) return 1;
+
+                    double product = MathOps.multiply(2.5, 4.0);
+                    if (product < 9.99 || product > 10.01) return 2;
+
+                    return 0;
+                }
+            }
+        )";
+        assert_compile_sources_success(sources);
+        REQUIRE(run_solixlib_sources(sources) == 0);
+    }
 }
