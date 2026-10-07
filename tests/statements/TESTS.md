@@ -4834,6 +4834,48 @@ class Main {
 ```
 *Expected Result*: Compilation fails reporting that exit code must be an integer type.
 
+---
+
+## Suite 51: Compiler Diagnostics & Error Reporting Consistency
+
+### Case 51.1: Syntax Error Reports Source Name, Row, Column, and Caret [NOT IMPLEMENTED]
+```solix
+class Main {
+    public static int32 main() {
+        int32 x = ;
+        return 0;
+    }
+}
+```
+*Expected Result*: Compilation fails with `E_PARSE` diagnostic containing non-empty `source_path`, `line == 3`, and valid `column`.
+
+---
+
+### Case 51.2: Lexical Error Reports Source Name, Row, and Column [NOT IMPLEMENTED]
+```solix
+class Main {
+    public static int32 main() {
+        @
+        return 0;
+    }
+}
+```
+*Expected Result*: Lexical analysis fails with `E_LEX` diagnostic containing non-empty `source_path`, `line == 3`, and valid `column`.
+
+---
+
+### Case 51.3: Semantic Binding Error Reports Source Name, Row, Column, and Caret [NOT IMPLEMENTED]
+```solix
+class Main {
+    public static int32 main() {
+        int32 x = "mismatched";
+        return 0;
+    }
+}
+```
+*Expected Result*: Semantic binding fails with `E_BIND` diagnostic containing non-empty `source_path`, `line == 3`, and valid `column`.
+
+
 
 
 
