@@ -45,6 +45,7 @@ This directory contains the formal specification of the Solix programming langua
 | [**Collections: Linear**](solixlib/linear_collections.md) | `Stack`, `Queue`, `Deque`, `PriorityQueue`, `CircularBuffer`, and `BitSet` |
 | [**Filesystem**](solixlib/filesystem.md) | `Path`, `File`, and `Directory` cross-platform I/O and directory management |
 | [**Streams & Path Operators**](solixlib/streams.md) | `IStream`, `FileStream`, `MemoryStream`, `BufferedReader`, `StreamReader`, `StreamWriter`, and `Path` operators |
+| [**System Environment & Processes**](solixlib/environment.md) | `Environment`, `Process`, and `ProcessResult` cross-platform environment variables and child processes |
 
 ---
 
@@ -66,7 +67,8 @@ docs/spec/
 │   └── manifest.md             ← solix.json project manifest schema
 ├── solixlib/
 │   ├── scaffolding.md          ← solixlib layout & packaging specification
-│   └── streams.md              ← Streams and Path operators specification
+│   ├── streams.md              ← Streams and Path operators specification
+│   └── environment.md          ← System environment and processes specification
 └── statements/
     ├── README.md               ← Statements reference index
     ├── modules/
