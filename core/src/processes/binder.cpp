@@ -248,8 +248,12 @@ void Binder::record_error(Node *node, const std::string &msg) {
   uint32_t line = node ? node->line : 0;
   uint32_t col = node ? node->column : 0;
   std::string src = "";
-  if (node && node->source && std::holds_alternative<std::filesystem::path>(*node->source)) {
-    src = std::get<std::filesystem::path>(*node->source).string();
+  if (node && node->source) {
+    if (std::holds_alternative<std::filesystem::path>(*node->source)) {
+      src = std::get<std::filesystem::path>(*node->source).string();
+    } else {
+      src = std::get<std::string>(*node->source);
+    }
   }
   if (!src.empty()) {
     log_error("[{}:{}:{}] {}", src, line, col, msg);
@@ -261,40 +265,36 @@ void Binder::record_error(Node *node, const std::string &msg) {
   report.severity = ReportSeverity::ERROR;
   report.code = "E_BIND";
   report.message = msg;
-  report.source_path = "";
+  report.source_path = src;
   report.line = line;
   report.column = col;
-  if (node && node->source) {
-    if (std::holds_alternative<std::filesystem::path>(*node->source)) {
-      report.source_path =
-          std::get<std::filesystem::path>(*node->source).string();
-    } else {
-      report.source_path = std::get<std::string>(*node->source);
-    }
-  }
   context.diagnostic->record_report(report);
 }
 
 void Binder::record_warning(Node *node, const std::string &msg, const std::string &code) {
   uint32_t line = node ? node->line : 0;
   uint32_t col = node ? node->column : 0;
-  log_warn("[line {}, col {}] {}", line, col, msg);
+  std::string src = "";
+  if (node && node->source) {
+    if (std::holds_alternative<std::filesystem::path>(*node->source)) {
+      src = std::get<std::filesystem::path>(*node->source).string();
+    } else {
+      src = std::get<std::string>(*node->source);
+    }
+  }
+  if (!src.empty()) {
+    log_warn("[{}:{}:{}] {}", src, line, col, msg);
+  } else {
+    log_warn("[line {}, col {}] {}", line, col, msg);
+  }
 
   Report report;
   report.severity = ReportSeverity::WARNING;
   report.code = code;
   report.message = msg;
-  report.source_path = "";
+  report.source_path = src;
   report.line = line;
   report.column = col;
-  if (node && node->source) {
-    if (std::holds_alternative<std::filesystem::path>(*node->source)) {
-      report.source_path =
-          std::get<std::filesystem::path>(*node->source).string();
-    } else {
-      report.source_path = std::get<std::string>(*node->source);
-    }
-  }
   if (context.diagnostic) {
     context.diagnostic->record_report(report);
   }

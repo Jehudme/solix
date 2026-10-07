@@ -393,6 +393,7 @@ void Lexer::execute() {
                     if (std::holds_alternative<std::string>(tok.value)) {
                         msg = "Lexical error: " + std::get<std::string>(tok.value);
                     }
+                    log_error("[{}:{}:{}] {}", source_name, tok.line, tok.column, msg);
                     Report report;
                     report.severity = ReportSeverity::ERROR;
                     report.code = "E_LEX";

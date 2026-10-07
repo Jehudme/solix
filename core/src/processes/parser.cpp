@@ -133,9 +133,7 @@ public:
   const Token &consume(TokenType type, const std::string &message) {
     if (check(type))
       return advance();
-    throw ParseError(message + " at line " + std::to_string(peek().line) +
-                     " col " + std::to_string(peek().column),
-                     peek().line, peek().column);
+    throw ParseError(message, peek().line, peek().column);
   }
 
   // Expression parsing
@@ -238,8 +236,7 @@ TypeInfo ParserState::parse_type_info() {
               "Expected '>' after template arguments");
     }
   } else {
-    throw ParseError("Expected a type name at line " +
-                     std::to_string(peek().line));
+    throw ParseError("Expected a type name", peek().line, peek().column);
   }
 
   while (match(TokenType::PUNCTUATION_ARRAY_BRACKETS)) {
@@ -312,7 +309,7 @@ std::unique_ptr<Node> ParserState::parse_assignment() {
       return std::make_unique<AssignmentExpression>(
           equals, std::move(expr), equals.type, std::move(value));
     }
-    throw ParseError("Invalid assignment target");
+    throw ParseError("Invalid assignment target", equals.line, equals.column);
   }
 
   return expr;
@@ -792,7 +789,7 @@ std::unique_ptr<Node> ParserState::parse_primary() {
   }
 
   throw ParseError("Expected expression, got " +
-                   token_type_to_string(peek().type));
+                   token_type_to_string(peek().type), peek().line, peek().column);
 }
 
 std::unique_ptr<Node> ParserState::parse_block() {
@@ -1837,7 +1834,7 @@ void Parser::execute() {
         context.nodes[source].push_back(state.parse_top_level_declaration());
       }
     } catch (const ParseError &e) {
-      log_error("Syntax Error in {}: {}", source_name, e.what());
+      log_error("[{}:{}:{}] Syntax Error: {}", source_name, e.line, e.column, e.what());
       if (context.diagnostic) {
         Report report;
         report.severity = ReportSeverity::ERROR;
@@ -1849,7 +1846,7 @@ void Parser::execute() {
         context.diagnostic->record_report(report);
       }
     } catch (const std::exception &e) {
-      log_error("Syntax Error in {}: {}", source_name, e.what());
+      log_error("[{}:0:0] Syntax Error: {}", source_name, e.what());
       if (context.diagnostic) {
         Report report;
         report.severity = ReportSeverity::ERROR;
