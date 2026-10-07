@@ -1,0 +1,76 @@
+{
+  "name": "solix",
+  "displayName": "Solix Language Support",
+  "description": "Rich language support, syntax highlighting, and LSP client for the Solix programming language.",
+  "version": "0.1.0",
+  "publisher": "solix",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/solix-lang/solix.git"
+  },
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "solix",
+        "aliases": [
+          "Solix",
+          "solix"
+        ],
+        "extensions": [
+          ".slx"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "solix",
+        "scopeName": "source.solix",
+        "path": "./syntaxes/solix.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "Solix",
+      "properties": {
+        "solix.lsp.path": {
+          "type": "string",
+          "default": "",
+          "description": "Custom path to the Solix executable or solix-lsp server. If empty, searches PATH."
+        },
+        "solix.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Traces the communication between VS Code and the Solix language server."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package --no-git-tag-version"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.75.0",
+    "@vscode/vsce": "^4.0.0",
+    "typescript": "^5.3.3"
+  }
+}
