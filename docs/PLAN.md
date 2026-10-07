@@ -2492,6 +2492,55 @@ Resolve IDE language intelligence failures (no autocomplete, missing hover, brok
 - [x] Update documentation in `docs/spec/lsp/navigation.md` and `docs/spec/lsp/intelligence.md`.
 - [x] Rebuild, package, and reinstall `editors/vscode/solix-0.1.0.vsix` and update `~/.local/bin/solix`.
 
+---
+
+## Phase 55: LSP Package Autocompletion & Same-Package Multi-File Scope Visibility
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `lsp/src/server.cpp`, `lsp/src/spatial_index.cpp`, `core/src/processes/binder.cpp`, `tests/commands/TESTS.md`, `tests/commands/test_lsp_command.cpp`, `docs/spec/lsp/intelligence.md`, `docs/spec/lsp/navigation.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Resolve package declaration intelligence, cross-file visibility for files sharing the same package, and redundant self-package imports:
+1. **Package Declaration Autocompletion**: When declaring a package (`package <cursor>`), suggest candidate packages inferred from relative directory paths (e.g., `src/solix/collections/HashSet.slx` -> `solix.collections`) and any known package declarations across project files.
+2. **Same-Package Multi-File Scope Resolution**: When two or more files share identical `package` statements (e.g. `package mypkg;`), classes, enums, and aliases declared in sibling files are automatically visible and in scope for autocompletion, Go-to-Definition, and on-hover information without needing an explicit `import` statement.
+3. **Relax Self-Package Import Check**: In Binder, allow `import mypkg.ClassB;` or `import mypkg.*;` when the importing file is also declared in `package mypkg;` without failing with `Cannot resolve import` or redundant import errors.
+4. **Package Statement Hover & Definition**: Provide hover info and navigation for `package` declarations (`package <name>;`).
+
+### Action Items
+- [ ] Implement `CompletionContext::PACKAGE_DECL` in `lsp/src/server.cpp` with directory path heuristic and known project package suggestions.
+- [ ] Implement same-package multi-file symbol resolution helper (`get_file_package`, `find_type_declaration`, `find_symbol_in_scope`) in `lsp/src/server.cpp`.
+- [ ] Update `core/src/processes/binder.cpp` to tolerate and resolve self-package imports when current file package matches target import package.
+- [ ] Index `PackageStatement` in `lsp/src/spatial_index.cpp` and support hover in `format_hover_for_node`.
+- [ ] Define test specifications in `tests/commands/TESTS.md` with `[NOT IMPLEMENTED]`.
+- [ ] Implement Catch2 unit tests in `tests/commands/test_lsp_command.cpp`.
+- [ ] Update documentation in `docs/spec/lsp/intelligence.md` and `docs/spec/lsp/navigation.md`.
+
+---
+
+## Phase 56: Type Alias Declarations, Scope Completion & Import Autocompletion
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `lsp/src/server.cpp`, `tests/commands/TESTS.md`, `tests/commands/test_lsp_command.cpp`, `docs/spec/lsp/intelligence.md`, `editors/vscode/`
+- **Status**: - [ ] Planned
+
+### Objective
+Provide comprehensive type alias intelligence, general alias scope completion, and import statement autocompletion:
+1. **Alias Declaration Autocompletion**: When declaring a type alias (`alias <Name> = <cursor>`), suggest all available types, classes, primitives, and existing aliases.
+2. **Alias Symbol Scope Completion**: Include declared type aliases in general scope autocompletion and type annotation autocompletion positions.
+3. **Import Autocompletion**: When typing `import <cursor>`, suggest known packages, subpackages, and classes discovered in the project and standard library.
+4. **Extension Packaging Verification**: Rebuild `solix-0.1.0.vsix` and reinstall into VS Code.
+
+### Action Items
+- [ ] Implement `CompletionContext::ALIAS_TARGET` in `lsp/src/server.cpp` to suggest types after `alias <Name> = `.
+- [ ] Add `AliasStatement` items to general scope and type completions in `handle_completion`.
+- [ ] Implement `CompletionContext::IMPORT_STMT` in `lsp/src/server.cpp` to suggest known packages and types.
+- [ ] Define test specifications in `tests/commands/TESTS.md`.
+- [ ] Implement Catch2 unit tests in `tests/commands/test_lsp_command.cpp`.
+- [ ] Update documentation in `docs/spec/lsp/intelligence.md`.
+- [ ] Rebuild, package, and install `solix-0.1.0.vsix`.
+
+
 
 
 
