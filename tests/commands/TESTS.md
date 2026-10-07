@@ -562,27 +562,27 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 10.1: LSP Lifecycle Handshake [NOT IMPLEMENTED]
+#### Case 10.1: LSP Lifecycle Handshake [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Input**: JSON-RPC `initialize` request followed by `shutdown` and `exit`.
 - **Expected**: Exits 0; responds with `capabilities` (textDocumentSync, hoverProvider, definitionProvider, etc.); returns null on shutdown; terminates cleanly on exit.
 
-#### Case 10.2: LSP Document Sync & Diagnostics Publication [NOT IMPLEMENTED]
+#### Case 10.2: LSP Document Sync & Diagnostics Publication [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Input**: JSON-RPC `textDocument/didOpen` with a valid Solix source file.
 - **Expected**: Emits `textDocument/publishDiagnostics` with empty diagnostic array `[]`.
 
-#### Case 10.3: LSP Live Syntax Error Diagnostics [NOT IMPLEMENTED]
+#### Case 10.3: LSP Live Syntax Error Diagnostics [IMPLEMENTED]
 - **Command**: `solix lsp`
-- **Input**: JSON-RPC `textDocument/didOpen` with invalid syntax (e.g. `int a = ;`).
+- **Input**: JSON-RPC `textDocument/didOpen` with invalid syntax (e.g. `int32 a = ;`).
 - **Expected**: Emits `textDocument/publishDiagnostics` containing error diagnostic with severity 1, code `E_PARSE`, and accurate line/column range.
 
-#### Case 10.4: LSP Live Diagnostic Resolution on Edit [NOT IMPLEMENTED]
+#### Case 10.4: LSP Live Diagnostic Resolution on Edit [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Input**: JSON-RPC `textDocument/didOpen` with error, followed by `textDocument/didChange` providing the fixed syntax.
 - **Expected**: Emits updated `textDocument/publishDiagnostics` clearing the error diagnostic.
 
-#### Case 10.5: LSP Project Manifest Integration (`solix.json`) [NOT IMPLEMENTED]
+#### Case 10.5: LSP Project Manifest Integration (`solix.json`) [IMPLEMENTED]
 - **Command**: `solix lsp`
 - **Setup**: Workspace directory containing `solix.json` declaring dependencies.
 - **Input**: `initialize` with `rootUri` set to workspace; `didOpen` referencing symbols from imported packages.

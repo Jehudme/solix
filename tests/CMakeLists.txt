@@ -31,7 +31,7 @@ add_executable(solix_tests
 )
 add_dependencies(solix_tests solix_test_plugin solix_test_plugin_b solixlib_native)
 
-target_link_libraries(solix_tests PRIVATE Catch2::Catch2WithMain solix_core solix_cli_core
+target_link_libraries(solix_tests PRIVATE Catch2::Catch2WithMain solix_core solix_cli_core solix_lsp_core
     $<IF:$<TARGET_EXISTS:spdlog::spdlog>,spdlog::spdlog,spdlog>
     $<IF:$<TARGET_EXISTS:fmt::fmt>,fmt::fmt,fmt>
 )
@@ -42,6 +42,7 @@ target_include_directories(solix_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/core/src
     ${CMAKE_SOURCE_DIR}/cli/src
     ${CMAKE_SOURCE_DIR}/cli/src/commands
+    ${CMAKE_SOURCE_DIR}/lsp/include
 )
 
 target_compile_definitions(solix_tests PRIVATE
