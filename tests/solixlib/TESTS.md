@@ -208,9 +208,9 @@ Each test scenario is assigned a permanent identifier and status tag:
 
 ## 15. Cryptography & Encoding (`solix.crypto`: `Base64`, `Hex`, `Hash`)
 
-- [ ] **Case 15.1 [NOT IMPLEMENTED]**: Base64 round-trip encoding and decoding across byte arrays and strings (`Base64.encode`, `Base64.decode`, `Base64.encode_string`, `Base64.decode_to_string`) (`tests/solixlib/test_crypto.cpp`).
-- [ ] **Case 15.2 [NOT IMPLEMENTED]**: Hexadecimal round-trip encoding and decoding (`Hex.encode`, `Hex.decode`) (`tests/solixlib/test_crypto.cpp`).
-- [ ] **Case 15.3 [NOT IMPLEMENTED]**: Cryptographic digest validation: SHA-256, SHA-1, and MD5 matching NIST and RFC standard test vectors (`tests/solixlib/test_crypto.cpp`).
-- [ ] **Case 15.4 [NOT IMPLEMENTED]**: Negative: Malformed Base64 payload or padding throws `FormatException` (`tests/solixlib/test_crypto.cpp`).
-- [ ] **Case 15.5 [NOT IMPLEMENTED]**: Negative: Odd-length or invalid non-hexadecimal character string throws `FormatException` (`tests/solixlib/test_crypto.cpp`).
+- [x] **Case 15.1 [IMPLEMENTED]**: Base64 round-trip encoding and decoding across byte arrays and strings (`Base64.encode`, `Base64.decode`, `Base64.encode_string`, `Base64.decode_to_string`) (`tests/solixlib/test_crypto.cpp`).
+- [x] **Case 15.2 [IMPLEMENTED]**: Hexadecimal round-trip encoding and decoding (`Hex.encode`, `Hex.decode`) (`tests/solixlib/test_crypto.cpp`).
+- [x] **Case 15.3 [IMPLEMENTED]**: Cryptographic digest validation: SHA-256, SHA-1, and MD5 matching NIST and RFC standard test vectors (`tests/solixlib/test_crypto.cpp`).
+- [x] **Case 15.4 [IMPLEMENTED]**: Negative: Malformed Base64 payload or padding throws `FormatException` (`tests/solixlib/test_crypto.cpp`).
+- [x] **Case 15.5 [IMPLEMENTED]**: Negative: Odd-length or invalid non-hexadecimal character string throws `FormatException` (`tests/solixlib/test_crypto.cpp`).
 
