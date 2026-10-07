@@ -1245,6 +1245,205 @@ void LspServer::handle_completion(const nlohmann::json& id, const nlohmann::json
         return;
     }
 
+    // Tokenize prefix before cursor into words and punctuation
+    std::vector<std::string> tokens;
+    {
+        size_t i = 0;
+        while (i < prefix.size()) {
+            if (std::isspace(prefix[i])) {
+                i++;
+                continue;
+            }
+            if (std::isalnum(prefix[i]) || prefix[i] == '_') {
+                size_t st = i;
+                while (i < prefix.size() && (std::isalnum(prefix[i]) || prefix[i] == '_')) {
+                    i++;
+                }
+                tokens.push_back(prefix.substr(st, i - st));
+            } else {
+                tokens.push_back(std::string(1, prefix[i]));
+                i++;
+            }
+        }
+    }
+
+    // Determine completion context
+    enum class CompletionContext {
+        GENERAL,
+        CLASS_NAME_DECL,
+        EXTENDS,
+        IMPLEMENTS,
+        NEW_INSTANCE,
+        CASE_EXPR
+    };
+
+    CompletionContext ctx = CompletionContext::GENERAL;
+    if (!tokens.empty()) {
+        // If the user is typing an identifier right now (cursor at end of word without space),
+        // look at the preceding token(s).
+        bool trailing_space = prefix.empty() || std::isspace(prefix.back());
+        std::string last_token = tokens.back();
+        std::string prev_token = (tokens.size() >= 2) ? tokens[tokens.size() - 2] : "";
+
+        if (trailing_space) {
+            if (last_token == "class") {
+                ctx = CompletionContext::CLASS_NAME_DECL;
+            } else if (last_token == "extends") {
+                ctx = CompletionContext::EXTENDS;
+            } else if (last_token == "implements" || (last_token == "," && tokens.size() >= 3)) {
+                // Check if implements was seen earlier on the line
+                bool seen_implements = false;
+                for (const auto& t : tokens) {
+                    if (t == "implements") { seen_implements = true; break; }
+                }
+                if (seen_implements) ctx = CompletionContext::IMPLEMENTS;
+            } else if (last_token == "new") {
+                ctx = CompletionContext::NEW_INSTANCE;
+            } else if (last_token == "case") {
+                ctx = CompletionContext::CASE_EXPR;
+            }
+        } else {
+            // Typing in progress, e.g. "class MyFoo", "extends Base", "new Cls", "case Mem"
+            if (prev_token == "class") {
+                ctx = CompletionContext::CLASS_NAME_DECL;
+            } else if (prev_token == "extends") {
+                ctx = CompletionContext::EXTENDS;
+            } else if (prev_token == "implements" || (prev_token == "," && tokens.size() >= 3)) {
+                bool seen_implements = false;
+                for (const auto& t : tokens) {
+                    if (t == "implements") { seen_implements = true; break; }
+                }
+                if (seen_implements) ctx = CompletionContext::IMPLEMENTS;
+            } else if (prev_token == "new") {
+                ctx = CompletionContext::NEW_INSTANCE;
+            } else if (prev_token == "case") {
+                ctx = CompletionContext::CASE_EXPR;
+            }
+        }
+    }
+
+    // 1. CLASS_NAME_DECL: when typing new class name, do NOT suggest existing class names
+    if (ctx == CompletionContext::CLASS_NAME_DECL) {
+        // Return empty or non-class items (e.g. no existing class names)
+        transport_.send_response(id, comp_list);
+        return;
+    }
+
+    // 2. EXTENDS: Suggest non-interface classes only
+    if (ctx == CompletionContext::EXTENDS) {
+        if (last_context_) {
+            for (const auto& [src, nodes] : last_context_->nodes) {
+                for (const auto& n : nodes) {
+                    if (n && n->node_type == NodeType::CLASS_DECL) {
+                        auto* cd = static_cast<ClassDeclaration*>(n.get());
+                        if (!cd->is_interface) {
+                            CompletionItem item;
+                            item.label = cd->class_name;
+                            item.kind = static_cast<int>(CompletionItemKind::Class);
+                            item.insertText = cd->class_name;
+                            comp_list.items.push_back(item);
+                        }
+                    }
+                }
+            }
+        }
+        transport_.send_response(id, comp_list);
+        return;
+    }
+
+    // 3. IMPLEMENTS: Suggest interfaces only
+    if (ctx == CompletionContext::IMPLEMENTS) {
+        if (last_context_) {
+            for (const auto& [src, nodes] : last_context_->nodes) {
+                for (const auto& n : nodes) {
+                    if (n && n->node_type == NodeType::CLASS_DECL) {
+                        auto* cd = static_cast<ClassDeclaration*>(n.get());
+                        if (cd->is_interface) {
+                            CompletionItem item;
+                            item.label = cd->class_name;
+                            item.kind = static_cast<int>(CompletionItemKind::Interface);
+                            item.insertText = cd->class_name;
+                            comp_list.items.push_back(item);
+                        }
+                    }
+                }
+            }
+        }
+        transport_.send_response(id, comp_list);
+        return;
+    }
+
+    // 4. NEW_INSTANCE: Suggest instantiable classes with "()" constructor snippet
+    if (ctx == CompletionContext::NEW_INSTANCE) {
+        if (last_context_) {
+            for (const auto& [src, nodes] : last_context_->nodes) {
+                for (const auto& n : nodes) {
+                    if (n && n->node_type == NodeType::CLASS_DECL) {
+                        auto* cd = static_cast<ClassDeclaration*>(n.get());
+                        if (!cd->is_interface && !cd->is_abstract) {
+                            CompletionItem item;
+                            item.label = cd->class_name;
+                            item.kind = static_cast<int>(CompletionItemKind::Constructor);
+                            item.detail = cd->class_name + "()";
+                            item.insertText = cd->class_name + "()";
+                            comp_list.items.push_back(item);
+                        }
+                    }
+                }
+            }
+        }
+        transport_.send_response(id, comp_list);
+        return;
+    }
+
+    // 5. CASE_EXPR: Suggest enum members of the enclosing switch condition
+    if (ctx == CompletionContext::CASE_EXPR) {
+        if (last_context_) {
+            std::string file_path = uri_to_path(uri);
+            Node* hit = spatial_index_.find_node_at(file_path, line + 1, std::max(1, character));
+            Node* curr = hit;
+            while (curr && curr->node_type != NodeType::SWITCH_STMT) {
+                curr = curr->parent;
+            }
+
+            std::string enum_type_name;
+            if (curr && curr->node_type == NodeType::SWITCH_STMT) {
+                auto* sw = static_cast<SwitchStatement*>(curr);
+                if (sw->condition) {
+                    if (sw->condition->resolved_declaration) {
+                        Node* decl = sw->condition->resolved_declaration;
+                        if (decl->node_type == NodeType::VAR_DECL) {
+                            enum_type_name = static_cast<VariableDeclaration*>(decl)->type_info.name;
+                        }
+                    } else if (!sw->condition->expression_type.name.empty()) {
+                        enum_type_name = sw->condition->expression_type.name;
+                    }
+                }
+            }
+
+            // Find all matching enum members (or all enum members if switch condition unresolved)
+            for (const auto& [src, nodes] : last_context_->nodes) {
+                for (const auto& n : nodes) {
+                    if (n && n->node_type == NodeType::ENUM_DECL) {
+                        auto* ed = static_cast<EnumDeclaration*>(n.get());
+                        if (enum_type_name.empty() || ed->enum_name == enum_type_name) {
+                            for (const auto& mem : ed->members) {
+                                CompletionItem item;
+                                item.label = ed->enum_name + "." + mem;
+                                item.kind = static_cast<int>(CompletionItemKind::EnumMember);
+                                item.detail = ed->enum_name;
+                                item.insertText = ed->enum_name + "." + mem;
+                                comp_list.items.push_back(item);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        transport_.send_response(id, comp_list);
+        return;
+    }
+
     // General scope completion: Keywords, visible locals, class members, types
     static const std::vector<std::string> keywords = {
         "class", "interface", "enum", "struct", "public", "private", "protected", "internal",

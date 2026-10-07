@@ -26,6 +26,23 @@ When requested outside member dot access:
 2. **Local Variables & Parameters**: Suggests visible parameters and local variables in the enclosing method/block scope.
 3. **Types & Classes**: Suggests known classes and interfaces declared across the project with `CompletionItemKind::Class` (`7`).
 
+### Context-Aware Grammar Completions
+The language server inspects the lexical tokens leading up to the cursor to refine completions:
+1. **Class Declaration (`class <cursor>`)**:
+   - Existing class names are suppressed from completion results so typing a new class name does not autocomplete or collide with existing declarations.
+2. **Inheritance Extension (`extends <cursor>`)**:
+   - Suggests only concrete/abstract classes with `CompletionItemKind::Class`.
+   - Interfaces are strictly excluded.
+3. **Interface Implementation (`implements <cursor>`, `implements IFoo, <cursor>`)**:
+   - Suggests only interfaces with `CompletionItemKind::Interface`.
+   - Regular classes are strictly excluded.
+4. **Instantiations (`new <cursor>`)**:
+   - Suggests instantiable classes (excluding interfaces and `abstract` classes).
+   - Injects constructor snippets with `()` automatically via `insertText`.
+5. **Switch Cases (`case <cursor>`)**:
+   - Inspects the enclosing `switch` condition variable type.
+   - If switching over an `enum`, suggests enum members (e.g. `Color.RED`, `Color.GREEN`, `Color.BLUE`) with `CompletionItemKind::EnumMember`.
+
 ---
 
 ## 2. Parameter Hints (`textDocument/signatureHelp`)

@@ -981,6 +981,290 @@ TEST_CASE("Suite 12: LSP Intelligence (Completions, Signature Help & Document Sy
         REQUIRE(unk_resp.value().value("id", 0) == 205);
         REQUIRE(unk_resp.value()["result"]["items"].empty());
     }
+
+    SECTION("Case 12.6: Class Declaration Name Completion Suppression") {
+        std::stringstream in_s;
+        std::stringstream out_s;
+        LspServer srv(in_s, out_s);
+        JsonRpcTransport rdr(out_s, in_s);
+
+        std::string test_uri = "file:///test/DeclComp.slx";
+        std::string test_src = "class ExistingClass {}\nclass ";
+
+        nlohmann::json open_doc = {
+            {"jsonrpc", "2.0"},
+            {"method", "textDocument/didOpen"},
+            {"params", {
+                {"textDocument", {
+                    {"uri", test_uri},
+                    {"languageId", "solix"},
+                    {"version", 1},
+                    {"text", test_src}
+                }}
+            }}
+        };
+        srv.process_message(open_doc);
+        auto notif = rdr.read_message(); // drain publishDiagnostics
+
+        // Cursor immediately after "class " on line 1, char 6
+        nlohmann::json req = {
+            {"jsonrpc", "2.0"},
+            {"id", 206},
+            {"method", "textDocument/completion"},
+            {"params", {
+                {"textDocument", {{"uri", test_uri}}},
+                {"position", {{"line", 1}, {"character", 6}}}
+            }}
+        };
+        srv.process_message(req);
+        auto resp = rdr.read_message();
+        REQUIRE(resp.has_value());
+        REQUIRE(resp.value().value("id", 0) == 206);
+        const auto& items = resp.value()["result"]["items"];
+        // Must NOT suggest ExistingClass when declaring a new class name
+        bool found_existing = false;
+        for (const auto& item : items) {
+            if (item.value("label", "") == "ExistingClass") {
+                found_existing = true;
+            }
+        }
+        REQUIRE_FALSE(found_existing);
+    }
+
+    SECTION("Case 12.7: Extends Context Class-Only Completion") {
+        std::stringstream in_s;
+        std::stringstream out_s;
+        LspServer srv(in_s, out_s);
+        JsonRpcTransport rdr(out_s, in_s);
+
+        std::string test_uri = "file:///test/ExtendsComp.slx";
+        std::string test_src =
+            "interface IWorker {}\n"
+            "class BaseService {}\n"
+            "class ChildService extends \n";
+
+        nlohmann::json open_doc = {
+            {"jsonrpc", "2.0"},
+            {"method", "textDocument/didOpen"},
+            {"params", {
+                {"textDocument", {
+                    {"uri", test_uri},
+                    {"languageId", "solix"},
+                    {"version", 1},
+                    {"text", test_src}
+                }}
+            }}
+        };
+        srv.process_message(open_doc);
+        auto notif = rdr.read_message();
+
+        // Cursor after "extends " on line 2, char 27
+        nlohmann::json req = {
+            {"jsonrpc", "2.0"},
+            {"id", 207},
+            {"method", "textDocument/completion"},
+            {"params", {
+                {"textDocument", {{"uri", test_uri}}},
+                {"position", {{"line", 2}, {"character", 27}}}
+            }}
+        };
+        srv.process_message(req);
+        auto resp = rdr.read_message();
+        REQUIRE(resp.has_value());
+        REQUIRE(resp.value().value("id", 0) == 207);
+        const auto& items = resp.value()["result"]["items"];
+
+        bool found_base = false;
+        bool found_interface = false;
+        for (const auto& item : items) {
+            std::string label = item.value("label", "");
+            if (label == "BaseService") found_base = true;
+            if (label == "IWorker") found_interface = true;
+        }
+        REQUIRE(found_base);
+        REQUIRE_FALSE(found_interface); // interfaces excluded from extends
+    }
+
+    SECTION("Case 12.8: Implements Context Interface-Only Completion") {
+        std::stringstream in_s;
+        std::stringstream out_s;
+        LspServer srv(in_s, out_s);
+        JsonRpcTransport rdr(out_s, in_s);
+
+        std::string test_uri = "file:///test/ImplComp.slx";
+        std::string test_src =
+            "interface IRunner {}\n"
+            "class NormalClass {}\n"
+            "class Worker implements \n";
+
+        nlohmann::json open_doc = {
+            {"jsonrpc", "2.0"},
+            {"method", "textDocument/didOpen"},
+            {"params", {
+                {"textDocument", {
+                    {"uri", test_uri},
+                    {"languageId", "solix"},
+                    {"version", 1},
+                    {"text", test_src}
+                }}
+            }}
+        };
+        srv.process_message(open_doc);
+        auto notif = rdr.read_message();
+
+        // Cursor after "implements " on line 2, char 24
+        nlohmann::json req = {
+            {"jsonrpc", "2.0"},
+            {"id", 208},
+            {"method", "textDocument/completion"},
+            {"params", {
+                {"textDocument", {{"uri", test_uri}}},
+                {"position", {{"line", 2}, {"character", 24}}}
+            }}
+        };
+        srv.process_message(req);
+        auto resp = rdr.read_message();
+        REQUIRE(resp.has_value());
+        REQUIRE(resp.value().value("id", 0) == 208);
+        const auto& items = resp.value()["result"]["items"];
+
+        bool found_interface = false;
+        bool found_class = false;
+        for (const auto& item : items) {
+            std::string label = item.value("label", "");
+            if (label == "IRunner") found_interface = true;
+            if (label == "NormalClass") found_class = true;
+        }
+        REQUIRE(found_interface);
+        REQUIRE_FALSE(found_class); // regular classes excluded from implements
+    }
+
+    SECTION("Case 12.9: New-Instance Completion with Constructor Snippets") {
+        std::stringstream in_s;
+        std::stringstream out_s;
+        LspServer srv(in_s, out_s);
+        JsonRpcTransport rdr(out_s, in_s);
+
+        std::string test_uri = "file:///test/NewComp.slx";
+        std::string test_src =
+            "interface IService {}\n"
+            "abstract class AbstractTask {}\n"
+            "class ConcreteTask {}\n"
+            "class App {\n"
+            "    void run() {\n"
+            "        var t = new \n"
+            "    }\n"
+            "}\n";
+
+        nlohmann::json open_doc = {
+            {"jsonrpc", "2.0"},
+            {"method", "textDocument/didOpen"},
+            {"params", {
+                {"textDocument", {
+                    {"uri", test_uri},
+                    {"languageId", "solix"},
+                    {"version", 1},
+                    {"text", test_src}
+                }}
+            }}
+        };
+        srv.process_message(open_doc);
+        auto notif = rdr.read_message();
+
+        // Cursor after "new " on line 5, char 20
+        nlohmann::json req = {
+            {"jsonrpc", "2.0"},
+            {"id", 209},
+            {"method", "textDocument/completion"},
+            {"params", {
+                {"textDocument", {{"uri", test_uri}}},
+                {"position", {{"line", 5}, {"character", 20}}}
+            }}
+        };
+        srv.process_message(req);
+        auto resp = rdr.read_message();
+        REQUIRE(resp.has_value());
+        REQUIRE(resp.value().value("id", 0) == 209);
+        const auto& items = resp.value()["result"]["items"];
+
+        bool found_concrete = false;
+        bool found_abstract = false;
+        bool found_interface = false;
+        for (const auto& item : items) {
+            std::string label = item.value("label", "");
+            if (label == "ConcreteTask") {
+                found_concrete = true;
+                REQUIRE(item.value("insertText", "") == "ConcreteTask()");
+            }
+            if (label == "AbstractTask") found_abstract = true;
+            if (label == "IService") found_interface = true;
+        }
+        REQUIRE(found_concrete);
+        REQUIRE_FALSE(found_abstract);  // abstract classes excluded from new
+        REQUIRE_FALSE(found_interface); // interfaces excluded from new
+    }
+
+    SECTION("Case 12.10: Case Context Enum Member Completion") {
+        std::stringstream in_s;
+        std::stringstream out_s;
+        LspServer srv(in_s, out_s);
+        JsonRpcTransport rdr(out_s, in_s);
+
+        std::string test_uri = "file:///test/CaseComp.slx";
+        std::string test_src =
+            "enum Color { RED, GREEN, BLUE }\n"
+            "class Switcher {\n"
+            "    void test(Color c) {\n"
+            "        switch (c) {\n"
+            "            case \n"
+            "        }\n"
+            "    }\n"
+            "}\n";
+
+        nlohmann::json open_doc = {
+            {"jsonrpc", "2.0"},
+            {"method", "textDocument/didOpen"},
+            {"params", {
+                {"textDocument", {
+                    {"uri", test_uri},
+                    {"languageId", "solix"},
+                    {"version", 1},
+                    {"text", test_src}
+                }}
+            }}
+        };
+        srv.process_message(open_doc);
+        auto notif = rdr.read_message();
+
+        // Cursor after "case " on line 4, char 17
+        nlohmann::json req = {
+            {"jsonrpc", "2.0"},
+            {"id", 210},
+            {"method", "textDocument/completion"},
+            {"params", {
+                {"textDocument", {{"uri", test_uri}}},
+                {"position", {{"line", 4}, {"character", 17}}}
+            }}
+        };
+        srv.process_message(req);
+        auto resp = rdr.read_message();
+        REQUIRE(resp.has_value());
+        REQUIRE(resp.value().value("id", 0) == 210);
+        const auto& items = resp.value()["result"]["items"];
+
+        bool found_red = false;
+        bool found_green = false;
+        bool found_blue = false;
+        for (const auto& item : items) {
+            std::string label = item.value("label", "");
+            if (label == "Color.RED") found_red = true;
+            if (label == "Color.GREEN") found_green = true;
+            if (label == "Color.BLUE") found_blue = true;
+        }
+        REQUIRE(found_red);
+        REQUIRE(found_green);
+        REQUIRE(found_blue);
+    }
 }
 
 

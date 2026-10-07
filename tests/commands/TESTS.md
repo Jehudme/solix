@@ -697,22 +697,22 @@ This document is the master test specification for the Solix CLI command suite (
 - **Request**: `textDocument/completion` after dot access on unknown/invalid identifier.
 - **Expected**: Returns empty `CompletionList` (`items: []`) gracefully without crashing.
 
-#### Case 12.6: Class Declaration Name Completion Suppression [NOT IMPLEMENTED]
+#### Case 12.6: Class Declaration Name Completion Suppression [IMPLEMENTED]
 - **Request**: `textDocument/completion` immediately after typing `class ` (or `class <NamePrefix>`).
 - **Expected**: Existing class names are suppressed from the completion items so typing a new class name does not autocomplete to existing classes.
 
-#### Case 12.7: Extends Context Class-Only Completion [NOT IMPLEMENTED]
+#### Case 12.7: Extends Context Class-Only Completion [IMPLEMENTED]
 - **Request**: `textDocument/completion` after `extends ` in a class declaration.
 - **Expected**: Returns only non-interface classes (interfaces are excluded).
 
-#### Case 12.8: Implements Context Interface-Only Completion [NOT IMPLEMENTED]
+#### Case 12.8: Implements Context Interface-Only Completion [IMPLEMENTED]
 - **Request**: `textDocument/completion` after `implements ` (or after comma in implements list).
 - **Expected**: Returns only interfaces (regular non-interface classes are excluded).
 
-#### Case 12.9: New-Instance Completion with Constructor Snippets [NOT IMPLEMENTED]
+#### Case 12.9: New-Instance Completion with Constructor Snippets [IMPLEMENTED]
 - **Request**: `textDocument/completion` after `new ` keyword.
 - **Expected**: Suggests instantiable classes (excluding interfaces and abstract classes) formatted with `()` snippet or constructor parameters.
 
-#### Case 12.10: Case Context Enum Member Completion [NOT IMPLEMENTED]
+#### Case 12.10: Case Context Enum Member Completion [IMPLEMENTED]
 - **Request**: `textDocument/completion` after `case ` within a switch statement switching on an enum.
 - **Expected**: Returns members of the switch expression's enum type.
