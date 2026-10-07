@@ -18,6 +18,13 @@ A `MethodDeclaration` defines a callable member function or package-level free f
 - Functions declared inside a class may be instance methods or marked with `static` to denote static member functions.
 - When an entry point function is defined inside a class, it must be declared `public static`.
 
+### 2.3 Entry Point Resolution & Ambiguity Detection
+- The compiler performs an exhaustive scan across all compilation units to identify all candidate functions matching the entry point name configured in `CompilationOptions::entry_point` (defaults to `main`).
+- If multiple candidates matching the entry point name exist across modules or classes (for example, two package-level `main()` functions in distinct packages), compilation is rejected with diagnostic:
+  `[E_ASM] Ambiguous entry point '<name>': multiple candidates found:` listing the source path, line, and column for every candidate.
+- If exactly one candidate is identified, it is selected as the program's boot entry point.
+- If no candidate is identified, compilation succeeds in library mode without emitting a startup call.
+
 ---
 
 ## 3. Compilation & Runtime Mechanics (With Real Bytecode)
