@@ -2494,25 +2494,23 @@ Resolve IDE language intelligence failures (no autocomplete, missing hover, brok
 
 ---
 
-## Phase 55: LSP Package Autocompletion & Same-Package Multi-File Scope Visibility
+## Phase 55: LSP Package Autocompletion & Same-Package Import Tolerance
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `lsp/src/server.cpp`, `lsp/src/spatial_index.cpp`, `core/src/processes/binder.cpp`, `tests/commands/TESTS.md`, `tests/commands/test_lsp_command.cpp`, `docs/spec/lsp/intelligence.md`, `docs/spec/lsp/navigation.md`
 - **Status**: - [ ] Planned
 
 ### Objective
-Resolve package declaration intelligence, cross-file visibility for files sharing the same package, and redundant self-package imports:
-1. **Package Declaration Autocompletion**: When declaring a package (`package <cursor>`), suggest candidate packages inferred from relative directory paths (e.g., `src/solix/collections/HashSet.slx` -> `solix.collections`) and any known package declarations across project files.
-2. **Same-Package Multi-File Scope Resolution**: When two or more files share identical `package` statements (e.g. `package mypkg;`), classes, enums, and aliases declared in sibling files are automatically visible and in scope for autocompletion, Go-to-Definition, and on-hover information without needing an explicit `import` statement.
-3. **Relax Self-Package Import Check**: In Binder, allow `import mypkg.ClassB;` or `import mypkg.*;` when the importing file is also declared in `package mypkg;` without failing with `Cannot resolve import` or redundant import errors.
-4. **Package Statement Hover & Definition**: Provide hover info and navigation for `package` declarations (`package <name>;`).
+Resolve package declaration intelligence, same-package import tolerance, and package hover/navigation:
+1. **Package Declaration Autocompletion**: When declaring a package (`package <cursor>`), suggest candidate packages inferred from relative directory paths (e.g., `src/solix/collections/HashSet.slx` -> `solix.collections`) and any known package declarations across project files. Suppress package suggestions outside package declaration context.
+2. **Relax Self-Package / Same-Package Import Check**: In Binder, allow `import mypkg.ClassB;` or `import mypkg.*;` when the importing file is also declared in `package mypkg;` without failing with `Cannot resolve import` or redundant import errors.
+3. **Package Statement Hover & Definition**: Provide hover info and navigation for `package` declarations (`package <name>;`).
 
 ### Action Items
 - [ ] Implement `CompletionContext::PACKAGE_DECL` in `lsp/src/server.cpp` with directory path heuristic and known project package suggestions.
-- [ ] Implement same-package multi-file symbol resolution helper (`get_file_package`, `find_type_declaration`, `find_symbol_in_scope`) in `lsp/src/server.cpp`.
-- [ ] Update `core/src/processes/binder.cpp` to tolerate and resolve self-package imports when current file package matches target import package.
-- [ ] Index `PackageStatement` in `lsp/src/spatial_index.cpp` and support hover in `format_hover_for_node`.
-- [ ] Define test specifications in `tests/commands/TESTS.md` with `[NOT IMPLEMENTED]`.
+- [ ] Update `core/src/processes/binder.cpp` to tolerate and resolve same-package imports.
+- [ ] Index `PackageStatement` in `lsp/src/spatial_index.cpp` and support hover in `format_hover_for_node` and navigation in `handle_definition`.
+- [ ] Define test specifications in `tests/commands/TESTS.md`.
 - [ ] Implement Catch2 unit tests in `tests/commands/test_lsp_command.cpp`.
 - [ ] Update documentation in `docs/spec/lsp/intelligence.md` and `docs/spec/lsp/navigation.md`.
 
