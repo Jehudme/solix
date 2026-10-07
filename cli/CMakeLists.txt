@@ -22,15 +22,17 @@ add_library(solix_cli_core STATIC
     src/commands/new.cpp
     src/commands/package.cpp
     src/commands/version.cpp
+    src/commands/lsp.cpp
 )
 
 add_library(solix_launcher_core ALIAS solix_cli_core)
 
-target_link_libraries(solix_cli_core PUBLIC solix_core CLI11::CLI11 nlohmann_json::nlohmann_json)
+target_link_libraries(solix_cli_core PUBLIC solix_core CLI11::CLI11 nlohmann_json::nlohmann_json solix_lsp_core)
 
 target_include_directories(solix_cli_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/commands
+    ${CMAKE_SOURCE_DIR}/lsp/include
 )
 
 add_executable(solix

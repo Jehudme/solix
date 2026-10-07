@@ -41,6 +41,7 @@ if(NOT TARGET spdlog AND NOT TARGET spdlog::spdlog)
 endif()
 
 add_subdirectory(core)
+add_subdirectory(lsp)
 add_subdirectory(cli)
 add_subdirectory(solixlib/native)
 add_subdirectory(tests)
