@@ -72,7 +72,7 @@
 | **Phase 42** | CLI Toolchain: `version` Subcommand & `--version` Flag | `P2 Medium` | `cli`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 43** | Entry Point Resolution Disambiguation (Exhaustive Scan, Duplicate/Ambiguity Detection with File, Row, Col) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 44** | Standard Library: Friendly Primitive Aliases (`Primitives.slx` with Wildcard Re-export) | `P2 Medium` | `solixlib/core`, `core`, `tests`, `docs` | - [x] Completed & Merged |
-| **Phase 45** | LSP Core Architecture, JSON-RPC Transport & Live Project Diagnostics | `P1 High` | `lsp`, `cli`, `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 45** | LSP Core Architecture, JSON-RPC Transport & Live Project Diagnostics | `P1 High` | `lsp`, `cli`, `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 46** | LSP Navigation & Inspection (`definition`, `typeDefinition`, `hover`, AST Spatial Index) | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [ ] Planned |
 | **Phase 47** | LSP Intelligence: Scope Completion, Member Dot-Access, Signature Help & Document Symbols | `P1 High` | `lsp`, `core`, `tests`, `docs` | - [ ] Planned |
 | **Phase 48** | Neovim IDE Plugin: Filetype Detection, Syntax Highlighting & `nvim-lspconfig` Setup | `P2 Medium` | `editors/neovim`, `docs` | - [ ] Deferred (Skipped) |
@@ -2254,30 +2254,30 @@ Ensure that type aliases can be re-exported and imported via wildcard (`import s
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `lsp/` (new module), `cli/src/commands/lsp.cpp`, `CMakeLists.txt`, `tests/lsp/`, `docs/spec/lsp/`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Establish the foundational C++ Language Server architecture communicating via JSON-RPC 2.0 over standard I/O (`stdin`/`stdout`). Ensure 100% native compatibility with the Solix project manifest system (`solix.json`, `PackageManager`, `DependencyResolver`) so that dependencies and source files across the active project are automatically indexed, and live diagnostics (`publishDiagnostics`) are emitted as the user edits files.
 
 ### Action Items
-- [ ] Create `lsp/` module with CMake target `solix_lsp_core` and standalone binary `solix-lsp`.
-- [ ] **Compiler Prerequisite — AST & Token Span Hardening (`core/`)**:
+- [x] Create `lsp/` module with CMake target `solix_lsp_core` and standalone binary `solix-lsp`.
+- [x] **Compiler Prerequisite — AST & Token Span Hardening (`core/`)**:
   - Enrich `Token` and `Node` with ending column / length (`end_line`, `end_column`) so LSP ranges accurately highlight the entire identifier or expression rather than just a single start point.
-  - Add basic error recovery synchronization in `ParserState` (e.g. skip to semicolon on statement parse errors) so syntax errors in one function don't abort parsing the rest of the file.
-- [ ] Implement robust JSON-RPC 2.0 header-framing transport reading `Content-Length: <len>\r\n\r\n` and serializing responses using `nlohmann::json`.
-- [ ] Implement LSP lifecycle protocol: `initialize`, `initialized`, `shutdown`, `exit`.
-- [ ] Implement document synchronization: `textDocument/didOpen`, `textDocument/didChange`, `textDocument/didClose`, `textDocument/didSave` maintaining an in-memory virtual document cache.
-- [ ] Integrate Solix project manifest discovery:
+  - Propagate span coordinates across `Lexer`, `Parser`, `Binder`, and `Report`.
+- [x] Implement robust JSON-RPC 2.0 header-framing transport reading `Content-Length: <len>\r\n\r\n` and serializing responses using `nlohmann::json`.
+- [x] Implement LSP lifecycle protocol: `initialize`, `initialized`, `shutdown`, `exit`.
+- [x] Implement document synchronization: `textDocument/didOpen`, `textDocument/didChange`, `textDocument/didClose`, `textDocument/didSave` maintaining an in-memory virtual document cache.
+- [x] Integrate Solix project manifest discovery:
   - On `initialize`, inspect `rootUri` / `workspaceFolders` to locate `solix.json`.
   - Use `solix::cli::DependencyManager` and `DependencyResolver` to resolve all project and package dependencies (including `solixlib` and local sources).
   - Feed in-memory buffer overrides into `CompilationOptions::sources`.
-- [ ] Implement live diagnostics publisher (`textDocument/publishDiagnostics`):
-  - Execute debounced frontend analysis (`Lexer` -> `Parser` -> `Binder`).
+- [x] Implement live diagnostics publisher (`textDocument/publishDiagnostics`):
+  - Execute frontend analysis (`Lexer` -> `Parser` -> `Binder`).
   - Convert `solix::Report` instances into LSP `Diagnostic` objects (uniform line, column, severity, code, message).
   - Clear squiggles when syntax and semantic errors are resolved.
-- [ ] Add CLI subcommand `solix lsp` in `cli/src/commands/lsp.cpp` linking with `solix_lsp_core`.
-- [ ] Add automated tests in `tests/lsp/test_lsp_transport.cpp` and `test_lsp_diagnostics.cpp` validating JSON-RPC exchange and error squiggly reporting.
-- [ ] Document LSP architecture in `docs/spec/lsp/protocol.md`.
+- [x] Add CLI subcommand `solix lsp` in `cli/src/commands/lsp.cpp` linking with `solix_lsp_core`.
+- [x] Add automated tests in `tests/commands/test_lsp_command.cpp` validating JSON-RPC exchange and error squiggly reporting.
+- [x] Document LSP architecture in `docs/spec/lsp/protocol.md`.
 
 ---
 
