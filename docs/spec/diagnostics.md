@@ -35,3 +35,14 @@ Each diagnostic report records the following properties:
 - `code`: Diagnostic code (`E_LEX`, `E_PARSE`, `E_BIND`, `E_ASM`).
 - `severity`: Severity level (`ERROR`, `WARNING`, `NOTE`).
 - `message`: Clear, human-readable description of the error.
+
+---
+
+## 3. Log Levels & Pipeline Instrumentation
+
+### 3.1 Logging Level Hierarchy
+The compiler categorizes informational logs according to verbosity:
+- **`INFO`**: High-level milestones (e.g. `Compiling N source file(s)...`, `Compilation completed in X ms`).
+- **`DEBUG`**: Stage completion and duration summaries (e.g. `Lexer completed in X ms.`, `Parser completed in X ms.`, `Binder completed in X ms.`, `Assembler completed in X ms.`).
+- **`TRACE`**: Detailed AST nodes, symbol definitions, template cloning, and local frame index allocations. Fine-grained compiler diagnostics are kept at `TRACE` to keep `DEBUG` logging uncluttered.
+
