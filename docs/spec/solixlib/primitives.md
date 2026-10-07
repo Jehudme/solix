@@ -97,9 +97,41 @@ Boxed UTF-8 code point / character wrapper.
 - `static is_letter(char c) -> bool`: Checks if character is ASCII alphabetic.
 - `static is_whitespace(char c) -> bool`: Checks if character is `' '`, `'\t'`, `'\n'`, or `'\r'`.
 - `static is_upper_case(char c) -> bool`: Checks if character is `'A'`..`'Z'`.
-- `static is_lower_case(char c) -> bool`: Checks if character is `'a'`..`'z'`.
 - `static to_upper_case(char c) -> char`: In-place case conversion.
 - `static to_lower_case(char c) -> char`: In-place case conversion.
+
+### `Byte`, `Short`, `Long`
+Signed integer wrappers for `int8`, `int16`, and `int64`.
+- `public Byte(int8 val)`, `public Short(int16 val)`, `public Long(int64 val)`
+- `value()`: Retrieves underlying primitive.
+- `to_string() -> String`: String representation.
+- `hash_code() -> int32`: Integer hash code.
+- `equals(other) -> bool`: Value equality.
+- `compare_to(other) -> int32`: Ordinal comparison.
+- `static parse(String s)`: Parses string to numeric value; throws `FormatException` on error.
+- Arithmetic and relational operator overloads: `+`, `-`, `*`, `/`, `==`, `!=`, `<`, `<=`, `>`, `>=`.
+- Bounds constants: `MIN_VALUE`, `MAX_VALUE`.
+
+### `UByte`, `UShort`, `UInt`, `ULong`
+Unsigned integer wrappers for `uint8`, `uint16`, `uint32`, and `uint64`.
+- `public UByte(uint8 val)`, `public UShort(uint16 val)`, `public UInt(uint32 val)`, `public ULong(uint64 val)`
+- `value()`: Retrieves underlying unsigned primitive.
+- `to_string() -> String`: String representation.
+- `hash_code() -> int32`: Integer hash code.
+- `equals(other) -> bool`: Value equality.
+- `compare_to(other) -> int32`: Ordinal comparison.
+- Arithmetic and relational operator overloads: `+`, `-`, `*`, `/`, `==`, `!=`, `<`, `<=`, `>`, `>=`.
+- Bounds constants: `MIN_VALUE`, `MAX_VALUE`.
+
+### `Float`
+Boxed 32-bit IEEE 754 floating-point number.
+- `public Float(float32 val)`
+- `value() -> float32`: Retrieves underlying float32.
+- `to_string() -> String`: String representation.
+- `equals(Float other) -> bool`: Value equality.
+- `compare_to(Float other) -> int32`: Ordinal comparison.
+- Arithmetic and relational operator overloads: `+`, `-`, `*`, `/`, `==`, `!=`, `<`, `<=`, `>`, `>=`.
+- Bounds constants: `MIN_VALUE`, `MAX_VALUE`.
 
 ---
 
@@ -110,6 +142,8 @@ Generic container representing optional or absent values without null-pointer vu
 ### Constructors
 - `new Optional<T>()`: Constructs empty optional (`has_value() == false`).
 - `new Optional<T>(T val)`: Constructs present optional (`has_value() == true`).
+- `static of<T>(T val) -> Optional<T>`: Constructs present optional.
+- `static empty<T>() -> Optional<T>`: Constructs empty optional.
 
 ### Query, Value Access & Functional Operations
 - `has_value() -> bool`: Returns `true` if a value is contained.
@@ -118,4 +152,6 @@ Generic container representing optional or absent values without null-pointer vu
 - `value_or(T fallback) -> T`: Returns contained value if present, or `fallback` if empty.
 - `if_present(void(*)(T) consumer) -> void`: Executes `consumer` callback with the contained value if present.
 - `filter(bool(*)(T) predicate) -> Optional<T>`: Returns `this` if present and `predicate(value)` is true, or empty Optional otherwise.
+- `map<U>(U(*)(T) mapper) -> Optional<U>`: Transforms contained value if present, returning empty Optional otherwise.
+- `flat_map<U>(Optional<U>(*)(T) mapper) -> Optional<U>`: Monadic chaining; evaluates mapper returning `Optional<U>`.
 - `to_string() -> String`: Returns `"Optional.of(...)"` or `"Optional.empty"`.
