@@ -67,7 +67,7 @@
 | **Phase 37** | Standard Library: `solix.net` (TCP & UDP Sockets, Lightweight `HttpClient`) | `P3 Low` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 38** | Compiler Diagnostics & Error Reporting Consistency (Uniform Path, Row, Column, Caret) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 39** | Lexer Escape Sequence Decoding (`\n`, `\t`, `\r`, `\\`, `\"`, `\0`, `\xHH`) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
-| **Phase 40** | Function Declaration Scope Rules (`static` Prohibited Outside Classes; Non-`static` Free Functions Allowed as Entry Points) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 40** | Function Declaration Scope Rules (`static` Prohibited Outside Classes; Non-`static` Free Functions Allowed as Entry Points) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 41** | Diagnostic Logging Level Demotion (`log_debug` -> `log_trace` & Phase Pipeline Timing) | `P2 Medium` | `core`, `tests`, `docs` | - [ ] Planned |
 | **Phase 42** | CLI Toolchain: `version` Subcommand & `--version` Flag | `P2 Medium` | `cli`, `tests`, `docs` | - [ ] Planned |
 | **Phase 43** | Entry Point Resolution Disambiguation (Exhaustive Scan, Duplicate/Ambiguity Detection with File, Row, Col) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
@@ -2164,16 +2164,16 @@ Upgrade `handle_string()` in `core/src/processes/lexer.cpp` to decode escape seq
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `core/src/processes/binder.cpp`, `core/src/processes/assembler.cpp`, `tests/statements/declarations/test_method_declaration.cpp`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Enforce the language rule that functions declared outside of a class cannot use the `static` keyword (since free/package-level functions are inherently static). Allow free functions without the `static` keyword to serve as valid entry points (`main`).
 
 ### Action Items
-- [ ] Add compile-time check in `Binder` rejecting `static` modifier on top-level/free functions outside classes (`'static' modifier is not allowed on functions outside of a class`).
-- [ ] Update `Assembler` entry point locator to accept top-level free functions without checking `is_static == true` (top-level functions are implicitly static).
-- [ ] Add positive and negative unit tests in `test_method_declaration.cpp`.
-- [ ] Update `docs/spec/declarations/method_declaration.md`.
+- [x] Add compile-time check in `Binder` rejecting `static` modifier on top-level/free functions outside classes (`'static' modifier is not allowed on functions outside of a class`).
+- [x] Update `Assembler` entry point locator to accept top-level free functions without checking `is_static == true` (top-level functions are implicitly static).
+- [x] Add positive and negative unit tests in `test_method_declaration.cpp`.
+- [x] Update `docs/spec/declarations/method_declaration.md`.
 
 ---
 
