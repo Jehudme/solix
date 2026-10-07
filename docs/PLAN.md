@@ -65,7 +65,7 @@
 | **Phase 35** | Core Compiler & Runtime: Language Intrinsics (`assert`, `exit`, Hardcoded Built-ins) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 36** | Standard Library: `solix.crypto` (Base64, Hex, SHA-256, MD5) | `P3 Low` | `solixlib`, `solixlib/native`, `tests` | - [x] Completed & Merged |
 | **Phase 37** | Standard Library: `solix.net` (TCP & UDP Sockets, Lightweight `HttpClient`) | `P3 Low` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
-| **Phase 38** | Compiler Diagnostics & Error Reporting Consistency (Uniform Path, Row, Column, Caret) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 38** | Compiler Diagnostics & Error Reporting Consistency (Uniform Path, Row, Column, Caret) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 39** | Lexer Escape Sequence Decoding (`\n`, `\t`, `\r`, `\\`, `\"`, `\0`, `\xHH`) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
 | **Phase 40** | Function Declaration Scope Rules (`static` Prohibited Outside Classes; Non-`static` Free Functions Allowed as Entry Points) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
 | **Phase 41** | Diagnostic Logging Level Demotion (`log_debug` -> `log_trace` & Phase Pipeline Timing) | `P2 Medium` | `core`, `tests`, `docs` | - [ ] Planned |
@@ -2131,16 +2131,16 @@ Implement cross-platform networking primitives: IP address handling, TCP client/
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `core/src/processes/lexer.cpp`, `core/src/processes/parser.cpp`, `core/src/processes/binder.cpp`, `core/src/utilities/diagnostic.cpp`, `tests/statements/`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Ensure that all compiler diagnostics, syntax errors, and binder validation messages consistently report file path/name, line (row), and column, with source text caret pointers. Eliminate missing path, row, or column information across all compiler stages.
 
 ### Action Items
-- [ ] Ensure `Lexer` and `Parser` record source file path on every error report.
-- [ ] Unify `log_error` and `record_error` across `Binder` and `Parser` to always format `[path:line:col] message`.
-- [ ] Implement unit tests in `tests/statements/` verifying diagnostic consistency for syntax, lexical, and binder errors.
-- [ ] Update `docs/spec/` diagnostics specification.
+- [x] Ensure `Lexer` and `Parser` record source file path on every error report.
+- [x] Unify `log_error` and `record_error` across `Binder` and `Parser` to always format `[path:line:col] message`.
+- [x] Implement unit tests in `tests/statements/` verifying diagnostic consistency for syntax, lexical, and binder errors.
+- [x] Update `docs/spec/` diagnostics specification.
 
 ---
 
