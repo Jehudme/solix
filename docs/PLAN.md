@@ -63,7 +63,7 @@
 | **Phase 33.1** | Standard Library: Documentation Schema Standardization & Developer Guides (Operator Overloading & Native C++ Interop Guides) | `P2 Medium` | `docs/spec/solixlib`, `docs/guide` | - [ ] Planned |
 | **Phase 34** | Standard Library: `solix.system.Environment` (OS, Env, Subprocesses) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 35** | Core Compiler & Runtime: Language Intrinsics (`assert`, `exit`, Hardcoded Built-ins) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
-| **Phase 36** | Standard Library: `solix.crypto` (Base64, Hex, SHA-256, MD5) | `P3 Low` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
+| **Phase 36** | Standard Library: `solix.crypto` (Base64, Hex, SHA-256, MD5) | `P3 Low` | `solixlib`, `solixlib/native`, `tests` | - [x] Completed & Merged |
 | **Phase 37** | Standard Library: `solix.net` (TCP & UDP Sockets, Lightweight `HttpClient`) | `P3 Low` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 
 ---
@@ -2011,7 +2011,7 @@ Implement built-in hardcoded language expressions in the Solix core compiler and
 
 - **Priority**: `P3 Low`
 - **Affected Modules**: `solixlib/project/src/solix/crypto/Base64.slx`, `Hex.slx`, `Hash.slx`, `solixlib/native/src/crypto.cpp`, `tests/solixlib/test_crypto.cpp`, `docs/spec/solixlib/crypto.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Implement essential cryptographic hashing functions (SHA-256, SHA-1, MD5) and binary encodings (Base64, Hexadecimal) using well-established, battle-tested lightweight C libraries (e.g. Brad Conte's standard `crypto-algorithms` or `monocypher`) rather than handwriting cryptographic math from scratch.
@@ -2048,11 +2048,11 @@ Implement essential cryptographic hashing functions (SHA-256, SHA-1, MD5) and bi
   - `docs/spec/solixlib/crypto.md`: Cryptographic algorithms, test vector validations, and security boundaries.
 
 ### Action Items
-- [ ] Define test specification in `tests/solixlib/TESTS.md`.
-- [ ] Embed audited C crypto library in `solixlib/native/src/crypto.cpp`.
-- [ ] Author `Base64.slx`, `Hex.slx`, `Hash.slx`.
-- [ ] Implement Catch2 test suite `tests/solixlib/test_crypto.cpp`.
-- [ ] Author `docs/spec/solixlib/crypto.md`.
+- [x] Define test specification in `tests/solixlib/TESTS.md`.
+- [x] Embed audited C crypto library in `solixlib/native/src/crypto.cpp`.
+- [x] Author `Base64.slx`, `Hex.slx`, `Hash.slx`.
+- [x] Implement Catch2 test suite `tests/solixlib/test_crypto.cpp`.
+- [x] Author `docs/spec/solixlib/crypto.md`.
 
 ---
 
