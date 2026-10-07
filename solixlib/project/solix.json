@@ -11,6 +11,10 @@
     },
     {
       "type": "source",
+      "path": "src/solix/core/Primitives.slx"
+    },
+    {
+      "type": "source",
       "path": "src/solix/core/IStringable.slx"
     },
     {
