@@ -152,3 +152,16 @@ Hover requests targeting Solix keywords (`if`, `class`, `public`, `return`, `new
   }
 }
 ```
+
+---
+
+## 5. Unbound Generic Blueprint Scope & Manifest Discovery
+
+### 5.1 Upward Project Manifest Discovery
+When opening or editing a file in a multi-directory workspace or nested package (such as `solixlib/project/src/solix/collections/HashSet.slx`), the Language Server searches upwards from the target file directory to locate the nearest `solix.json`. If found, all source dependencies declared in the project manifest are loaded and compiled into the analysis context, preventing false-positive undefined import errors regardless of the root workspace URI passed during LSP initialization.
+
+### 5.2 Lexical Scope Traversal for Generic Blueprints
+In the Solix compiler, generic template blueprints (classes with template parameters `<T>`) defer semantic binding until instantiation. To provide full LSP navigation and hover within uninstantiated generic classes:
+1. **Callable Parameter & Local Resolution**: When cursor targets an identifier inside a generic method or constructor, the server traverses the enclosing callable's parameters and AST statement blocks to locate declarations (e.g. `contains(T item)` -> `T item`).
+2. **Chained Member Resolution**: Member accesses on fields (e.g. `this._map.contains_key(item)`) resolve receiver types by inspecting enclosing class fields, mapping generic field types (e.g. `HashMap<T, bool>` -> `HashMap`), and cross-referencing member declarations in external project sources.
+

@@ -14,11 +14,14 @@ The language server handles completions based on cursor context and trigger char
 ### Member Dot Completion (`receiver.`)
 When the user types `.` after an expression:
 1. The language server determines the receiver expression to the left of `.`.
-2. Resolves the receiver's type using the spatial AST index and symbol table.
+2. Resolves the receiver's type using the spatial AST index and symbol table:
+   - `this.`: Resolves to the enclosing class declaration, offering all class fields and methods.
+   - Field access (e.g. `this._map.` or `_map.`): Inspects enclosing class fields, extracting declared type information and stripping generic arguments to resolve the underlying class (e.g. `HashMap<K, V>` -> `HashMap`).
 3. Enumerates members of the declaring class:
    - Methods: mapped to `CompletionItemKind::Method` (`2`) with parameter signatures and `()` snippet insert text.
    - Fields: mapped to `CompletionItemKind::Field` (`5`) with field type details.
-4. If the receiver is invalid or unknown, returns an empty item list without error.
+4. **Resilient AST Preservation**: During live typing, transient syntax errors on unfinished statements do not clear cached class declarations, ensuring completions remain responsive and available on every keystroke.
+5. If the receiver is invalid or unknown, returns an empty item list without error.
 
 ### General Scope Completion
 When requested outside member dot access:
