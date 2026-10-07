@@ -2369,6 +2369,99 @@ Create, bundle, and document the official Solix VS Code extension providing rich
 - [x] Verified extension build and packaging producing `solix-0.1.0.vsix`.
 - [x] Document VS Code installation instructions (`code --install-extension editors/vscode/solix-0.1.0.vsix`) in `docs/guide/editors_vscode.md`.
 
+---
+
+## Phase 50: LSP Core Fixes — Stable Source Resolution & Syntax Highlighting Overhaul
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `core/src/processes/lexer.cpp`, `lsp/src/server.cpp`, `editors/vscode/syntaxes/solix.tmLanguage.json`, `tests/commands/TESTS.md`, `tests/commands/test_lsp_command.cpp`, `docs/spec/lsp/`
+- **Status**: - [ ] In Progress
+
+### Objective
+Resolve the critical dangling pointer bug in `Token.source` that breaks Go-to-Definition across files in VS Code, and update the TextMate grammar (`solix.tmLanguage.json`) to highlight all Solix keywords (`implements`, `extends`, `operator`, `assert`, `exit`, `weak`, `instanceof`, `sizeof`), properly styling class identifiers distinctly from general keywords.
+
+### Action Items
+- [ ] Fix Lexer source pointer stability in `core/src/processes/lexer.cpp` (bind `Token.source` to permanent storage or map source names safely).
+- [ ] Update `make_location_from_node` in `lsp/src/server.cpp` to reliably resolve source file paths even across multiple files.
+- [ ] Expand TextMate syntax grammar (`editors/vscode/syntaxes/solix.tmLanguage.json`) with missing keywords and dedicated `entity.name.type.class.solix` coloring for classes after `class` / `interface` / `extends` / `implements`.
+- [ ] Update `tests/commands/TESTS.md` with new test scenarios for multi-file definition resolution and TextMate grammar completeness.
+- [ ] Add unit tests in `tests/commands/test_lsp_command.cpp` verifying multi-file Go-to-Definition.
+- [ ] Document grammar and location resolution specifications in `docs/spec/lsp/protocol.md`.
+
+---
+
+## Phase 51: LSP Navigation & Multi-Step Definition Chaining Across All Constructs
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `lsp/src/server.cpp`, `lsp/src/spatial_index.cpp`, `tests/commands/TESTS.md`, `tests/commands/test_lsp_command.cpp`, `docs/spec/lsp/navigation.md`
+- **Status**: - [ ] Pending
+
+### Objective
+Implement multi-step Go-to-Definition chaining and type coordinate resolution across all Solix statements and expressions:
+1. Variable reference -> Variable declaration -> Variable type's Class declaration.
+2. Type annotations in variable declarations (`Calculator c;`), field declarations, return types, parameters, casts, and `new` instances jump directly to the target `ClassDeclaration` / `EnumDeclaration`.
+3. Method calls -> Method declaration -> Overridden base method (if `override`).
+4. `extends` and `implements` targets jump to base class / interface definitions.
+5. `catch` parameter types jump to exception class definition.
+
+### Action Items
+- [ ] Extend `spatial_index.cpp` and `server.cpp` to resolve type annotation spans for `VariableDeclaration`, `FieldDeclaration`, `MethodDeclaration`, `NewInstanceExpression`, `CastExpression`, `CatchClause`.
+- [ ] Implement definition chaining: jump from variable declaration to its class declaration.
+- [ ] Implement base-class and interface jumping for `ClassDeclaration` inheritance clauses.
+- [ ] Update `tests/commands/TESTS.md` with definition chaining test scenarios.
+- [ ] Add Catch2 test cases in `tests/commands/test_lsp_command.cpp`.
+- [ ] Update `docs/spec/lsp/navigation.md`.
+
+---
+
+## Phase 52: Full Symbol Hover Formatting & Keyword Suppression
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `lsp/src/server.cpp`, `tests/commands/TESTS.md`, `tests/commands/test_lsp_command.cpp`, `docs/spec/lsp/navigation.md`
+- **Status**: - [ ] Pending
+
+### Objective
+Provide complete symbol declarations and signatures on hover for every Solix construct while suppressing redundant or intrusive hovers on language keywords (`if`, `while`, `class`, `public`, `return`, `try`, etc.):
+- Variables & Fields: `[modifiers] [const] <Type> <Name>`
+- Methods: `[modifiers] <ReturnType> <MethodName>(<ParamType> <ParamName>, ...)`
+- Constructors & `new`: `[modifiers] <ClassName>(<ParamType> <ParamName>, ...)`
+- Classes & Interfaces: `[modifiers] class <Name> [: <Base>] [implements <I1>, ...]`
+- Enums & Enum Members: `enum <Name>` and `<Name>.<Member> = <Value>`
+- Aliases: `alias <Name> = <TargetType>`
+
+### Action Items
+- [ ] Refactor `format_hover_for_node` in `lsp/src/server.cpp` to eliminate truncation and default fallthrough for `MEMBER_ACCESS`, `METHOD_CALL`, and `NEW_INSTANCE`.
+- [ ] Implement keyword hover suppression: do not display hover tooltips when hovering over Solix keywords or punctuation tokens.
+- [ ] Update `tests/commands/TESTS.md` with complete symbol hover test scenarios.
+- [ ] Add Catch2 unit tests in `tests/commands/test_lsp_command.cpp`.
+- [ ] Update `docs/spec/lsp/navigation.md`.
+
+---
+
+## Phase 53: Context-Aware Autocompletion & Extension Packaging Verification
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `lsp/src/server.cpp`, `editors/vscode/`, `tests/commands/TESTS.md`, `tests/commands/test_lsp_command.cpp`, `docs/spec/lsp/intelligence.md`
+- **Status**: - [ ] Pending
+
+### Objective
+Implement context-aware intelligent autocompletion:
+1. When declaring a class (`class <cursor>`), suppress existing class names.
+2. After `extends ` or `:`, suggest only classes (exclude interfaces and current class).
+3. After `implements `, suggest only interfaces.
+4. After `new `, suggest instantiable classes with `()` constructor snippets.
+5. After `case `, suggest enum members when switching on an enum.
+Rebuild and repackage the official VS Code extension (`solix-0.1.0.vsix`) and reinstall it to the local environment.
+
+### Action Items
+- [ ] Implement context analysis in `LspServer::handle_completion` for `class`, `extends`, `implements`, `new`, and `case`.
+- [ ] Update `tests/commands/TESTS.md` with context-aware completion test cases.
+- [ ] Add Catch2 unit tests in `tests/commands/test_lsp_command.cpp`.
+- [ ] Rebuild `editors/vscode/` and package new `.vsix`.
+- [ ] Reinstall extension to `~/.vscode/extensions/solix.solix-0.1.0/`.
+- [ ] Update `docs/spec/lsp/intelligence.md`.
+
+
 
 
 
