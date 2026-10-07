@@ -589,6 +589,11 @@ std::string format_hover_for_node(Node* node, CompilationContext* ctx) {
             md = "```solix\npackage " + p->package_name + ";\n```";
             break;
         }
+        case NodeType::IMPORT_STMT: {
+            auto* imp = static_cast<ImportStatement*>(node);
+            md = "```solix\nimport " + imp->package_name + "." + imp->symbol_name + ";\n```";
+            break;
+        }
         case NodeType::ALIAS_STMT: {
             auto* a = static_cast<AliasStatement*>(node);
             md = "```solix\nalias " + a->alias_name + " = " + a->target_type.to_string() + "\n```";
@@ -1079,6 +1084,17 @@ void LspServer::handle_definition(const nlohmann::json& id, const nlohmann::json
             } else if (hit->node_type == NodeType::CATCH_CLAUSE) {
                 auto* cc = static_cast<CatchClause*>(hit);
                 target = find_type_declaration(cc->exception_type.name, last_context_.get());
+            } else if (hit->node_type == NodeType::IMPORT_STMT) {
+                auto* imp = static_cast<ImportStatement*>(hit);
+                if (imp->symbol_name != "*") {
+                    target = find_type_declaration(imp->symbol_name, last_context_.get());
+                    if (!target) {
+                        target = find_type_declaration(imp->package_name + "." + imp->symbol_name, last_context_.get());
+                    }
+                }
+                if (!target) {
+                    target = hit;
+                }
             } else {
                 target = hit->resolved_declaration;
                 if (!target && hit->parent && hit->parent->resolved_declaration) {
@@ -1097,7 +1113,7 @@ void LspServer::handle_definition(const nlohmann::json& id, const nlohmann::json
                     if (hit->node_type == NodeType::VAR_DECL || hit->node_type == NodeType::METHOD_DECL ||
                         hit->node_type == NodeType::CLASS_DECL || hit->node_type == NodeType::FIELD_DECL ||
                         hit->node_type == NodeType::ENUM_DECL || hit->node_type == NodeType::ALIAS_STMT ||
-                        hit->node_type == NodeType::PACKAGE_STMT) {
+                        hit->node_type == NodeType::PACKAGE_STMT || hit->node_type == NodeType::IMPORT_STMT) {
                         target = hit;
                     }
                 }
@@ -1210,7 +1226,7 @@ void LspServer::handle_hover(const nlohmann::json& id, const nlohmann::json& par
     Node* hit = spatial_index_.find_node_at(file_path, line, character);
 
     if (!word.empty() && is_keyword(word)) {
-        if (!hit || hit->node_type != NodeType::PACKAGE_STMT) {
+        if (!hit || (hit->node_type != NodeType::PACKAGE_STMT && hit->node_type != NodeType::IMPORT_STMT)) {
             transport_.send_response(id, nullptr);
             return;
         }
@@ -1364,6 +1380,15 @@ void LspServer::handle_document_symbol(const nlohmann::json& id, const nlohmann:
                 m_sym.range = node_to_lsp_range(m);
                 m_sym.selectionRange = m_sym.range;
                 symbols.push_back(m_sym);
+            } else if (node->node_type == NodeType::ALIAS_STMT) {
+                auto* as = static_cast<AliasStatement*>(node.get());
+                DocumentSymbol as_sym;
+                as_sym.name = as->alias_name;
+                as_sym.detail = as->target_type.to_string();
+                as_sym.kind = static_cast<int>(SymbolKind::TypeParameter);
+                as_sym.range = node_to_lsp_range(as);
+                as_sym.selectionRange = as_sym.range;
+                symbols.push_back(as_sym);
             }
         }
     }
@@ -1406,12 +1431,26 @@ void LspServer::handle_completion(const nlohmann::json& id, const nlohmann::json
                             ? current_line.substr(0, character) 
                             : current_line;
 
+    // Check if this is a declaration directive line (package, import, alias)
+    bool is_decl_directive_line = false;
+    {
+        size_t first_non_ws = prefix.find_first_not_of(" \t");
+        if (first_non_ws != std::string::npos) {
+            std::string rem = prefix.substr(first_non_ws);
+            if (rem == "import" || rem.rfind("import ", 0) == 0 || rem.rfind("import\t", 0) == 0 ||
+                rem == "package" || rem.rfind("package ", 0) == 0 || rem.rfind("package\t", 0) == 0 ||
+                rem == "alias" || rem.rfind("alias ", 0) == 0 || rem.rfind("alias\t", 0) == 0) {
+                is_decl_directive_line = true;
+            }
+        }
+    }
+
     // Check if this is a dot completion (e.g. "obj." or "obj.part")
     size_t last_dot = prefix.rfind('.');
     bool is_dot_access = false;
     std::string receiver_name;
 
-    if (last_dot != std::string::npos) {
+    if (!is_decl_directive_line && last_dot != std::string::npos) {
         // Ensure characters between last_dot and end of prefix are valid identifier characters
         bool valid_suffix = true;
         for (size_t i = last_dot + 1; i < prefix.size(); ++i) {
@@ -1547,6 +1586,9 @@ void LspServer::handle_completion(const nlohmann::json& id, const nlohmann::json
     enum class CompletionContext {
         GENERAL,
         PACKAGE_DECL,
+        IMPORT_STMT,
+        ALIAS_NAME_DECL,
+        ALIAS_TARGET,
         CLASS_NAME_DECL,
         EXTENDS,
         IMPLEMENTS,
@@ -1556,10 +1598,20 @@ void LspServer::handle_completion(const nlohmann::json& id, const nlohmann::json
 
     CompletionContext ctx = CompletionContext::GENERAL;
     if (!tokens.empty()) {
-        // Check if cursor is after package keyword (e.g. "package " or "package com.foo.")
         bool has_package_keyword = false;
+        bool has_import_keyword = false;
+        bool has_alias_keyword = false;
+        bool has_equals_after_alias = false;
         for (const auto& t : tokens) {
-            if (t == "package") { has_package_keyword = true; break; }
+            if (t == "package") {
+                has_package_keyword = true;
+            } else if (t == "import") {
+                has_import_keyword = true;
+            } else if (t == "alias") {
+                has_alias_keyword = true;
+            } else if (has_alias_keyword && t == "=") {
+                has_equals_after_alias = true;
+            }
         }
 
         bool trailing_space = prefix.empty() || std::isspace(prefix.back());
@@ -1568,6 +1620,12 @@ void LspServer::handle_completion(const nlohmann::json& id, const nlohmann::json
 
         if (has_package_keyword) {
             ctx = CompletionContext::PACKAGE_DECL;
+        } else if (has_import_keyword) {
+            ctx = CompletionContext::IMPORT_STMT;
+        } else if (has_alias_keyword && has_equals_after_alias) {
+            ctx = CompletionContext::ALIAS_TARGET;
+        } else if (has_alias_keyword && !has_equals_after_alias) {
+            ctx = CompletionContext::ALIAS_NAME_DECL;
         } else if (trailing_space) {
             if (last_token == "class") {
                 ctx = CompletionContext::CLASS_NAME_DECL;
@@ -1657,6 +1715,254 @@ void LspServer::handle_completion(const nlohmann::json& id, const nlohmann::json
             item.detail = "package " + pkg;
             item.insertText = pkg;
             comp_list.items.push_back(item);
+        }
+
+        transport_.send_response(id, comp_list);
+        return;
+    }
+
+    // IMPORT_STMT: Suggest packages, subpackages, package members, and wildcard
+    if (ctx == CompletionContext::IMPORT_STMT) {
+        std::unordered_set<std::string> seen_labels;
+
+        size_t imp_pos = prefix.find("import");
+        std::string after_import;
+        if (imp_pos != std::string::npos) {
+            after_import = prefix.substr(imp_pos + 6);
+        }
+        size_t start_idx = after_import.find_first_not_of(" \t");
+        std::string typed_path = (start_idx != std::string::npos) ? after_import.substr(start_idx) : "";
+
+        // Collect all known packages
+        std::unordered_set<std::string> known_pkgs;
+        static const std::vector<std::string> stdlib_packages = {
+            "solix.core",
+            "solix.system",
+            "solix.collections",
+            "solix.io",
+            "solix.io.filesystem",
+            "solix.math",
+            "solix.time",
+            "solix.exceptions",
+            "solix.crypto"
+        };
+        for (const auto& sp : stdlib_packages) known_pkgs.insert(sp);
+
+        if (last_context_) {
+            for (const auto& [src, nodes] : last_context_->nodes) {
+                for (const auto& n : nodes) {
+                    if (n && n->node_type == NodeType::PACKAGE_STMT) {
+                        auto* ps = static_cast<PackageStatement*>(n.get());
+                        if (!ps->package_name.empty()) {
+                            known_pkgs.insert(ps->package_name);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Relative path heuristic from workspace_root_ / "src"
+        if (!workspace_root_.empty()) {
+            try {
+                std::filesystem::path src_dir = std::filesystem::path(workspace_root_) / "src";
+                if (std::filesystem::exists(src_dir) && std::filesystem::is_directory(src_dir)) {
+                    for (const auto& entry : std::filesystem::recursive_directory_iterator(src_dir)) {
+                        if (entry.is_directory()) {
+                            std::filesystem::path rel = std::filesystem::relative(entry.path(), src_dir);
+                            std::string rel_str = rel.string();
+                            std::string pkg_str;
+                            for (char c : rel_str) {
+                                if (c == '/' || c == '\\') pkg_str += '.';
+                                else pkg_str += c;
+                            }
+                            if (!pkg_str.empty()) known_pkgs.insert(pkg_str);
+                        }
+                    }
+                }
+            } catch (...) {}
+        }
+
+        size_t last_dot_in_path = typed_path.rfind('.');
+        if (last_dot_in_path == std::string::npos) {
+            // Root level: suggest known packages and top-level packages
+            for (const auto& pkg : known_pkgs) {
+                if (seen_labels.insert(pkg).second) {
+                    CompletionItem item;
+                    item.label = pkg;
+                    item.kind = static_cast<int>(CompletionItemKind::Module);
+                    item.detail = "package " + pkg;
+                    item.insertText = pkg;
+                    comp_list.items.push_back(item);
+                }
+                size_t first_dot = pkg.find('.');
+                if (first_dot != std::string::npos) {
+                    std::string root_seg = pkg.substr(0, first_dot);
+                    if (seen_labels.insert(root_seg).second) {
+                        CompletionItem item;
+                        item.label = root_seg;
+                        item.kind = static_cast<int>(CompletionItemKind::Module);
+                        item.detail = "package " + root_seg;
+                        item.insertText = root_seg;
+                        comp_list.items.push_back(item);
+                    }
+                }
+            }
+        } else {
+            // Package member completion: after dot
+            std::string target_pkg = typed_path.substr(0, last_dot_in_path);
+
+            // 1. Wildcard import
+            CompletionItem wc_item;
+            wc_item.label = "*";
+            wc_item.kind = static_cast<int>(CompletionItemKind::Keyword);
+            wc_item.detail = "Wildcard import (all symbols in " + target_pkg + ")";
+            wc_item.insertText = "*";
+            comp_list.items.push_back(wc_item);
+            seen_labels.insert("*");
+
+            // 2. Subpackages under target_pkg
+            std::string prefix_match = target_pkg + ".";
+            for (const auto& pkg : known_pkgs) {
+                if (pkg.rfind(prefix_match, 0) == 0) {
+                    std::string rest = pkg.substr(prefix_match.size());
+                    size_t next_dot = rest.find('.');
+                    std::string next_segment = (next_dot != std::string::npos) ? rest.substr(0, next_dot) : rest;
+                    if (seen_labels.insert(next_segment).second) {
+                        CompletionItem item;
+                        item.label = next_segment;
+                        item.kind = static_cast<int>(CompletionItemKind::Module);
+                        item.detail = "package " + target_pkg + "." + next_segment;
+                        item.insertText = next_segment;
+                        comp_list.items.push_back(item);
+                    }
+                }
+            }
+
+            // 3. Symbols declared in target_pkg
+            if (last_context_) {
+                for (const auto& [src, nodes] : last_context_->nodes) {
+                    std::string file_pkg;
+                    for (const auto& n : nodes) {
+                        if (n && n->node_type == NodeType::PACKAGE_STMT) {
+                            file_pkg = static_cast<PackageStatement*>(n.get())->package_name;
+                            break;
+                        }
+                    }
+
+                    for (const auto& n : nodes) {
+                        if (!n) continue;
+                        if (n->node_type == NodeType::CLASS_DECL) {
+                            auto* cd = static_cast<ClassDeclaration*>(n.get());
+                            bool in_pkg = (!file_pkg.empty() && file_pkg == target_pkg) ||
+                                          (cd->mangled_name.rfind(prefix_match, 0) == 0);
+                            if (in_pkg && seen_labels.insert(cd->class_name).second) {
+                                CompletionItem item;
+                                item.label = cd->class_name;
+                                item.kind = cd->is_interface ? static_cast<int>(CompletionItemKind::Interface) : static_cast<int>(CompletionItemKind::Class);
+                                item.detail = (cd->is_interface ? "interface " : "class ") + cd->class_name;
+                                item.insertText = cd->class_name;
+                                comp_list.items.push_back(item);
+                            }
+                        } else if (n->node_type == NodeType::ENUM_DECL) {
+                            auto* ed = static_cast<EnumDeclaration*>(n.get());
+                            bool in_pkg = (!file_pkg.empty() && file_pkg == target_pkg) ||
+                                          (ed->mangled_name.rfind(prefix_match, 0) == 0);
+                            if (in_pkg && seen_labels.insert(ed->enum_name).second) {
+                                CompletionItem item;
+                                item.label = ed->enum_name;
+                                item.kind = static_cast<int>(CompletionItemKind::Enum);
+                                item.detail = "enum " + ed->enum_name;
+                                item.insertText = ed->enum_name;
+                                comp_list.items.push_back(item);
+                            }
+                        } else if (n->node_type == NodeType::ALIAS_STMT) {
+                            auto* as = static_cast<AliasStatement*>(n.get());
+                            bool in_pkg = (!file_pkg.empty() && file_pkg == target_pkg) ||
+                                          (as->mangled_name.rfind(prefix_match, 0) == 0);
+                            if (in_pkg && seen_labels.insert(as->alias_name).second) {
+                                CompletionItem item;
+                                item.label = as->alias_name;
+                                item.kind = static_cast<int>(CompletionItemKind::Reference);
+                                item.detail = "alias " + as->alias_name + " = " + as->target_type.to_string();
+                                item.insertText = as->alias_name;
+                                comp_list.items.push_back(item);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        transport_.send_response(id, comp_list);
+        return;
+    }
+
+    // ALIAS_NAME_DECL: when typing new alias name, do NOT suggest existing type names
+    if (ctx == CompletionContext::ALIAS_NAME_DECL) {
+        transport_.send_response(id, comp_list);
+        return;
+    }
+
+    // ALIAS_TARGET: Suggest primitive types, classes, interfaces, enums, existing aliases
+    if (ctx == CompletionContext::ALIAS_TARGET) {
+        std::unordered_set<std::string> seen_labels;
+
+        // 1. Primitive types
+        static const std::vector<std::string> primitive_types = {
+            "int8", "int16", "int32", "int64",
+            "uint8", "uint16", "uint32", "uint64",
+            "float32", "float64",
+            "bool", "char", "string", "void", "any"
+        };
+        for (const auto& pt : primitive_types) {
+            if (seen_labels.insert(pt).second) {
+                CompletionItem item;
+                item.label = pt;
+                item.kind = static_cast<int>(CompletionItemKind::Keyword);
+                item.detail = "primitive type";
+                item.insertText = pt;
+                comp_list.items.push_back(item);
+            }
+        }
+
+        // 2. Classes, Interfaces, Enums, and Aliases from context
+        if (last_context_) {
+            for (const auto& [src, nodes] : last_context_->nodes) {
+                for (const auto& n : nodes) {
+                    if (!n) continue;
+                    if (n->node_type == NodeType::CLASS_DECL) {
+                        auto* cd = static_cast<ClassDeclaration*>(n.get());
+                        if (seen_labels.insert(cd->class_name).second) {
+                            CompletionItem item;
+                            item.label = cd->class_name;
+                            item.kind = cd->is_interface ? static_cast<int>(CompletionItemKind::Interface) : static_cast<int>(CompletionItemKind::Class);
+                            item.detail = cd->is_interface ? "interface " + cd->class_name : "class " + cd->class_name;
+                            item.insertText = cd->class_name;
+                            comp_list.items.push_back(item);
+                        }
+                    } else if (n->node_type == NodeType::ENUM_DECL) {
+                        auto* ed = static_cast<EnumDeclaration*>(n.get());
+                        if (seen_labels.insert(ed->enum_name).second) {
+                            CompletionItem item;
+                            item.label = ed->enum_name;
+                            item.kind = static_cast<int>(CompletionItemKind::Enum);
+                            item.detail = "enum " + ed->enum_name;
+                            item.insertText = ed->enum_name;
+                            comp_list.items.push_back(item);
+                        }
+                    } else if (n->node_type == NodeType::ALIAS_STMT) {
+                        auto* as = static_cast<AliasStatement*>(n.get());
+                        if (seen_labels.insert(as->alias_name).second) {
+                            CompletionItem item;
+                            item.label = as->alias_name;
+                            item.kind = static_cast<int>(CompletionItemKind::Reference);
+                            item.detail = "alias " + as->alias_name + " = " + as->target_type.to_string();
+                            item.insertText = as->alias_name;
+                            comp_list.items.push_back(item);
+                        }
+                    }
+                }
+            }
         }
 
         transport_.send_response(id, comp_list);
@@ -1894,6 +2200,14 @@ void LspServer::handle_completion(const nlohmann::json& id, const nlohmann::json
                     item.label = ed->enum_name;
                     item.kind = static_cast<int>(CompletionItemKind::Enum);
                     item.insertText = ed->enum_name;
+                    comp_list.items.push_back(item);
+                } else if (n && n->node_type == NodeType::ALIAS_STMT) {
+                    auto* as = static_cast<AliasStatement*>(n.get());
+                    CompletionItem item;
+                    item.label = as->alias_name;
+                    item.kind = static_cast<int>(CompletionItemKind::Reference);
+                    item.detail = "alias " + as->alias_name + " = " + as->target_type.to_string();
+                    item.insertText = as->alias_name;
                     comp_list.items.push_back(item);
                 }
             }
