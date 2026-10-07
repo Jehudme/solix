@@ -1,0 +1,26 @@
+package solix.system;
+
+import solix.core.IStringable;
+import solix.core.String;
+
+public class ProcessResult implements IStringable {
+    public int32 exit_code;
+    public String standard_output;
+    public String standard_error;
+
+    public ProcessResult() {
+        this.exit_code = 0;
+        this.standard_output = new String("");
+        this.standard_error = new String("");
+    }
+
+    public ProcessResult(int32 exit_code, String standard_output, String standard_error) {
+        this.exit_code = exit_code;
+        this.standard_output = (standard_output != null) ? standard_output : new String("");
+        this.standard_error = (standard_error != null) ? standard_error : new String("");
+    }
+
+    public String to_string() {
+        return this.standard_output;
+    }
+}

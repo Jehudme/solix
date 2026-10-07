@@ -1,0 +1,91 @@
+package solix.system;
+
+import solix.core.String;
+import solix.collections.List;
+import solix.collections.HashMap;
+
+public class Environment {
+    public static String get_env(String key) {
+        if (key == null || key.data == null) return null;
+        char[] val = native_get_env(key.data);
+        if (val == null) return null;
+        return new String(val);
+    }
+
+    public static void set_env(String key, String value) {
+        if (key == null || key.data == null) return;
+        char[] val_data = (value != null && value.data != null) ? value.data : "";
+        native_set_env(key.data, val_data);
+    }
+
+    public static HashMap<String, String> get_all_env() {
+        HashMap<String, String> map = new HashMap<String, String>();
+        char[] raw = native_get_all_env();
+        if (raw == null || raw.length == 0) return map;
+        String combined = new String(raw);
+        String nl = new String("\n");
+        String eq = new String("=");
+        String[] lines = combined.split(nl);
+        for (int32 i = 0; i < lines.length; i = i + 1) {
+            String line = lines[i];
+            int32 eq_idx = line.index_of(eq);
+            if (eq_idx > 0) {
+                String k = line.substring(0, eq_idx);
+                String v = line.substring(eq_idx + 1);
+                map.put(k, v);
+            }
+        }
+        return map;
+    }
+
+    public static List<String> get_args() {
+        List<String> list = new List<String>();
+        char[] raw = native_get_args();
+        if (raw == null || raw.length == 0) return list;
+        String combined = new String(raw);
+        String nl = new String("\n");
+        String[] parts = combined.split(nl);
+        for (int32 i = 0; i < parts.length; i = i + 1) {
+            String p = parts[i];
+            if (p.length() > 0) {
+                list.add(p);
+            }
+        }
+        return list;
+    }
+
+    public static String os_name() {
+        return new String(native_os_name());
+    }
+
+    public static String os_version() {
+        return new String(native_os_version());
+    }
+
+    public static bool is_windows() {
+        return native_is_windows();
+    }
+
+    public static bool is_linux() {
+        return native_is_linux();
+    }
+
+    public static bool is_macos() {
+        return native_is_macos();
+    }
+
+    public static int32 processor_count() {
+        return (int32)native_processor_count();
+    }
+
+    private static native char[] native_get_env(char[] key);
+    private static native void native_set_env(char[] key, char[] value);
+    private static native char[] native_get_all_env();
+    private static native char[] native_get_args();
+    private static native char[] native_os_name();
+    private static native char[] native_os_version();
+    private static native bool native_is_windows();
+    private static native bool native_is_linux();
+    private static native bool native_is_macos();
+    private static native int64 native_processor_count();
+}

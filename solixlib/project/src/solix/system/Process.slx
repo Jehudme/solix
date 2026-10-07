@@ -1,0 +1,103 @@
+package solix.system;
+
+import solix.core.String;
+import solix.collections.List;
+
+public class Process {
+    private String _command;
+    private List<String> _args;
+    private int64 _handle;
+    private int32 _exit_code;
+    private bool _started;
+    private bool _exited;
+
+    public Process(String command) {
+        this._command = command;
+        this._args = new List<String>();
+        this._handle = 0L;
+        this._exit_code = -1;
+        this._started = false;
+        this._exited = false;
+    }
+
+    public Process(String command, List<String> args) {
+        this._command = command;
+        this._args = (args != null) ? args : new List<String>();
+        this._handle = 0L;
+        this._exit_code = -1;
+        this._started = false;
+        this._exited = false;
+    }
+
+    public void start() {
+        if (this._started) return;
+        char[] cmd = (this._command != null && this._command.data != null) ? this._command.data : "";
+        String joined = new String("");
+        if (this._args != null) {
+            for (int32 i = 0; i < this._args.size(); i = i + 1) {
+                if (i > 0) {
+                    joined = joined.concat(new String("\t"));
+                }
+                joined = joined.concat(this._args.get(i));
+            }
+        }
+        char[] args_data = (joined.data != null) ? joined.data : "";
+        this._handle = native_start(cmd, args_data);
+        this._started = true;
+    }
+
+    public int32 wait_for_exit() {
+        if (!this._started) {
+            this.start();
+        }
+        if (!this._exited) {
+            this._exit_code = native_wait_for_exit(this._handle);
+            this._exited = true;
+        }
+        return this._exit_code;
+    }
+
+    public String get_standard_output() {
+        if (!this._started) return new String("");
+        return new String(native_get_stdout(this._handle));
+    }
+
+    public String get_standard_error() {
+        if (!this._started) return new String("");
+        return new String(native_get_stderr(this._handle));
+    }
+
+    public void kill() {
+        if (this._started && !this._exited) {
+            native_kill(this._handle);
+            this._exited = true;
+        }
+    }
+
+    public int32 exit_code() {
+        return this._exit_code;
+    }
+
+    public bool has_exited() {
+        return this._exited;
+    }
+
+    public static ProcessResult run(String command, List<String> args) {
+        Process p = new Process(command, args);
+        p.start();
+        int32 code = p.wait_for_exit();
+        String out = p.get_standard_output();
+        String err = p.get_standard_error();
+        return new ProcessResult(code, out, err);
+    }
+
+    public static ProcessResult run(String command) {
+        return Process.run(command, new List<String>());
+    }
+
+    private static native int64 native_start(char[] command, char[] args);
+    private static native int32 native_wait_for_exit(int64 handle);
+    private static native char[] native_get_stdout(int64 handle);
+    private static native char[] native_get_stderr(int64 handle);
+    private static native void native_kill(int64 handle);
+}

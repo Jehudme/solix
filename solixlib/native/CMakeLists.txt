@@ -7,6 +7,7 @@ add_library(solixlib_native SHARED
     src/time.cpp
     src/io_fs.cpp
     src/io_stream.cpp
+    src/system.cpp
 )
 
 
