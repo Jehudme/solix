@@ -54,8 +54,8 @@
 | **Phase 32.4** | Emergency Refactor: Generic Associative Containers (`KeyValuePair<K, V>`, `HashMap<K, V>`, `TreeMap<K, V>`, `HashSet<T>`, `TreeSet<T>`) with `for_each` | `P0 Blocker` | `solixlib/collections`, `tests` | - [x] Complete |
 | **Phase 32.5** | Emergency Refactor: Align Filesystem (`File.slx`, `Directory.slx`) with `List<String>`, Update `test_filesystem.cpp`, Specs & Regression | `P0 Blocker` | `solixlib/io`, `docs`, `tests` | - [x] Complete |
 | **Phase 32.6** | CLI Build Ergonomics & Manifest Dependency Alignment (Positional Target & `name@version` Dependencies) | `P0 Blocker` | `cli`, `docs`, `tests` | - [x] Complete |
-| **Phase 32.7** | Standard Library: Structural Consolidation & Encapsulation (`Exceptions.slx`, `Interfaces.slx`, Node Encapsulation) | `P0 Blocker` | `solixlib`, `docs`, `tests` | - [ ] Planned |
-| **Phase 32.8** | Standard Library: Polymorphic Generic Collection Hierarchy & Interface Re-binding (`IList<T>`, `IMap<K, V>`, `ISet<T>`) | `P0 Blocker` | `solixlib/collections`, `docs`, `tests` | - [ ] Planned |
+| **Phase 32.7** | Standard Library: Structural Consolidation & Encapsulation (`Exceptions.slx`, `Interfaces.slx`, Node Encapsulation) | `P0 Blocker` | `solixlib`, `docs`, `tests` | - [x] Complete |
+| **Phase 32.8** | Standard Library: Polymorphic Generic Collection Hierarchy & Interface Re-binding (`IList<T>`, `IMap<K, V>`, `ISet<T>`) | `P0 Blocker` | `solixlib/collections`, `docs`, `tests` | - [x] Complete |
 | **Phase 32.9** | Standard Library: Complete Boxed Primitives (`Byte`..`ULong`, `Float`), Boxed Operator Overloads & `Optional<T>` Functional Parity (`map`, `flat_map`) | `P0 Blocker` | `solixlib/core`, `docs`, `tests` | - [ ] Planned |
 | **Phase 32.10** | Standard Library: Collection Ergonomics (Copy Constructors, Array Initializers, `map`, `reduce`) & String Primitive Constructors | `P1 High` | `solixlib/collections`, `solixlib/core`, `docs`, `tests` | - [ ] Planned |
 | **Phase 32.11** | Standard Library: Chrono & Time Ergonomics (Duration/Instant Operator Overloading, `DateTime.format` Pattern Formatting) | `P1 High` | `solixlib/time`, `docs`, `tests` | - [ ] Planned |
@@ -1783,7 +1783,7 @@ Resolve namespace pollution and contract fragmentation ("the tiny file problem")
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `solixlib/project/src/solix/collections/Interfaces.slx`, `List.slx`, `LinkedList.slx`, `Stack.slx`, `Queue.slx`, `Deque.slx`, `PriorityQueue.slx`, `CircularBuffer.slx`, `HashSet.slx`, `TreeSet.slx`, `HashMap.slx`, `TreeMap.slx`, `tests/solixlib/test_collections.cpp`, `docs/spec/solixlib/collections.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Complete
 
 ### Objective
 Restore polymorphic collection framework broken by the previous refactor:
@@ -1791,16 +1791,16 @@ Restore polymorphic collection framework broken by the previous refactor:
 2. Re-bind all concrete collection classes to their respective generic interfaces:
    - `List<T>` implements `IList<T>`, `ICollection<T>`, `IIterable<T>`, `IStringable`
    - `LinkedList<T>` implements `IList<T>`, `IDeque<T>`, `ICollection<T>`, `IIterable<T>`, `IStringable`
-   - `HashSet<T>` and `TreeSet<T>` implement `ISet<T>`, `ICollection<T>`, `IIterable<T>`, `IStringable`
+   - `HashSet<T>` and `TreeSet<T>` implement `ISet<T>`, `IReadOnlyCollection<T>`, `IIterable<T>`, `IStringable`
    - `HashMap<K, V>` and `TreeMap<K, V>` implement `IMap<K, V>`, `IStringable`
-   - Linear containers (`Stack<T>`, `Queue<T>`, `Deque<T>`, `PriorityQueue<T>`, `CircularBuffer<T>`) implement `ICollection<T>`, `IIterable<T>`, `IStringable`
+   - Linear containers (`Stack<T>`, `Queue<T>`, `Deque<T>`, `PriorityQueue<T>`, `CircularBuffer<T>`) implement `IReadOnlyCollection<T>` / `IDeque<T>`, `IIterable<T>`, `IStringable`
 3. Verify interface-based polymorphic dispatch, allowing methods to accept `IList<T>`, `ICollection<T>`, or `IMap<K, V>` transparently.
 
 ### Action Items
-- [ ] Update `Interfaces.slx` to define generic contracts (`IIterable<T>`, `ICollection<T>`, `IList<T>`, `ISet<T>`, `IMap<K, V>`, etc.).
-- [ ] Update each concrete collection class to declare interface implementations and match method signatures.
-- [ ] Add unit tests verifying polymorphic passing (`void process(IList<int32> list)` receiving `List<int32>` and `LinkedList<int32>`).
-- [ ] Update `docs/spec/solixlib/collections.md`.
+- [x] Update `Interfaces.slx` to define generic contracts (`IIterable<T>`, `ICollection<T>`, `IList<T>`, `ISet<T>`, `IMap<K, V>`, etc.).
+- [x] Update each concrete collection class to declare interface implementations and match method signatures.
+- [x] Add unit tests verifying polymorphic passing (`void process(IList<int32> list)` receiving `List<int32>` and `LinkedList<int32>`).
+- [x] Update `docs/spec/solixlib/collections_core.md`, `list.md`, `map.md`, `set.md`.
 
 ---
 
