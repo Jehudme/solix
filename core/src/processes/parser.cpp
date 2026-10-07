@@ -1279,10 +1279,13 @@ std::unique_ptr<Node> ParserState::parse_package_statement() {
         consume(TokenType::IDENTIFIER, "Expected sub-package name after '.'")
             .value);
   }
-  consume(TokenType::PUNCTUATION_SEMICOLON,
+  Token semi = consume(TokenType::PUNCTUATION_SEMICOLON,
           "Expected ';' after package declaration");
   log_trace("Declared package: {}", name_str);
-  return std::make_unique<PackageStatement>(pkg, name_str);
+  auto stmt = std::make_unique<PackageStatement>(pkg, name_str);
+  stmt->end_line = semi.end_line;
+  stmt->end_column = semi.end_column;
+  return stmt;
 }
 
 std::unique_ptr<Node> ParserState::parse_alias_statement() {
@@ -1303,13 +1306,15 @@ std::unique_ptr<Node> ParserState::parse_alias_statement() {
 
   consume(TokenType::OPERATOR_ASSIGN, "Expected '=' in alias declaration");
   TypeInfo type = parse_type_info();
-  consume(TokenType::PUNCTUATION_SEMICOLON,
+  Token semi = consume(TokenType::PUNCTUATION_SEMICOLON,
           "Expected ';' after alias declaration");
 
   log_trace("Declared alias '{}' = '{}' (generics count: {})", a_name,
             type.to_string(), tparams.size());
   auto decl = std::make_unique<AliasStatement>(alias, a_name, std::move(type));
   decl->template_parameters = tparams;
+  decl->end_line = semi.end_line;
+  decl->end_column = semi.end_column;
   return decl;
 }
 
@@ -1327,11 +1332,14 @@ std::unique_ptr<Node> ParserState::parse_import_statement() {
     full_path += std::get<std::string>(
         consume(TokenType::IDENTIFIER, "Expected identifier or '*' after '.' or '::'").value);
   }
-  consume(TokenType::PUNCTUATION_SEMICOLON, "Expected ';' after import statement");
+  Token semi = consume(TokenType::PUNCTUATION_SEMICOLON, "Expected ';' after import statement");
 
   if (is_wildcard) {
     log_trace("Declared wildcard import: '{}.*'", full_path);
-    return std::make_unique<ImportStatement>(import_tok, full_path, "*");
+    auto stmt = std::make_unique<ImportStatement>(import_tok, full_path, "*");
+    stmt->end_line = semi.end_line;
+    stmt->end_column = semi.end_column;
+    return stmt;
   }
 
   size_t last_dot = full_path.rfind('.');
@@ -1339,11 +1347,17 @@ std::unique_ptr<Node> ParserState::parse_import_statement() {
     std::string pkg = full_path.substr(0, last_dot);
     std::string sym = full_path.substr(last_dot + 1);
     log_trace("Declared symbol import: '{}' from '{}'", sym, pkg);
-    return std::make_unique<ImportStatement>(import_tok, pkg, sym);
+    auto stmt = std::make_unique<ImportStatement>(import_tok, pkg, sym);
+    stmt->end_line = semi.end_line;
+    stmt->end_column = semi.end_column;
+    return stmt;
   }
 
   log_trace("Declared import: '{}'", full_path);
-  return std::make_unique<ImportStatement>(import_tok, full_path, "");
+  auto stmt = std::make_unique<ImportStatement>(import_tok, full_path, "");
+  stmt->end_line = semi.end_line;
+  stmt->end_column = semi.end_column;
+  return stmt;
 }
 
 std::unique_ptr<Node> ParserState::parse_enum_declaration(TokenType modifier) {

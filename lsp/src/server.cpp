@@ -584,6 +584,11 @@ std::string format_hover_for_node(Node* node, CompilationContext* ctx) {
             md = "```solix\n" + sig + "\n```";
             break;
         }
+        case NodeType::PACKAGE_STMT: {
+            auto* p = static_cast<PackageStatement*>(node);
+            md = "```solix\npackage " + p->package_name + ";\n```";
+            break;
+        }
         case NodeType::ALIAS_STMT: {
             auto* a = static_cast<AliasStatement*>(node);
             md = "```solix\nalias " + a->alias_name + " = " + a->target_type.to_string() + "\n```";
@@ -1004,14 +1009,18 @@ void LspServer::handle_definition(const nlohmann::json& id, const nlohmann::json
     }
 
     std::string word = get_word_at_position(source_text, line, character);
+    Node* target = nullptr;
 
-    // Reserved keywords suppress Go-to-Definition
-    if (is_keyword(word)) {
+    Node* hit = spatial_index_.find_node_at(file_path, line, character);
+    if (hit && hit->node_type == NodeType::PACKAGE_STMT) {
+        target = hit;
+    }
+
+    // Reserved keywords suppress Go-to-Definition unless hovering/clicking on package statement
+    if (!target && is_keyword(word)) {
         transport_.send_response(id, nullptr);
         return;
     }
-
-    Node* target = nullptr;
 
     // 1. Direct type resolution (e.g. extends Base, implements IFoo, type annotations, casts, catch)
     if (!word.empty()) {
@@ -1042,7 +1051,9 @@ void LspServer::handle_definition(const nlohmann::json& id, const nlohmann::json
     if (!target) {
         Node* hit = spatial_index_.find_node_at(file_path, line, character);
         if (hit) {
-            if (hit->node_type == NodeType::METHOD_DECL) {
+            if (hit->node_type == NodeType::PACKAGE_STMT) {
+                target = hit;
+            } else if (hit->node_type == NodeType::METHOD_DECL) {
                 auto* md = static_cast<MethodDeclaration*>(hit);
                 if (md->is_override) {
                     target = find_overridden_method(md, last_context_.get());
@@ -1085,7 +1096,8 @@ void LspServer::handle_definition(const nlohmann::json& id, const nlohmann::json
                 if (!target) {
                     if (hit->node_type == NodeType::VAR_DECL || hit->node_type == NodeType::METHOD_DECL ||
                         hit->node_type == NodeType::CLASS_DECL || hit->node_type == NodeType::FIELD_DECL ||
-                        hit->node_type == NodeType::ENUM_DECL || hit->node_type == NodeType::ALIAS_STMT) {
+                        hit->node_type == NodeType::ENUM_DECL || hit->node_type == NodeType::ALIAS_STMT ||
+                        hit->node_type == NodeType::PACKAGE_STMT) {
                         target = hit;
                     }
                 }
@@ -1195,12 +1207,14 @@ void LspServer::handle_hover(const nlohmann::json& id, const nlohmann::json& par
         }
     }
     std::string word = get_word_at_position(source_text, line, character);
-    if (!word.empty() && is_keyword(word)) {
-        transport_.send_response(id, nullptr);
-        return;
-    }
-
     Node* hit = spatial_index_.find_node_at(file_path, line, character);
+
+    if (!word.empty() && is_keyword(word)) {
+        if (!hit || hit->node_type != NodeType::PACKAGE_STMT) {
+            transport_.send_response(id, nullptr);
+            return;
+        }
+    }
 
     if (hit && hit->node_type == NodeType::VAR_DECL) {
         auto* vd = static_cast<VariableDeclaration*>(hit);
@@ -1532,6 +1546,7 @@ void LspServer::handle_completion(const nlohmann::json& id, const nlohmann::json
     // Determine completion context
     enum class CompletionContext {
         GENERAL,
+        PACKAGE_DECL,
         CLASS_NAME_DECL,
         EXTENDS,
         IMPLEMENTS,
@@ -1541,13 +1556,19 @@ void LspServer::handle_completion(const nlohmann::json& id, const nlohmann::json
 
     CompletionContext ctx = CompletionContext::GENERAL;
     if (!tokens.empty()) {
-        // If the user is typing an identifier right now (cursor at end of word without space),
-        // look at the preceding token(s).
+        // Check if cursor is after package keyword (e.g. "package " or "package com.foo.")
+        bool has_package_keyword = false;
+        for (const auto& t : tokens) {
+            if (t == "package") { has_package_keyword = true; break; }
+        }
+
         bool trailing_space = prefix.empty() || std::isspace(prefix.back());
         std::string last_token = tokens.back();
         std::string prev_token = (tokens.size() >= 2) ? tokens[tokens.size() - 2] : "";
 
-        if (trailing_space) {
+        if (has_package_keyword) {
+            ctx = CompletionContext::PACKAGE_DECL;
+        } else if (trailing_space) {
             if (last_token == "class") {
                 ctx = CompletionContext::CLASS_NAME_DECL;
             } else if (last_token == "extends") {
@@ -1582,6 +1603,64 @@ void LspServer::handle_completion(const nlohmann::json& id, const nlohmann::json
                 ctx = CompletionContext::CASE_EXPR;
             }
         }
+    }
+
+    // 0. PACKAGE_DECL: Suggest packages inferred from file path and known project packages
+    if (ctx == CompletionContext::PACKAGE_DECL) {
+        std::string file_path = uri_to_path(uri);
+        std::unordered_set<std::string> pkg_suggestions;
+
+        // Path heuristic: relative path from workspace_root_ / "src"
+        std::filesystem::path fp = std::filesystem::path(file_path).lexically_normal();
+        std::filesystem::path pdir = fp.parent_path();
+        if (!workspace_root_.empty()) {
+            std::filesystem::path rel;
+            try {
+                rel = std::filesystem::relative(pdir, workspace_root_);
+            } catch (...) {}
+
+            std::string rel_str = rel.string();
+            if (rel_str.rfind("src/", 0) == 0) {
+                rel_str = rel_str.substr(4);
+            } else if (rel_str == "src") {
+                rel_str = "";
+            }
+
+            if (!rel_str.empty() && rel_str != ".") {
+                std::string pkg_from_path;
+                for (char c : rel_str) {
+                    if (c == '/' || c == '\\') pkg_from_path += '.';
+                    else pkg_from_path += c;
+                }
+                if (!pkg_from_path.empty()) pkg_suggestions.insert(pkg_from_path);
+            }
+        }
+
+        // Collect known packages from last_context_
+        if (last_context_) {
+            for (const auto& [src, nodes] : last_context_->nodes) {
+                for (const auto& n : nodes) {
+                    if (n && n->node_type == NodeType::PACKAGE_STMT) {
+                        auto* ps = static_cast<PackageStatement*>(n.get());
+                        if (!ps->package_name.empty()) {
+                            pkg_suggestions.insert(ps->package_name);
+                        }
+                    }
+                }
+            }
+        }
+
+        for (const auto& pkg : pkg_suggestions) {
+            CompletionItem item;
+            item.label = pkg;
+            item.kind = static_cast<int>(CompletionItemKind::Module);
+            item.detail = "package " + pkg;
+            item.insertText = pkg;
+            comp_list.items.push_back(item);
+        }
+
+        transport_.send_response(id, comp_list);
+        return;
     }
 
     // 1. CLASS_NAME_DECL: when typing new class name, do NOT suggest existing class names
