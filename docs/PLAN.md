@@ -66,7 +66,7 @@
 | **Phase 36** | Standard Library: `solix.crypto` (Base64, Hex, SHA-256, MD5) | `P3 Low` | `solixlib`, `solixlib/native`, `tests` | - [x] Completed & Merged |
 | **Phase 37** | Standard Library: `solix.net` (TCP & UDP Sockets, Lightweight `HttpClient`) | `P3 Low` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
 | **Phase 38** | Compiler Diagnostics & Error Reporting Consistency (Uniform Path, Row, Column, Caret) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
-| **Phase 39** | Lexer Escape Sequence Decoding (`\n`, `\t`, `\r`, `\\`, `\"`, `\0`, `\xHH`) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 39** | Lexer Escape Sequence Decoding (`\n`, `\t`, `\r`, `\\`, `\"`, `\0`, `\xHH`) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 40** | Function Declaration Scope Rules (`static` Prohibited Outside Classes; Non-`static` Free Functions Allowed as Entry Points) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
 | **Phase 41** | Diagnostic Logging Level Demotion (`log_debug` -> `log_trace` & Phase Pipeline Timing) | `P2 Medium` | `core`, `tests`, `docs` | - [ ] Planned |
 | **Phase 42** | CLI Toolchain: `version` Subcommand & `--version` Flag | `P2 Medium` | `cli`, `tests`, `docs` | - [ ] Planned |
@@ -2148,15 +2148,15 @@ Ensure that all compiler diagnostics, syntax errors, and binder validation messa
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `core/src/processes/lexer.cpp`, `tests/statements/expressions/test_literal_expression.cpp`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Upgrade `handle_string()` in `core/src/processes/lexer.cpp` to decode escape sequences (`\n`, `\t`, `\r`, `\\`, `\"`, `\0`, `\xHH`) into their true ASCII/Unicode byte values rather than emitting raw backslashes and letters. Preserve double backslash `\\` as a literal backslash `\`.
 
 ### Action Items
-- [ ] Refactor `Lexer::handle_string()` to process escape sequences identically to `Lexer::handle_character()`.
-- [ ] Add test cases in `tests/statements/TESTS.md` and `test_literal_expression.cpp` verifying newline, tab, carriage return, quotes, hex escapes, and escaped backslashes.
-- [ ] Update `docs/spec/lexical.md` with string literal escape sequence rules.
+- [x] Refactor `Lexer::handle_string()` to process escape sequences identically to `Lexer::handle_character()`.
+- [x] Add test cases in `tests/statements/TESTS.md` and `test_literal_expression.cpp` verifying newline, tab, carriage return, quotes, hex escapes, and escaped backslashes.
+- [x] Update `docs/spec/lexical.md` with string literal escape sequence rules.
 
 ---
 
