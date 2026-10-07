@@ -193,3 +193,13 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 13.3 [IMPLEMENTED]**: `FileStream` reading, writing, seeking, position, and lifecycle (`tests/solixlib/test_streams.cpp`).
 - [x] **Case 13.4 [IMPLEMENTED]**: `BufferedReader` line-by-line reading without OOM memory hazards (`tests/solixlib/test_streams.cpp`).
 - [x] **Case 13.5 [IMPLEMENTED]**: `StreamReader` and `StreamWriter` sequential text reading and writing (`tests/solixlib/test_streams.cpp`).
+
+---
+
+## 14. System Environment & Processes (`solix.system`: `Environment`, `Process`, `ProcessResult`)
+
+- [ ] **Case 14.1 [NOT IMPLEMENTED]**: Setting and retrieving environment variables (`Environment.get_env`, `Environment.set_env`, `Environment.get_all_env`) (`tests/solixlib/test_environment.cpp`).
+- [ ] **Case 14.2 [NOT IMPLEMENTED]**: Operating system identification and host hardware inspection (`Environment.os_name`, `Environment.is_linux`, `Environment.processor_count`) (`tests/solixlib/test_environment.cpp`).
+- [ ] **Case 14.3 [NOT IMPLEMENTED]**: Synchronous child process execution via `Process.run()` with standard output capture (`tests/solixlib/test_environment.cpp`).
+- [ ] **Case 14.4 [NOT IMPLEMENTED]**: Lifecycle child process management with `Process` (`start()`, `wait_for_exit()`, `get_standard_output()`) (`tests/solixlib/test_environment.cpp`).
+- [ ] **Case 14.5 [NOT IMPLEMENTED]**: Negative: Spawning non-existent command returns non-zero exit code without crashing parent process (`tests/solixlib/test_environment.cpp`).
