@@ -69,7 +69,7 @@
 | **Phase 39** | Lexer Escape Sequence Decoding (`\n`, `\t`, `\r`, `\\`, `\"`, `\0`, `\xHH`) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 40** | Function Declaration Scope Rules (`static` Prohibited Outside Classes; Non-`static` Free Functions Allowed as Entry Points) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 41** | Diagnostic Logging Level Demotion (`log_debug` -> `log_trace` & Phase Pipeline Timing) | `P2 Medium` | `core`, `tests`, `docs` | - [x] Completed & Merged |
-| **Phase 42** | CLI Toolchain: `version` Subcommand & `--version` Flag | `P2 Medium` | `cli`, `tests`, `docs` | - [ ] Planned |
+| **Phase 42** | CLI Toolchain: `version` Subcommand & `--version` Flag | `P2 Medium` | `cli`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 43** | Entry Point Resolution Disambiguation (Exhaustive Scan, Duplicate/Ambiguity Detection with File, Row, Col) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
 | **Phase 44** | Standard Library: Friendly Primitive Aliases (`Primitives.slx` with Wildcard Re-export) | `P2 Medium` | `solixlib/core`, `core`, `tests`, `docs` | - [ ] Planned |
 
@@ -2197,16 +2197,16 @@ Demote verbose compiler debug logs (`log_debug`) to trace level (`log_trace`) so
 
 - **Priority**: `P2 Medium`
 - **Affected Modules**: `cli/src/main.cpp`, `cli/src/commands/`, `CMakeLists.txt`, `tests/commands/`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Add a first-class `version` CLI subcommand and `--version` / `-v` flag to the Solix CLI toolchain that prints the CLI engine version, build target, and commit hash or release tag.
 
 ### Action Items
-- [ ] Expose `SOLIX_VERSION` definition from CMake.
-- [ ] Implement `solix::cli::setup_version_command(app)` in `cli/src/commands/version.cpp` and support top-level `-v,--version`.
-- [ ] Add unit test in `tests/commands/test_version_command.cpp`.
-- [ ] Update `docs/spec/cli/README.md`.
+- [x] Expose `SOLIX_VERSION` definition from CMake.
+- [x] Implement `solix::cli::setup_version_command(app)` in `cli/src/commands/version.cpp` and support top-level `-v,--version`.
+- [x] Add unit test in `tests/commands/test_version_command.cpp`.
+- [x] Update `docs/spec/cli/README.md`.
 
 ---
 
