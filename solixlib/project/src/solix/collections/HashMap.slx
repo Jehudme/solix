@@ -23,12 +23,14 @@ public class HashMap<K, V> implements IMap<K, V>, IStringable {
     private int32 _size;
     private int32 _threshold;
     private int32(*)(K) _hasher;
+    private bool(*)(K, K) _key_equals;
 
     public HashMap() {
         this._table = new HashMapEntry<K, V>[16];
         this._size = 0;
         this._threshold = 12;
         this._hasher = null;
+        this._key_equals = null;
     }
 
     public HashMap(int32 initial_capacity) {
@@ -39,6 +41,7 @@ public class HashMap<K, V> implements IMap<K, V>, IStringable {
         this._size = 0;
         this._threshold = initial_capacity * 3 / 4;
         this._hasher = null;
+        this._key_equals = null;
     }
 
     public HashMap(int32(*)(K) hasher) {
@@ -46,6 +49,7 @@ public class HashMap<K, V> implements IMap<K, V>, IStringable {
         this._size = 0;
         this._threshold = 12;
         this._hasher = hasher;
+        this._key_equals = null;
     }
 
     public HashMap(int32 initial_capacity, int32(*)(K) hasher) {
@@ -56,6 +60,33 @@ public class HashMap<K, V> implements IMap<K, V>, IStringable {
         this._size = 0;
         this._threshold = initial_capacity * 3 / 4;
         this._hasher = hasher;
+        this._key_equals = null;
+    }
+
+    public HashMap(int32(*)(K) hasher, bool(*)(K, K) key_equals) {
+        this._table = new HashMapEntry<K, V>[16];
+        this._size = 0;
+        this._threshold = 12;
+        this._hasher = hasher;
+        this._key_equals = key_equals;
+    }
+
+    public HashMap(int32 initial_capacity, int32(*)(K) hasher, bool(*)(K, K) key_equals) {
+        if (initial_capacity < 4) {
+            initial_capacity = 4;
+        }
+        this._table = new HashMapEntry<K, V>[initial_capacity];
+        this._size = 0;
+        this._threshold = initial_capacity * 3 / 4;
+        this._hasher = hasher;
+        this._key_equals = key_equals;
+    }
+
+    private bool check_equals(K a, K b) {
+        if (this._key_equals != null) {
+            return this._key_equals(a, b);
+        }
+        return a == b;
     }
 
     private int32 hash(K key) {
@@ -91,7 +122,7 @@ public class HashMap<K, V> implements IMap<K, V>, IStringable {
         int32 idx = this.index_for(h, this._table.length);
         HashMapEntry<K, V> e = this._table[idx];
         while (e != null) {
-            if (e.hash == h && e.key == key) {
+            if (e.hash == h && this.check_equals(e.key, key)) {
                 return true;
             }
             e = e.next;
@@ -117,7 +148,7 @@ public class HashMap<K, V> implements IMap<K, V>, IStringable {
         int32 idx = this.index_for(h, this._table.length);
         HashMapEntry<K, V> e = this._table[idx];
         while (e != null) {
-            if (e.hash == h && e.key == key) {
+            if (e.hash == h && this.check_equals(e.key, key)) {
                 return e.value;
             }
             e = e.next;
@@ -130,7 +161,7 @@ public class HashMap<K, V> implements IMap<K, V>, IStringable {
         int32 idx = this.index_for(h, this._table.length);
         HashMapEntry<K, V> e = this._table[idx];
         while (e != null) {
-            if (e.hash == h && e.key == key) {
+            if (e.hash == h && this.check_equals(e.key, key)) {
                 return e.value;
             }
             e = e.next;
@@ -143,7 +174,7 @@ public class HashMap<K, V> implements IMap<K, V>, IStringable {
         int32 idx = this.index_for(h, this._table.length);
         HashMapEntry<K, V> e = this._table[idx];
         while (e != null) {
-            if (e.hash == h && e.key == key) {
+            if (e.hash == h && this.check_equals(e.key, key)) {
                 e.value = value;
                 return;
             }
@@ -178,7 +209,7 @@ public class HashMap<K, V> implements IMap<K, V>, IStringable {
         HashMapEntry<K, V> prev = null;
         HashMapEntry<K, V> e = this._table[idx];
         while (e != null) {
-            if (e.hash == h && e.key == key) {
+            if (e.hash == h && this.check_equals(e.key, key)) {
                 if (prev == null) {
                     this._table[idx] = e.next;
                 } else {

@@ -18,20 +18,30 @@ public class Environment {
         native_set_env(key.data, val_data);
     }
 
+    private static int32 string_hash(String s) {
+        if (s == null) return 0;
+        return s.hash_code();
+    }
+
+    private static bool string_equals(String a, String b) {
+        if (a == null) return b == null;
+        return a.equals(b);
+    }
+
     public static HashMap<String, String> get_all_env() {
-        HashMap<String, String> map = new HashMap<String, String>();
+        HashMap<String, String> map = new HashMap<String, String>(Environment.string_hash, Environment.string_equals);
         char[] raw = native_get_all_env();
         if (raw == null || raw.length == 0) return map;
         String combined = new String(raw);
-        String nl = new String("\n");
-        String eq = new String("=");
+        String nl = new String('\n');
+        String eq = new String('=');
         String[] lines = combined.split(nl);
         for (int32 i = 0; i < lines.length; i = i + 1) {
             String line = lines[i];
             int32 eq_idx = line.index_of(eq);
             if (eq_idx > 0) {
                 String k = line.substring(0, eq_idx);
-                String v = line.substring(eq_idx + 1);
+                String v = line.substring(eq_idx + 1, line.length() - eq_idx - 1);
                 map.put(k, v);
             }
         }
@@ -43,7 +53,7 @@ public class Environment {
         char[] raw = native_get_args();
         if (raw == null || raw.length == 0) return list;
         String combined = new String(raw);
-        String nl = new String("\n");
+        String nl = new String('\n');
         String[] parts = combined.split(nl);
         for (int32 i = 0; i < parts.length; i = i + 1) {
             String p = parts[i];
