@@ -2,6 +2,7 @@
 #include "solix/compilation.hpp"
 #include "utilities/diagnostic.hpp"
 #include <unordered_set>
+#include <iostream>
 
 #include "processes/template_substitution.hpp"
 
@@ -1389,7 +1390,15 @@ void Binder::execute() {
   setup_builtins();
 
   log_debug("Pass 1a: Registering package and top-level symbols...");
-  for (const auto &[source, nodes] : context.nodes) {
+  std::vector<Source> initial_sources;
+  for (const auto &[source, _] : context.nodes) {
+    initial_sources.push_back(source);
+  }
+
+  for (const auto &src : initial_sources) {
+    auto it = context.nodes.find(src);
+    if (it == context.nodes.end()) continue;
+    const auto &nodes = it->second;
     current_package = "";
     current_prefix = "";
     for (const auto &node : nodes) {
@@ -1408,7 +1417,10 @@ void Binder::execute() {
   process_imports();
 
   log_debug("Pass 1b: Registering class members and signatures...");
-  for (const auto &[source, nodes] : context.nodes) {
+  for (const auto &src : initial_sources) {
+    auto it = context.nodes.find(src);
+    if (it == context.nodes.end()) continue;
+    const auto &nodes = it->second;
     current_package = "";
     current_prefix = "";
     for (const auto &node : nodes) {
