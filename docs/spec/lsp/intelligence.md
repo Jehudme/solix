@@ -27,7 +27,7 @@ When the user types `.` after an expression:
 When requested outside member dot access:
 1. **Language Keywords**: Offers keywords (`class`, `interface`, `public`, `return`, `if`, `while`, `var`, `int32`, `string`, etc.) with `CompletionItemKind::Keyword` (`14`).
 2. **Local Variables & Parameters**: Suggests visible parameters and local variables in the enclosing method/block scope.
-3. **Types & Classes**: Suggests known classes and interfaces declared across the project with `CompletionItemKind::Class` (`7`).
+3. **Types & Classes**: Suggests known classes, interfaces, enums, and declared type aliases (`alias`) across the project with `CompletionItemKind::Class` (`7`), `CompletionItemKind::Enum` (`13`), or `CompletionItemKind::Reference` (`18`).
 
 ### Context-Aware Grammar Completions
 The language server inspects the lexical tokens leading up to the cursor to refine completions:
@@ -49,6 +49,12 @@ The language server inspects the lexical tokens leading up to the cursor to refi
    - Offers package name completions inferred from file directory path relative to project root or `src/` (e.g. `src/net/http/Client.slx` -> `net.http`).
    - Suggests known package names declared across all compilation units in the workspace with `CompletionItemKind::Module`.
    - Package suggestions are suppressed in general scope or method body contexts.
+7. **Type Alias Target (`alias <Name> = <cursor>`)**:
+   - When declaring a type alias target after `=`, suggests primitive types (`int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`, `float32`, `float64`, `bool`, `char`, `string`, `void`, `any`), classes, interfaces, enums, and previously declared type aliases.
+   - While typing the alias name before `=` (`alias <cursor>`), existing type suggestions are suppressed.
+8. **Import Statements (`import <cursor>`, `import pkg.<cursor>`)**:
+   - At statement root (`import <cursor>`): suggests all known workspace packages, subpackage prefixes, and standard library modules (`solix.core`, `solix.system`, `solix.collections`, `solix.io`, `solix.math`, `solix.time`, `solix.exceptions`, `solix.crypto`).
+   - After package delimiter (`import pkg.<cursor>`): suggests immediate subpackages, classes, interfaces, enums, type aliases belonging to the package, and wildcard `*`.
 
 ---
 
@@ -74,4 +80,5 @@ Provides editors and IDEs (e.g. VS Code Outline view, symbol breadcrumbs) with a
   - Fields: `SymbolKind::Field` (`8`) with field type details.
   - Constructors: `SymbolKind::Constructor` (`9`).
 - **Enums**: `SymbolKind::Enum` (`10`) containing enum member children with `SymbolKind::EnumMember` (`22`).
+- **Type Aliases**: `SymbolKind::TypeParameter` (`26`) representing `alias` declarations.
 - **Top-level Functions**: `SymbolKind::Function` (`12`).
