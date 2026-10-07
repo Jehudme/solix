@@ -56,7 +56,7 @@
 | **Phase 32.6** | CLI Build Ergonomics & Manifest Dependency Alignment (Positional Target & `name@version` Dependencies) | `P0 Blocker` | `cli`, `docs`, `tests` | - [x] Complete |
 | **Phase 32.7** | Standard Library: Structural Consolidation & Encapsulation (`Exceptions.slx`, `Interfaces.slx`, Node Encapsulation) | `P0 Blocker` | `solixlib`, `docs`, `tests` | - [x] Complete |
 | **Phase 32.8** | Standard Library: Polymorphic Generic Collection Hierarchy & Interface Re-binding (`IList<T>`, `IMap<K, V>`, `ISet<T>`) | `P0 Blocker` | `solixlib/collections`, `docs`, `tests` | - [x] Complete |
-| **Phase 32.9** | Standard Library: Complete Boxed Primitives (`Byte`..`ULong`, `Float`), Boxed Operator Overloads & `Optional<T>` Functional Parity (`map`, `flat_map`) | `P0 Blocker` | `solixlib/core`, `docs`, `tests` | - [ ] Planned |
+| **Phase 32.9** | Standard Library: Complete Boxed Primitives (`Byte`..`ULong`, `Float`), Boxed Operator Overloads & `Optional<T>` Functional Parity (`map`, `flat_map`) | `P0 Blocker` | `solixlib/core`, `docs`, `tests` | - [x] Complete |
 | **Phase 32.10** | Standard Library: Collection Ergonomics (Copy Constructors, Array Initializers, `map`, `reduce`) & String Primitive Constructors | `P1 High` | `solixlib/collections`, `solixlib/core`, `docs`, `tests` | - [ ] Planned |
 | **Phase 32.11** | Standard Library: Chrono & Time Ergonomics (Duration/Instant Operator Overloading, `DateTime.format` Pattern Formatting) | `P1 High` | `solixlib/time`, `docs`, `tests` | - [ ] Planned |
 | **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, `StreamReader`, `StreamWriter`, `BufferedReader`) & Object-Oriented `Path` (`operator/`) | `P1 High` | `solixlib/io`, `solixlib/native`, `docs`, `tests` | - [ ] Planned |
@@ -1807,8 +1807,8 @@ Restore polymorphic collection framework broken by the previous refactor:
 ## Phase 32.9: Standard Library — Complete Boxed Primitives, Boxed Operator Overloads & `Optional<T>` Parity
 
 - **Priority**: `P0 Blocker`
-- **Affected Modules**: `solixlib/project/src/solix/core/Byte.slx`, `Short.slx`, `Long.slx`, `UByte.slx`, `UShort.slx`, `UInt.slx`, `ULong.slx`, `Float.slx`, `Int.slx`, `Double.slx`, `String.slx`, `Optional.slx`, `tests/solixlib/test_core.cpp`, `docs/spec/solixlib/primitives.md`, `docs/spec/solixlib/optional.md`
-- **Status**: - [ ] Planned
+- **Affected Modules**: `solixlib/project/src/solix/core/Byte.slx`, `Short.slx`, `Long.slx`, `UByte.slx`, `UShort.slx`, `UInt.slx`, `ULong.slx`, `Float.slx`, `Int.slx`, `Double.slx`, `String.slx`, `Optional.slx`, `tests/solixlib/test_primitives.cpp`, `docs/spec/solixlib/primitives.md`
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Complete boxed primitive type coverage, implement operator overloads on boxed types and `String`, and upgrade `Optional<T>` with functional combinators:
@@ -1818,12 +1818,12 @@ Complete boxed primitive type coverage, implement operator overloads on boxed ty
 4. Extend `Optional<T>` with `map<U>` and `flat_map<U>` functional transformation methods.
 
 ### Action Items
-- [ ] Author boxed wrappers for all remaining primitives (`Byte`, `Short`, `Long`, `UByte`, `UShort`, `UInt`, `ULong`, `Float`).
-- [ ] Implement arithmetic and comparison operator overloads on all numeric boxed types.
-- [ ] Add `operator+` and `operator==` to `String.slx`.
-- [ ] Implement `map<U>` and `flat_map<U>` in `Optional.slx`.
-- [ ] Add tests in `tests/solixlib/test_core.cpp` verifying boxed operators, boxed types, and `Optional` transformations.
-- [ ] Update specifications in `docs/spec/solixlib/`.
+- [x] Author boxed wrappers for all remaining primitives (`Byte`, `Short`, `Long`, `UByte`, `UShort`, `UInt`, `ULong`, `Float`).
+- [x] Implement arithmetic and comparison operator overloads on all numeric boxed types.
+- [x] Add `operator+`, `operator==`, `operator!=` to `String.slx`.
+- [x] Implement `map<U>` and `flat_map<U>` in `Optional.slx`.
+- [x] Add tests in `tests/solixlib/test_primitives.cpp` verifying boxed operators, boxed types, and `Optional` transformations.
+- [x] Update specifications in `docs/spec/solixlib/primitives.md`.
 
 ---
 
