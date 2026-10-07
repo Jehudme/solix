@@ -155,3 +155,36 @@ Generic container representing optional or absent values without null-pointer vu
 - `map<U>(U(*)(T) mapper) -> Optional<U>`: Transforms contained value if present, returning empty Optional otherwise.
 - `flat_map<U>(Optional<U>(*)(T) mapper) -> Optional<U>`: Monadic chaining; evaluates mapper returning `Optional<U>`.
 - `to_string() -> String`: Returns `"Optional.of(...)"` or `"Optional.empty"`.
+
+---
+
+## 4. Friendly Primitive Aliases (`Primitives.slx`)
+
+Package `solix.core` provides friendly synonyms for core primitive scalar types defined in `src/solix/core/Primitives.slx`. Importing `solix.core.*` exposes these aliases for streamlined typing:
+
+| Friendly Alias | Underlying Primitive | Description |
+|---|---|---|
+| `int` | `int32` | 32-bit signed integer |
+| `long` | `int64` | 64-bit signed integer |
+| `short` | `int16` | 16-bit signed integer |
+| `byte` | `int8` | 8-bit signed integer |
+| `ubyte` | `uint8` | 8-bit unsigned integer |
+| `ushort` | `uint16` | 16-bit unsigned integer |
+| `uint` | `uint32` | 32-bit unsigned integer |
+| `ulong` | `uint64` | 64-bit unsigned integer |
+| `float` | `float32` | 32-bit single-precision float |
+| `double` | `float64` | 64-bit double-precision float |
+
+### Example Usage
+```solix
+import solix.core.*;
+
+int add(int a, int b) {
+    return a + b;
+}
+
+double multiply(double a, double b) {
+    return a * b;
+}
+```
+
