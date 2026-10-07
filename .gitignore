@@ -36,5 +36,5 @@ disasm*
 console.slx
 scratch*
 patch.cpp
-main.cpp
+/main.cpp
 CLI/
