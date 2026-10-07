@@ -372,10 +372,12 @@ std::unique_ptr<Node> ClassDeclaration::clone() const {
     cloned->itable = itable;
     cloned->template_parameters = template_parameters;
     cloned->base_class_name = base_class_name;
+    cloned->base_class_type = base_class_type;
     cloned->access_modifier = access_modifier;
     cloned->is_abstract = is_abstract;
     cloned->is_interface = is_interface;
     cloned->implemented_interfaces = implemented_interfaces;
+    cloned->interface_types = interface_types;
     cloned->reference_field_offsets = reference_field_offsets;
     copy_children(this, cloned.get());
     return cloned;

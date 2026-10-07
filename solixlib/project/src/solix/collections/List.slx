@@ -6,7 +6,7 @@ import solix.exceptions.IndexOutOfBoundsException;
 import solix.exceptions.IllegalArgumentException;
 import solix.exceptions.NoSuchElementException;
 
-public class ListIterator<T> {
+public class ListIterator<T> implements IIterator<T> {
     private T[] data;
     private int32 count;
     private int32 cursor;
@@ -31,7 +31,7 @@ public class ListIterator<T> {
     }
 }
 
-public class List<T> implements IStringable {
+public class List<T> implements IList<T>, ICollection<T>, IIterable<T>, IStringable {
     private T[] _data;
     private int32 _size;
 
@@ -207,7 +207,7 @@ public class List<T> implements IStringable {
         return result;
     }
 
-    public ListIterator<T> iterator() {
+    public IIterator<T> iterator() {
         return new ListIterator<T>(this._data, this._size);
     }
 

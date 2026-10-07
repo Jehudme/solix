@@ -123,6 +123,16 @@ void TemplateSubstitutionVisitor::visit(AliasStatement& n) {
     substitute_type(n.target_type);
 }
 void TemplateSubstitutionVisitor::visit(ClassDeclaration& n) {
+    if (n.base_class_type) {
+        substitute_type(*n.base_class_type);
+        n.base_class_name = n.base_class_type->to_string();
+    }
+    for (size_t i = 0; i < n.interface_types.size(); ++i) {
+        substitute_type(n.interface_types[i]);
+        if (i < n.implemented_interfaces.size()) {
+            n.implemented_interfaces[i] = n.interface_types[i].to_string();
+        }
+    }
     for (auto& child : n.children) {
         if (child) child->accept(*this);
     }

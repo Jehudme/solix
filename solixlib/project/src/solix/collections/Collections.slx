@@ -5,20 +5,20 @@ import solix.core.String;
 import solix.core.StringBuilder;
 
 public class Collections {
-    public static String to_string(IIterable collection) {
+    public static String to_string<T>(IIterable<T> collection) {
         if (collection == null) {
             return new String("null");
         }
         StringBuilder sb = new StringBuilder();
         sb.append_char('[');
-        IIterator it = collection.iterator();
+        IIterator<T> it = collection.iterator();
         bool first = true;
         while (it != null && it.has_next()) {
             if (!first) {
                 sb.append_char(',');
                 sb.append_char(' ');
             }
-            IStringable item = it.next();
+            T item = it.next();
             if (item == null) {
                 sb.append_char('n');
                 sb.append_char('u');

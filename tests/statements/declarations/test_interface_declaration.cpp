@@ -215,4 +215,55 @@ void test() {
 )";
         assert_compile_error(code, "Interfaces cannot be declared inside a function or method body");
     }
+
+    SECTION("Case 4.6: Generic Interface Polymorphic Dispatch") {
+        std::string code = R"(
+interface IBox<T> {
+    T get();
+    void set(T v);
 }
+class Box<T> implements IBox<T> {
+    private T val;
+    public Box(T v) { this.val = v; }
+    public T get() { return this.val; }
+    public void set(T v) { this.val = v; }
+}
+
+public static int32 main() {
+    IBox<int32> b = new Box<int32>(42);
+    b.set(100);
+    return b.get() == 100 ? 0 : 1;
+}
+)";
+        assert_compile_success(code);
+        CHECK(run_source(code) == 0);
+    }
+
+    SECTION("Case 4.7: Generic Sub-Interface Inheritance and Upcasting") {
+        std::string code = R"(
+interface IBase<T> {
+    T get();
+}
+interface IDerived<T> extends IBase<T> {
+    void set(T v);
+}
+class Box<T> implements IDerived<T> {
+    private T val;
+    public Box(T v) { this.val = v; }
+    public T get() { return this.val; }
+    public void set(T v) { this.val = v; }
+}
+
+public static int32 main() {
+    IDerived<int32> d = new Box<int32>(10);
+    if (d.get() != 10) return 2;
+    d.set(20);
+    IBase<int32> b = d;
+    return b.get() == 20 ? 0 : 1;
+}
+)";
+        assert_compile_success(code);
+        CHECK(run_source(code) == 0);
+    }
+}
+

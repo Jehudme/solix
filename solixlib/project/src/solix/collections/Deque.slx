@@ -5,7 +5,7 @@ import solix.core.String;
 import solix.exceptions.InvalidOperationException;
 import solix.exceptions.NoSuchElementException;
 
-public class DequeIterator<T> {
+public class DequeIterator<T> implements IIterator<T> {
     private LinkedList<T> _items;
     private int32 _idx;
 
@@ -28,7 +28,7 @@ public class DequeIterator<T> {
     }
 }
 
-public class Deque<T> implements IStringable {
+public class Deque<T> implements IDeque<T>, ICollection<T>, IIterable<T>, IStringable {
     private LinkedList<T> _items;
 
     public Deque() {
@@ -115,12 +115,20 @@ public class Deque<T> implements IStringable {
         return this._items.to_array();
     }
 
+    public void add(T item) {
+        this._items.add_last(item);
+    }
+
+    public bool remove(T item) {
+        return this._items.remove(item);
+    }
+
     public void for_each(void(*)(T) action) {
         if (action == null) return;
         this._items.for_each(action);
     }
 
-    public DequeIterator<T> iterator() {
+    public IIterator<T> iterator() {
         return new DequeIterator<T>(this._items);
     }
 

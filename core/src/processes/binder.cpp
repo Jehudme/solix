@@ -165,6 +165,7 @@ Node *Binder::instantiate_template(const std::string &template_name,
     }
 
     resolve_base_class(cls);
+    resolve_interfaces(cls);
     if (!cls->is_primitive) {
       cls->vtable_id = next_vtable_id++;
       if (!cls->base_class_name.empty()) {
@@ -929,6 +930,7 @@ void Binder::bind_types_and_memory() {
   for (const auto &[name, node] : get_symbols()) {
     if (node->node_type == NodeType::CLASS_DECL) {
       resolve_base_class(static_cast<ClassDeclaration *>(node));
+      resolve_interfaces(static_cast<ClassDeclaration *>(node));
     }
   }
 
@@ -1001,7 +1003,15 @@ Node *Binder::unwrap_alias(Node *n) {
 
 Node *Binder::resolve_base_class(ClassDeclaration *cls) {
   if (cls->base_class_name.empty()) return nullptr;
-  Node *node = resolve_symbol(cls->base_class_name, cls, true);
+  Node *node = nullptr;
+  if (cls->base_class_type && !cls->base_class_type->type_args.empty()) {
+    TypeInfo resolved_t = resolve_type(*cls->base_class_type, cls);
+    node = resolve_symbol(resolved_t.name, cls, true);
+    if (!node) node = global_scope.resolve(resolved_t.name);
+  } else {
+    node = resolve_symbol(cls->base_class_name, cls, true);
+    if (!node) node = global_scope.resolve(cls->base_class_name);
+  }
   node = unwrap_alias(node);
   if (node && node->node_type == NodeType::CLASS_DECL) {
     if (static_cast<ClassDeclaration *>(node)->is_primitive) {
@@ -1017,6 +1027,28 @@ Node *Binder::resolve_base_class(ClassDeclaration *cls) {
   }
   record_error(cls, "Base class not found: " + cls->base_class_name);
   return nullptr;
+}
+
+void Binder::resolve_interfaces(ClassDeclaration *cls) {
+  for (size_t i = 0; i < cls->interface_types.size(); ++i) {
+    if (!cls->interface_types[i].type_args.empty()) {
+      TypeInfo res_t = resolve_type(cls->interface_types[i], cls);
+      if (i < cls->implemented_interfaces.size()) {
+        cls->implemented_interfaces[i] = res_t.name;
+      } else {
+        cls->implemented_interfaces.push_back(res_t.name);
+      }
+    } else {
+      std::string iface_name = i < cls->implemented_interfaces.size() ? cls->implemented_interfaces[i] : cls->interface_types[i].to_string();
+      Node *in_node = unwrap_alias(resolve_symbol(iface_name, cls, false));
+      if (!in_node) in_node = unwrap_alias(global_scope.resolve(iface_name));
+      if (in_node && in_node->node_type == NodeType::CLASS_DECL) {
+        if (i < cls->implemented_interfaces.size()) {
+          cls->implemented_interfaces[i] = static_cast<ClassDeclaration *>(in_node)->mangled_name;
+        }
+      }
+    }
+  }
 }
 
 std::string Binder::get_method_sig(const std::string &mangled) {
@@ -1042,7 +1074,8 @@ std::vector<ClassDeclaration *> Binder::collect_all_interfaces(ClassDeclaration 
     visited.insert(c->mangled_name);
 
     for (const auto &iface_name : c->implemented_interfaces) {
-      Node *n = resolve_symbol(iface_name, c, false);
+      Node *n = global_scope.resolve(iface_name);
+      if (!n) n = resolve_symbol(iface_name, c, false);
       n = unwrap_alias(n);
       if (n && n->node_type == NodeType::CLASS_DECL) {
         auto *iface = static_cast<ClassDeclaration *>(n);
@@ -1051,7 +1084,8 @@ std::vector<ClassDeclaration *> Binder::collect_all_interfaces(ClassDeclaration 
       }
     }
     if (c->is_interface && !c->base_class_name.empty()) {
-      Node *bn = resolve_symbol(c->base_class_name, c, false);
+      Node *bn = global_scope.resolve(c->base_class_name);
+      if (!bn) bn = resolve_symbol(c->base_class_name, c, false);
       bn = unwrap_alias(bn);
       if (bn && bn->node_type == NodeType::CLASS_DECL) {
         auto *base_iface = static_cast<ClassDeclaration *>(bn);
@@ -1083,7 +1117,8 @@ void Binder::calculate_interface_vtable(ClassDeclaration *iface) {
 
   std::vector<MethodDeclaration *> vtable;
   if (!iface->base_class_name.empty()) {
-    Node *base_node = unwrap_alias(resolve_symbol(iface->base_class_name, iface, false));
+    Node *base_node = unwrap_alias(global_scope.resolve(iface->base_class_name));
+    if (!base_node) base_node = unwrap_alias(resolve_symbol(iface->base_class_name, iface, false));
     if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
       auto *base_iface = static_cast<ClassDeclaration *>(base_node);
       calculate_interface_vtable(base_iface);
@@ -1093,7 +1128,8 @@ void Binder::calculate_interface_vtable(ClassDeclaration *iface) {
 
   for (const auto &iface_name : iface->implemented_interfaces) {
     if (iface_name == iface->base_class_name) continue;
-    Node *other_node = unwrap_alias(resolve_symbol(iface_name, iface, false));
+    Node *other_node = unwrap_alias(global_scope.resolve(iface_name));
+    if (!other_node) other_node = unwrap_alias(resolve_symbol(iface_name, iface, false));
     if (other_node && other_node->node_type == NodeType::CLASS_DECL) {
       auto *other_iface = static_cast<ClassDeclaration *>(other_node);
       calculate_interface_vtable(other_iface);
@@ -1386,14 +1422,26 @@ void Binder::execute() {
 
   log_debug("Pass 3: Binding statement execution logic and bodies...");
   current_pass = BinderPass::BIND_EXECUTION;
-  for (const auto &[source, nodes] : context.nodes) {
+  std::vector<Source> user_sources;
+  for (const auto &[source, _] : context.nodes) {
+    if (std::holds_alternative<std::string>(source) &&
+        std::get<std::string>(source) == "__instantiated_templates") {
+      continue;
+    }
+    user_sources.push_back(source);
+  }
+  for (const auto &src : user_sources) {
     current_package = "";
-    for (const auto &node : nodes) {
-      if (node->node_type == NodeType::PACKAGE_STMT) {
+    auto it = context.nodes.find(src);
+    if (it == context.nodes.end()) continue;
+    const auto &nodes = it->second;
+    for (size_t i = 0; i < nodes.size(); ++i) {
+      if (!nodes[i]) continue;
+      if (nodes[i]->node_type == NodeType::PACKAGE_STMT) {
         current_pass = BinderPass::BIND_EXECUTION;
-        node->accept(*this);
+        nodes[i]->accept(*this);
       } else {
-        bind_tree(node.get());
+        bind_tree(nodes[i].get());
       }
     }
   }
@@ -1780,7 +1828,8 @@ bool Binder::class_implements_interface(ClassDeclaration *cls, const std::string
         auto *tgt = static_cast<ClassDeclaration *>(target_node);
         if (in == tgt->class_name || in == tgt->mangled_name) return true;
       }
-      Node *in_node = resolve_symbol(in, current, false);
+      Node *in_node = global_scope.resolve(in);
+      if (!in_node) in_node = resolve_symbol(in, current, false);
       if (in_node && in_node->node_type == NodeType::CLASS_DECL) {
         auto *in_cls = static_cast<ClassDeclaration *>(in_node);
         if (in_cls == target_node || in_cls->class_name == iface_name || in_cls->mangled_name == iface_name) return true;
@@ -1796,7 +1845,8 @@ bool Binder::class_implements_interface(ClassDeclaration *cls, const std::string
         auto *tgt = static_cast<ClassDeclaration *>(target_node);
         if (current->base_class_name == tgt->class_name || current->base_class_name == tgt->mangled_name) return true;
       }
-      Node *base_in = resolve_symbol(current->base_class_name, current, false);
+      Node *base_in = global_scope.resolve(current->base_class_name);
+      if (!base_in) base_in = resolve_symbol(current->base_class_name, current, false);
       if (base_in && base_in->node_type == NodeType::CLASS_DECL) {
         auto *base_cls = static_cast<ClassDeclaration *>(base_in);
         if (base_cls == target_node || base_cls->class_name == iface_name || base_cls->mangled_name == iface_name) return true;
@@ -2739,6 +2789,33 @@ void Binder::visit(MethodCallExpression &n) {
                 }
               }
             }
+          }
+        }
+
+        if (!method_decl && current_resolve_class && current_resolve_class->is_interface && !member_access->is_scope_resolution) {
+          auto ifaces = collect_all_interfaces(current_resolve_class);
+          for (auto *iface : ifaces) {
+            for (const auto &child : iface->children) {
+              if (child && child->node_type == NodeType::METHOD_DECL) {
+                auto *m = static_cast<MethodDeclaration *>(child.get());
+                if (m->method_name == member_access->member_name &&
+                    m->parameters.size() == argument_types.size()) {
+                  bool match = true;
+                  for (size_t i = 0; i < argument_types.size(); ++i) {
+                    auto *p_var = static_cast<VariableDeclaration *>(m->parameters[i].get());
+                    if (!is_assignable(p_var->type_info, argument_types[i])) {
+                      match = false;
+                      break;
+                    }
+                  }
+                  if (match) {
+                    method_decl = m;
+                    break;
+                  }
+                }
+              }
+            }
+            if (method_decl) break;
           }
         }
 

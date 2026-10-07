@@ -1367,13 +1367,28 @@ std::unique_ptr<Node> ParserState::parse_interface_declaration(TokenType modifie
   decl->is_abstract = true;
   decl->access_modifier = modifier;
 
+  if (match(TokenType::OPERATOR_LESS_THAN)) {
+    do {
+      std::string t_param = std::get<std::string>(
+          consume(TokenType::IDENTIFIER, "Expected template parameter name")
+              .value);
+      decl->template_parameters.push_back(t_param);
+    } while (match(TokenType::PUNCTUATION_COMMA));
+    consume(TokenType::OPERATOR_GREATER_THAN,
+            "Expected '>' after template parameters");
+    log_debug("Interface '{}' template parameters count: {}", iface_name,
+              decl->template_parameters.size());
+  }
+
   if (match(TokenType::KEYWORD_EXTENDS) || match(TokenType::PUNCTUATION_COLON)) {
     do {
       TypeInfo base_type = parse_type_info();
       if (decl->base_class_name.empty()) {
-        decl->base_class_name = base_type.name;
+        decl->base_class_name = base_type.to_string();
+        decl->base_class_type = base_type;
       }
-      decl->implemented_interfaces.push_back(base_type.name);
+      decl->implemented_interfaces.push_back(base_type.to_string());
+      decl->interface_types.push_back(base_type);
     } while (match(TokenType::PUNCTUATION_COMMA));
   }
 
@@ -1434,13 +1449,15 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
 
   if (match(TokenType::KEYWORD_EXTENDS) || match(TokenType::PUNCTUATION_COLON)) {
     TypeInfo base_type = parse_type_info();
-    decl->base_class_name = base_type.name;
+    decl->base_class_name = base_type.to_string();
+    decl->base_class_type = base_type;
     log_debug("Class '{}' extends '{}'", cls_name, decl->base_class_name);
   }
   if (match(TokenType::KEYWORD_IMPLEMENTS)) {
     do {
-      Token iface_tok = consume(TokenType::IDENTIFIER, "Expected interface name");
-      decl->implemented_interfaces.push_back(std::get<std::string>(iface_tok.value));
+      TypeInfo iface_type = parse_type_info();
+      decl->implemented_interfaces.push_back(iface_type.to_string());
+      decl->interface_types.push_back(iface_type);
     } while (match(TokenType::PUNCTUATION_COMMA));
   }
   decl->access_modifier = modifier;

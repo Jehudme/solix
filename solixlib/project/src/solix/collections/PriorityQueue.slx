@@ -5,7 +5,7 @@ import solix.core.String;
 import solix.exceptions.InvalidOperationException;
 import solix.exceptions.NoSuchElementException;
 
-public class PriorityQueueIterator<T> {
+public class PriorityQueueIterator<T> implements IIterator<T> {
     private List<T> _heap;
     private int32 _idx;
 
@@ -28,7 +28,7 @@ public class PriorityQueueIterator<T> {
     }
 }
 
-public class PriorityQueue<T> implements IStringable {
+public class PriorityQueue<T> implements IReadOnlyCollection<T>, IIterable<T>, IStringable {
     private List<T> _heap;
     private int32(*)(T, T) _comparator;
 
@@ -137,12 +137,16 @@ public class PriorityQueue<T> implements IStringable {
         return this._heap.to_array();
     }
 
+    public bool contains(T item) {
+        return this._heap.contains(item);
+    }
+
     public void for_each(void(*)(T) action) {
         if (action == null) return;
         this._heap.for_each(action);
     }
 
-    public PriorityQueueIterator<T> iterator() {
+    public IIterator<T> iterator() {
         return new PriorityQueueIterator<T>(this._heap);
     }
 

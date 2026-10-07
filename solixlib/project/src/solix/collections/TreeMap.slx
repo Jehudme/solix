@@ -21,7 +21,7 @@ class TreeMapNode<K, V> {
     }
 }
 
-public class TreeMap<K, V> implements IStringable {
+public class TreeMap<K, V> implements IMap<K, V>, IStringable {
     private TreeMapNode<K, V> _root;
     private int32 _size;
     private int32(*)(K, K) _comparator;

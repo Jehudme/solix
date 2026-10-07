@@ -173,6 +173,7 @@ public:
 
     Node *unwrap_alias(Node *n);
     Node *resolve_base_class(ClassDeclaration *cls);
+    void resolve_interfaces(ClassDeclaration *cls);
     std::string get_method_sig(const std::string &mangled);
     std::vector<ClassDeclaration *> collect_all_interfaces(ClassDeclaration *cls);
     void calculate_interface_vtable(ClassDeclaration *iface);

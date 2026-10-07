@@ -18,7 +18,7 @@ class HashMapEntry<K, V> {
     }
 }
 
-public class HashMap<K, V> implements IStringable {
+public class HashMap<K, V> implements IMap<K, V>, IStringable {
     private HashMapEntry<K, V>[] _table;
     private int32 _size;
     private int32 _threshold;

@@ -6,7 +6,7 @@ import solix.exceptions.IllegalArgumentException;
 import solix.exceptions.InvalidOperationException;
 import solix.exceptions.NoSuchElementException;
 
-public class CircularBufferIterator<T> {
+public class CircularBufferIterator<T> implements IIterator<T> {
     private T[] _data;
     private int32 _head;
     private int32 _capacity;
@@ -35,7 +35,7 @@ public class CircularBufferIterator<T> {
     }
 }
 
-public class CircularBuffer<T> implements IStringable {
+public class CircularBuffer<T> implements IReadOnlyCollection<T>, IIterable<T>, IStringable {
     private T[] _buffer;
     private int32 _capacity;
     private int32 _head;
@@ -153,6 +153,14 @@ public class CircularBuffer<T> implements IStringable {
         return arr;
     }
 
+    public bool contains(T item) {
+        for (int32 i = 0; i < this._size; i = i + 1) {
+            int32 pos = (this._head + i) % this._capacity;
+            if (this._buffer[pos] == item) return true;
+        }
+        return false;
+    }
+
     public void for_each(void(*)(T) action) {
         if (action == null) return;
         for (int32 i = 0; i < this._size; i = i + 1) {
@@ -161,7 +169,7 @@ public class CircularBuffer<T> implements IStringable {
         }
     }
 
-    public CircularBufferIterator<T> iterator() {
+    public IIterator<T> iterator() {
         return new CircularBufferIterator<T>(this._buffer, this._head, this._capacity, this._size);
     }
 

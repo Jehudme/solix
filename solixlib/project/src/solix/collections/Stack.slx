@@ -5,7 +5,7 @@ import solix.core.String;
 import solix.exceptions.InvalidOperationException;
 import solix.exceptions.NoSuchElementException;
 
-public class StackIterator<T> {
+public class StackIterator<T> implements IIterator<T> {
     private List<T> _items;
     private int32 _idx;
 
@@ -28,7 +28,7 @@ public class StackIterator<T> {
     }
 }
 
-public class Stack<T> implements IStringable {
+public class Stack<T> implements IReadOnlyCollection<T>, IIterable<T>, IStringable {
     private List<T> _items;
 
     public Stack() {
@@ -84,7 +84,7 @@ public class Stack<T> implements IStringable {
         this._items.for_each(action);
     }
 
-    public StackIterator<T> iterator() {
+    public IIterator<T> iterator() {
         return new StackIterator<T>(this._items);
     }
 

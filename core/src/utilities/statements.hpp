@@ -605,10 +605,12 @@ struct ClassDeclaration : public Node {
     std::string class_name;
     std::vector<std::string> template_parameters;
     std::string base_class_name;
+    std::optional<TypeInfo> base_class_type;
     TokenType access_modifier = TokenType::KEYWORD_INTERNAL;
     bool is_abstract = false;
     bool is_interface = false;
     std::vector<std::string> implemented_interfaces;
+    std::vector<TypeInfo> interface_types;
     int instance_size = 0;
     std::vector<uint32_t> reference_field_offsets;
     ClassDeclaration(const Token& t, std::string name) : Node(NodeType::CLASS_DECL, t), class_name(std::move(name)) {}

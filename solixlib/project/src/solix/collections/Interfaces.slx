@@ -3,71 +3,74 @@ package solix.collections;
 import solix.core.IStringable;
 import solix.core.String;
 
-public interface IIterator {
+public interface IIterator<T> {
     bool has_next();
-    IStringable next();
+    T next();
 }
 
-public interface IIterable {
-    IIterator iterator();
+public interface IIterable<T> {
+    IIterator<T> iterator();
 }
 
-public interface IReadOnlyCollection extends IIterable, IStringable {
+public interface IReadOnlyCollection<T> extends IIterable<T>, IStringable {
     int32 size();
     bool is_empty();
-    bool contains(IStringable item);
+    bool contains(T item);
     String to_string();
 }
 
-public interface ICollection extends IIterable, IStringable {
+public interface ICollection<T> extends IIterable<T>, IStringable {
     int32 size();
     bool is_empty();
-    bool contains(IStringable item);
+    bool contains(T item);
+    void add(T item);
+    bool remove(T item);
     void clear();
-    IStringable[] to_array();
+    T[] to_array();
     String to_string();
 }
 
-public interface IList extends ICollection {
-    IStringable get(int32 index);
-    void set(int32 index, IStringable item);
-    void add(IStringable item);
-    void insert(int32 index, IStringable item);
-    bool remove(IStringable item);
-    IStringable remove_at(int32 index);
-    int32 index_of(IStringable item);
+public interface IList<T> extends ICollection<T> {
+    T get(int32 index);
+    void set(int32 index, T item);
+    void insert(int32 index, T item);
+    T remove_at(int32 index);
+    int32 index_of(T item);
 }
 
-public interface IDeque extends ICollection {
-    void add_first(IStringable item);
-    void add_last(IStringable item);
-    IStringable remove_first();
-    IStringable remove_last();
-    IStringable peek_first();
-    IStringable peek_last();
+public interface IDeque<T> extends ICollection<T> {
+    void add_first(T item);
+    void add_last(T item);
+    T remove_first();
+    T remove_last();
+    T peek_first();
+    T peek_last();
 }
 
-public interface ISet extends ICollection {
-    bool add(IStringable item);
-    bool remove(IStringable item);
-    void union_with(ICollection other);
-    void intersect_with(ICollection other);
-    void difference_with(ICollection other);
-    bool is_subset_of(ICollection other);
-    bool is_superset_of(ICollection other);
+public interface ISet<T> extends IReadOnlyCollection<T> {
+    bool add(T item);
+    bool remove(T item);
+    void clear();
+    T[] to_array();
+    void union_with(ISet<T> other);
+    void intersect_with(ISet<T> other);
+    void difference_with(ISet<T> other);
+    bool is_subset_of(ISet<T> other);
+    bool is_superset_of(ISet<T> other);
 }
 
-public interface IMap extends IStringable {
+public interface IMap<K, V> extends IStringable {
     int32 size();
     bool is_empty();
     void clear();
-    bool contains_key(IStringable key);
-    bool contains_value(IStringable value);
-    IStringable get(IStringable key);
-    IStringable get_or_default(IStringable key, IStringable default_val);
-    void put(IStringable key, IStringable value);
-    IStringable remove(IStringable key);
-    List<IStringable> keys();
-    List<IStringable> values();
-    List<IStringable> entries();
+    bool contains_key(K key);
+    bool contains_value(V value);
+    V get(K key);
+    V get_or_default(K key, V default_val);
+    void put(K key, V value);
+    V remove(K key);
+    List<K> keys();
+    List<V> values();
+    List<KeyValuePair<K, V>> entries();
 }
+

@@ -5,7 +5,7 @@ import solix.core.String;
 import solix.exceptions.InvalidOperationException;
 import solix.exceptions.NoSuchElementException;
 
-public class QueueIterator<T> {
+public class QueueIterator<T> implements IIterator<T> {
     private LinkedList<T> _items;
     private int32 _idx;
 
@@ -28,7 +28,7 @@ public class QueueIterator<T> {
     }
 }
 
-public class Queue<T> implements IStringable {
+public class Queue<T> implements IReadOnlyCollection<T>, IIterable<T>, IStringable {
     private LinkedList<T> _items;
 
     public Queue() {
@@ -78,7 +78,7 @@ public class Queue<T> implements IStringable {
         this._items.for_each(action);
     }
 
-    public QueueIterator<T> iterator() {
+    public IIterator<T> iterator() {
         return new QueueIterator<T>(this._items);
     }
 

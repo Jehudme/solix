@@ -17,7 +17,7 @@ class LinkedListNode<T> {
     }
 }
 
-public class LinkedListIterator<T> {
+public class LinkedListIterator<T> implements IIterator<T> {
     private LinkedListNode<T> _current;
 
     public LinkedListIterator(LinkedListNode<T> head) {
@@ -38,7 +38,7 @@ public class LinkedListIterator<T> {
     }
 }
 
-public class LinkedList<T> implements IStringable {
+public class LinkedList<T> implements IList<T>, IDeque<T>, ICollection<T>, IIterable<T>, IStringable {
     private LinkedListNode<T> _head;
     private LinkedListNode<T> _tail;
     private int32 _count;
@@ -324,7 +324,7 @@ public class LinkedList<T> implements IStringable {
         return result;
     }
 
-    public LinkedListIterator<T> iterator() {
+    public IIterator<T> iterator() {
         return new LinkedListIterator<T>(this._head);
     }
 

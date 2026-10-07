@@ -4,7 +4,7 @@ import solix.core.IStringable;
 import solix.core.String;
 import solix.exceptions.NoSuchElementException;
 
-public class HashSetIterator<T> {
+public class HashSetIterator<T> implements IIterator<T> {
     private List<T> _keys;
     private int32 _idx;
 
@@ -27,7 +27,7 @@ public class HashSetIterator<T> {
     }
 }
 
-public class HashSet<T> implements IStringable {
+public class HashSet<T> implements ISet<T>, IReadOnlyCollection<T>, IIterable<T>, IStringable {
     private HashMap<T, bool> _map;
 
     public HashSet() {
@@ -87,7 +87,7 @@ public class HashSet<T> implements IStringable {
         return this._map.keys();
     }
 
-    public HashSetIterator<T> iterator() {
+    public IIterator<T> iterator() {
         return new HashSetIterator<T>(this._map.keys());
     }
 
@@ -107,7 +107,29 @@ public class HashSet<T> implements IStringable {
         }
     }
 
+    public void union_with(ISet<T> other) {
+        if (other == null) return;
+        IIterator<T> it = other.iterator();
+        while (it != null && it.has_next()) {
+            this.add(it.next());
+        }
+    }
+
     public void intersect_with(HashSet<T> other) {
+        if (other == null) {
+            this.clear();
+            return;
+        }
+        List<T> keys = this._map.keys();
+        for (int32 i = 0; i < keys.size(); i = i + 1) {
+            T item = keys.get(i);
+            if (!other.contains(item)) {
+                this.remove(item);
+            }
+        }
+    }
+
+    public void intersect_with(ISet<T> other) {
         if (other == null) {
             this.clear();
             return;
@@ -129,7 +151,25 @@ public class HashSet<T> implements IStringable {
         }
     }
 
+    public void difference_with(ISet<T> other) {
+        if (other == null) return;
+        IIterator<T> it = other.iterator();
+        while (it != null && it.has_next()) {
+            this.remove(it.next());
+        }
+    }
+
     public bool is_subset_of(HashSet<T> other) {
+        if (other == null) return false;
+        if (this.size() > other.size()) return false;
+        List<T> keys = this._map.keys();
+        for (int32 i = 0; i < keys.size(); i = i + 1) {
+            if (!other.contains(keys.get(i))) return false;
+        }
+        return true;
+    }
+
+    public bool is_subset_of(ISet<T> other) {
         if (other == null) return false;
         if (this.size() > other.size()) return false;
         List<T> keys = this._map.keys();
@@ -145,6 +185,16 @@ public class HashSet<T> implements IStringable {
         List<T> keys = other._map.keys();
         for (int32 i = 0; i < keys.size(); i = i + 1) {
             if (!this.contains(keys.get(i))) return false;
+        }
+        return true;
+    }
+
+    public bool is_superset_of(ISet<T> other) {
+        if (other == null) return true;
+        if (other.size() > this.size()) return false;
+        IIterator<T> it = other.iterator();
+        while (it != null && it.has_next()) {
+            if (!this.contains(it.next())) return false;
         }
         return true;
     }
