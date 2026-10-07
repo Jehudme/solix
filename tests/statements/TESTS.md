@@ -4958,6 +4958,56 @@ int32 main() {
 'static' modifier is not allowed on functions outside of a class
 ```
 
+---
+
+## Suite 54: Entry Point Resolution Disambiguation
+
+### Case 54.1: Single Unambiguous Entry Point Execution [NOT IMPLEMENTED]
+```solix
+// pkg1.slx
+package app.service;
+
+int32 run_service() {
+    return 42;
+}
+
+// main.slx
+package app;
+import app.service.*;
+
+int32 main() {
+    return run_service() == 42 ? 0 : 1;
+}
+```
+*Expected Result*: Compiles and executes cleanly with exit code 0 when an unambiguous entry point `main` is found.
+
+---
+
+### Case 54.2: Ambiguous Entry Point Detection Across Modules [NOT IMPLEMENTED]
+```solix
+// mod_a.slx
+package app.alpha;
+
+int32 main() {
+    return 1;
+}
+
+// mod_b.slx
+package app.beta;
+
+int32 main() {
+    return 2;
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+Ambiguous entry point 'main': multiple candidates found:
+  - mod_a.slx:4:1 (in free function 'main')
+  - mod_b.slx:4:1 (in free function 'main')
+```
+*Expected Result*: Compilation fails with compiler error listing candidate files, rows (lines), and columns.
+
+
 
 
 
