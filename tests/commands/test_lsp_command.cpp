@@ -421,3 +421,211 @@ TEST_CASE("Suite 11: LSP Navigation & Inspection (Definitions, Type-Definitions 
     }
 }
 
+TEST_CASE("Suite 12: LSP Intelligence (Completions, Signature Help & Document Symbols)", "[lsp][intelligence]") {
+    std::stringstream input_stream;
+    std::stringstream output_stream;
+
+    LspServer server(input_stream, output_stream);
+
+    std::string source_text = 
+        "class Helper {\n"
+        "    public int32 count;\n"
+        "    public void compute(int32 delta, string tag) {\n"
+        "        int32 x = delta + 1;\n"
+        "    }\n"
+        "}\n"
+        "class Main {\n"
+        "    public void run() {\n"
+        "        Helper h = new Helper();\n"
+        "        h.compute(10, \"test\");\n"
+        "    }\n"
+        "}\n";
+
+    std::string doc_uri = "file:///test/IntelTest.slx";
+
+    nlohmann::json open_msg = {
+        {"jsonrpc", "2.0"},
+        {"method", "textDocument/didOpen"},
+        {"params", {
+            {"textDocument", {
+                {"uri", doc_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", source_text}
+            }}
+        }}
+    };
+    server.process_message(open_msg);
+
+    JsonRpcTransport reader(output_stream, input_stream);
+    auto diag_notif = reader.read_message();
+    REQUIRE(diag_notif.has_value());
+
+    SECTION("Case 12.1: Member Completion on Dot Access") {
+        // Line 9 (0-indexed line 9): "        h.compute(10, \"test\");" -> right after 'h.' is col 10
+        nlohmann::json comp_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 201},
+            {"method", "textDocument/completion"},
+            {"params", {
+                {"textDocument", {{"uri", doc_uri}}},
+                {"position", {{"line", 9}, {"character", 10}}}
+            }}
+        };
+        server.process_message(comp_req);
+
+        auto comp_resp = reader.read_message();
+        REQUIRE(comp_resp.has_value());
+        REQUIRE(comp_resp.value().value("id", 0) == 201);
+        const auto& result = comp_resp.value()["result"];
+        REQUIRE(result.contains("items"));
+        REQUIRE(result["items"].is_array());
+
+        bool found_compute = false;
+        bool found_count = false;
+        for (const auto& item : result["items"]) {
+            std::string label = item.value("label", "");
+            if (label == "compute") {
+                found_compute = true;
+                REQUIRE(item.value("kind", 0) == 2); // CompletionItemKind::Method
+            } else if (label == "count") {
+                found_count = true;
+                REQUIRE(item.value("kind", 0) == 5); // CompletionItemKind::Field
+            }
+        }
+        REQUIRE(found_compute);
+        REQUIRE(found_count);
+    }
+
+    SECTION("Case 12.2: Scope & Keyword Completion") {
+        // Inside run() body at line 8, char 8
+        nlohmann::json comp_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 202},
+            {"method", "textDocument/completion"},
+            {"params", {
+                {"textDocument", {{"uri", doc_uri}}},
+                {"position", {{"line", 8}, {"character", 8}}}
+            }}
+        };
+        server.process_message(comp_req);
+
+        auto comp_resp = reader.read_message();
+        REQUIRE(comp_resp.has_value());
+        REQUIRE(comp_resp.value().value("id", 0) == 202);
+        const auto& result = comp_resp.value()["result"];
+        REQUIRE(result.contains("items"));
+
+        bool found_kw = false;
+        bool found_class = false;
+        for (const auto& item : result["items"]) {
+            std::string label = item.value("label", "");
+            if (label == "return" || label == "class" || label == "if") {
+                found_kw = true;
+            }
+            if (label == "Helper" || label == "Main") {
+                found_class = true;
+            }
+        }
+        REQUIRE(found_kw);
+        REQUIRE(found_class);
+    }
+
+    SECTION("Case 12.3: Signature Help on Method Call") {
+        // Inside h.compute(10, "test") at char 19 (after comma, activeParameter = 1)
+        nlohmann::json sig_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 203},
+            {"method", "textDocument/signatureHelp"},
+            {"params", {
+                {"textDocument", {{"uri", doc_uri}}},
+                {"position", {{"line", 9}, {"character", 22}}}
+            }}
+        };
+        server.process_message(sig_req);
+
+        auto sig_resp = reader.read_message();
+        REQUIRE(sig_resp.has_value());
+        REQUIRE(sig_resp.value().value("id", 0) == 203);
+        REQUIRE_FALSE(sig_resp.value()["result"].is_null());
+
+        const auto& result = sig_resp.value()["result"];
+        REQUIRE(result.contains("signatures"));
+        REQUIRE(!result["signatures"].empty());
+        REQUIRE(result["signatures"][0]["label"].get<std::string>().find("compute") != std::string::npos);
+        REQUIRE(result["signatures"][0]["parameters"].size() == 2);
+        REQUIRE(result["activeParameter"] == 1);
+    }
+
+    SECTION("Case 12.4: Hierarchical Document Symbols Outline") {
+        nlohmann::json sym_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 204},
+            {"method", "textDocument/documentSymbol"},
+            {"params", {
+                {"textDocument", {{"uri", doc_uri}}}
+            }}
+        };
+        server.process_message(sym_req);
+
+        auto sym_resp = reader.read_message();
+        REQUIRE(sym_resp.has_value());
+        REQUIRE(sym_resp.value().value("id", 0) == 204);
+        REQUIRE(sym_resp.value()["result"].is_array());
+
+        const auto& symbols = sym_resp.value()["result"];
+        REQUIRE(symbols.size() >= 2);
+
+        bool found_helper = false;
+        bool found_main = false;
+        for (const auto& s : symbols) {
+            std::string name = s.value("name", "");
+            if (name == "Helper") {
+                found_helper = true;
+                REQUIRE(s.value("kind", 0) == 5); // Class
+                REQUIRE(s.contains("children"));
+                REQUIRE(s["children"].size() >= 2); // count and compute
+            } else if (name == "Main") {
+                found_main = true;
+                REQUIRE(s.value("kind", 0) == 5); // Class
+                REQUIRE(s.contains("children"));
+                REQUIRE(s["children"].size() >= 1); // run
+            }
+        }
+        REQUIRE(found_helper);
+        REQUIRE(found_main);
+    }
+
+    SECTION("Case 12.5: Completion on Unresolved Expression") {
+        // Test didChange with invalid receiver "unknown."
+        std::string modified_text = source_text + "\nclass Dummy { void test() { unknown. } }\n";
+        nlohmann::json change_msg = {
+            {"jsonrpc", "2.0"},
+            {"method", "textDocument/didChange"},
+            {"params", {
+                {"textDocument", {{"uri", doc_uri}, {"version", 2}}},
+                {"contentChanges", {{{"text", modified_text}}}}
+            }}
+        };
+        server.process_message(change_msg);
+        auto ch_notif = reader.read_message(); // drain publishDiagnostics
+
+        nlohmann::json unk_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 205},
+            {"method", "textDocument/completion"},
+            {"params", {
+                {"textDocument", {{"uri", doc_uri}}},
+                {"position", {{"line", 13}, {"character", 36}}}
+            }}
+        };
+        server.process_message(unk_req);
+
+        auto unk_resp = reader.read_message();
+        REQUIRE(unk_resp.has_value());
+        REQUIRE(unk_resp.value().value("id", 0) == 205);
+        REQUIRE(unk_resp.value()["result"]["items"].empty());
+    }
+}
+
+

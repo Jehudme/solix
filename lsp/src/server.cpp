@@ -58,6 +58,12 @@ void LspServer::process_message(const nlohmann::json& msg) {
         if (has_id) handle_type_definition(msg["id"], params);
     } else if (method == "textDocument/hover") {
         if (has_id) handle_hover(msg["id"], params);
+    } else if (method == "textDocument/completion") {
+        if (has_id) handle_completion(msg["id"], params);
+    } else if (method == "textDocument/signatureHelp") {
+        if (has_id) handle_signature_help(msg["id"], params);
+    } else if (method == "textDocument/documentSymbol") {
+        if (has_id) handle_document_symbol(msg["id"], params);
     } else {
         if (has_id) {
             // Method not found (-32601)
@@ -116,7 +122,11 @@ void LspServer::handle_initialize(const nlohmann::json& id, const nlohmann::json
             {"completionProvider", {
                 {"resolveProvider", false},
                 {"triggerCharacters", {".", "::"}}
-            }}
+            }},
+            {"signatureHelpProvider", {
+                {"triggerCharacters", {"(", ","}}
+            }},
+            {"documentSymbolProvider", true}
         }},
         {"serverInfo", {
             {"name", "solix-lsp"},
@@ -329,6 +339,20 @@ void LspServer::analyze_document(const std::string& target_uri) {
 
 namespace {
 
+Range node_to_lsp_range(Node* node) {
+    Range r;
+    if (!node) return r;
+    int s_line = std::max(0, static_cast<int>(node->line) - 1);
+    int s_col = std::max(0, static_cast<int>(node->column) - 1);
+    int e_line = (node->end_line > 0) ? std::max(0, static_cast<int>(node->end_line) - 1) : s_line;
+    int e_col = (node->end_column > 0) ? std::max(0, static_cast<int>(node->end_column) - 1) : (s_col + 1);
+    r.start.line = s_line;
+    r.start.character = s_col;
+    r.end.line = e_line;
+    r.end.character = e_col;
+    return r;
+}
+
 Location make_location_from_node(Node* node) {
     Location loc;
     if (!node) return loc;
@@ -344,16 +368,7 @@ Location make_location_from_node(Node* node) {
         } catch (...) {}
     }
     loc.uri = path_to_uri(path);
-
-    int s_line = std::max(0, static_cast<int>(node->line) - 1);
-    int s_col = std::max(0, static_cast<int>(node->column) - 1);
-    int e_line = (node->end_line > 0) ? std::max(0, static_cast<int>(node->end_line) - 1) : s_line;
-    int e_col = (node->end_column > 0) ? std::max(0, static_cast<int>(node->end_column) - 1) : (s_col + 1);
-
-    loc.range.start.line = s_line;
-    loc.range.start.character = s_col;
-    loc.range.end.line = e_line;
-    loc.range.end.character = e_col;
+    loc.range = node_to_lsp_range(node);
     return loc;
 }
 
@@ -594,6 +609,444 @@ void LspServer::handle_hover(const nlohmann::json& id, const nlohmann::json& par
 
     nlohmann::json hover_json = hover;
     transport_.send_response(id, hover_json);
+}
+
+void LspServer::handle_document_symbol(const nlohmann::json& id, const nlohmann::json& params) {
+    if (!last_context_ || !params.contains("textDocument")) {
+        transport_.send_response(id, nlohmann::json::array());
+        return;
+    }
+
+    std::string uri = params["textDocument"].value("uri", "");
+    std::string file_path = uri_to_path(uri);
+
+    std::vector<DocumentSymbol> symbols;
+
+    for (const auto& [src, nodes] : last_context_->nodes) {
+        std::string src_path;
+        if (std::holds_alternative<std::filesystem::path>(src)) {
+            src_path = std::get<std::filesystem::path>(src).string();
+        } else {
+            src_path = std::get<std::string>(src);
+        }
+        if (src_path != file_path) continue;
+
+        for (const auto& node : nodes) {
+            if (!node) continue;
+            if (node->node_type == NodeType::CLASS_DECL) {
+                auto* cls = static_cast<ClassDeclaration*>(node.get());
+                DocumentSymbol cls_sym;
+                cls_sym.name = cls->class_name;
+                cls_sym.kind = static_cast<int>(cls->is_interface ? SymbolKind::Interface : SymbolKind::Class);
+                cls_sym.range = node_to_lsp_range(cls);
+                cls_sym.selectionRange = cls_sym.range;
+
+                for (const auto& child : cls->children) {
+                    if (!child) continue;
+                    if (child->node_type == NodeType::METHOD_DECL) {
+                        auto* m = static_cast<MethodDeclaration*>(child.get());
+                        DocumentSymbol m_sym;
+                        m_sym.name = m->method_name;
+                        m_sym.detail = m->return_type.to_string();
+                        m_sym.kind = static_cast<int>(SymbolKind::Method);
+                        m_sym.range = node_to_lsp_range(m);
+                        m_sym.selectionRange = m_sym.range;
+                        cls_sym.children.push_back(m_sym);
+                    } else if (child->node_type == NodeType::FIELD_DECL) {
+                        auto* f = static_cast<FieldDeclaration*>(child.get());
+                        DocumentSymbol f_sym;
+                        f_sym.name = f->field_name;
+                        f_sym.detail = f->type_info.to_string();
+                        f_sym.kind = static_cast<int>(SymbolKind::Field);
+                        f_sym.range = node_to_lsp_range(f);
+                        f_sym.selectionRange = f_sym.range;
+                        cls_sym.children.push_back(f_sym);
+                    } else if (child->node_type == NodeType::CONSTRUCTOR_DECL) {
+                        auto* c = static_cast<ConstructorDeclaration*>(child.get());
+                        DocumentSymbol c_sym;
+                        c_sym.name = c->class_name;
+                        c_sym.kind = static_cast<int>(SymbolKind::Constructor);
+                        c_sym.range = node_to_lsp_range(c);
+                        c_sym.selectionRange = c_sym.range;
+                        cls_sym.children.push_back(c_sym);
+                    }
+                }
+                symbols.push_back(cls_sym);
+            } else if (node->node_type == NodeType::ENUM_DECL) {
+                auto* en = static_cast<EnumDeclaration*>(node.get());
+                DocumentSymbol en_sym;
+                en_sym.name = en->enum_name;
+                en_sym.kind = static_cast<int>(SymbolKind::Enum);
+                en_sym.range = node_to_lsp_range(en);
+                en_sym.selectionRange = en_sym.range;
+                for (const auto& member_name : en->members) {
+                    DocumentSymbol em_sym;
+                    em_sym.name = member_name;
+                    em_sym.kind = static_cast<int>(SymbolKind::EnumMember);
+                    em_sym.range = en_sym.range;
+                    em_sym.selectionRange = en_sym.range;
+                    en_sym.children.push_back(em_sym);
+                }
+                symbols.push_back(en_sym);
+            } else if (node->node_type == NodeType::METHOD_DECL) {
+                auto* m = static_cast<MethodDeclaration*>(node.get());
+                DocumentSymbol m_sym;
+                m_sym.name = m->method_name;
+                m_sym.detail = m->return_type.to_string();
+                m_sym.kind = static_cast<int>(SymbolKind::Function);
+                m_sym.range = node_to_lsp_range(m);
+                m_sym.selectionRange = m_sym.range;
+                symbols.push_back(m_sym);
+            }
+        }
+    }
+
+    nlohmann::json res = nlohmann::json::array();
+    for (const auto& s : symbols) {
+        nlohmann::json sj = s;
+        res.push_back(sj);
+    }
+    transport_.send_response(id, res);
+}
+
+void LspServer::handle_completion(const nlohmann::json& id, const nlohmann::json& params) {
+    if (!params.contains("textDocument") || !params.contains("position")) {
+        CompletionList cl;
+        transport_.send_response(id, cl);
+        return;
+    }
+
+    std::string uri = params["textDocument"].value("uri", "");
+    int line = params["position"].value("line", 0);           // 0-indexed
+    int character = params["position"].value("character", 0); // 0-indexed
+
+    auto doc_text_opt = docs_.get_document_text(uri);
+    std::string current_line;
+    if (doc_text_opt.has_value()) {
+        std::istringstream stream(doc_text_opt.value());
+        std::string l;
+        int cur = 0;
+        while (std::getline(stream, l)) {
+            if (cur == line) {
+                current_line = l;
+                break;
+            }
+            cur++;
+        }
+    }
+
+    std::string prefix = (character <= static_cast<int>(current_line.size())) 
+                            ? current_line.substr(0, character) 
+                            : current_line;
+
+    // Check if this is a dot completion (e.g. "obj." or "obj.part")
+    size_t last_dot = prefix.rfind('.');
+    bool is_dot_access = false;
+    std::string receiver_name;
+
+    if (last_dot != std::string::npos) {
+        // Ensure characters between last_dot and end of prefix are valid identifier characters
+        bool valid_suffix = true;
+        for (size_t i = last_dot + 1; i < prefix.size(); ++i) {
+            char c = prefix[i];
+            if (!std::isalnum(c) && c != '_') {
+                valid_suffix = false;
+                break;
+            }
+        }
+        if (valid_suffix) {
+            // Find receiver word ending right before last_dot
+            size_t end_recv = last_dot;
+            while (end_recv > 0 && std::isspace(prefix[end_recv - 1])) end_recv--;
+            size_t start_recv = end_recv;
+            while (start_recv > 0 && (std::isalnum(prefix[start_recv - 1]) || prefix[start_recv - 1] == '_')) {
+                start_recv--;
+            }
+            if (end_recv > start_recv) {
+                receiver_name = prefix.substr(start_recv, end_recv - start_recv);
+                is_dot_access = true;
+            }
+        }
+    }
+
+    CompletionList comp_list;
+
+    if (is_dot_access && !receiver_name.empty()) {
+        std::string file_path = uri_to_path(uri);
+        // Find receiver type via spatial index at receiver position
+        int recv_col = static_cast<int>(last_dot); // 1-indexed column of the char before '.'
+        Node* recv_node = spatial_index_.find_node_at(file_path, line + 1, recv_col);
+
+        std::string target_class_name;
+        if (recv_node) {
+            if (recv_node->resolved_declaration) {
+                Node* decl = recv_node->resolved_declaration;
+                if (decl->node_type == NodeType::VAR_DECL) {
+                    target_class_name = static_cast<VariableDeclaration*>(decl)->type_info.name;
+                } else if (decl->node_type == NodeType::FIELD_DECL) {
+                    target_class_name = static_cast<FieldDeclaration*>(decl)->type_info.name;
+                } else if (decl->node_type == NodeType::CLASS_DECL) {
+                    target_class_name = static_cast<ClassDeclaration*>(decl)->class_name;
+                }
+            } else if (!recv_node->expression_type.name.empty()) {
+                target_class_name = recv_node->expression_type.name;
+            }
+        }
+
+        // If spatial index did not directly resolve receiver, search context for local variable or class
+        if (target_class_name.empty() && last_context_) {
+            for (const auto& [src, nodes] : last_context_->nodes) {
+                for (const auto& node : nodes) {
+                    if (!node || node->node_type != NodeType::CLASS_DECL) continue;
+                    auto* cd = static_cast<ClassDeclaration*>(node.get());
+                    if (cd->class_name == receiver_name) {
+                        target_class_name = cd->class_name;
+                        break;
+                    }
+                    for (const auto& member : cd->children) {
+                        if (!member || member->node_type != NodeType::METHOD_DECL) continue;
+                        auto* md = static_cast<MethodDeclaration*>(member.get());
+                        for (const auto& child : md->children) {
+                            if (!child) continue;
+                            auto check_var = [&](Node* n) {
+                                if (n && n->node_type == NodeType::VAR_DECL) {
+                                    auto* vd = static_cast<VariableDeclaration*>(n);
+                                    if (vd->var_name == receiver_name) {
+                                        target_class_name = vd->type_info.name;
+                                    }
+                                }
+                            };
+                            check_var(child.get());
+                            for (const auto& nested : child->children) {
+                                check_var(nested.get());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!target_class_name.empty() && last_context_) {
+            // Find class declaration and populate members
+            for (const auto& [src, nodes] : last_context_->nodes) {
+                for (const auto& node : nodes) {
+                    if (!node || node->node_type != NodeType::CLASS_DECL) continue;
+                    auto* cd = static_cast<ClassDeclaration*>(node.get());
+                    if (cd->class_name == target_class_name || cd->mangled_name == target_class_name) {
+                        for (const auto& member : cd->children) {
+                            if (!member) continue;
+                            if (member->node_type == NodeType::METHOD_DECL) {
+                                auto* md = static_cast<MethodDeclaration*>(member.get());
+                                CompletionItem item;
+                                item.label = md->method_name;
+                                item.kind = static_cast<int>(CompletionItemKind::Method);
+                                item.detail = md->return_type.to_string() + " " + md->method_name + "()";
+                                item.insertText = md->method_name + "()";
+                                comp_list.items.push_back(item);
+                            } else if (member->node_type == NodeType::FIELD_DECL) {
+                                auto* fd = static_cast<FieldDeclaration*>(member.get());
+                                CompletionItem item;
+                                item.label = fd->field_name;
+                                item.kind = static_cast<int>(CompletionItemKind::Field);
+                                item.detail = fd->type_info.to_string();
+                                item.insertText = fd->field_name;
+                                comp_list.items.push_back(item);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Return completions for dot access (empty if unresolved)
+        transport_.send_response(id, comp_list);
+        return;
+    }
+
+    // General scope completion: Keywords, visible locals, class members, types
+    static const std::vector<std::string> keywords = {
+        "class", "interface", "enum", "struct", "public", "private", "protected", "internal",
+        "static", "virtual", "override", "abstract", "native", "const",
+        "if", "else", "while", "do", "for", "switch", "case", "default", "break", "continue",
+        "return", "throw", "try", "catch", "finally", "new", "null", "true", "false",
+        "this", "super", "import", "package", "alias", "var", "int32", "int64", "string", "bool", "void"
+    };
+
+    for (const auto& kw : keywords) {
+        CompletionItem item;
+        item.label = kw;
+        item.kind = static_cast<int>(CompletionItemKind::Keyword);
+        item.insertText = kw;
+        comp_list.items.push_back(item);
+    }
+
+    if (last_context_) {
+        std::string file_path = uri_to_path(uri);
+        Node* hit = spatial_index_.find_node_at(file_path, line + 1, std::max(1, character));
+        // Find enclosing method
+        Node* curr = hit;
+        while (curr && curr->node_type != NodeType::METHOD_DECL && curr->node_type != NodeType::CLASS_DECL) {
+            curr = curr->parent;
+        }
+
+        if (curr && curr->node_type == NodeType::METHOD_DECL) {
+            auto* md = static_cast<MethodDeclaration*>(curr);
+            for (const auto& param : md->parameters) {
+                CompletionItem item;
+                item.label = param->var_name;
+                item.kind = static_cast<int>(CompletionItemKind::Variable);
+                item.detail = param->type_info.to_string();
+                item.insertText = param->var_name;
+                comp_list.items.push_back(item);
+            }
+        }
+
+        // Add class names
+        for (const auto& [src, nodes] : last_context_->nodes) {
+            for (const auto& n : nodes) {
+                if (n && n->node_type == NodeType::CLASS_DECL) {
+                    auto* cd = static_cast<ClassDeclaration*>(n.get());
+                    CompletionItem item;
+                    item.label = cd->class_name;
+                    item.kind = static_cast<int>(CompletionItemKind::Class);
+                    item.insertText = cd->class_name;
+                    comp_list.items.push_back(item);
+                }
+            }
+        }
+    }
+
+    transport_.send_response(id, comp_list);
+}
+
+void LspServer::handle_signature_help(const nlohmann::json& id, const nlohmann::json& params) {
+    if (!params.contains("textDocument") || !params.contains("position") || !last_context_) {
+        transport_.send_response(id, nullptr);
+        return;
+    }
+
+    std::string uri = params["textDocument"].value("uri", "");
+    int line = params["position"].value("line", 0);
+    int character = params["position"].value("character", 0);
+
+    auto doc_text_opt = docs_.get_document_text(uri);
+    if (!doc_text_opt.has_value()) {
+        transport_.send_response(id, nullptr);
+        return;
+    }
+
+    // Scan backwards from cursor to find open '(' and count commas
+    std::istringstream stream(doc_text_opt.value());
+    std::string l;
+    int cur_line_idx = 0;
+    std::string target_line;
+    while (std::getline(stream, l)) {
+        if (cur_line_idx == line) {
+            target_line = l;
+            break;
+        }
+        cur_line_idx++;
+    }
+
+    if (character > static_cast<int>(target_line.size())) {
+        character = static_cast<int>(target_line.size());
+    }
+
+    int depth = 0;
+    int comma_count = 0;
+    int open_paren_char = -1;
+
+    for (int i = character - 1; i >= 0; --i) {
+        char c = target_line[i];
+        if (c == ')') {
+            depth++;
+        } else if (c == '(') {
+            if (depth == 0) {
+                open_paren_char = i;
+                break;
+            } else {
+                depth--;
+            }
+        } else if (c == ',' && depth == 0) {
+            comma_count++;
+        }
+    }
+
+    if (open_paren_char < 0) {
+        transport_.send_response(id, nullptr);
+        return;
+    }
+
+    // Extract callee name immediately preceding '('
+    size_t end_callee = open_paren_char;
+    while (end_callee > 0 && std::isspace(target_line[end_callee - 1])) end_callee--;
+    size_t start_callee = end_callee;
+    while (start_callee > 0 && (std::isalnum(target_line[start_callee - 1]) || target_line[start_callee - 1] == '_')) {
+        start_callee--;
+    }
+    std::string method_name = target_line.substr(start_callee, end_callee - start_callee);
+
+    if (method_name.empty()) {
+        transport_.send_response(id, nullptr);
+        return;
+    }
+
+    // Search context for method declaration
+    MethodDeclaration* target_method = nullptr;
+    for (const auto& [src, nodes] : last_context_->nodes) {
+        for (const auto& n : nodes) {
+            if (!n) continue;
+            if (n->node_type == NodeType::CLASS_DECL) {
+                auto* cd = static_cast<ClassDeclaration*>(n.get());
+                for (const auto& member : cd->children) {
+                    if (member && member->node_type == NodeType::METHOD_DECL) {
+                        auto* md = static_cast<MethodDeclaration*>(member.get());
+                        if (md->method_name == method_name) {
+                            target_method = md;
+                            break;
+                        }
+                    }
+                }
+            } else if (n->node_type == NodeType::METHOD_DECL) {
+                auto* md = static_cast<MethodDeclaration*>(n.get());
+                if (md->method_name == method_name) {
+                    target_method = md;
+                    break;
+                }
+            }
+            if (target_method) break;
+        }
+        if (target_method) break;
+    }
+
+    if (!target_method) {
+        transport_.send_response(id, nullptr);
+        return;
+    }
+
+    SignatureInformation sig;
+    std::string sig_label = target_method->return_type.to_string() + " " + target_method->method_name + "(";
+    for (size_t i = 0; i < target_method->parameters.size(); ++i) {
+        if (i > 0) sig_label += ", ";
+        std::string p_str = target_method->parameters[i]->type_info.to_string() + " " + target_method->parameters[i]->var_name;
+        sig_label += p_str;
+
+        ParameterInformation param_info;
+        param_info.label = p_str;
+        param_info.documentation = "Parameter " + target_method->parameters[i]->var_name;
+        sig.parameters.push_back(param_info);
+    }
+    sig_label += ")";
+    sig.label = sig_label;
+    sig.activeParameter = comma_count;
+
+    SignatureHelp help;
+    help.signatures.push_back(sig);
+    help.activeSignature = 0;
+    help.activeParameter = comma_count;
+
+    nlohmann::json help_json = help;
+    transport_.send_response(id, help_json);
 }
 
 } // namespace solix::lsp

@@ -628,24 +628,24 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 12.1: Member Completion on Dot Access [NOT IMPLEMENTED]
+#### Case 12.1: Member Completion on Dot Access [IMPLEMENTED]
 - **Request**: `textDocument/completion` after typing `.` on an instance expression (e.g. `h.`).
 - **Expected**: Returns `CompletionList` containing accessible fields and methods of the receiver's type with correct `CompletionItemKind`.
 
-#### Case 12.2: Scope & Keyword Completion [NOT IMPLEMENTED]
+#### Case 12.2: Scope & Keyword Completion [IMPLEMENTED]
 - **Request**: `textDocument/completion` within a function or method body.
 - **Expected**: Returns `CompletionList` containing visible local variables, parameters, enclosing class members, and language keywords.
 
-#### Case 12.3: Signature Help on Method Call [NOT IMPLEMENTED]
+#### Case 12.3: Signature Help on Method Call [IMPLEMENTED]
 - **Request**: `textDocument/signatureHelp` inside argument list parentheses (e.g. `compute(`).
 - **Expected**: Returns `SignatureHelp` with `SignatureInformation` detailing parameter names and active parameter index.
 
-#### Case 12.4: Hierarchical Document Symbols Outline [NOT IMPLEMENTED]
+#### Case 12.4: Hierarchical Document Symbols Outline [IMPLEMENTED]
 - **Request**: `textDocument/documentSymbol` on a source file.
 - **Expected**: Returns array of `DocumentSymbol` representing class declarations and nested methods/fields with their respective `SymbolKind` and ranges.
 
 ### Negative Test Scenarios
 
-#### Case 12.5: Completion on Unresolved Expression [NOT IMPLEMENTED]
+#### Case 12.5: Completion on Unresolved Expression [IMPLEMENTED]
 - **Request**: `textDocument/completion` after dot access on unknown/invalid identifier.
 - **Expected**: Returns empty `CompletionList` (`items: []`) gracefully without crashing.

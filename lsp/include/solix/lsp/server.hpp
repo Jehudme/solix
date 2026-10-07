@@ -46,6 +46,9 @@ private:
     void handle_definition(const nlohmann::json& id, const nlohmann::json& params);
     void handle_type_definition(const nlohmann::json& id, const nlohmann::json& params);
     void handle_hover(const nlohmann::json& id, const nlohmann::json& params);
+    void handle_completion(const nlohmann::json& id, const nlohmann::json& params);
+    void handle_signature_help(const nlohmann::json& id, const nlohmann::json& params);
+    void handle_document_symbol(const nlohmann::json& id, const nlohmann::json& params);
 
     void load_project_dependencies();
 
