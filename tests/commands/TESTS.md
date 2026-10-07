@@ -716,3 +716,35 @@ This document is the master test specification for the Solix CLI command suite (
 #### Case 12.10: Case Context Enum Member Completion [IMPLEMENTED]
 - **Request**: `textDocument/completion` after `case ` within a switch statement switching on an enum.
 - **Expected**: Returns members of the switch expression's enum type.
+
+---
+
+# Part VIII: Multi-Project Manifest Discovery & Unbound Generic Scope Resolution
+
+## LspGenericScopeAndProjectCommand
+
+*Command*: `solix lsp` (JSON-RPC requests `textDocument/definition`, `textDocument/hover`, `textDocument/completion` on multi-file projects and uninstantiated generic templates)
+
+### Positive Test Scenarios
+
+#### Case 14.1: Upward Manifest Discovery from Nested File Path [NOT IMPLEMENTED]
+- **Command**: `solix lsp`
+- **Setup**: Subdirectory project containing `solix.json` with source dependencies, where LSP `initialize` was passed an ancestor repository directory.
+- **Input**: `textDocument/didOpen` on a nested `.slx` file inside the subproject.
+- **Expected**: Discovers the closest `solix.json` by searching upwards from the file path and resolves all dependency files without undefined import errors.
+
+#### Case 14.2: Generic Blueprint Scope Parameter Hover and Definition [NOT IMPLEMENTED]
+- **Command**: `solix lsp`
+- **Input**: Hover and Go to Definition on a method parameter within an uninstantiated generic class (e.g. `contains(T item)`).
+- **Expected**: Hover displays the parameter signature (e.g. `T item`) and Go to Definition jumps to the parameter declaration.
+
+#### Case 14.3: Generic Blueprint Member Access Chained Resolution [NOT IMPLEMENTED]
+- **Command**: `solix lsp`
+- **Input**: Hover and Go to Definition on a method call invoked on a generic field (e.g. `this._map.contains_key(item)`).
+- **Expected**: Hover displays the target method signature and Go to Definition navigates across files to the declaring class of the member.
+
+#### Case 14.4: Resilient `this.` Completion in Generic Classes During Live Editing [NOT IMPLEMENTED]
+- **Command**: `solix lsp`
+- **Input**: `textDocument/completion` on `this.` within a generic method body following a `didChange` notification.
+- **Expected**: Returns all fields and methods of the enclosing class even when transient syntax errors exist during live typing.
+
