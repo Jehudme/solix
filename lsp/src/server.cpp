@@ -8,6 +8,7 @@
 #include "utilities/diagnostic.hpp"
 #include <fstream>
 #include <sstream>
+#include <unordered_set>
 
 namespace solix::lsp {
 
@@ -461,6 +462,149 @@ std::string format_hover_for_node(Node* node, CompilationContext* ctx) {
     return md;
 }
 
+std::string get_word_at_position(const std::string& text, int line, int character) {
+    if (text.empty() || line < 1 || character < 1) return "";
+    
+    int current_line = 1;
+    size_t line_start = 0;
+    while (current_line < line && line_start < text.size()) {
+        size_t next_nl = text.find('\n', line_start);
+        if (next_nl == std::string::npos) return "";
+        line_start = next_nl + 1;
+        current_line++;
+    }
+    if (current_line != line || line_start >= text.size()) return "";
+
+    size_t line_end = text.find('\n', line_start);
+    if (line_end == std::string::npos) line_end = text.size();
+    if (line_end > line_start && text[line_end - 1] == '\r') line_end--;
+
+    size_t col_idx = line_start + static_cast<size_t>(character - 1);
+    if (col_idx > line_end) return "";
+
+    auto is_ident_char = [](char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+    };
+
+    if (col_idx == line_end || !is_ident_char(text[col_idx])) {
+        if (col_idx > line_start && is_ident_char(text[col_idx - 1])) {
+            col_idx--;
+        } else {
+            return "";
+        }
+    }
+
+    size_t start = col_idx;
+    while (start > line_start && is_ident_char(text[start - 1])) {
+        start--;
+    }
+
+    size_t end = col_idx;
+    while (end < line_end && is_ident_char(text[end])) {
+        end++;
+    }
+
+    return text.substr(start, end - start);
+}
+
+bool is_keyword(const std::string& w) {
+    static const std::unordered_set<std::string> kw = {
+        "if", "else", "while", "for", "do", "switch", "case", "default",
+        "break", "continue", "return", "throw", "try", "catch", "finally",
+        "class", "interface", "enum", "package", "import", "alias",
+        "public", "private", "protected", "internal", "static", "inline",
+        "native", "virtual", "override", "const", "weak", "abstract",
+        "new", "extends", "implements", "operator", "assert", "exit",
+        "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64",
+        "f32", "f64", "bool", "string", "void", "auto", "null", "true", "false",
+        "instanceof", "sizeof", "super", "this"
+    };
+    return kw.find(w) != kw.end();
+}
+
+Node* find_type_declaration(const std::string& full_type_name, CompilationContext* context) {
+    if (!context || full_type_name.empty()) return nullptr;
+
+    std::string base = full_type_name;
+    auto lt = base.find('<');
+    if (lt != std::string::npos) base = base.substr(0, lt);
+    auto brk = base.find('[');
+    if (brk != std::string::npos) base = base.substr(0, brk);
+
+    if (base.empty()) return nullptr;
+
+    for (const auto& [name, sym] : context->symbols) {
+        if (!sym) continue;
+        if (sym->node_type == NodeType::CLASS_DECL || sym->node_type == NodeType::ENUM_DECL || sym->node_type == NodeType::ALIAS_STMT) {
+            if (name == base || sym->mangled_name == base) {
+                return sym;
+            }
+        }
+    }
+
+    for (const auto& [src, nodes] : context->nodes) {
+        for (const auto& n : nodes) {
+            if (!n) continue;
+            if (n->node_type == NodeType::CLASS_DECL) {
+                auto* c = static_cast<ClassDeclaration*>(n.get());
+                if (c->class_name == base || c->mangled_name == base) {
+                    return c;
+                }
+            } else if (n->node_type == NodeType::ENUM_DECL) {
+                auto* e = static_cast<EnumDeclaration*>(n.get());
+                if (e->enum_name == base || e->mangled_name == base) {
+                    return e;
+                }
+            } else if (n->node_type == NodeType::ALIAS_STMT) {
+                auto* a = static_cast<AliasStatement*>(n.get());
+                if (a->alias_name == base || a->mangled_name == base) {
+                    return a;
+                }
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+Node* find_overridden_method(MethodDeclaration* method, CompilationContext* context) {
+    if (!method || !context) return nullptr;
+    auto* parent_cls = dynamic_cast<ClassDeclaration*>(method->parent);
+    if (!parent_cls) return nullptr;
+
+    if (!parent_cls->base_class_name.empty()) {
+        Node* base_node = find_type_declaration(parent_cls->base_class_name, context);
+        if (base_node && base_node->node_type == NodeType::CLASS_DECL) {
+            auto* base_cls = static_cast<ClassDeclaration*>(base_node);
+            for (const auto& ch : base_cls->children) {
+                if (ch && ch->node_type == NodeType::METHOD_DECL) {
+                    auto* m = static_cast<MethodDeclaration*>(ch.get());
+                    if (m->method_name == method->method_name) {
+                        return m;
+                    }
+                }
+            }
+        }
+    }
+
+    for (const auto& iface_name : parent_cls->implemented_interfaces) {
+        Node* iface_node = find_type_declaration(iface_name, context);
+        if (iface_node && iface_node->node_type == NodeType::CLASS_DECL) {
+            auto* iface_cls = static_cast<ClassDeclaration*>(iface_node);
+            for (const auto& ch : iface_cls->children) {
+                if (ch && ch->node_type == NodeType::METHOD_DECL) {
+                    auto* m = static_cast<MethodDeclaration*>(ch.get());
+                    if (m->method_name == method->method_name) {
+                        return m;
+                    }
+                }
+            }
+        }
+    }
+
+    return nullptr;
+}
+
 } // namespace
 
 void LspServer::handle_definition(const nlohmann::json& id, const nlohmann::json& params) {
@@ -474,35 +618,105 @@ void LspServer::handle_definition(const nlohmann::json& id, const nlohmann::json
     int character = params["position"].value("character", 0) + 1;
 
     std::string file_path = uri_to_path(uri);
-    Node* hit = spatial_index_.find_node_at(file_path, line, character);
+    auto doc_opt = docs_.get_document_text(uri);
+    std::string source_text = doc_opt.value_or("");
+    if (source_text.empty() && last_opts_) {
+        auto it = last_opts_->sources.find(file_path);
+        if (it != last_opts_->sources.end()) {
+            source_text = it->second.value_or("");
+        }
+    }
 
-    if (!hit) {
+    std::string word = get_word_at_position(source_text, line, character);
+
+    // Reserved keywords suppress Go-to-Definition
+    if (is_keyword(word)) {
         transport_.send_response(id, nullptr);
         return;
     }
 
-    Node* target = hit->resolved_declaration;
-    if (!target && hit->parent && hit->parent->resolved_declaration) {
-        target = hit->parent->resolved_declaration;
-    }
-    if (!target && hit->node_type == NodeType::MEMBER_ACCESS) {
-        auto* mem = static_cast<MemberAccessExpression*>(hit);
-        if (mem->parent && mem->parent->resolved_declaration) {
-            target = mem->parent->resolved_declaration;
+    Node* target = nullptr;
+
+    // 1. Direct type resolution (e.g. extends Base, implements IFoo, type annotations, casts, catch)
+    if (!word.empty()) {
+        Node* type_match = find_type_declaration(word, last_context_.get());
+        if (type_match) {
+            // If the cursor is on the declaration of the class/enum itself, do not target itself
+            if (type_match->node_type == NodeType::CLASS_DECL) {
+                auto* c = static_cast<ClassDeclaration*>(type_match);
+                if (c->class_name == word && c->line == static_cast<uint32_t>(line)) {
+                    target = nullptr;
+                } else {
+                    target = type_match;
+                }
+            } else if (type_match->node_type == NodeType::ENUM_DECL) {
+                auto* e = static_cast<EnumDeclaration*>(type_match);
+                if (e->enum_name == word && e->line == static_cast<uint32_t>(line)) {
+                    target = nullptr;
+                } else {
+                    target = type_match;
+                }
+            } else {
+                target = type_match;
+            }
         }
     }
-    if (!target && hit->node_type == NodeType::METHOD_CALL) {
-        auto* mc = static_cast<MethodCallExpression*>(hit);
-        if (mc->callee && mc->callee->resolved_declaration) {
-            target = mc->callee->resolved_declaration;
-        }
-    }
+
+    // 2. Spatial AST query with multi-step definition chaining
     if (!target) {
-        // If hit is itself a declaration, it can point to itself
-        if (hit->node_type == NodeType::VAR_DECL || hit->node_type == NodeType::METHOD_DECL ||
-            hit->node_type == NodeType::CLASS_DECL || hit->node_type == NodeType::FIELD_DECL ||
-            hit->node_type == NodeType::ENUM_DECL || hit->node_type == NodeType::ALIAS_STMT) {
-            target = hit;
+        Node* hit = spatial_index_.find_node_at(file_path, line, character);
+        if (hit) {
+            if (hit->node_type == NodeType::METHOD_DECL) {
+                auto* md = static_cast<MethodDeclaration*>(hit);
+                if (md->is_override) {
+                    target = find_overridden_method(md, last_context_.get());
+                }
+                if (!target) target = md;
+            } else if (hit->node_type == NodeType::VAR_DECL) {
+                auto* vd = static_cast<VariableDeclaration*>(hit);
+                target = find_type_declaration(vd->type_info.name, last_context_.get());
+                if (!target) target = vd;
+            } else if (hit->node_type == NodeType::FIELD_DECL) {
+                auto* fd = static_cast<FieldDeclaration*>(hit);
+                target = find_type_declaration(fd->type_info.name, last_context_.get());
+                if (!target) target = fd;
+            } else if (hit->node_type == NodeType::NEW_INSTANCE) {
+                auto* ni = static_cast<NewInstanceExpression*>(hit);
+                target = find_type_declaration(ni->type_info.name, last_context_.get());
+            } else if (hit->node_type == NodeType::CAST_EXPR) {
+                auto* ce = static_cast<CastExpression*>(hit);
+                target = find_type_declaration(ce->target_type.name, last_context_.get());
+            } else if (hit->node_type == NodeType::INSTANCEOF_EXPR) {
+                auto* ie = static_cast<InstanceofExpression*>(hit);
+                target = find_type_declaration(ie->target_type.name, last_context_.get());
+            } else if (hit->node_type == NodeType::CATCH_CLAUSE) {
+                auto* cc = static_cast<CatchClause*>(hit);
+                target = find_type_declaration(cc->exception_type.name, last_context_.get());
+            } else {
+                target = hit->resolved_declaration;
+                if (!target && hit->parent && hit->parent->resolved_declaration) {
+                    target = hit->parent->resolved_declaration;
+                }
+                if (!target && hit->node_type == NodeType::MEMBER_ACCESS) {
+                    auto* mem = static_cast<MemberAccessExpression*>(hit);
+                    if (mem->parent && mem->parent->resolved_declaration) {
+                        target = mem->parent->resolved_declaration;
+                    }
+                }
+                if (!target && hit->node_type == NodeType::METHOD_CALL) {
+                    auto* mc = static_cast<MethodCallExpression*>(hit);
+                    if (mc->callee && mc->callee->resolved_declaration) {
+                        target = mc->callee->resolved_declaration;
+                    }
+                }
+                if (!target) {
+                    if (hit->node_type == NodeType::VAR_DECL || hit->node_type == NodeType::METHOD_DECL ||
+                        hit->node_type == NodeType::CLASS_DECL || hit->node_type == NodeType::FIELD_DECL ||
+                        hit->node_type == NodeType::ENUM_DECL || hit->node_type == NodeType::ALIAS_STMT) {
+                        target = hit;
+                    }
+                }
+            }
         }
     }
 
@@ -527,62 +741,48 @@ void LspServer::handle_type_definition(const nlohmann::json& id, const nlohmann:
     int character = params["position"].value("character", 0) + 1;
 
     std::string file_path = uri_to_path(uri);
-    Node* hit = spatial_index_.find_node_at(file_path, line, character);
-
-    if (!hit) {
-        transport_.send_response(id, nullptr);
-        return;
-    }
-
-    std::string type_name = hit->expression_type.name;
-    if (hit->node_type == NodeType::VAR_DECL) {
-        type_name = static_cast<VariableDeclaration*>(hit)->type_info.name;
-    } else if (hit->node_type == NodeType::FIELD_DECL) {
-        type_name = static_cast<FieldDeclaration*>(hit)->type_info.name;
-    } else if (type_name.empty() && hit->resolved_declaration) {
-        if (hit->resolved_declaration->node_type == NodeType::VAR_DECL) {
-            type_name = static_cast<VariableDeclaration*>(hit->resolved_declaration)->type_info.name;
-        } else if (hit->resolved_declaration->node_type == NodeType::FIELD_DECL) {
-            type_name = static_cast<FieldDeclaration*>(hit->resolved_declaration)->type_info.name;
-        } else {
-            type_name = hit->resolved_declaration->expression_type.name;
+    auto doc_opt = docs_.get_document_text(uri);
+    std::string source_text = doc_opt.value_or("");
+    if (source_text.empty() && last_opts_) {
+        auto it = last_opts_->sources.find(file_path);
+        if (it != last_opts_->sources.end()) {
+            source_text = it->second.value_or("");
         }
     }
 
-    if (type_name.empty() || !last_context_) {
-        transport_.send_response(id, nullptr);
-        return;
-    }
-
-    // Find class or enum matching type_name
+    std::string word = get_word_at_position(source_text, line, character);
     Node* type_decl = nullptr;
-    for (const auto& [name, sym] : last_context_->symbols) {
-        if (sym && (sym->node_type == NodeType::CLASS_DECL || sym->node_type == NodeType::ENUM_DECL)) {
-            if (sym->mangled_name == type_name || name == type_name) {
-                type_decl = sym;
-                break;
-            }
-        }
+
+    if (!word.empty() && !is_keyword(word)) {
+        type_decl = find_type_declaration(word, last_context_.get());
     }
+
     if (!type_decl) {
-        for (const auto& [src, nodes] : last_context_->nodes) {
-            for (const auto& n : nodes) {
-                if (!n) continue;
-                if (n->node_type == NodeType::CLASS_DECL) {
-                    auto* c = static_cast<ClassDeclaration*>(n.get());
-                    if (c->class_name == type_name || c->mangled_name == type_name) {
-                        type_decl = c;
-                        break;
-                    }
-                } else if (n->node_type == NodeType::ENUM_DECL) {
-                    auto* e = static_cast<EnumDeclaration*>(n.get());
-                    if (e->enum_name == type_name || e->mangled_name == type_name) {
-                        type_decl = e;
-                        break;
-                    }
+        Node* hit = spatial_index_.find_node_at(file_path, line, character);
+        if (hit) {
+            std::string type_name = hit->expression_type.name;
+            if (hit->node_type == NodeType::VAR_DECL) {
+                type_name = static_cast<VariableDeclaration*>(hit)->type_info.name;
+            } else if (hit->node_type == NodeType::FIELD_DECL) {
+                type_name = static_cast<FieldDeclaration*>(hit)->type_info.name;
+            } else if (hit->node_type == NodeType::NEW_INSTANCE) {
+                type_name = static_cast<NewInstanceExpression*>(hit)->type_info.name;
+            } else if (hit->node_type == NodeType::CAST_EXPR) {
+                type_name = static_cast<CastExpression*>(hit)->target_type.name;
+            } else if (hit->node_type == NodeType::INSTANCEOF_EXPR) {
+                type_name = static_cast<InstanceofExpression*>(hit)->target_type.name;
+            } else if (hit->node_type == NodeType::CATCH_CLAUSE) {
+                type_name = static_cast<CatchClause*>(hit)->exception_type.name;
+            } else if (type_name.empty() && hit->resolved_declaration) {
+                if (hit->resolved_declaration->node_type == NodeType::VAR_DECL) {
+                    type_name = static_cast<VariableDeclaration*>(hit->resolved_declaration)->type_info.name;
+                } else if (hit->resolved_declaration->node_type == NodeType::FIELD_DECL) {
+                    type_name = static_cast<FieldDeclaration*>(hit->resolved_declaration)->type_info.name;
+                } else {
+                    type_name = hit->resolved_declaration->expression_type.name;
                 }
             }
-            if (type_decl) break;
+            type_decl = find_type_declaration(type_name, last_context_.get());
         }
     }
 

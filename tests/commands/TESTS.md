@@ -630,15 +630,15 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: `editors/vscode/syntaxes/solix.tmLanguage.json`
 - **Validation**: Asserts all control and declaration keywords (`implements`, `extends`, `operator`, `assert`, `exit`, `weak`, `instanceof`, `sizeof`) and class name capture rules (`entity.name.type.class.solix`) are present.
 
-#### Case 11.8: Variable Reference to Declaration and Declaration-to-Type Chaining [NOT IMPLEMENTED]
+#### Case 11.8: Variable Reference to Declaration and Declaration-to-Type Chaining [IMPLEMENTED]
 - **Request**: `textDocument/definition` first on variable use (jumping to variable declaration), then on variable declaration site.
 - **Expected**: First jump navigates to `VariableDeclaration` coordinates; second jump from declaration chains into `ClassDeclaration` of the variable's type.
 
-#### Case 11.9: Type Annotation Go-to-Definition Across Constructs [NOT IMPLEMENTED]
+#### Case 11.9: Type Annotation Go-to-Definition Across Constructs [IMPLEMENTED]
 - **Request**: `textDocument/definition` on type annotation identifiers in variable declarations (`Calculator c;`), `new` expressions (`new Calculator()`), cast expressions (`(Calculator) obj`), and `catch` clauses (`catch (MyError err)`).
 - **Expected**: Each request resolves to the corresponding `ClassDeclaration` location.
 
-#### Case 11.10: Inheritance & Override Definition Navigation [NOT IMPLEMENTED]
+#### Case 11.10: Inheritance & Override Definition Navigation [IMPLEMENTED]
 - **Request**: `textDocument/definition` on `extends <Base>`, `implements <Interface>`, and `override` method declarations.
 - **Expected**: `extends` and `implements` resolve to base class/interface declarations; `override` method navigates to the overridden method declaration in the base class.
 ---

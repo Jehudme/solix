@@ -518,6 +518,262 @@ TEST_CASE("Suite 11: LSP Navigation & Inspection (Definitions, Type-Definitions 
         REQUIRE(json_str.find("exit") != std::string::npos);
         REQUIRE(json_str.find("entity.name.type.class.solix") != std::string::npos);
     }
+
+    SECTION("Case 11.8: Variable Reference to Declaration and Declaration-to-Type Chaining") {
+        std::stringstream in_s;
+        std::stringstream out_s;
+        LspServer srv(in_s, out_s);
+        JsonRpcTransport rdr(out_s, in_s);
+
+        std::string chain_uri = "file:///test/Chaining.slx";
+        std::string chain_src =
+            "class Calculator {\n"
+            "    public int32 add(int32 a, int32 b) {\n"
+            "        return a + b;\n"
+            "    }\n"
+            "}\n"
+            "class App {\n"
+            "    public void run() {\n"
+            "        Calculator calc = new Calculator();\n"
+            "        calc.add(1, 2);\n"
+            "    }\n"
+            "}\n";
+
+        nlohmann::json open_msg = {
+            {"jsonrpc", "2.0"},
+            {"method", "textDocument/didOpen"},
+            {"params", {
+                {"textDocument", {
+                    {"uri", chain_uri},
+                    {"languageId", "solix"},
+                    {"version", 1},
+                    {"text", chain_src}
+                }}
+            }}
+        };
+        srv.process_message(open_msg);
+        auto diag = rdr.read_message();
+        REQUIRE(diag.has_value());
+
+        // Step 1: Definition on variable usage 'calc' in 'calc.add(1, 2);' (line 8, char 9)
+        nlohmann::json ref_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 201},
+            {"method", "textDocument/definition"},
+            {"params", {
+                {"textDocument", {{"uri", chain_uri}}},
+                {"position", {{"line", 8}, {"character", 9}}}
+            }}
+        };
+        srv.process_message(ref_req);
+        auto ref_resp = rdr.read_message();
+        REQUIRE(ref_resp.has_value());
+        REQUIRE_FALSE(ref_resp.value()["result"].is_null());
+        // Jumps to line 7 ('Calculator calc = new Calculator();')
+        REQUIRE(ref_resp.value()["result"]["range"]["start"]["line"] == 7);
+
+        // Step 2: Definition on declaration identifier 'calc' at line 7, char 20
+        nlohmann::json decl_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 202},
+            {"method", "textDocument/definition"},
+            {"params", {
+                {"textDocument", {{"uri", chain_uri}}},
+                {"position", {{"line", 7}, {"character", 20}}}
+            }}
+        };
+        srv.process_message(decl_req);
+        auto decl_resp = rdr.read_message();
+        REQUIRE(decl_resp.has_value());
+        REQUIRE_FALSE(decl_resp.value()["result"].is_null());
+        // Chains to line 0 ('class Calculator')
+        REQUIRE(decl_resp.value()["result"]["range"]["start"]["line"] == 0);
+    }
+
+    SECTION("Case 11.9: Type Annotation Go-to-Definition Across Constructs") {
+        std::stringstream in_s;
+        std::stringstream out_s;
+        LspServer srv(in_s, out_s);
+        JsonRpcTransport rdr(out_s, in_s);
+
+        std::string type_uri = "file:///test/TypeNav.slx";
+        std::string type_src =
+            "class Calculator {\n"
+            "}\n"
+            "class App {\n"
+            "    public void run() {\n"
+            "        Calculator calc = new Calculator();\n"
+            "        try {\n"
+            "            Calculator c2 = (Calculator) calc;\n"
+            "        } catch (Calculator err) {\n"
+            "        }\n"
+            "    }\n"
+            "}\n";
+
+        nlohmann::json open_msg = {
+            {"jsonrpc", "2.0"},
+            {"method", "textDocument/didOpen"},
+            {"params", {
+                {"textDocument", {
+                    {"uri", type_uri},
+                    {"languageId", "solix"},
+                    {"version", 1},
+                    {"text", type_src}
+                }}
+            }}
+        };
+        srv.process_message(open_msg);
+        auto diag = rdr.read_message();
+        REQUIRE(diag.has_value());
+
+        // 1. Type annotation in variable declaration: 'Calculator' at line 4, char 10
+        nlohmann::json var_type_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 211},
+            {"method", "textDocument/definition"},
+            {"params", {
+                {"textDocument", {{"uri", type_uri}}},
+                {"position", {{"line", 4}, {"character", 10}}}
+            }}
+        };
+        srv.process_message(var_type_req);
+        auto var_type_resp = rdr.read_message();
+        REQUIRE(var_type_resp.has_value());
+        REQUIRE_FALSE(var_type_resp.value()["result"].is_null());
+        REQUIRE(var_type_resp.value()["result"]["range"]["start"]["line"] == 0);
+
+        // 2. Type in new expression: 'Calculator' at line 4, char 31
+        nlohmann::json new_type_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 212},
+            {"method", "textDocument/definition"},
+            {"params", {
+                {"textDocument", {{"uri", type_uri}}},
+                {"position", {{"line", 4}, {"character", 31}}}
+            }}
+        };
+        srv.process_message(new_type_req);
+        auto new_type_resp = rdr.read_message();
+        REQUIRE(new_type_resp.has_value());
+        REQUIRE_FALSE(new_type_resp.value()["result"].is_null());
+        REQUIRE(new_type_resp.value()["result"]["range"]["start"]["line"] == 0);
+
+        // 3. Type in cast expression: 'Calculator' at line 6, char 30
+        nlohmann::json cast_type_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 213},
+            {"method", "textDocument/definition"},
+            {"params", {
+                {"textDocument", {{"uri", type_uri}}},
+                {"position", {{"line", 6}, {"character", 30}}}
+            }}
+        };
+        srv.process_message(cast_type_req);
+        auto cast_type_resp = rdr.read_message();
+        REQUIRE(cast_type_resp.has_value());
+        REQUIRE_FALSE(cast_type_resp.value()["result"].is_null());
+        REQUIRE(cast_type_resp.value()["result"]["range"]["start"]["line"] == 0);
+
+        // 4. Type in catch clause: 'Calculator' at line 7, char 18
+        nlohmann::json catch_type_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 214},
+            {"method", "textDocument/definition"},
+            {"params", {
+                {"textDocument", {{"uri", type_uri}}},
+                {"position", {{"line", 7}, {"character", 18}}}
+            }}
+        };
+        srv.process_message(catch_type_req);
+        auto catch_type_resp = rdr.read_message();
+        REQUIRE(catch_type_resp.has_value());
+        REQUIRE_FALSE(catch_type_resp.value()["result"].is_null());
+        REQUIRE(catch_type_resp.value()["result"]["range"]["start"]["line"] == 0);
+    }
+
+    SECTION("Case 11.10: Inheritance & Override Definition Navigation") {
+        std::stringstream in_s;
+        std::stringstream out_s;
+        LspServer srv(in_s, out_s);
+        JsonRpcTransport rdr(out_s, in_s);
+
+        std::string hier_uri = "file:///test/Hier.slx";
+        std::string hier_src =
+            "interface IRunner {\n"
+            "    void run();\n"
+            "}\n"
+            "class BaseWorker {\n"
+            "    public virtual void run() {}\n"
+            "}\n"
+            "class FastWorker extends BaseWorker implements IRunner {\n"
+            "    public override void run() {}\n"
+            "}\n";
+
+        nlohmann::json open_msg = {
+            {"jsonrpc", "2.0"},
+            {"method", "textDocument/didOpen"},
+            {"params", {
+                {"textDocument", {
+                    {"uri", hier_uri},
+                    {"languageId", "solix"},
+                    {"version", 1},
+                    {"text", hier_src}
+                }}
+            }}
+        };
+        srv.process_message(open_msg);
+        auto diag = rdr.read_message();
+        REQUIRE(diag.has_value());
+
+        // 1. Go-to-definition on 'BaseWorker' in extends clause (line 6, char 27)
+        nlohmann::json ext_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 221},
+            {"method", "textDocument/definition"},
+            {"params", {
+                {"textDocument", {{"uri", hier_uri}}},
+                {"position", {{"line", 6}, {"character", 27}}}
+            }}
+        };
+        srv.process_message(ext_req);
+        auto ext_resp = rdr.read_message();
+        REQUIRE(ext_resp.has_value());
+        REQUIRE_FALSE(ext_resp.value()["result"].is_null());
+        REQUIRE(ext_resp.value()["result"]["range"]["start"]["line"] == 3);
+
+        // 2. Go-to-definition on 'IRunner' in implements clause (line 6, char 49)
+        nlohmann::json impl_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 222},
+            {"method", "textDocument/definition"},
+            {"params", {
+                {"textDocument", {{"uri", hier_uri}}},
+                {"position", {{"line", 6}, {"character", 49}}}
+            }}
+        };
+        srv.process_message(impl_req);
+        auto impl_resp = rdr.read_message();
+        REQUIRE(impl_resp.has_value());
+        REQUIRE_FALSE(impl_resp.value()["result"].is_null());
+        REQUIRE(impl_resp.value()["result"]["range"]["start"]["line"] == 0);
+
+        // 3. Go-to-definition on 'override void run()' in FastWorker (line 7, char 26)
+        nlohmann::json over_req = {
+            {"jsonrpc", "2.0"},
+            {"id", 223},
+            {"method", "textDocument/definition"},
+            {"params", {
+                {"textDocument", {{"uri", hier_uri}}},
+                {"position", {{"line", 7}, {"character", 26}}}
+            }}
+        };
+        srv.process_message(over_req);
+        auto over_resp = rdr.read_message();
+        REQUIRE(over_resp.has_value());
+        REQUIRE_FALSE(over_resp.value()["result"].is_null());
+        // Resolves to BaseWorker::run() at line 4
+        REQUIRE(over_resp.value()["result"]["range"]["start"]["line"] == 4);
+    }
 }
 
 TEST_CASE("Suite 12: LSP Intelligence (Completions, Signature Help & Document Symbols)", "[lsp][intelligence]") {

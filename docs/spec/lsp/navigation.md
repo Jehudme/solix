@@ -21,11 +21,26 @@ When receiving position-based queries:
 
 ## 2. Go-to-Definition (`textDocument/definition`)
 
-Finds the declaration site of symbols under the cursor:
-- **Local Variables & Parameters**: Jumps to the `VariableDeclaration` node where the variable was defined.
-- **Methods**: Jumps to the `MethodDeclaration` in the declaring class or interface.
-- **Fields**: Jumps to the `FieldDeclaration` within the class or struct.
-- **Classes, Enums, Aliases**: Jumps to the corresponding declaration header.
+Finds the declaration site of symbols under the cursor with multi-step chaining and type resolution:
+
+### 2.1 Multi-Step Definition Chaining
+- **Variable Usage to Declaration**: Invoking Go-to-Definition on a variable reference (e.g. `calc` in `calc.add()`) navigates to its `VariableDeclaration` coordinates.
+- **Declaration to Type Chaining**: Invoking Go-to-Definition while already at the declaration site (e.g. cursor on `calc` in `Calculator calc = ...`) chains directly into the `ClassDeclaration` or `EnumDeclaration` of the variable's declared type.
+
+### 2.2 Type Annotation Resolution
+Type annotations across all language constructs directly resolve to their defining `ClassDeclaration`, `EnumDeclaration`, or `AliasStatement`:
+- **Variable & Field Declarations**: `Calculator c;` or `private Helper h;` resolves to `class Calculator` / `class Helper`.
+- **Constructor Calls / Allocations**: `new Calculator()` on the type identifier navigates to `class Calculator`.
+- **Explicit Casts**: `(Calculator) obj` navigates to `class Calculator`.
+- **Exception Handlers**: `catch (MyException e)` on `MyException` navigates to `class MyException`.
+
+### 2.3 Inheritance & Method Overrides
+- **`extends <Base>`**: Navigates from the inheritance clause identifier to the base class declaration.
+- **`implements <Interface>`**: Navigates to the interface declaration.
+- **`override` Methods**: When invoking definition on an `override` method declaration (e.g. `public override void run()`), the server traverses the inheritance hierarchy to locate and jump to the matching method in the base class or interface.
+
+### 2.4 Keyword Suppression
+In accordance with language ergonomics, queries on keywords (`if`, `class`, `public`, `return`, `extends`, `implements`, etc.) or punctuation return `null` without error.
 
 ### Request Payload
 ```json
