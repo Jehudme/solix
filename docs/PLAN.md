@@ -2418,7 +2418,7 @@ Implement multi-step Go-to-Definition chaining and type coordinate resolution ac
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `lsp/src/server.cpp`, `tests/commands/TESTS.md`, `tests/commands/test_lsp_command.cpp`, `docs/spec/lsp/navigation.md`
-- **Status**: - [ ] Pending
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Provide complete symbol declarations and signatures on hover for every Solix construct while suppressing redundant or intrusive hovers on language keywords (`if`, `while`, `class`, `public`, `return`, `try`, etc.):
@@ -2430,11 +2430,11 @@ Provide complete symbol declarations and signatures on hover for every Solix con
 - Aliases: `alias <Name> = <TargetType>`
 
 ### Action Items
-- [ ] Refactor `format_hover_for_node` in `lsp/src/server.cpp` to eliminate truncation and default fallthrough for `MEMBER_ACCESS`, `METHOD_CALL`, and `NEW_INSTANCE`.
-- [ ] Implement keyword hover suppression: do not display hover tooltips when hovering over Solix keywords or punctuation tokens.
-- [ ] Update `tests/commands/TESTS.md` with complete symbol hover test scenarios.
-- [ ] Add Catch2 unit tests in `tests/commands/test_lsp_command.cpp`.
-- [ ] Update `docs/spec/lsp/navigation.md`.
+- [x] Refactor `format_hover_for_node` in `lsp/src/server.cpp` to eliminate truncation and default fallthrough for `MEMBER_ACCESS`, `METHOD_CALL`, and `NEW_INSTANCE`.
+- [x] Implement keyword hover suppression: do not display hover tooltips when hovering over Solix keywords or punctuation tokens.
+- [x] Update `tests/commands/TESTS.md` with complete symbol hover test scenarios.
+- [x] Add Catch2 unit tests in `tests/commands/test_lsp_command.cpp`.
+- [x] Update `docs/spec/lsp/navigation.md`.
 
 ---
 
