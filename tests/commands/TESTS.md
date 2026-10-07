@@ -642,27 +642,27 @@ This document is the master test specification for the Solix CLI command suite (
 - **Request**: `textDocument/definition` on `extends <Base>`, `implements <Interface>`, and `override` method declarations.
 - **Expected**: `extends` and `implements` resolve to base class/interface declarations; `override` method navigates to the overridden method declaration in the base class.
 
-#### Case 11.11: Method Hover Shows Complete Signature [NOT IMPLEMENTED]
+#### Case 11.11: Method Hover Shows Complete Signature [IMPLEMENTED]
 - **Request**: `textDocument/hover` on a method call or method declaration token.
 - **Expected**: Hover content is a `solix` code block containing the full method signature: `<access> [static] [inline] [native] [virtual] [override] [abstract] <ReturnType> <name>(<ParamType> <paramName>, ...)`.
 
-#### Case 11.12: Field Hover Shows Access Modifiers and Type [NOT IMPLEMENTED]
+#### Case 11.12: Field Hover Shows Access Modifiers and Type [IMPLEMENTED]
 - **Request**: `textDocument/hover` on a field reference or field declaration token.
 - **Expected**: Hover content is a `solix` code block with `<access> [static] [const] [weak] <Type>[&] <fieldName>`.
 
-#### Case 11.13: Variable Hover Shows Full Declaration Signature [NOT IMPLEMENTED]
+#### Case 11.13: Variable Hover Shows Full Declaration Signature [IMPLEMENTED]
 - **Request**: `textDocument/hover` on a local variable use.
 - **Expected**: Hover content is a `solix` code block with `[const] [weak] <Type>[&] <varName>` (no access modifier on local vars).
 
-#### Case 11.14: Class Hover Shows Full Hierarchy Signature [NOT IMPLEMENTED]
+#### Case 11.14: Class Hover Shows Full Hierarchy Signature [IMPLEMENTED]
 - **Request**: `textDocument/hover` on a class name reference.
 - **Expected**: Hover content is a `solix` code block with `<access> [abstract] class <Name>[<T>] [extends <Base>] [implements <I1>, <I2>, ...]`.
 
-#### Case 11.15: New-Instance Hover Shows Constructor Signature [NOT IMPLEMENTED]
+#### Case 11.15: New-Instance Hover Shows Constructor Signature [IMPLEMENTED]
 - **Request**: `textDocument/hover` on a `new Foo(...)` expression.
 - **Expected**: Hover content is a `solix` code block with the constructor's access and parameter list: `<access> Foo(<ParamType> <paramName>, ...)`.
 
-#### Case 11.16: Hover on Keyword Returns Null [NOT IMPLEMENTED]
+#### Case 11.16: Hover on Keyword Returns Null [IMPLEMENTED]
 - **Request**: `textDocument/hover` on any keyword token (`if`, `class`, `public`, `return`, `new`, etc.).
 - **Expected**: Server returns `{"result": null}` — no hover content shown for keywords.
 ---

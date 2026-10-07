@@ -984,3 +984,189 @@ TEST_CASE("Suite 12: LSP Intelligence (Completions, Signature Help & Document Sy
 }
 
 
+
+// ============================================================================
+// Suite 13: LSP Hover Signatures & Keyword Suppression (Phase 52)
+// Cases 11.11 – 11.16
+// ============================================================================
+
+TEST_CASE("Suite 13: LSP Hover Signatures & Keyword Suppression", "[lsp][hover]") {
+    // Source layout (0-indexed lines):
+    // 0:  public interface IWorker {
+    // 1:      void work(int32 amount);
+    // 2:  }
+    // 3:  public abstract class BaseJob {
+    // 4:      protected static int32 total;
+    // 5:      public virtual void doWork(int32 n, string label) {}
+    // 6:  }
+    // 7:  public class ConcreteJob extends BaseJob implements IWorker {
+    // 8:      private const int32 limit;
+    // 9:      public ConcreteJob(int32 cap, string name) {}
+    // 10:     public override void doWork(int32 n, string label) {
+    // 11:         const int32 localMax = 0;
+    // 12:     }
+    // 13:     public void work(int32 amount) {}
+    // 14: }
+    // 15: class Launcher {
+    // 16:     public void start() {
+    // 17:         ConcreteJob job = new ConcreteJob(10, "run");
+    // 18:     }
+    // 19: }
+    std::string source_text =
+        "public interface IWorker {\n"
+        "    void work(int32 amount);\n"
+        "}\n"
+        "public abstract class BaseJob {\n"
+        "    protected static int32 total;\n"
+        "    public virtual void doWork(int32 n, string label) {}\n"
+        "}\n"
+        "public class ConcreteJob extends BaseJob implements IWorker {\n"
+        "    private const int32 limit;\n"
+        "    public ConcreteJob(int32 cap, string name) {}\n"
+        "    public override void doWork(int32 n, string label) {\n"
+        "        const int32 localMax = 0;\n"
+        "    }\n"
+        "    public void work(int32 amount) {}\n"
+        "}\n"
+        "class Launcher {\n"
+        "    public void start() {\n"
+        "        ConcreteJob job = new ConcreteJob(10, \"run\");\n"
+        "    }\n"
+        "}\n";
+
+    std::string doc_uri = "file:///test/HoverSig.slx";
+
+    std::stringstream input_stream;
+    std::stringstream output_stream;
+    LspServer server(input_stream, output_stream);
+
+    nlohmann::json open_msg = {
+        {"jsonrpc", "2.0"},
+        {"method", "textDocument/didOpen"},
+        {"params", {
+            {"textDocument", {
+                {"uri", doc_uri},
+                {"languageId", "solix"},
+                {"version", 1},
+                {"text", source_text}
+            }}
+        }}
+    };
+    server.process_message(open_msg);
+
+    JsonRpcTransport reader(output_stream, input_stream);
+    auto diag_notif = reader.read_message(); // drain publishDiagnostics
+    REQUIRE(diag_notif.has_value());
+
+    // Helper lambda: send hover, return result JSON
+    auto send_hover = [&](int id, int line, int character) -> nlohmann::json {
+        nlohmann::json req = {
+            {"jsonrpc", "2.0"},
+            {"id", id},
+            {"method", "textDocument/hover"},
+            {"params", {
+                {"textDocument", {{"uri", doc_uri}}},
+                {"position", {{"line", line}, {"character", character}}}
+            }}
+        };
+        server.process_message(req);
+        auto resp = reader.read_message();
+        REQUIRE(resp.has_value());
+        REQUIRE(resp.value().value("id", 0) == id);
+        return resp.value()["result"];
+    };
+
+    SECTION("Case 11.11: Method Hover Shows Complete Signature") {
+        // Hover on 'doWork' in BaseJob at line 5, char 24
+        // Expected sig: "public virtual void doWork(int32 n, string label)"
+        auto result = send_hover(1101, 5, 24);
+        REQUIRE_FALSE(result.is_null());
+        REQUIRE(result.contains("contents"));
+        std::string md = result["contents"]["value"];
+        REQUIRE(md.find("```solix")    != std::string::npos);
+        REQUIRE(md.find("public")      != std::string::npos);
+        REQUIRE(md.find("virtual")     != std::string::npos);
+        REQUIRE(md.find("void")        != std::string::npos);
+        REQUIRE(md.find("doWork")      != std::string::npos);
+        REQUIRE(md.find("int32 n")     != std::string::npos);
+        REQUIRE(md.find("string")      != std::string::npos);
+        REQUIRE(md.find("label")       != std::string::npos);
+    }
+
+    SECTION("Case 11.12: Field Hover Shows Access Modifiers and Type") {
+        // Hover on 'limit' field at line 8, char 26
+        // Expected sig: "private const int32 limit"
+        auto result = send_hover(1102, 8, 26);
+        REQUIRE_FALSE(result.is_null());
+        REQUIRE(result.contains("contents"));
+        std::string md = result["contents"]["value"];
+        REQUIRE(md.find("```solix") != std::string::npos);
+        REQUIRE(md.find("private")  != std::string::npos);
+        REQUIRE(md.find("const")    != std::string::npos);
+        REQUIRE(md.find("int32")    != std::string::npos);
+        REQUIRE(md.find("limit")    != std::string::npos);
+    }
+
+    SECTION("Case 11.13: Variable Hover Shows Full Declaration Signature") {
+        // Hover on 'localMax' at line 11, char 20
+        // Expected: "const int32 localMax"  (no access modifier)
+        auto result = send_hover(1103, 11, 20);
+        REQUIRE_FALSE(result.is_null());
+        REQUIRE(result.contains("contents"));
+        std::string md = result["contents"]["value"];
+        REQUIRE(md.find("```solix") != std::string::npos);
+        REQUIRE(md.find("const")    != std::string::npos);
+        REQUIRE(md.find("int32")    != std::string::npos);
+        REQUIRE(md.find("localMax") != std::string::npos);
+        // Local variables have no access modifier
+        REQUIRE(md.find("public")   == std::string::npos);
+        REQUIRE(md.find("private")  == std::string::npos);
+    }
+
+    SECTION("Case 11.14: Class Hover Shows Full Hierarchy Signature") {
+        // Hover on 'ConcreteJob' class at line 7, char 14
+        // Expected: "public class ConcreteJob extends BaseJob implements IWorker"
+        auto result = send_hover(1104, 7, 14);
+        REQUIRE_FALSE(result.is_null());
+        REQUIRE(result.contains("contents"));
+        std::string md = result["contents"]["value"];
+        REQUIRE(md.find("```solix")    != std::string::npos);
+        REQUIRE(md.find("public")      != std::string::npos);
+        REQUIRE(md.find("class")       != std::string::npos);
+        REQUIRE(md.find("ConcreteJob") != std::string::npos);
+        REQUIRE(md.find("extends")     != std::string::npos);
+        REQUIRE(md.find("BaseJob")     != std::string::npos);
+        REQUIRE(md.find("implements")  != std::string::npos);
+        REQUIRE(md.find("IWorker")     != std::string::npos);
+    }
+
+    SECTION("Case 11.15: New-Instance Hover Shows Constructor Signature") {
+        // Hover on 'ConcreteJob' inside 'new ConcreteJob(...)' at line 17, char 32
+        // Expected: "public ConcreteJob(int32 cap, string name)"
+        auto result = send_hover(1105, 17, 32);
+        REQUIRE_FALSE(result.is_null());
+        REQUIRE(result.contains("contents"));
+        std::string md = result["contents"]["value"];
+        REQUIRE(md.find("```solix")    != std::string::npos);
+        REQUIRE(md.find("ConcreteJob") != std::string::npos);
+        REQUIRE(md.find("int32")       != std::string::npos);
+        REQUIRE(md.find("cap")         != std::string::npos);
+        REQUIRE(md.find("string")      != std::string::npos);
+        REQUIRE(md.find("name")        != std::string::npos);
+    }
+
+    SECTION("Case 11.16: Hover on Keyword Returns Null") {
+        // "public" at line 0, char 2
+        REQUIRE(send_hover(1106, 0, 2).is_null());
+        // "class" in "public class ConcreteJob" at line 7, char 7
+        REQUIRE(send_hover(1107, 7, 7).is_null());
+        // "extends" at line 7, char 26
+        REQUIRE(send_hover(1108, 7, 26).is_null());
+        // "implements" at line 7, char 44
+        REQUIRE(send_hover(1109, 7, 44).is_null());
+        // "override" at line 10, char 11
+        REQUIRE(send_hover(1110, 10, 11).is_null());
+        // "const" at line 11, char 8
+        REQUIRE(send_hover(1111, 11, 8).is_null());
+    }
+}

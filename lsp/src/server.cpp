@@ -947,6 +947,21 @@ void LspServer::handle_hover(const nlohmann::json& id, const nlohmann::json& par
 
     Node* hit = spatial_index_.find_node_at(file_path, line, character);
 
+    if (hit && hit->node_type == NodeType::VAR_DECL) {
+        auto* vd = static_cast<VariableDeclaration*>(hit);
+        if (vd->initializer) {
+            uint32_t init_line = vd->initializer->line;
+            uint32_t init_col = vd->initializer->column;
+            if (static_cast<uint32_t>(line) == init_line && static_cast<uint32_t>(character) >= init_col) {
+                hit = vd->initializer.get();
+            }
+        }
+    }
+
+    if (!hit && !word.empty()) {
+        hit = find_type_declaration(word, last_context_.get());
+    }
+
     if (!hit) {
         transport_.send_response(id, nullptr);
         return;

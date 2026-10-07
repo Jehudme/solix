@@ -102,11 +102,38 @@ Resolves the underlying type declaration of a variable, parameter, field, or ins
 
 Renders rich markdown documentation and type signature tooltips when hovering over symbols in the editor.
 
-### Supported Constructs
-- **Methods**: Formats signature showing access modifier, return type, name, and parameters (e.g., ````solix\npublic void compute()\n````).
-- **Variables & Parameters**: Displays declared type and variable name (e.g., ````solix\nHelper h\n````).
-- **Fields**: Displays field type and containing class info.
-- **Classes & Types**: Displays class or enum declarations.
+### Supported Constructs & Formats
+- **Methods**: Displays complete method signatures including access modifiers, qualifiers (`static`, `inline`, `native`, `virtual`, `override`, `abstract`), return type, method name, and all parameters with types, reference modifiers, and names:
+  ```solix
+  public virtual void doWork(int32 n, string& label)
+  ```
+- **Constructors & `new` Instances**: Displays constructor signature including access modifier and parameter types/names:
+  ```solix
+  public ConcreteJob(int32 cap, string name)
+  ```
+- **Fields**: Displays field access modifiers, `static`, `const`, `weak`, type, and name:
+  ```solix
+  private const int32 limit
+  ```
+- **Local Variables & Parameters**: Displays variable qualifiers (`const`, `weak`), type, reference flag, and identifier name (without spurious access modifiers):
+  ```solix
+  const int32 localMax
+  ```
+- **Classes & Interfaces**: Displays class declaration with access modifier, `abstract`/`interface`, template parameters, base class (`extends`), and implemented interfaces (`implements`):
+  ```solix
+  public class ConcreteJob extends BaseJob implements IWorker
+  ```
+- **Enums**: Displays enum declaration header:
+  ```solix
+  public enum Status
+  ```
+- **Aliases**: Displays full type alias equivalence:
+  ```solix
+  alias Callback = (int32) -> void
+  ```
+
+### Keyword Suppression
+Hover requests targeting Solix keywords (`if`, `class`, `public`, `return`, `new`, `extends`, `implements`, etc.) are explicitly suppressed and return `null` (`{"result": null}`), preventing redundant tooltip popups on syntax elements.
 
 ### Response Payload
 ```json
@@ -116,11 +143,11 @@ Renders rich markdown documentation and type signature tooltips when hovering ov
   "result": {
     "contents": {
       "kind": "markdown",
-      "value": "```solix\npublic void compute()\n```"
+      "value": "```solix\npublic virtual void doWork(int32 n, string& label)\n```"
     },
     "range": {
-      "start": { "line": 2, "character": 4 },
-      "end": { "line": 2, "character": 26 }
+      "start": { "line": 5, "character": 4 },
+      "end": { "line": 5, "character": 56 }
     }
   }
 }
