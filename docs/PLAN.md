@@ -58,7 +58,7 @@
 | **Phase 32.8** | Standard Library: Polymorphic Generic Collection Hierarchy & Interface Re-binding (`IList<T>`, `IMap<K, V>`, `ISet<T>`) | `P0 Blocker` | `solixlib/collections`, `docs`, `tests` | - [x] Complete |
 | **Phase 32.9** | Standard Library: Complete Boxed Primitives (`Byte`..`ULong`, `Float`), Boxed Operator Overloads & `Optional<T>` Functional Parity (`map`, `flat_map`) | `P0 Blocker` | `solixlib/core`, `docs`, `tests` | - [x] Complete |
 | **Phase 32.10** | Standard Library: Collection Ergonomics (Copy Constructors, Array Initializers, `map`, `reduce`) & String Primitive Constructors | `P1 High` | `solixlib/collections`, `solixlib/core`, `docs`, `tests` | - [x] Complete |
-| **Phase 32.11** | Standard Library: Chrono & Time Ergonomics (Duration/Instant Operator Overloading, `DateTime.format` Pattern Formatting) | `P1 High` | `solixlib/time`, `docs`, `tests` | - [ ] Planned |
+| **Phase 32.11** | Standard Library: Chrono & Time Ergonomics (Duration/Instant Operator Overloading, `DateTime.format` Pattern Formatting) | `P1 High` | `solixlib/time`, `docs`, `tests` | - [x] Complete |
 | **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, `StreamReader`, `StreamWriter`, `BufferedReader`) & Object-Oriented `Path` (`operator/`) | `P1 High` | `solixlib/io`, `solixlib/native`, `docs`, `tests` | - [ ] Planned |
 | **Phase 33.1** | Standard Library: Documentation Schema Standardization & Developer Guides (Operator Overloading & Native C++ Interop Guides) | `P2 Medium` | `docs/spec/solixlib`, `docs/guide` | - [ ] Planned |
 | **Phase 34** | Standard Library: `solix.system.Environment` (OS, Env, Subprocesses) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
@@ -1852,7 +1852,7 @@ Modernize collection instantiation ergonomics and functional transformations:
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `solixlib/project/src/solix/time/Duration.slx`, `Instant.slx`, `DateTime.slx`, `tests/solixlib/test_chrono.cpp`, `docs/spec/solixlib/chrono.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Complete
 
 ### Objective
 Eliminate boilerplate and rigid APIs in `solix.time`:
@@ -1861,10 +1861,10 @@ Eliminate boilerplate and rigid APIs in `solix.time`:
 3. Add custom format token parsing to `DateTime`: `format(String pattern)` supporting `yyyy`, `MM`, `dd`, `HH`, `mm`, `ss`.
 
 ### Action Items
-- [ ] Add operator overloads to `Duration.slx` and `Instant.slx`.
-- [ ] Implement `DateTime.format(String pattern)` parser.
-- [ ] Add unit tests in `tests/solixlib/test_chrono.cpp` testing expressions like `t2 - t1`, `d1 + d2`, and custom formatted strings.
-- [ ] Update `docs/spec/solixlib/chrono.md`.
+- [x] Add operator overloads to `Duration.slx` and `Instant.slx`.
+- [x] Implement `DateTime.format(String pattern)` parser.
+- [x] Add unit tests in `tests/solixlib/test_chrono.cpp` testing expressions like `t2 - t1`, `d1 + d2`, and custom formatted strings.
+- [x] Update `docs/spec/solixlib/chrono.md`.
 
 ---
 
