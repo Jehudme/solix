@@ -2442,7 +2442,7 @@ Provide complete symbol declarations and signatures on hover for every Solix con
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `lsp/src/server.cpp`, `editors/vscode/`, `tests/commands/TESTS.md`, `tests/commands/test_lsp_command.cpp`, `docs/spec/lsp/intelligence.md`
-- **Status**: - [ ] Pending
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Implement context-aware intelligent autocompletion:
@@ -2454,12 +2454,12 @@ Implement context-aware intelligent autocompletion:
 Rebuild and repackage the official VS Code extension (`solix-0.1.0.vsix`) and reinstall it to the local environment.
 
 ### Action Items
-- [ ] Implement context analysis in `LspServer::handle_completion` for `class`, `extends`, `implements`, `new`, and `case`.
-- [ ] Update `tests/commands/TESTS.md` with context-aware completion test cases.
-- [ ] Add Catch2 unit tests in `tests/commands/test_lsp_command.cpp`.
-- [ ] Rebuild `editors/vscode/` and package new `.vsix`.
-- [ ] Reinstall extension to `~/.vscode/extensions/solix.solix-0.1.0/`.
-- [ ] Update `docs/spec/lsp/intelligence.md`.
+- [x] Implement context analysis in `LspServer::handle_completion` for `class`, `extends`, `implements`, `new`, and `case`.
+- [x] Update `tests/commands/TESTS.md` with context-aware completion test cases.
+- [x] Add Catch2 unit tests in `tests/commands/test_lsp_command.cpp`.
+- [x] Rebuild `editors/vscode/` and package new `.vsix`.
+- [x] Reinstall extension to `~/.vscode/extensions/solix.solix-0.1.0/`.
+- [x] Update `docs/spec/lsp/intelligence.md`.
 
 
 
