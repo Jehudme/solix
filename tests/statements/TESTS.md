@@ -4875,6 +4875,57 @@ class Main {
 ```
 *Expected Result*: Semantic binding fails with `E_BIND` diagnostic containing non-empty `source_path`, `line == 4`, and valid `column`.
 
+---
+
+## Suite 52: String Literal Escape Sequence Decoding
+
+### Case 52.1: Common Whitespace and Punctuation Escapes (`\n`, `\t`, `\r`, `\"`, `\\`) [NOT IMPLEMENTED]
+```solix
+class Main {
+    public static int32 main() {
+        char[] s = "hello\nworld\ttab\\slash\"quote";
+        if (s[5] != (char)10) return 1; // '\n'
+        if (s[11] != (char)9) return 2; // '\t'
+        if (s[15] != (char)92) return 3; // '\\'
+        if (s[21] != (char)34) return 4; // '\"'
+        return 0;
+    }
+}
+```
+*Expected Result*: The string literal decodes escape sequences into their respective ASCII character codepoints.
+
+---
+
+### Case 52.2: Hexadecimal Escape Sequences (`\xHH`) and Null Character (`\0`) [NOT IMPLEMENTED]
+```solix
+class Main {
+    public static int32 main() {
+        char[] s = "A\x42C\0D";
+        if (s[0] != 'A') return 1;
+        if (s[1] != 'B') return 2; // \x42 == 'B'
+        if (s[2] != 'C') return 3;
+        if (s[3] != '\0') return 4; // \0 == 0
+        if (s[4] != 'D') return 5;
+        return 0;
+    }
+}
+```
+*Expected Result*: Hexadecimal escape sequences (`\xHH`) and null character (`\0`) decode to exact binary values.
+
+---
+
+### Case 52.3: Negative: Unterminated Hex Escape in String Literal [NOT IMPLEMENTED]
+```solix
+class Main {
+    public static int32 main() {
+        char[] s = "bad\x4";
+        return 0;
+    }
+}
+```
+*Expected Result*: Compilation fails reporting an unterminated or invalid hex escape sequence in string literal.
+
+
 
 
 
