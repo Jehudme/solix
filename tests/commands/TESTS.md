@@ -531,3 +531,24 @@ This document is the master test specification for the Solix CLI command suite (
 - **Command**: `solix details my_multi_pkg`
 - **Setup**: `my_multi_pkg` has versions 1.0.0 and 2.0.0 installed.
 - **Expected**: Prompts user with available versions and their IDs without crashing.
+
+---
+
+# Part IV: Toolchain Version Commands
+
+## VersionCommand
+
+*Command*: `solix version` or `solix --version` / `solix -v`
+
+### Positive Test Scenarios
+
+#### Case 9.1: Version Subcommand [NOT IMPLEMENTED]
+- **Command**: `solix version`
+- **Setup**: None.
+- **Expected**: Exits 0; outputs Solix version string (e.g. `Solix version 0.1.0`).
+
+#### Case 9.2: Version Top-Level Flag (`--version` / `-v`) [NOT IMPLEMENTED]
+- **Command**: `solix --version` and `solix -v`
+- **Setup**: None.
+- **Expected**: Exits 0; outputs Solix version string.
+
