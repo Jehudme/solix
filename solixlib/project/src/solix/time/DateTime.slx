@@ -2,6 +2,7 @@ package solix.time;
 
 import solix.core.IStringable;
 import solix.core.String;
+import solix.core.StringBuilder;
 
 public class DateTime implements IStringable {
     private int64 _epoch_millis;
@@ -67,6 +68,51 @@ public class DateTime implements IStringable {
 
     public String to_iso8601() {
         return new String(native_iso8601(this._epoch_millis));
+    }
+
+    private static String pad_zero(int32 val, int32 width) {
+        String s = String.from_int((int64)val);
+        while (s.length() < width) {
+            s = new String("0").concat(s);
+        }
+        return s;
+    }
+
+    public String format(String pattern) {
+        if (pattern == null) {
+            return this.to_iso8601();
+        }
+        StringBuilder sb = new StringBuilder();
+        int32 len = pattern.length();
+        int32 i = 0;
+        while (i < len) {
+            if (i + 4 <= len && pattern.substring(i, 4).equals(new String("yyyy"))) {
+                sb.append(pad_zero(this._year, 4));
+                i = i + 4;
+            } else if (i + 2 <= len && pattern.substring(i, 2).equals(new String("MM"))) {
+                sb.append(pad_zero(this._month, 2));
+                i = i + 2;
+            } else if (i + 2 <= len && pattern.substring(i, 2).equals(new String("dd"))) {
+                sb.append(pad_zero(this._day, 2));
+                i = i + 2;
+            } else if (i + 2 <= len && pattern.substring(i, 2).equals(new String("HH"))) {
+                sb.append(pad_zero(this._hour, 2));
+                i = i + 2;
+            } else if (i + 2 <= len && pattern.substring(i, 2).equals(new String("mm"))) {
+                sb.append(pad_zero(this._minute, 2));
+                i = i + 2;
+            } else if (i + 2 <= len && pattern.substring(i, 2).equals(new String("ss"))) {
+                sb.append(pad_zero(this._second, 2));
+                i = i + 2;
+            } else if (i + 3 <= len && pattern.substring(i, 3).equals(new String("SSS"))) {
+                sb.append(pad_zero(this._millisecond, 3));
+                i = i + 3;
+            } else {
+                sb.append_char(pattern.char_at(i));
+                i = i + 1;
+            }
+        }
+        return sb.to_string();
     }
 
     public String to_string() {

@@ -21,6 +21,20 @@ public class Instant {
         return new Duration(this._nanoseconds - earlier._nanoseconds);
     }
 
+    public Duration operator-(Instant earlier) {
+        return this.duration_since(earlier);
+    }
+
+    public Instant operator+(Duration d) {
+        if (d == null) return this;
+        return new Instant(this._nanoseconds + d.to_nanoseconds());
+    }
+
+    public Instant operator-(Duration d) {
+        if (d == null) return this;
+        return new Instant(this._nanoseconds - d.to_nanoseconds());
+    }
+
     public int64 to_nanoseconds() {
         return this._nanoseconds;
     }
@@ -30,11 +44,35 @@ public class Instant {
         return this._nanoseconds == other._nanoseconds;
     }
 
+    public bool operator==(Instant other) {
+        return this.equals(other);
+    }
+
+    public bool operator!=(Instant other) {
+        return !this.equals(other);
+    }
+
     public int32 compare_to(Instant other) {
         if (other == null) return 1;
         if (this._nanoseconds < other._nanoseconds) return -1;
         if (this._nanoseconds > other._nanoseconds) return 1;
         return 0;
+    }
+
+    public bool operator<(Instant other) {
+        return this.compare_to(other) < 0;
+    }
+
+    public bool operator<=(Instant other) {
+        return this.compare_to(other) <= 0;
+    }
+
+    public bool operator>(Instant other) {
+        return this.compare_to(other) > 0;
+    }
+
+    public bool operator>=(Instant other) {
+        return this.compare_to(other) >= 0;
     }
 
     private static native int64 native_steady_nanos();
