@@ -13,10 +13,13 @@ let client: LanguageClient | undefined;
 
 function findServerBinary(): { command: string; args: string[] } {
     const config = vscode.workspace.getConfiguration('solix');
-    const customPath = config.get<string>('lsp.path');
+    let customPath = config.get<string>('lsp.path');
+    if (customPath) {
+        customPath = customPath.trim().replace(/^["']+|["']+$/g, '');
+    }
 
-    if (customPath && customPath.trim().length > 0) {
-        const resolvedPath = path.resolve(customPath.trim());
+    if (customPath && customPath.length > 0) {
+        const resolvedPath = path.resolve(customPath);
         if (fs.existsSync(resolvedPath)) {
             const basename = path.basename(resolvedPath);
             if (basename === 'solix' || basename === 'solix.exe') {
@@ -24,7 +27,7 @@ function findServerBinary(): { command: string; args: string[] } {
             }
             return { command: resolvedPath, args: [] };
         }
-        return { command: customPath.trim(), args: [] };
+        return { command: customPath, args: ['lsp'] };
     }
 
     // Default to 'solix' CLI command with 'lsp' subcommand
