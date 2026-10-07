@@ -30,6 +30,11 @@ Any class implementing `IStringable` can be passed seamlessly to standard input/
 ### Constructors
 - `new String()`: Constructs an empty string.
 - `new String(char[] characters)`: Constructs a string by copying characters from the provided array.
+- `new String(int32 value)`: Constructs a string representing the specified 32-bit integer.
+- `new String(int64 value)`: Constructs a string representing the specified 64-bit integer.
+- `new String(float64 value)`: Constructs a string representing the specified 64-bit floating point number.
+- `new String(bool value)`: Constructs a string representing `"true"` or `"false"`.
+- `new String(char ch)`: Constructs a single-character string from the given character.
 
 ### Query Methods
 - `length() -> int32`: Returns the number of characters.

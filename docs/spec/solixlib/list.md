@@ -18,6 +18,8 @@ Compile-time generic resizable array container. Implements `IList<T>`, `ICollect
 ### Constructors
 - `List()`: Initializes list with default initial capacity of 16.
 - `List(int32 initial_capacity)`: Initializes list with specified capacity. Throws `IllegalArgumentException` if `initial_capacity < 0`.
+- `List(T[] items)`: Initializes list populated with elements from the given array.
+- `List(ICollection<T> other)`: Copy constructor initializing list populated with elements copied from another collection.
 
 ### Capacity Management
 - `size() -> int32`: Returns current element count.
@@ -43,6 +45,9 @@ Compile-time generic resizable array container. Implements `IList<T>`, `ICollect
 - `to_array() -> T[]`: Returns snapshot copy of elements as a typed array.
 - `for_each(void(*)(T) action) -> void`: Iterates sequentially across all elements, invoking `action(item)` on each.
 - `filter(bool(*)(T) predicate) -> List<T>`: Returns a new `List<T>` containing all elements satisfying `predicate(item) == true`.
+- `map<U>(U(*)(T) transform) -> List<U>`: Returns a new `List<U>` containing mapped elements after applying `transform(item)` to each element.
+- `reduce(T initial_value, T(*)(T, T) accumulator) -> T`: Reduces elements into a single accumulated result starting with `initial_value`.
+- `reduce(T(*)(T, T) accumulator) -> T`: Reduces elements using the first element as initial accumulator value. Throws `NoSuchElementException` if list is empty.
 - `iterator() -> IIterator<T>`: Returns forward iterator implementing `IIterator<T>`.
 - `to_string() -> String`: Standard bracketed representation `"[List]"`.
 
@@ -54,6 +59,8 @@ Compile-time generic doubly-linked list supporting efficient node insertion and 
 
 ### Constructors
 - `LinkedList()`: Initializes empty doubly-linked list.
+- `LinkedList(T[] items)`: Initializes linked list populated with elements from the given array.
+- `LinkedList(ICollection<T> other)`: Copy constructor initializing linked list populated with elements copied from another collection.
 
 ### Double-Ended Operations
 - `add_first(T item) -> void`: Prepends item to head in O(1).
