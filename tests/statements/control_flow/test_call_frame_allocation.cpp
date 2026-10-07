@@ -20,7 +20,7 @@ class Derived extends Base {
     }
 }
 
-static int32 main() {
+int32 main() {
     Base b = new Derived();
     return b.compute() == 60 ? 0 : 1;
 }
@@ -30,12 +30,12 @@ static int32 main() {
 
     SECTION("Case 1.2: Deep Call Stack & Recursion Integrity") {
         std::string code = R"(
-static int32 fib(int32 n) {
+int32 fib(int32 n) {
     if (n <= 1) return n;
     return fib(n - 1) + fib(n - 2);
 }
 
-static int32 main() {
+int32 main() {
     int32 res = fib(10);
     return res == 55 ? 0 : 1;
 }
@@ -45,7 +45,7 @@ static int32 main() {
 
     SECTION("Case 2.1: Method with Multiple Local Slots") {
         std::string code = R"(
-static int32 sum_locals(int32 x) {
+int32 sum_locals(int32 x) {
     int32 l1 = 1;
     int32 l2 = 2;
     int32 l3 = 3;
@@ -54,7 +54,7 @@ static int32 sum_locals(int32 x) {
     return x + l1 + l2 + l3 + l4 + l5;
 }
 
-static int32 main() {
+int32 main() {
     return sum_locals(10) == 25 ? 0 : 1;
 }
 )";

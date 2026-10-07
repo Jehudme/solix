@@ -11,7 +11,7 @@ class Item {
     public Item(int32 v) { this.val = v; }
 }
 
-static int32 main() {
+int32 main() {
     Item i1 = new Item();
     Item i2 = new Item(42);
     if (i1.val == 0 && i2.val == 42) {
@@ -30,7 +30,7 @@ class Config {
     public bool enabled = true;
 }
 
-static int32 main() {
+int32 main() {
     Config c = new Config();
     return (c.timeout == 3000 && c.enabled == true) ? 0 : 1;
 }
@@ -42,7 +42,7 @@ static int32 main() {
         std::string code = R"(
 abstract class Base {}
 
-static int32 main() {
+int32 main() {
     Base b = new Base();
     return 0;
 }

@@ -4929,7 +4929,7 @@ class Main {
 
 ## Suite 53: Function Declaration Scope Rules
 
-### Case 53.1: Free Function Entry Point Without `static` [NOT IMPLEMENTED]
+### Case 53.1: Free Function Entry Point Without `static` [IMPLEMENTED]
 ```solix
 int32 helper(int32 x) {
     return x * 2;
@@ -4943,7 +4943,7 @@ int32 main() {
 
 ---
 
-### Case 53.2: Rejection of `static` on Free Function Outside Class [NOT IMPLEMENTED]
+### Case 53.2: Rejection of `static` on Free Function Outside Class [IMPLEMENTED]
 ```solix
 static int32 compute() {
     return 10;

@@ -57,7 +57,7 @@ TEST_CASE("CLI Command - new", "[command][new]") {
 
         // Verify custom entry point in main.slx
         std::string src_content = sandbox.read_file("custom_proj/src/main.slx");
-        CHECK(src_content.find("static int32 start()") != std::string::npos);
+        CHECK(src_content.find("int32 start()") != std::string::npos);
 
         // Verify project builds cleanly with the custom entry point using directory path
         auto build_res = run_cli({"build", proj_dir.string()});
@@ -108,7 +108,7 @@ TEST_CASE("CLI Command - new", "[command][new]") {
         mf.close();
 
         std::ofstream sf(tmpl_dir / "src/main.slx");
-        sf << "static int32 main() { return 0; }\n";
+        sf << "int32 main() { return 0; }\n";
         sf.close();
 
         std::ofstream extra(tmpl_dir / "extra_file.txt");

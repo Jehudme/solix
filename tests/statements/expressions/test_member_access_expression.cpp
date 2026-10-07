@@ -12,7 +12,7 @@ class Person {
     public Address addr;
 }
 
-static int32 main() {
+int32 main() {
     Person p = new Person();
     p.addr = new Address();
     p.addr.zip = 90210;
@@ -28,7 +28,7 @@ class MathConstants {
     public static int32 SCALE = 100;
 }
 
-static int32 main() {
+int32 main() {
     return MathConstants.SCALE == 100 ? 0 : 1;
 }
 )";
@@ -44,7 +44,7 @@ class Person {
     public Address addr;
 }
 
-static int32 main() {
+int32 main() {
     Person p = null;
     Address a = p.addr;
     return 0;

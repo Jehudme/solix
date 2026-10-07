@@ -5,7 +5,7 @@ using namespace solix::test;
 TEST_CASE("AssignmentExpression - Expressions", "[expressions][assignment]") {
     SECTION("Case 3.1: Chained Assignment") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 a = 0;
     int32 b = 0;
     int32 c = 0;
@@ -19,7 +19,7 @@ static int32 main() {
 
     SECTION("Case 3.2: Compound Assignments") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 x = 10;
     x += 5;
     x -= 3;
@@ -37,7 +37,7 @@ class Box {
     public int32 weight;
 }
 
-static int32 main() {
+int32 main() {
     Box b = new Box();
     b.weight = 50;
     return b.weight == 50 ? 0 : 1;

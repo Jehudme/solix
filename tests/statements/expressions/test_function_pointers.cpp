@@ -12,7 +12,7 @@ public class MathUtils {
     }
 }
 
-static int32 main() {
+int32 main() {
     int32(*)(int32, int32) op = MathUtils.add;
     return op(10, 20) == 30 ? 0 : 1;
 }
@@ -28,7 +28,7 @@ public class MathUtils {
     }
 }
 
-static int32 main() {
+int32 main() {
     int32(*)(int32, int32) op = null;
     if (op != null) return 1;
     op = MathUtils.mul;
@@ -51,7 +51,7 @@ public class Operations {
     }
 }
 
-static int32 main() {
+int32 main() {
     int32 res = Operations.apply(50, 18, Operations.sub);
     return res == 32 ? 0 : 1;
 }
@@ -69,7 +69,7 @@ public class Calc {
     }
 }
 
-static int32 main() {
+int32 main() {
     BinaryOp op = Calc.add;
     return op(100, 200) == 300 ? 0 : 1;
 }
@@ -89,7 +89,7 @@ public class Factory {
     }
 }
 
-static int32 main() {
+int32 main() {
     int32(*)(int32) f = Factory.get_fn();
     return f(21) == 42 ? 0 : 1;
 }
@@ -99,7 +99,7 @@ static int32 main() {
 
     SECTION("Case 2.1: Invoking Null Function Pointer Throws NullPointerException") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32(*)(int32, int32) op = null;
     return op(1, 2);
 }
@@ -115,7 +115,7 @@ public class MathUtils {
     }
 }
 
-static void test() {
+void test() {
     int32(*)(int32) op = MathUtils.add;
 }
 )";
@@ -130,7 +130,7 @@ public class MathUtils {
     }
 }
 
-static void test() {
+void test() {
     void(*)(int32, int32) op = MathUtils.add;
 }
 )";
@@ -143,7 +143,7 @@ public class Greeter {
     public void greet() {}
 }
 
-static void test() {
+void test() {
     void(*)() f = Greeter.greet;
 }
 )";
@@ -152,7 +152,7 @@ static void test() {
 
     SECTION("Case 2.5: SizeOf Function Pointer Type") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 sz = sizeof(int32(*)(int32, int32));
     return sz == 8 ? 0 : 1;
 }

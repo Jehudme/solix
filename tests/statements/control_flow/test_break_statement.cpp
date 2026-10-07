@@ -9,7 +9,7 @@ class Res {
     int32 id;
     Res(int32 id) { this.id = id; }
 }
-static int32 main() {
+int32 main() {
     int32 count = 0;
     while (true) {
         Res s1 = new Res(1);
@@ -27,7 +27,7 @@ static int32 main() {
 
     SECTION("Case 3.2: Break in For Loop Preserves State") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 sum = 0;
     for (int32 i = 0; i < 10; i++) {
         if (i == 5) {
@@ -43,7 +43,7 @@ static int32 main() {
 
     SECTION("Case 3.3: Break Inside Switch Statement") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 x = 2;
     int32 res = 0;
     switch (x) {

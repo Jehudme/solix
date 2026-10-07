@@ -5,7 +5,7 @@ using namespace solix::test;
 TEST_CASE("BlockStatement - Control Flow", "[control_flow][block]") {
     SECTION("Case 3.1: Empty and Nested Empty Blocks") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     {}
     {
         {}
@@ -19,7 +19,7 @@ static int32 main() {
 
     SECTION("Case 3.2: Lexical Variable Shadowing") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 value = 10;
     {
         int32 value = 20;
@@ -38,7 +38,7 @@ class Res {
     int32 id;
     Res(int32 id) { this.id = id; }
 }
-static int32 main() {
+int32 main() {
     {
         Res first = new Res(1);
         Res second = new Res(2);
@@ -57,7 +57,7 @@ class Res {
     int32 id;
     Res(int32 id) { this.id = id; }
 }
-static int32 compute(bool early) {
+int32 compute(bool early) {
     Res a = new Res(1);
     {
         Res b = new Res(2);
@@ -67,7 +67,7 @@ static int32 compute(bool early) {
     }
     return 0;
 }
-static int32 main() {
+int32 main() {
     return compute(true);
 }
 )";
@@ -82,7 +82,7 @@ class Res {
     Res(int32 id) { this.id = id; }
 }
 
-static int32 compute() {
+int32 compute() {
     Res a = new Res(1);
     {
         Res b = new Res(2);
@@ -93,7 +93,7 @@ static int32 compute() {
     return 0;
 }
 
-static int32 main() {
+int32 main() {
     compute();
     return 0;
 }

@@ -11,7 +11,7 @@ class Holder {
     }
 }
 
-static int32 main() {
+int32 main() {
     Holder h = null;
     int32 len = (h != null) ? h.getVal() : 0;
     if (len != 0) {
@@ -32,11 +32,11 @@ static int32 main() {
 
     SECTION("Case 3.2: Nested Ternary Evaluation") {
         std::string code = R"(
-static int32 classify(int32 x) {
+int32 classify(int32 x) {
     return x > 0 ? 1 : (x < 0 ? -1 : 0);
 }
 
-static int32 main() {
+int32 main() {
     return (classify(10) == 1 && classify(-5) == -1 && classify(0) == 0) ? 0 : 1;
 }
 )";
@@ -45,7 +45,7 @@ static int32 main() {
 
     SECTION("Case 4.1: Non-Boolean Condition (Compile-Time Error)") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 res = 5 ? 1 : 2;
     return 0;
 }

@@ -5,7 +5,7 @@ using namespace solix::test;
 TEST_CASE("WhileStatement - Control Flow", "[control_flow][while]") {
     SECTION("Case 3.1: Standard Counted Loop") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 total = 0;
     int32 i = 1;
     while (i <= 5) {
@@ -20,7 +20,7 @@ static int32 main() {
 
     SECTION("Case 3.2: While Loop with Break and Continue") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 sum = 0;
     int32 i = 0;
     while (true) {
@@ -37,7 +37,7 @@ static int32 main() {
 
     SECTION("Case 3.3: While Loop with Complex Short-Circuit Condition") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 count = 0;
     int32 limit = 5;
     while (count < 10 && count < limit) {

@@ -10,7 +10,7 @@ class Printer {
     public int32 print(float64 s) { return 2; }
 }
 
-static int32 main() {
+int32 main() {
     Printer p = new Printer();
     int32 a = p.print(42);
     int32 b = p.print(3.14);
@@ -32,7 +32,7 @@ class AdvancedCalc extends BaseCalc {
     }
 }
 
-static int32 main() {
+int32 main() {
     AdvancedCalc calc = new AdvancedCalc();
     return calc.doubleAdd(3, 4) == 14 ? 0 : 1;
 }

@@ -12,7 +12,7 @@ class Child {
     public weak Parent p;
 }
 
-static int32 main() {
+int32 main() {
     Parent p = new Parent();
     Child c = new Child();
     p.c = c;
@@ -39,7 +39,7 @@ class Account {
     public int32 getSecret() { return this.secret; }
 }
 
-static int32 main() {
+int32 main() {
     Account a = new Account(1, 1234, 500);
     return a.getSecret() == 1234 ? 0 : 1;
 }
@@ -53,7 +53,7 @@ class Counter {
     public static int32 count;
 }
 
-static int32 main() {
+int32 main() {
     Counter.count = 10;
     Counter c = new Counter();
     Counter.count++;
@@ -69,7 +69,7 @@ class Config {
     public const int32 MAX_USERS = 500;
 }
 
-static int32 main() {
+int32 main() {
     return Config.MAX_USERS == 500 ? 0 : 1;
 }
 )";
@@ -95,7 +95,7 @@ class Entity {
     }
 }
 
-static int32 main() {
+int32 main() {
     Entity e = new Entity();
     return (e.getItemId() == 42 && e.getCount() == 100) ? 0 : 1;
 }
@@ -119,7 +119,7 @@ class Config {
     }
 }
 
-static int32 main() {
+int32 main() {
     return (Config.getTag().code == 99 && Config.version == 3) ? 0 : 1;
 }
 )";
@@ -135,7 +135,7 @@ class Child {
     public weak Parent p;
 }
 
-static int32 main() {
+int32 main() {
     Parent p = new Parent();
     Child c = new Child();
     p.c = c;
@@ -162,7 +162,7 @@ class Item {
 class Item {
     public int32 count;
 }
-static int32 main() {
+int32 main() {
     Item item = null;
     item.count = 5;
     return 0;

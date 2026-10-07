@@ -8,7 +8,7 @@ TEST_CASE("TryCatchFinallyStatement - Control Flow", "[control_flow][try_catch_f
 class Exception {}
 class CustomError extends Exception {}
 
-static int32 main() {
+int32 main() {
     int32 result = 0;
     try {
         throw new CustomError();
@@ -27,7 +27,7 @@ static int32 main() {
         std::string code = R"(
 static int32 cleanup_marker = 0;
 
-static void work() {
+void work() {
     try {
         cleanup_marker += 10;
     } finally {
@@ -35,7 +35,7 @@ static void work() {
     }
 }
 
-static int32 main() {
+int32 main() {
     work();
     return cleanup_marker == 30 ? 0 : 1;
 }
@@ -49,7 +49,7 @@ class Exception {}
 
 static bool finally_ran = false;
 
-static void faulty() {
+void faulty() {
     try {
         throw new Exception();
     } catch (Exception e) {
@@ -59,7 +59,7 @@ static void faulty() {
     }
 }
 
-static int32 main() {
+int32 main() {
     try {
         faulty();
     } catch (Exception e) {}

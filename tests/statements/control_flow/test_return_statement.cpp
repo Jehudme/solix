@@ -9,7 +9,7 @@ class Res {
     int32 id;
     Res(int32 id) { this.id = id; }
 }
-static int32 find(bool fast) {
+int32 find(bool fast) {
     Res a = new Res(1);
     {
         Res b = new Res(2);
@@ -17,7 +17,7 @@ static int32 find(bool fast) {
     }
     return 0;
 }
-static int32 main() {
+int32 main() {
     return find(true);
 }
 )";
@@ -28,7 +28,7 @@ static int32 main() {
         std::string code = R"(
 static int32 result = 0;
 
-static int32 compute() {
+int32 compute() {
     try {
         return 42;
     } finally {
@@ -36,7 +36,7 @@ static int32 compute() {
     }
 }
 
-static int32 main() {
+int32 main() {
     int32 val = compute();
     return (val == 42 && result == 100) ? 0 : 1;
 }

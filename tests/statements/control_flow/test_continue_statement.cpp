@@ -5,7 +5,7 @@ using namespace solix::test;
 TEST_CASE("ContinueStatement - Control Flow", "[control_flow][continue]") {
     SECTION("Case 3.1: Continue Advances Loop Variable") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 hits = 0;
     for (int32 i = 0; i < 6; i++) {
         if (i % 2 == 0) continue;
@@ -19,7 +19,7 @@ static int32 main() {
 
     SECTION("Case 3.2: Continue in While Loop") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 i = 0;
     int32 count = 0;
     while (i < 10) {

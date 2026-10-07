@@ -5,7 +5,7 @@ using namespace solix::test;
 TEST_CASE("ArrayAccessExpression - Expressions", "[expressions][array_access]") {
     SECTION("Case 3.1: In-Bounds Read and Write") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32[] buffer = new int32[3];
     buffer[0] = 100;
     buffer[1] = 200;
@@ -18,7 +18,7 @@ static int32 main() {
 
     SECTION("Case 3.2: Multi-Dimensional Array Access") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32[][] grid = new int32[][2];
     grid[0] = new int32[2];
     grid[0][1] = 42;
@@ -30,7 +30,7 @@ static int32 main() {
 
     SECTION("Case 4.1: Index Out of Bounds (Runtime Fault)") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32[] data = new int32[2];
     int32 fail = data[5];
     return fail;
@@ -50,7 +50,7 @@ void test(int32[] arr) {
 
     SECTION("Case 4.4: Subscript Access on Null Reference at Runtime") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32[] arr = null;
     int32 v = arr[0];
     return 0;

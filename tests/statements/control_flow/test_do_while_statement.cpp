@@ -5,7 +5,7 @@ using namespace solix::test;
 TEST_CASE("DoWhileStatement - Control Flow", "[control_flow][do_while]") {
     SECTION("Case 3.1: Guaranteed Initial Pass with False Condition") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 ran = 0;
     do {
         ran++;
@@ -18,7 +18,7 @@ static int32 main() {
 
     SECTION("Case 3.2: Multi-Pass Iteration and Condition Evaluation") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 sum = 0;
     int32 i = 1;
     do {

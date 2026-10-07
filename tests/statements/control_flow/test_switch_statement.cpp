@@ -5,7 +5,7 @@ using namespace solix::test;
 TEST_CASE("SwitchStatement - Control Flow", "[control_flow][switch]") {
     SECTION("Case 3.1: Switch with Explicit Break") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 value = 2;
     int32 res = 0;
     switch (value) {
@@ -23,7 +23,7 @@ static int32 main() {
         std::string code = R"(
 enum Status { PENDING, APPROVED, REJECTED }
 
-static int32 evaluate(Status s) {
+int32 evaluate(Status s) {
     switch (s) {
         case Status.PENDING: return 1;
         case Status.APPROVED: return 2;
@@ -32,7 +32,7 @@ static int32 evaluate(Status s) {
     }
 }
 
-static int32 main() {
+int32 main() {
     return evaluate(Status.APPROVED) == 2 ? 0 : 1;
 }
 )";

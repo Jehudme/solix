@@ -5,7 +5,7 @@ using namespace solix::test;
 TEST_CASE("IfStatement - Control Flow", "[control_flow][if]") {
     SECTION("Case 3.1: Single Branch If") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 x = 10;
     if (x > 5) {
         x = 20;
@@ -18,7 +18,7 @@ static int32 main() {
 
     SECTION("Case 3.2: If-Else Chain") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 score = 85;
     int32 grade = 0;
     if (score >= 90) {
@@ -36,7 +36,7 @@ static int32 main() {
 
     SECTION("Case 3.3: Complex Short-Circuit Logical Condition") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 a = 10;
     int32 b = 20;
     bool executed = false;

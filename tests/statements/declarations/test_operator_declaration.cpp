@@ -13,7 +13,7 @@ class Vector {
     }
 }
 
-static int32 main() {
+int32 main() {
     Vector v1 = new Vector(10);
     Vector v2 = new Vector(20);
     Vector v3 = v1 + v2;
@@ -38,7 +38,7 @@ class Complex {
     }
 }
 
-static int32 main() {
+int32 main() {
     Complex c1 = new Complex(10, 5);
     Complex c2 = new Complex(4, 2);
     Complex res = c1 - c2;

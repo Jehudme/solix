@@ -5,7 +5,7 @@ using namespace solix::test;
 TEST_CASE("LiteralNode - Expressions", "[expressions][literal]") {
     SECTION("Case 3.1: All Literal Types") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int64 big = 10000000000;
     char letter = 'Z';
     bool flag = true;
@@ -19,7 +19,7 @@ static int32 main() {
 
     SECTION("Case 3.2: Hexadecimal and Binary Numeric Literals") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 hex = 0x2A;
     int32 bin = 0b101010;
     return (hex == 42 && bin == 42) ? 0 : 1;
@@ -30,7 +30,7 @@ static int32 main() {
 
     SECTION("Case 3.3: Character Literals with Escapes") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     char newline = '\n';
     char tab = '\t';
     char quote = '\'';
@@ -63,7 +63,7 @@ void test() {
 
     SECTION("Case 52.1: Common Whitespace and Punctuation Escapes") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     char[] s = "hello\nworld\ttab\\slash\"quote";
     if (s[5] != (char)10) return 1; // '\n'
     if (s[11] != (char)9) return 2; // '\t'
@@ -77,7 +77,7 @@ static int32 main() {
 
     SECTION("Case 52.2: Hexadecimal Escape Sequences and Null Character") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     char[] s = "A\x42C\0D";
     if (s[0] != 'A') return 1;
     if (s[1] != 'B') return 2; // \x42 == 'B'

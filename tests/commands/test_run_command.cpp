@@ -10,7 +10,7 @@ static std::filesystem::path create_runnable_project(
     const std::string& folder_name,
     const std::string& project_name = "sample_app",
     const std::string& version = "1.0.0",
-    const std::string& source_code = "static int32 main() { return 0; }\n",
+    const std::string& source_code = "int32 main() { return 0; }\n",
     const nlohmann::json& custom_runtime = nlohmann::json::object()) {
 
     auto proj_dir = sandbox.path() / folder_name;
@@ -61,21 +61,21 @@ TEST_CASE("CLI Command - run", "[command][run]") {
     };
 
     SECTION("Positive - Case 2.1: Execute Valid Compiled Bytecode") {
-        auto bc = generate_bytecode("app_zero", "static int32 main() { return 0; }\n");
+        auto bc = generate_bytecode("app_zero", "int32 main() { return 0; }\n");
         auto res = run_cli({"run", bc.string()});
 
         CHECK(res.exit_code == 0);
     }
 
     SECTION("Positive - Case 2.2: Pass Program Arguments to Executing Bytecode") {
-        auto bc = generate_bytecode("app_args", "static int32 main() { return 0; }\n");
+        auto bc = generate_bytecode("app_args", "int32 main() { return 0; }\n");
         auto res = run_cli({"run", bc.string(), "arg1", "arg2", "foo"});
 
         CHECK(res.exit_code == 0);
     }
 
     SECTION("Positive - Case 2.3: Custom Stack and Heap Capacities") {
-        auto bc = generate_bytecode("app_limits", "static int32 main() { return 0; }\n");
+        auto bc = generate_bytecode("app_limits", "int32 main() { return 0; }\n");
         auto res = run_cli({"run", bc.string(), "-s", "2048", "-p", "4096"});
 
         CHECK(res.exit_code == 0);
@@ -104,7 +104,7 @@ TEST_CASE("CLI Command - run", "[command][run]") {
         rt["arguments"] = nlohmann::json::array({"def_arg1", "def_arg2"});
 
         auto proj = create_runnable_project(sandbox, "uninstalled_rt", "uninstalled_rt", "1.0.0",
-                                            "static int32 main() { return 0; }\n", rt);
+                                            "int32 main() { return 0; }\n", rt);
         auto res = run_cli({"run", proj.string()});
 
         CHECK(res.exit_code == 0);
@@ -115,7 +115,7 @@ TEST_CASE("CLI Command - run", "[command][run]") {
         rt["arguments"] = nlohmann::json::array({"def_arg1", "def_arg2"});
 
         auto proj = create_runnable_project(sandbox, "uninstalled_args", "uninstalled_args", "1.0.0",
-                                            "static int32 main() { return 0; }\n", rt);
+                                            "int32 main() { return 0; }\n", rt);
         auto res = run_cli({"run", proj.string(), "override_arg1", "override_arg2"});
 
         CHECK(res.exit_code == 0);
@@ -177,7 +177,7 @@ TEST_CASE("CLI Command - run", "[command][run]") {
     SECTION("Negative - Case 2.7: Runtime Fault / Unhandled Exception") {
         std::string fault_source = R"(
 class Exception {}
-static int32 main() {
+int32 main() {
     Exception e = null;
     throw e;
     return 0;
@@ -191,7 +191,7 @@ static int32 main() {
     }
 
     SECTION("Negative - Case 2.8: Non-Zero Exit Code Propagation") {
-        auto bc = generate_bytecode("app_exit7", "static int32 main() { return 7; }\n");
+        auto bc = generate_bytecode("app_exit7", "int32 main() { return 7; }\n");
         auto res = run_cli({"run", bc.string()});
 
         CHECK(res.exit_code == 7);
@@ -251,7 +251,7 @@ static int32 main() {
             public class NativeMath {
                 public static native int32 add(int32 a, int32 b);
             }
-            static int32 main() {
+            int32 main() {
                 return NativeMath.add(10, 20) == 30 ? 0 : 1;
             }
         )";
@@ -274,7 +274,7 @@ static int32 main() {
             public class NativeMath {
                 public static native int32 add(int32 a, int32 b);
             }
-            static int32 main() {
+            int32 main() {
                 return NativeMath.add(15, 27) == 42 ? 0 : 1;
             }
         )";
@@ -303,7 +303,7 @@ static int32 main() {
             public class NativeMath {
                 public static native int32 add(int32 a, int32 b);
             }
-            static int32 main() {
+            int32 main() {
                 return NativeMath.add(100, 200) == 300 ? 0 : 1;
             }
         )";
@@ -331,7 +331,7 @@ static int32 main() {
             public class NativeMath {
                 public static native int32 add(int32 a, int32 b);
             }
-            static int32 main() {
+            int32 main() {
                 return NativeMath.add(7, 8) == 15 ? 0 : 1;
             }
         )";
@@ -356,7 +356,7 @@ static int32 main() {
             public class MissingNative {
                 public static native int32 non_existent(int32 a, int32 b);
             }
-            static int32 main() {
+            int32 main() {
                 return MissingNative.non_existent(1, 2);
             }
         )";

@@ -12,7 +12,7 @@ class Dog extends Animal {
     public override int32 speak() { return 7; }
 }
 
-static int32 main() {
+int32 main() {
     Animal a = new Dog();
     Dog d = (Dog)a;
     return d.speak();
@@ -23,7 +23,7 @@ static int32 main() {
 
     SECTION("Case 3.2: Numeric Widening and Narrowing Conversions") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 small = 42;
     int64 big = (int64)small;
     int8 tiny = (int8)small;
@@ -37,7 +37,7 @@ static int32 main() {
         std::string code = R"(
 class Person {}
 
-static int32 main() {
+int32 main() {
     Person p = (Person)null;
     return p == null ? 0 : 1;
 }
@@ -57,7 +57,7 @@ class Cat extends Animal {
     public override int32 speak() { return 3; }
 }
 
-static int32 main() {
+int32 main() {
     Animal a = new Cat();
     Dog d = (Dog)a;
     return 0;

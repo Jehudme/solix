@@ -41,7 +41,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         std::filesystem::current_path(sandbox.path());
 
         sandbox.create_file("solix.json", create_sample_manifest());
-        sandbox.create_file("src/main.slx", "static int32 main() { return 0; }\n");
+        sandbox.create_file("src/main.slx", "int32 main() { return 0; }\n");
 
         auto res = run_cli({"build"});
         std::filesystem::current_path(orig_cwd);
@@ -56,7 +56,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         std::filesystem::current_path(sandbox.path());
 
         sandbox.create_file("solix.json", create_sample_manifest());
-        sandbox.create_file("src/main.slx", "static int32 main() { return 0; }\n");
+        sandbox.create_file("src/main.slx", "int32 main() { return 0; }\n");
 
         auto res = run_cli({"build", "-p", "release"});
         std::filesystem::current_path(orig_cwd);
@@ -76,7 +76,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         mf.close();
 
         std::ofstream sf(proj_dir / "src/main.slx");
-        sf << "static int32 main() { return 0; }\n";
+        sf << "int32 main() { return 0; }\n";
         sf.close();
 
         auto res = run_cli({"build", manifest_path.string()});
@@ -97,7 +97,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
 
         sandbox.create_file("solix.json", manifest.dump(2));
         sandbox.create_file("src/math.slx", "class MathHelper { public static int32 add() { return 42; } }\n");
-        sandbox.create_file("src/main.slx", "static int32 main() { return MathHelper.add() == 42 ? 0 : 1; }\n");
+        sandbox.create_file("src/main.slx", "int32 main() { return MathHelper.add() == 42 ? 0 : 1; }\n");
 
         auto res = run_cli({"build"});
         std::filesystem::current_path(orig_cwd);
@@ -149,7 +149,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         std::filesystem::current_path(sandbox.path());
 
         sandbox.create_file("solix.json", create_sample_manifest());
-        sandbox.create_file("src/main.slx", "static int32 main() { return 0; }\n");
+        sandbox.create_file("src/main.slx", "int32 main() { return 0; }\n");
 
         auto res = run_cli({"build", "-p", "non_existent_profile"});
         std::filesystem::current_path(orig_cwd);
@@ -210,7 +210,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_mf.close();
 
         std::ofstream app_sf(app_dir / "src/main.slx");
-        app_sf << "static int32 main() { return MathLib.getValue() == 100 ? 0 : 1; }\n";
+        app_sf << "int32 main() { return MathLib.getValue() == 100 ? 0 : 1; }\n";
         app_sf.close();
 
         auto res = run_cli({"build", (app_dir / "solix.json").string()});
@@ -273,7 +273,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         a_mf << a_manifest.dump(2);
         a_mf.close();
         std::ofstream a_sf(a_dir / "src/main.slx");
-        a_sf << "static int32 main() { return ClassB.val() == 15 ? 0 : 1; }\n";
+        a_sf << "int32 main() { return ClassB.val() == 15 ? 0 : 1; }\n";
         a_sf.close();
 
         auto res = run_cli({"build", (a_dir / "solix.json").string()});
@@ -336,7 +336,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_file << app_m.dump(2);
         app_file.close();
         std::ofstream app_src(app_dir / "src/main.slx");
-        app_src << "static int32 main() { return (LibOne.val1() + LibTwo.val2()) == 33 ? 0 : 1; }\n";
+        app_src << "int32 main() { return (LibOne.val1() + LibTwo.val2()) == 33 ? 0 : 1; }\n";
         app_src.close();
 
         auto res = run_cli({"build", (app_dir / "solix.json").string()});
@@ -434,7 +434,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_file.close();
         std::ofstream app_src(app_dir / "src/main.slx");
         // Should use version 1.0.4 which has patchNum() == 4
-        app_src << "static int32 main() { return (LibLeft.left() + LibRight.right() + SharedLib.patchNum()) == 34 ? 0 : 1; }\n";
+        app_src << "int32 main() { return (LibLeft.left() + LibRight.right() + SharedLib.patchNum()) == 34 ? 0 : 1; }\n";
         app_src.close();
 
         auto res = run_cli({"build", (app_dir / "solix.json").string()});
@@ -498,7 +498,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_file.close();
         std::ofstream app_src(app_dir / "src/main.slx");
         // Selected version should be 1.3.0 which has minorNum() == 3
-        app_src << "static int32 main() { return UtilLib.minorNum() == 3 ? 0 : 1; }\n";
+        app_src << "int32 main() { return UtilLib.minorNum() == 3 ? 0 : 1; }\n";
         app_src.close();
 
         auto res = run_cli({"build", (app_dir / "solix.json").string()});
@@ -553,7 +553,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_file << app_m.dump(2);
         app_file.close();
         std::ofstream app_src(app_dir / "src/main.slx");
-        app_src << "static int32 main() { return HelperPkg.getAnswer() == 42 ? 0 : 1; }\n";
+        app_src << "int32 main() { return HelperPkg.getAnswer() == 42 ? 0 : 1; }\n";
         app_src.close();
 
         auto res = run_cli({"build", (app_dir / "solix.json").string()}, solix_home.path());
@@ -613,7 +613,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_file << app_m.dump(2);
         app_file.close();
         std::ofstream app_src(app_dir / "src/main.slx");
-        app_src << "static int32 main() { return 0; }\n";
+        app_src << "int32 main() { return 0; }\n";
         app_src.close();
 
         auto res = run_cli({"build", (app_dir / "solix.json").string()});
@@ -639,7 +639,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_file << app_m.dump(2);
         app_file.close();
         std::ofstream app_src(app_dir / "src/main.slx");
-        app_src << "static int32 main() { return 0; }\n";
+        app_src << "int32 main() { return 0; }\n";
         app_src.close();
 
         auto res = run_cli({"build", (app_dir / "solix.json").string()});
@@ -678,7 +678,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         app_file << app_m.dump(2);
         app_file.close();
         std::ofstream app_src(app_dir / "src/main.slx");
-        app_src << "static int32 main() { return 0; }\n";
+        app_src << "int32 main() { return 0; }\n";
         app_src.close();
 
         auto res = run_cli({"build", (app_dir / "solix.json").string()});
@@ -695,7 +695,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         mf.close();
 
         std::ofstream sf(proj_dir / "src/main.slx");
-        sf << "static int32 main() { return 0; }\n";
+        sf << "int32 main() { return 0; }\n";
         sf.close();
 
         auto res = run_cli({"build", proj_dir.string()});
@@ -725,7 +725,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
 
         std::ofstream ps(pkg_dir / "src/main.slx");
         ps << "class DemoInst { public static int32 val() { return 100; } }\n"
-           << "static int32 main() { return 0; }\n";
+           << "int32 main() { return 0; }\n";
         ps.close();
 
         auto inst_res = run_cli({"install", pkg_dir.string()}, solix_home.path());
@@ -782,7 +782,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         af.close();
 
         std::ofstream as(app_dir / "src/main.slx");
-        as << "static int32 main() { return NameLib.val() == 77 ? 0 : 1; }\n";
+        as << "int32 main() { return NameLib.val() == 77 ? 0 : 1; }\n";
         as.close();
 
         auto build_res = run_cli({"build", app_dir.string()}, solix_home.path());
@@ -838,7 +838,7 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         af.close();
 
         std::ofstream as(app_dir / "src/main.slx");
-        as << "static int32 main() { return PkgLib.val() == 88 ? 0 : 1; }\n";
+        as << "int32 main() { return PkgLib.val() == 88 ? 0 : 1; }\n";
         as.close();
 
         auto build_res = run_cli({"build", app_dir.string()}, solix_home.path());

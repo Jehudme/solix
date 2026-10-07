@@ -5,7 +5,7 @@ using namespace solix::test;
 TEST_CASE("ForStatement - Control Flow", "[control_flow][for]") {
     SECTION("Case 3.1: Standard For Loop with Continue") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 evens = 0;
     for (int32 i = 0; i < 10; i++) {
         if (i % 2 != 0) continue;
@@ -19,7 +19,7 @@ static int32 main() {
 
     SECTION("Case 3.2: Empty Header Clauses for Infinite Loop with Break") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 count = 0;
     for (;;) {
         count++;
@@ -35,7 +35,7 @@ static int32 main() {
 
     SECTION("Case 3.3: Nested For Loops for Matrix Summation") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 total = 0;
     for (int32 i = 0; i < 3; i++) {
         for (int32 j = 0; j < 3; j++) {

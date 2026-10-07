@@ -5,7 +5,7 @@ using namespace solix::test;
 TEST_CASE("VariableDeclarationStatement - Control Flow", "[control_flow][variable_declaration]") {
     SECTION("Case 3.1: Primitive and Reference Declarations") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 a = 1;
     float64 b = 2.5;
     bool c = true;
@@ -21,7 +21,7 @@ static int32 main() {
 class Animal {}
 class Cat extends Animal {}
 
-static int32 main() {
+int32 main() {
     Animal a = new Cat();
     return 0;
 }
@@ -43,7 +43,7 @@ void test() {
 
     SECTION("Case 3.4: Multiple Declarations on Single Line") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 a = 1, b = 2, c = 3;
     return (a + b + c) == 6 ? 0 : 1;
 }
@@ -53,7 +53,7 @@ static int32 main() {
 
     SECTION("Case 3.5: Constant Local Variable Declaration") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     const int32 LIMIT = 100;
     return LIMIT == 100 ? 0 : 1;
 }
@@ -65,7 +65,7 @@ static int32 main() {
         std::string code = R"(
 int32 global_counter = 45;
 
-static int32 main() {
+int32 main() {
     return global_counter == 45 ? 0 : 1;
 }
 )";

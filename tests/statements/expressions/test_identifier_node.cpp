@@ -5,7 +5,7 @@ using namespace solix::test;
 TEST_CASE("IdentifierNode - Expressions", "[expressions][identifier]") {
     SECTION("Case 3.1: Local Resolution Precedence") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 val = 100;
     {
         int32 val = 200;
@@ -24,7 +24,7 @@ class ScopeTest {
         this.val = val;
     }
 }
-static int32 main() {
+int32 main() {
     ScopeTest s = new ScopeTest();
     s.setVal(42);
     return s.val;

@@ -8,7 +8,7 @@ TEST_CASE("ThrowStatement - Control Flow", "[control_flow][throw]") {
 class Exception {}
 class MyException extends Exception {}
 
-static int32 main() {
+int32 main() {
     int32 caught = 0;
     try {
         throw new MyException();
@@ -25,7 +25,7 @@ static int32 main() {
         std::string code = R"(
 class Exception {}
 
-static int32 main() {
+int32 main() {
     bool caught_outer = false;
     try {
         try {
@@ -54,7 +54,7 @@ void test() {
     SECTION("Case 4.2: Throwing Null Reference at Runtime") {
         std::string code = R"(
 class Exception {}
-static int32 main() {
+int32 main() {
     Exception e = null;
     throw e;
     return 0;

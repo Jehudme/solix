@@ -34,7 +34,7 @@ static std::filesystem::path create_test_project(TempDir& sandbox,
     mf.close();
 
     std::ofstream sf(proj_dir / "src/main.slx");
-    sf << "static int32 main() { return 0; }\n";
+    sf << "int32 main() { return 0; }\n";
     sf.close();
 
     return proj_dir;
@@ -165,7 +165,7 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
 
         std::ofstream sf(consumer_dir / "src/main.slx");
         sf << "import solix.core.Internal;\n"
-           << "static int32 main() {\n"
+           << "int32 main() {\n"
            << "    return Internal.version() == 1 ? 0 : 1;\n"
            << "}\n";
         sf.close();

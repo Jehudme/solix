@@ -5,7 +5,7 @@ using namespace solix::test;
 TEST_CASE("SizeOfExpression - Expressions", "[expressions][sizeof]") {
     SECTION("Case 1.1: Primitive Type Sizing") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 s1 = sizeof(int8);
     int32 s2 = sizeof(int16);
     int32 s4 = sizeof(int32);
@@ -29,7 +29,7 @@ class Point {
     int32 x;
     int32 y;
 }
-static int32 main() {
+int32 main() {
     int32 sz = sizeof(Point);
     return sz >= 16 ? 0 : 1;
 }
@@ -43,7 +43,7 @@ class Item {
     int32 a;
     int32 b;
 }
-static int32 main() {
+int32 main() {
     Item item = new Item();
     int32 sz = sizeof(item);
     return sz >= 16 ? 0 : 1;

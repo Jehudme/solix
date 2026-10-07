@@ -5,7 +5,7 @@ using namespace solix::test;
 TEST_CASE("ExpressionStatement - Control Flow", "[control_flow][expression]") {
     SECTION("Case 3.1: Method Calls and Assignments") {
         std::string code = R"(
-static int32 main() {
+int32 main() {
     int32 x = 0;
     x = 10;
     x++;
@@ -21,8 +21,8 @@ class Res {
     int32 val;
     Res(int32 v) { this.val = v; }
 }
-static Res generate() { return new Res(42); }
-static int32 main() {
+Res generate() { return new Res(42); }
+int32 main() {
     generate();
     return 0;
 }
@@ -37,7 +37,7 @@ class Builder {
     public Builder add(int32 x) { this.val += x; return this; }
 }
 
-static int32 main() {
+int32 main() {
     Builder b = new Builder();
     b.add(10).add(20).add(30);
     return b.val == 60 ? 0 : 1;
@@ -61,7 +61,7 @@ void test() {
 class Res {
     public virtual int32 get_val() { return 10; }
 }
-static int32 main() {
+int32 main() {
     Res r = null;
     return r.get_val();
 }

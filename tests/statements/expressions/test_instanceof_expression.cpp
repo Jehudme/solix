@@ -8,7 +8,7 @@ TEST_CASE("InstanceOfExpression - Expressions", "[expressions][instanceof]") {
 class Animal {}
 class Dog extends Animal {}
 
-static int32 main() {
+int32 main() {
     Animal a = null;
     bool check = a instanceof Dog;
     return check ? 1 : 0;
@@ -22,7 +22,7 @@ static int32 main() {
 class Base {}
 class Sub extends Base {}
 
-static int32 main() {
+int32 main() {
     Base obj = new Sub();
     if (obj instanceof Base && obj instanceof Sub) {
         return 0;

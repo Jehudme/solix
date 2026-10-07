@@ -37,7 +37,7 @@ class Robot implements Worker {
     public int32 work() { return 99; }
 }
 
-static int32 main() {
+int32 main() {
     Worker w = new Robot();
     return w.work() == 99 ? 0 : 1;
 }
@@ -66,7 +66,7 @@ class Android implements Worker, Greeter {
     public int32 greet() { return 20; }
 }
 
-static int32 main() {
+int32 main() {
     Android a = new Android();
     Worker w = a;
     Greeter g = a;
@@ -93,7 +93,7 @@ class ClassBA implements SecondIface, FirstIface {
     public int32 getB() { return 20; }
 }
 
-static int32 main() {
+int32 main() {
     FirstIface a1 = new ClassAB();
     SecondIface b1 = new ClassAB();
     FirstIface a2 = new ClassBA();
@@ -119,7 +119,7 @@ class StreamBuffer implements AdvancedReader {
     public int32 reset() { return 7; }
 }
 
-static int32 main() {
+int32 main() {
     AdvancedReader ar = new StreamBuffer();
     Reader r = ar;
     if (r.read() != 42) return 1;
@@ -143,7 +143,7 @@ class DerivedTask extends BaseTask {
     public override int32 execute() { return 100; }
 }
 
-static int32 main() {
+int32 main() {
     Action a1 = new BaseTask();
     Action a2 = new DerivedTask();
     if (a1.execute() != 50) return 1;
@@ -163,7 +163,7 @@ class Human implements Worker {
     public int32 work() { return 1; }
 }
 
-static int32 main() {
+int32 main() {
     Human h = new Human();
     Worker w = h;
     if (!(h instanceof Worker)) return 1;
@@ -229,7 +229,7 @@ class Box<T> implements IBox<T> {
     public void set(T v) { this.val = v; }
 }
 
-public static int32 main() {
+int32 main() {
     IBox<int32> b = new Box<int32>(42);
     b.set(100);
     return b.get() == 100 ? 0 : 1;
@@ -254,7 +254,7 @@ class Box<T> implements IDerived<T> {
     public void set(T v) { this.val = v; }
 }
 
-public static int32 main() {
+int32 main() {
     IDerived<int32> d = new Box<int32>(10);
     if (d.get() != 10) return 2;
     d.set(20);

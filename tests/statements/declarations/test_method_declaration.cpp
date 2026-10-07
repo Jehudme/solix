@@ -12,7 +12,7 @@ class Child extends Parent {
     public override int32 get_val() { return 2; }
 }
 
-static int32 main() {
+int32 main() {
     Parent p = new Child();
     return p.get_val();
 }
@@ -28,7 +28,7 @@ class MathUtil {
     }
 }
 
-static int32 main() {
+int32 main() {
     return MathUtil.add(20, 22) == 42 ? 0 : 1;
 }
 )";
@@ -42,7 +42,7 @@ class Calculator {
     public float64 compute(float64 x) { return x * 2.0; }
 }
 
-static int32 main() {
+int32 main() {
     Calculator c = new Calculator();
     return (c.compute(10) == 20 && c.compute(1.5) == 3.0) ? 0 : 1;
 }
@@ -59,7 +59,7 @@ class DerivedWorker extends BaseWorker {
     public int32 test() { return this.getCode(); }
 }
 
-static int32 main() {
+int32 main() {
     DerivedWorker w = new DerivedWorker();
     return w.test();
 }
@@ -121,4 +121,31 @@ void outer() {
 )";
         assert_compile_error(code, "Methods cannot be declared inside another method");
     }
+
+    SECTION("Case 53.1: Free Function Entry Point Without static") {
+        std::string code = R"(
+int32 helper(int32 x) {
+    return x * 2;
 }
+
+int32 main() {
+    return helper(21) == 42 ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
+    SECTION("Case 53.2: Rejection of static on Free Function Outside Class") {
+        std::string code = R"(
+static int32 compute() {
+    return 10;
+}
+
+int32 main() {
+    return compute();
+}
+)";
+        assert_compile_error(code, "'static' modifier is not allowed on functions outside of a class");
+    }
+}
+
