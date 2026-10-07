@@ -1,0 +1,43 @@
+package solix.io;
+
+import solix.core.String;
+import solix.core.StringBuilder;
+import solix.exceptions.IOException;
+
+public class StreamReader {
+    private BufferedReader _reader;
+    private bool _is_closed;
+
+    public StreamReader(IStream stream) {
+        this._reader = new BufferedReader(stream);
+        this._is_closed = false;
+    }
+
+    public int32 read() {
+        if (this._is_closed) throw new IOException("Reader is closed");
+        return this._reader.read();
+    }
+
+    public String read_line() {
+        if (this._is_closed) throw new IOException("Reader is closed");
+        return this._reader.read_line();
+    }
+
+    public String read_to_end() {
+        if (this._is_closed) throw new IOException("Reader is closed");
+        StringBuilder sb = new StringBuilder();
+        while (true) {
+            int32 ch = this._reader.read();
+            if (ch == -1) break;
+            sb.append_char((char)ch);
+        }
+        return sb.to_string();
+    }
+
+    public void close() {
+        if (!this._is_closed) {
+            this._reader.close();
+            this._is_closed = true;
+        }
+    }
+}

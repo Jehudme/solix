@@ -1,9 +1,82 @@
 package solix.io.filesystem;
 
+import solix.core.IStringable;
 import solix.core.String;
+import solix.system.Console;
 
-public class Path {
+public class Path implements IStringable {
     public static char DIRECTORY_SEPARATOR = native_get_separator();
+
+    private String _value;
+
+    public Path() {
+        this._value = new String("");
+    }
+
+    public Path(String path) {
+        this._value = (path != null) ? path : new String("");
+    }
+
+    public Path(char[] characters) {
+        this._value = new String(characters);
+    }
+
+    public String value() {
+        return this._value;
+    }
+
+    public String to_string() {
+        return this._value;
+    }
+
+    public bool is_empty() {
+        return this._value.is_empty();
+    }
+
+    public Path parent() {
+        return new Path(Path.get_directory_name(this._value));
+    }
+
+    public Path filename() {
+        return new Path(Path.get_file_name(this._value));
+    }
+
+    public String extension() {
+        return Path.get_extension(this._value);
+    }
+
+    public String filename_without_extension() {
+        return Path.get_file_name_without_extension(this._value);
+    }
+
+    public bool is_absolute_path() {
+        return Path.is_absolute(this._value);
+    }
+
+    public Path normalized() {
+        return new Path(Path.normalize(this._value));
+    }
+
+    public Path operator/(Path other) {
+        if (other == null) return this;
+        String c = Path.combine(this.to_string(), other.to_string());
+        return new Path(c);
+    }
+
+    public Path operator/(String other) {
+        if (other == null) return this;
+        return new Path(Path.combine(this.to_string(), other));
+    }
+
+    public bool operator==(Path other) {
+        if (other == null) return false;
+        return this._value.equals(other._value);
+    }
+
+    public bool operator!=(Path other) {
+        if (other == null) return true;
+        return !this._value.equals(other._value);
+    }
 
     public static String combine(String path1, String path2) {
         char[] p1 = (path1 != null && path1.data != null) ? path1.data : "";

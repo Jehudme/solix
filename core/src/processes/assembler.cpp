@@ -34,6 +34,10 @@ static bool produces_retained_reference(Node *expr) {
     case NodeType::ARRAY_ACCESS:
     case NodeType::ASSIGNMENT_EXPR:
       return true;
+    case NodeType::BINARY_EXPR: {
+      auto *bin = static_cast<BinaryExpression *>(expr);
+      return bin->overloaded_operator != nullptr;
+    }
     case NodeType::LITERAL: {
       auto *lit = static_cast<LiteralNode *>(expr);
       return std::holds_alternative<std::string>(lit->value);
@@ -2126,6 +2130,17 @@ void Assembler::visit(TernaryExpression &node) {
   emit_int32(0xFFFFFFFF);
 
   compile_expression(tern->true_branch.get());
+  bool is_ref = is_reference_type(tern->expression_type);
+  bool true_retained = produces_retained_reference(tern->true_branch.get());
+  bool false_retained = produces_retained_reference(tern->false_branch.get());
+
+  // If one branch produces a retained reference and the other doesn't,
+  // normalize so both branches retain (or neither).
+  if (is_ref) {
+    if (!true_retained && false_retained) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    }
+  }
 
   emit_byte(static_cast<uint8_t>(OpCode::JUMP));
   size_t end_jump_idx = bytecode().size();
@@ -2138,6 +2153,11 @@ void Assembler::visit(TernaryExpression &node) {
   bytecode()[false_jump_idx + 3] = false_ip & 0xFF;
 
   compile_expression(tern->false_branch.get());
+  if (is_ref) {
+    if (true_retained && !false_retained) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    }
+  }
 
   uint32_t end_ip = bytecode().size();
   bytecode()[end_jump_idx] = (end_ip >> 24) & 0xFF;

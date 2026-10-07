@@ -1,0 +1,147 @@
+package solix.io;
+
+import solix.exceptions.IOException;
+import solix.exceptions.ArgumentOutOfRangeException;
+
+public class MemoryStream implements IStream {
+    private int8[] _buffer;
+    private int32 _capacity;
+    private int32 _length;
+    private int32 _position;
+    private bool _is_closed;
+
+    public MemoryStream() {
+        this.init(64);
+    }
+
+    public MemoryStream(int32 initial_capacity) {
+        int32 cap = (initial_capacity > 0) ? initial_capacity : 64;
+        this.init(cap);
+    }
+
+    public MemoryStream(int8[] buffer) {
+        if (buffer == null) {
+            this.init(64);
+        } else {
+            this._capacity = buffer.length;
+            this._length = buffer.length;
+            this._position = 0;
+            this._is_closed = false;
+            this._buffer = new int8[this._capacity];
+            for (int32 i = 0; i < this._length; i = i + 1) {
+                this._buffer[i] = buffer[i];
+            }
+        }
+    }
+
+    private void init(int32 cap) {
+        this._capacity = cap;
+        this._length = 0;
+        this._position = 0;
+        this._is_closed = false;
+        this._buffer = new int8[this._capacity];
+    }
+
+    private void ensure_capacity(int32 min_cap) {
+        if (min_cap > this._capacity) {
+            int32 new_cap = this._capacity * 2;
+            if (new_cap < min_cap) new_cap = min_cap;
+            int8[] new_buf = new int8[new_cap];
+            for (int32 i = 0; i < this._length; i = i + 1) {
+                new_buf[i] = this._buffer[i];
+            }
+            this._buffer = new_buf;
+            this._capacity = new_cap;
+        }
+    }
+
+    public int32 read(int8[] buffer, int32 offset, int32 count) {
+        if (this._is_closed) throw new IOException("Stream is closed");
+        if (buffer == null) return 0;
+        if (this._position >= this._length) return 0;
+
+        int32 available = this._length - this._position;
+        int32 to_read = (count < available) ? count : available;
+        for (int32 i = 0; i < to_read; i = i + 1) {
+            buffer[offset + i] = this._buffer[this._position + i];
+        }
+        this._position = this._position + to_read;
+        return to_read;
+    }
+
+    public void write(int8[] buffer, int32 offset, int32 count) {
+        if (this._is_closed) throw new IOException("Stream is closed");
+        if (buffer == null || count <= 0) return;
+
+        this.ensure_capacity(this._position + count);
+        for (int32 i = 0; i < count; i = i + 1) {
+            this._buffer[this._position + i] = buffer[offset + i];
+        }
+        this._position = this._position + count;
+        if (this._position > this._length) {
+            this._length = this._position;
+        }
+    }
+
+    public int32 read_byte() {
+        if (this._is_closed) return -1;
+        if (this._position >= this._length) return -1;
+        int32 val = (int32)this._buffer[this._position];
+        if (val < 0) val = val + 256;
+        this._position = this._position + 1;
+        return val;
+    }
+
+    public void write_byte(int32 value) {
+        if (this._is_closed) throw new IOException("Stream is closed");
+        this.ensure_capacity(this._position + 1);
+        this._buffer[this._position] = (int8)value;
+        this._position = this._position + 1;
+        if (this._position > this._length) {
+            this._length = this._position;
+        }
+    }
+
+    public int64 seek(int64 offset, int32 origin) {
+        if (this._is_closed) throw new IOException("Stream is closed");
+        int64 new_pos = 0L;
+        if (origin == 0) { // Begin
+            new_pos = offset;
+        } else if (origin == 1) { // Current
+            new_pos = (int64)this._position + offset;
+        } else if (origin == 2) { // End
+            new_pos = (int64)this._length + offset;
+        }
+        if (new_pos < 0L) throw new ArgumentOutOfRangeException("Seek position cannot be negative");
+        this._position = (int32)new_pos;
+        return (int64)this._position;
+    }
+
+    public void flush() {}
+
+    public void close() {
+        this._is_closed = true;
+    }
+
+    public int64 length() {
+        if (this._is_closed) throw new IOException("Stream is closed");
+        return (int64)this._length;
+    }
+
+    public int64 position() {
+        if (this._is_closed) throw new IOException("Stream is closed");
+        return (int64)this._position;
+    }
+
+    public int8[] to_array() {
+        int8[] res = new int8[this._length];
+        for (int32 i = 0; i < this._length; i = i + 1) {
+            res[i] = this._buffer[i];
+        }
+        return res;
+    }
+
+    public bool can_read() { return !this._is_closed; }
+    public bool can_write() { return !this._is_closed; }
+    public bool can_seek() { return !this._is_closed; }
+}

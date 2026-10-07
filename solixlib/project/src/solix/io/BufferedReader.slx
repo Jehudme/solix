@@ -1,0 +1,92 @@
+package solix.io;
+
+import solix.core.String;
+import solix.core.StringBuilder;
+import solix.exceptions.IOException;
+
+public class BufferedReader {
+    private IStream _stream;
+    private int8[] _buf;
+    private int32 _buf_size;
+    private int32 _buf_pos;
+    private int32 _buf_len;
+    private bool _is_closed;
+
+    public BufferedReader(IStream stream) {
+        this.init(stream, 4096);
+    }
+
+    public BufferedReader(IStream stream, int32 buffer_size) {
+        int32 size = (buffer_size > 0) ? buffer_size : 4096;
+        this.init(stream, size);
+    }
+
+    private void init(IStream stream, int32 buffer_size) {
+        this._stream = stream;
+        this._buf_size = buffer_size;
+        this._buf = new int8[this._buf_size];
+        this._buf_pos = 0;
+        this._buf_len = 0;
+        this._is_closed = false;
+    }
+
+    public int32 read() {
+        if (this._is_closed) throw new IOException("Reader is closed");
+        if (this._buf_pos >= this._buf_len) {
+            this.fill_buffer();
+            if (this._buf_len <= 0) {
+                return -1;
+            }
+        }
+        int32 val = (int32)this._buf[this._buf_pos];
+        if (val < 0) val = val + 256;
+        this._buf_pos = this._buf_pos + 1;
+        return val;
+    }
+
+    public String read_line() {
+        if (this._is_closed) throw new IOException("Reader is closed");
+        StringBuilder sb = new StringBuilder();
+        bool has_chars = false;
+
+        while (true) {
+            int32 ch = this.read();
+            if (ch == -1) {
+                if (has_chars) {
+                    return sb.to_string();
+                } else {
+                    return null;
+                }
+            }
+            has_chars = true;
+            if (ch == 10) { // '\n'
+                return sb.to_string();
+            } else if (ch == 13) { // '\r'
+                // Check if followed by '\n'
+                if (this._buf_pos < this._buf_len) {
+                    int32 next_ch = (int32)this._buf[this._buf_pos];
+                    if (next_ch < 0) next_ch = next_ch + 256;
+                    if (next_ch == 10) {
+                        this._buf_pos = this._buf_pos + 1;
+                    }
+                }
+                return sb.to_string();
+            } else {
+                sb.append_char((char)ch);
+            }
+        }
+        return null;
+    }
+
+    private void fill_buffer() {
+        this._buf_pos = 0;
+        this._buf_len = this._stream.read(this._buf, 0, this._buf_size);
+    }
+
+    public void close() {
+        if (!this._is_closed) {
+            this._stream.close();
+            this._is_closed = true;
+        }
+    }
+}

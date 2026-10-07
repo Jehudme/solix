@@ -1,0 +1,16 @@
+package solix.io;
+
+public interface IStream {
+    int32 read(int8[] buffer, int32 offset, int32 count);
+    void write(int8[] buffer, int32 offset, int32 count);
+    int32 read_byte();
+    void write_byte(int32 value);
+    int64 seek(int64 offset, int32 origin);
+    void flush();
+    void close();
+    int64 length();
+    int64 position();
+    bool can_read();
+    bool can_write();
+    bool can_seek();
+}

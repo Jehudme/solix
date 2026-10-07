@@ -1,0 +1,51 @@
+package solix.io;
+
+import solix.core.String;
+import solix.exceptions.IOException;
+
+public class StreamWriter {
+    private IStream _stream;
+    private bool _is_closed;
+
+    public StreamWriter(IStream stream) {
+        this._stream = stream;
+        this._is_closed = false;
+    }
+
+    public void write(String s) {
+        if (this._is_closed) throw new IOException("Writer is closed");
+        if (s == null || s.data == null) return;
+        int32 len = s.length();
+        int8[] buf = new int8[len];
+        for (int32 i = 0; i < len; i = i + 1) {
+            buf[i] = (int8)s.char_at(i);
+        }
+        this._stream.write(buf, 0, len);
+    }
+
+    public void write_line(String s) {
+        this.write(s);
+        this.write_line();
+    }
+
+    public void write_line() {
+        if (this._is_closed) throw new IOException("Writer is closed");
+        int8[] nl = new int8[1];
+        nl[0] = (int8)10; // '\n'
+        this._stream.write(nl, 0, 1);
+    }
+
+    public void flush() {
+        if (!this._is_closed) {
+            this._stream.flush();
+        }
+    }
+
+    public void close() {
+        if (!this._is_closed) {
+            this._stream.flush();
+            this._stream.close();
+            this._is_closed = true;
+        }
+    }
+}

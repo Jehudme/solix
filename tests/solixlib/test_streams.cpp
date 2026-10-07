@@ -8,17 +8,34 @@ TEST_CASE("Standard Library - solix.io.Streams", "[io][streams][solixlib]") {
         sources["main.slx"] = R"(
             import solix.io.filesystem.Path;
             import solix.core.String;
+            import solix.system.Console;
 
             class Main {
                 public static int32 main() {
-                    Path p1 = new Path(new String("root"));
-                    Path p2 = new Path(new String("sub"));
+                    String s1 = new String("root");
+                    String s2 = new String("child");
+                    if (s1.length() == 0) return 601;
+                    if (s2.length() == 0) return 602;
+
+                    Path p1 = new Path(s1);
+                    Path p2 = new Path(s2);
+
+                    if (p1.to_string().length() == 0) return 500;
+                    if (p2.to_string().length() == 0) return 501;
+
+                    String direct_comb = Path.combine(p1.to_string(), p2.to_string());
+                    if (direct_comb.length() == 0) return 502;
 
                     Path combined = p1 / p2;
-                    if (combined.is_empty()) return 1;
+                    if (combined == null) return 10;
+                    Console.println(p1.to_string());
+                    Console.println(p2.to_string());
+                    Console.println(combined.to_string());
+                    if (combined.is_empty()) return 1000 + combined.to_string().length();
 
                     Path combined_str = p1 / new String("file.txt");
-                    if (combined_str.is_empty()) return 2;
+                    if (combined_str == null) return 20;
+                    if (combined_str.is_empty()) return 21;
 
                     Path fn = combined_str.filename();
                     if (!fn.to_string().equals(new String("file.txt"))) return 3;
@@ -131,13 +148,22 @@ TEST_CASE("Standard Library - solix.io.Streams", "[io][streams][solixlib]") {
                     String temp_dir = Path.get_temp_path();
                     String file_path = Path.combine(temp_dir, new String("solix_buffered_reader_test.txt"));
 
-                    File.write_all_text(file_path, new String("alpha\nbeta\ngamma\n"));
+                    FileStream fs_w = new FileStream(file_path, FileMode.WRITE);
+                    StreamWriter sw = new StreamWriter(fs_w);
+                    sw.write_line(new String("alpha"));
+                    sw.write_line(new String("beta"));
+                    sw.write_line(new String("gamma"));
+                    sw.close();
 
                     FileStream fs = new FileStream(file_path, FileMode.READ);
                     BufferedReader reader = new BufferedReader(fs);
 
                     String l1 = reader.read_line();
-                    if (l1 == null || !l1.equals(new String("alpha"))) return 1;
+                    if (l1 == null) return 101;
+                    if (!l1.equals(new String("alpha"))) {
+                        if (l1.length() != 5) return 2000 + l1.length();
+                        return 3000 + (int32)l1.char_at(0);
+                    }
 
                     String l2 = reader.read_line();
                     if (l2 == null || !l2.equals(new String("beta"))) return 2;

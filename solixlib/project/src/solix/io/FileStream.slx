@@ -1,0 +1,110 @@
+package solix.io;
+
+import solix.core.String;
+import solix.exceptions.IOException;
+import solix.exceptions.FileNotFoundException;
+
+public class FileStream implements IStream {
+    private int64 _handle;
+    private int32 _mode;
+    private bool _is_closed;
+
+    public FileStream(String path, int32 mode) {
+        char[] p = (path != null && path.data != null) ? path.data : "";
+        this.init(p, mode);
+    }
+
+    public FileStream(char[] path, int32 mode) {
+        char[] p = (path != null) ? path : "";
+        this.init(p, mode);
+    }
+
+    private void init(char[] path, int32 mode) {
+        this._mode = mode;
+        this._is_closed = false;
+        this._handle = native_open(path, mode);
+        if (this._handle < 0L) {
+            if (mode == FileMode.READ) {
+                throw new FileNotFoundException("Could not open file for reading");
+            } else {
+                throw new IOException("Could not open file stream");
+            }
+        }
+    }
+
+    public int32 read(int8[] buffer, int32 offset, int32 count) {
+        if (this._is_closed || this._handle < 0L) throw new IOException("Stream is closed");
+        return (int32)native_read(this._handle, buffer, offset, count);
+    }
+
+    public void write(int8[] buffer, int32 offset, int32 count) {
+        if (this._is_closed || this._handle < 0L) throw new IOException("Stream is closed");
+        native_write(this._handle, buffer, offset, count);
+    }
+
+    public int32 read_byte() {
+        if (this._is_closed || this._handle < 0L) return -1;
+        return (int32)native_read_byte(this._handle);
+    }
+
+    public void write_byte(int32 value) {
+        if (this._is_closed || this._handle < 0L) throw new IOException("Stream is closed");
+        native_write_byte(this._handle, value);
+    }
+
+    public int64 seek(int64 offset, int32 origin) {
+        if (this._is_closed || this._handle < 0L) throw new IOException("Stream is closed");
+        return native_seek(this._handle, offset, origin);
+    }
+
+    public void flush() {
+        if (!this._is_closed && this._handle >= 0L) {
+            native_flush(this._handle);
+        }
+    }
+
+    public void close() {
+        if (!this._is_closed && this._handle >= 0L) {
+            native_close(this._handle);
+            this._is_closed = true;
+            this._handle = -1L;
+        }
+    }
+
+    public int64 length() {
+        if (this._is_closed || this._handle < 0L) throw new IOException("Stream is closed");
+        return native_length(this._handle);
+    }
+
+    public int64 position() {
+        if (this._is_closed || this._handle < 0L) throw new IOException("Stream is closed");
+        return native_tell(this._handle);
+    }
+
+    public bool can_read() {
+        return !this._is_closed && (this._mode == FileMode.READ || this._mode == FileMode.READ_WRITE);
+    }
+
+    public bool can_write() {
+        return !this._is_closed && (this._mode == FileMode.WRITE || this._mode == FileMode.APPEND || this._mode == FileMode.READ_WRITE);
+    }
+
+    public bool can_seek() {
+        return !this._is_closed;
+    }
+
+    public bool is_closed() {
+        return this._is_closed;
+    }
+
+    private static native int64 native_open(char[] path, int32 mode);
+    private static native int64 native_close(int64 handle);
+    private static native int64 native_read_byte(int64 handle);
+    private static native int64 native_write_byte(int64 handle, int32 val);
+    private static native int64 native_read(int64 handle, int8[] buf, int32 offset, int32 count);
+    private static native int64 native_write(int64 handle, int8[] buf, int32 offset, int32 count);
+    private static native int64 native_seek(int64 handle, int64 offset, int32 origin);
+    private static native int64 native_tell(int64 handle);
+    private static native int64 native_length(int64 handle);
+    private static native int64 native_flush(int64 handle);
+}

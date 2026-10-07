@@ -1,0 +1,8 @@
+package solix.io;
+
+public class FileMode {
+    public static int32 READ = 0;
+    public static int32 WRITE = 1;
+    public static int32 APPEND = 2;
+    public static int32 READ_WRITE = 3;
+}
