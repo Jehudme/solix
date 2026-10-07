@@ -61,10 +61,17 @@
 | **Phase 32.11** | Standard Library: Chrono & Time Ergonomics (Duration/Instant Operator Overloading, `DateTime.format` Pattern Formatting) | `P1 High` | `solixlib/time`, `docs`, `tests` | - [x] Complete |
 | **Phase 33** | Standard Library: `solix.io.Streams` (`IStream`, `FileStream`, `MemoryStream`, `StreamReader`, `StreamWriter`, `BufferedReader`) & Object-Oriented `Path` (`operator/`) | `P1 High` | `solixlib/io`, `solixlib/native`, `docs`, `tests` | - [x] Complete |
 | **Phase 33.1** | Standard Library: Documentation Schema Standardization & Developer Guides (Operator Overloading & Native C++ Interop Guides) | `P2 Medium` | `docs/spec/solixlib`, `docs/guide` | - [ ] Planned |
-| **Phase 34** | Standard Library: `solix.system.Environment` (OS, Env, Subprocesses) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
+| **Phase 34** | Standard Library: `solix.system.Environment` (OS, Env, Subprocesses) | `P2 Medium` | `solixlib`, `solixlib/native`, `tests` | - [x] Completed & Merged |
 | **Phase 35** | Core Compiler & Runtime: Language Intrinsics (`assert`, `exit`, Hardcoded Built-ins) | `P1 High` | `core`, `tests`, `docs` | - [x] Completed & Merged |
 | **Phase 36** | Standard Library: `solix.crypto` (Base64, Hex, SHA-256, MD5) | `P3 Low` | `solixlib`, `solixlib/native`, `tests` | - [x] Completed & Merged |
 | **Phase 37** | Standard Library: `solix.net` (TCP & UDP Sockets, Lightweight `HttpClient`) | `P3 Low` | `solixlib`, `solixlib/native`, `tests` | - [ ] Planned |
+| **Phase 38** | Compiler Diagnostics & Error Reporting Consistency (Uniform Path, Row, Column, Caret) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 39** | Lexer Escape Sequence Decoding (`\n`, `\t`, `\r`, `\\`, `\"`, `\0`, `\xHH`) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 40** | Function Declaration Scope Rules (`static` Prohibited Outside Classes; Non-`static` Free Functions Allowed as Entry Points) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 41** | Diagnostic Logging Level Demotion (`log_debug` -> `log_trace` & Phase Pipeline Timing) | `P2 Medium` | `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 42** | CLI Toolchain: `version` Subcommand & `--version` Flag | `P2 Medium` | `cli`, `tests`, `docs` | - [ ] Planned |
+| **Phase 43** | Entry Point Resolution Disambiguation (Exhaustive Scan, Duplicate/Ambiguity Detection with File, Row, Col) | `P1 High` | `core`, `tests`, `docs` | - [ ] Planned |
+| **Phase 44** | Standard Library: Friendly Primitive Aliases (`Primitives.slx` with Wildcard Re-export) | `P2 Medium` | `solixlib/core`, `core`, `tests`, `docs` | - [ ] Planned |
 
 ---
 
@@ -2117,6 +2124,125 @@ Implement cross-platform networking primitives: IP address handling, TCP client/
 - [ ] Author `IPAddress.slx`, `IPEndPoint.slx`, `TcpClient.slx`, `TcpListener.slx`, `UdpClient.slx`, `UdpReceiveResult.slx`, `HttpClient.slx`, `HttpResponse.slx`.
 - [ ] Implement Catch2 test suite `tests/solixlib/test_net.cpp`.
 - [ ] Author `docs/spec/solixlib/net.md`.
+
+---
+
+## Phase 38: Compiler Diagnostics & Error Reporting Consistency
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `core/src/processes/lexer.cpp`, `core/src/processes/parser.cpp`, `core/src/processes/binder.cpp`, `core/src/utilities/diagnostic.cpp`, `tests/statements/`
+- **Status**: - [ ] Planned
+
+### Objective
+Ensure that all compiler diagnostics, syntax errors, and binder validation messages consistently report file path/name, line (row), and column, with source text caret pointers. Eliminate missing path, row, or column information across all compiler stages.
+
+### Action Items
+- [ ] Ensure `Lexer` and `Parser` record source file path on every error report.
+- [ ] Unify `log_error` and `record_error` across `Binder` and `Parser` to always format `[path:line:col] message`.
+- [ ] Implement unit tests in `tests/statements/` verifying diagnostic consistency for syntax, lexical, and binder errors.
+- [ ] Update `docs/spec/` diagnostics specification.
+
+---
+
+## Phase 39: Lexer String Escape Sequence Decoding
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `core/src/processes/lexer.cpp`, `tests/statements/expressions/test_literal_expression.cpp`
+- **Status**: - [ ] Planned
+
+### Objective
+Upgrade `handle_string()` in `core/src/processes/lexer.cpp` to decode escape sequences (`\n`, `\t`, `\r`, `\\`, `\"`, `\0`, `\xHH`) into their true ASCII/Unicode byte values rather than emitting raw backslashes and letters. Preserve double backslash `\\` as a literal backslash `\`.
+
+### Action Items
+- [ ] Refactor `Lexer::handle_string()` to process escape sequences identically to `Lexer::handle_character()`.
+- [ ] Add test cases in `tests/statements/TESTS.md` and `test_literal_expression.cpp` verifying newline, tab, carriage return, quotes, hex escapes, and escaped backslashes.
+- [ ] Update `docs/spec/lexical.md` with string literal escape sequence rules.
+
+---
+
+## Phase 40: Function Declaration Scope Rules
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `core/src/processes/binder.cpp`, `core/src/processes/assembler.cpp`, `tests/statements/declarations/test_method_declaration.cpp`
+- **Status**: - [ ] Planned
+
+### Objective
+Enforce the language rule that functions declared outside of a class cannot use the `static` keyword (since free/package-level functions are inherently static). Allow free functions without the `static` keyword to serve as valid entry points (`main`).
+
+### Action Items
+- [ ] Add compile-time check in `Binder` rejecting `static` modifier on top-level/free functions outside classes (`'static' modifier is not allowed on functions outside of a class`).
+- [ ] Update `Assembler` entry point locator to accept top-level free functions without checking `is_static == true` (top-level functions are implicitly static).
+- [ ] Add positive and negative unit tests in `test_method_declaration.cpp`.
+- [ ] Update `docs/spec/declarations/method_declaration.md`.
+
+---
+
+## Phase 41: Diagnostic Logging Level Demotion & Pipeline Timing
+
+- **Priority**: `P2 Medium`
+- **Affected Modules**: `core/src/processes/`, `core/src/compilation.cpp`, `core/src/utilities/diagnostic.cpp`
+- **Status**: - [ ] Planned
+
+### Objective
+Demote verbose compiler debug logs (`log_debug`) to trace level (`log_trace`) so that normal debug logging is uncluttered. In `core/src/compilation.cpp`, add timing instrumentation for each compiler stage (Lexer, Parser, Binder, Assembler) reporting stage completion and duration.
+
+### Action Items
+- [ ] Audit and convert fine-grained AST/symbol `log_debug` invocations to `log_trace`.
+- [ ] Measure and log elapsed execution time per stage in `core/src/compilation.cpp`.
+- [ ] Verify clean CLI compile output.
+
+---
+
+## Phase 42: CLI Toolchain — `version` Subcommand & `--version` Flag
+
+- **Priority**: `P2 Medium`
+- **Affected Modules**: `cli/src/main.cpp`, `cli/src/commands/`, `CMakeLists.txt`, `tests/commands/`
+- **Status**: - [ ] Planned
+
+### Objective
+Add a first-class `version` CLI subcommand and `--version` / `-v` flag to the Solix CLI toolchain that prints the CLI engine version, build target, and commit hash or release tag.
+
+### Action Items
+- [ ] Expose `SOLIX_VERSION` definition from CMake.
+- [ ] Implement `solix::cli::setup_version_command(app)` in `cli/src/commands/version.cpp` and support top-level `-v,--version`.
+- [ ] Add unit test in `tests/commands/test_version_command.cpp`.
+- [ ] Update `docs/spec/cli/README.md`.
+
+---
+
+## Phase 43: Entry Point Resolution Disambiguation
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `core/src/processes/assembler.cpp`, `tests/statements/`
+- **Status**: - [ ] Planned
+
+### Objective
+Replace the first-match entry point locator in `Assembler` with an exhaustive search across all compilation units. If multiple candidate functions matching the entry point name exist (e.g. `com.example1.main` and `com.example2.main`), reject compilation with an informative error detailing all candidate locations (file path, line, and column).
+
+### Action Items
+- [ ] Update `Assembler` to collect all entry point candidate functions instead of breaking on the first match.
+- [ ] If candidates count > 1, emit compiler error `Ambiguous entry point 'main': multiple candidates found:` listing each candidate's source file, line, and column.
+- [ ] Add unit tests in `tests/statements/` for single entry point (success) and ambiguous entry points (compile error with candidate locations).
+- [ ] Update `docs/spec/` toolchain/runtime specification.
+
+---
+
+## Phase 44: Standard Library — Friendly Primitive Aliases (`Primitives.slx`)
+
+- **Priority**: `P2 Medium`
+- **Affected Modules**: `core/src/processes/binder.cpp`, `solixlib/project/src/solix/core/Primitives.slx`, `tests/solixlib/`
+- **Status**: - [ ] Planned
+
+### Objective
+Ensure that type aliases can be re-exported and imported via wildcard (`import solix.core.primitives.*` / `import solix.core.*`). Introduce `Primitives.slx` containing friendly aliases: `alias int = int32;`, `alias long = int64;`, `alias short = int16;`, `alias byte = int8;`, `alias ubyte = uint8;`, `alias ushort = uint16;`, `alias uint = uint32;`, `alias ulong = uint64;`, `alias float = float32;`, `alias double = float64;`.
+
+### Action Items
+- [ ] Verify and harden Binder wildcard import resolution for `AliasStatement` symbols.
+- [ ] Create `solixlib/project/src/solix/core/Primitives.slx` declaring friendly primitive type aliases.
+- [ ] Update `solixlib/project/solix.json` manifest.
+- [ ] Add unit tests in `tests/solixlib/test_primitives.cpp` verifying code using `import solix.core.Primitives;` and wildcard imports.
+- [ ] Document primitive aliases in `docs/spec/solixlib/primitives.md`.
+
 
 
 
