@@ -203,3 +203,14 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 14.3 [IMPLEMENTED]**: Synchronous child process execution via `Process.run()` with standard output capture (`tests/solixlib/test_environment.cpp`).
 - [x] **Case 14.4 [IMPLEMENTED]**: Lifecycle child process management with `Process` (`start()`, `wait_for_exit()`, `get_standard_output()`) (`tests/solixlib/test_environment.cpp`).
 - [x] **Case 14.5 [IMPLEMENTED]**: Negative: Spawning non-existent command returns non-zero exit code without crashing parent process (`tests/solixlib/test_environment.cpp`).
+
+---
+
+## 15. Cryptography & Encoding (`solix.crypto`: `Base64`, `Hex`, `Hash`)
+
+- [ ] **Case 15.1 [NOT IMPLEMENTED]**: Base64 round-trip encoding and decoding across byte arrays and strings (`Base64.encode`, `Base64.decode`, `Base64.encode_string`, `Base64.decode_to_string`) (`tests/solixlib/test_crypto.cpp`).
+- [ ] **Case 15.2 [NOT IMPLEMENTED]**: Hexadecimal round-trip encoding and decoding (`Hex.encode`, `Hex.decode`) (`tests/solixlib/test_crypto.cpp`).
+- [ ] **Case 15.3 [NOT IMPLEMENTED]**: Cryptographic digest validation: SHA-256, SHA-1, and MD5 matching NIST and RFC standard test vectors (`tests/solixlib/test_crypto.cpp`).
+- [ ] **Case 15.4 [NOT IMPLEMENTED]**: Negative: Malformed Base64 payload or padding throws `FormatException` (`tests/solixlib/test_crypto.cpp`).
+- [ ] **Case 15.5 [NOT IMPLEMENTED]**: Negative: Odd-length or invalid non-hexadecimal character string throws `FormatException` (`tests/solixlib/test_crypto.cpp`).
+
