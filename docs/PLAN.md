@@ -2394,7 +2394,7 @@ Resolve the critical dangling pointer bug in `Token.source` that breaks Go-to-De
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `lsp/src/server.cpp`, `lsp/src/spatial_index.cpp`, `tests/commands/TESTS.md`, `tests/commands/test_lsp_command.cpp`, `docs/spec/lsp/navigation.md`
-- **Status**: - [ ] Pending
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Implement multi-step Go-to-Definition chaining and type coordinate resolution across all Solix statements and expressions:
@@ -2405,12 +2405,12 @@ Implement multi-step Go-to-Definition chaining and type coordinate resolution ac
 5. `catch` parameter types jump to exception class definition.
 
 ### Action Items
-- [ ] Extend `spatial_index.cpp` and `server.cpp` to resolve type annotation spans for `VariableDeclaration`, `FieldDeclaration`, `MethodDeclaration`, `NewInstanceExpression`, `CastExpression`, `CatchClause`.
-- [ ] Implement definition chaining: jump from variable declaration to its class declaration.
-- [ ] Implement base-class and interface jumping for `ClassDeclaration` inheritance clauses.
-- [ ] Update `tests/commands/TESTS.md` with definition chaining test scenarios.
-- [ ] Add Catch2 test cases in `tests/commands/test_lsp_command.cpp`.
-- [ ] Update `docs/spec/lsp/navigation.md`.
+- [x] Extend `spatial_index.cpp` and `server.cpp` to resolve type annotation spans for `VariableDeclaration`, `FieldDeclaration`, `MethodDeclaration`, `NewInstanceExpression`, `CastExpression`, `CatchClause`.
+- [x] Implement definition chaining: jump from variable declaration to its class declaration.
+- [x] Implement base-class and interface jumping for `ClassDeclaration` inheritance clauses.
+- [x] Update `tests/commands/TESTS.md` with definition chaining test scenarios.
+- [x] Add Catch2 test cases in `tests/commands/test_lsp_command.cpp`.
+- [x] Update `docs/spec/lsp/navigation.md`.
 
 ---
 
