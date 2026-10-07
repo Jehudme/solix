@@ -4838,7 +4838,7 @@ class Main {
 
 ## Suite 51: Compiler Diagnostics & Error Reporting Consistency
 
-### Case 51.1: Syntax Error Reports Source Name, Row, Column, and Caret [NOT IMPLEMENTED]
+### Case 51.1: Syntax Error Reports Source Name, Row, Column, and Caret [IMPLEMENTED]
 ```solix
 class Main {
     public static int32 main() {
@@ -4847,11 +4847,11 @@ class Main {
     }
 }
 ```
-*Expected Result*: Compilation fails with `E_PARSE` diagnostic containing non-empty `source_path`, `line == 3`, and valid `column`.
+*Expected Result*: Compilation fails with `E_PARSE` diagnostic containing non-empty `source_path`, `line == 4`, and valid `column`.
 
 ---
 
-### Case 51.2: Lexical Error Reports Source Name, Row, and Column [NOT IMPLEMENTED]
+### Case 51.2: Lexical Error Reports Source Name, Row, and Column [IMPLEMENTED]
 ```solix
 class Main {
     public static int32 main() {
@@ -4860,11 +4860,11 @@ class Main {
     }
 }
 ```
-*Expected Result*: Lexical analysis fails with `E_LEX` diagnostic containing non-empty `source_path`, `line == 3`, and valid `column`.
+*Expected Result*: Lexical analysis fails with `E_LEX` diagnostic containing non-empty `source_path`, `line == 4`, and valid `column`.
 
 ---
 
-### Case 51.3: Semantic Binding Error Reports Source Name, Row, Column, and Caret [NOT IMPLEMENTED]
+### Case 51.3: Semantic Binding Error Reports Source Name, Row, Column, and Caret [IMPLEMENTED]
 ```solix
 class Main {
     public static int32 main() {
@@ -4873,7 +4873,7 @@ class Main {
     }
 }
 ```
-*Expected Result*: Semantic binding fails with `E_BIND` diagnostic containing non-empty `source_path`, `line == 3`, and valid `column`.
+*Expected Result*: Semantic binding fails with `E_BIND` diagnostic containing non-empty `source_path`, `line == 4`, and valid `column`.
 
 
 
