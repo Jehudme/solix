@@ -173,3 +173,28 @@ Defined Profiles:
 |---|---|
 | `0` | Command succeeded. |
 | `1` | Missing package, manifest validation error, collision conflict, or filesystem error. |
+
+---
+
+## CPack Multi-OS Packaging & Bundling
+
+In addition to user-level project package management (`solix install/uninstall`), Solix integrates CMake's **CPack** to build native release packages and standalone bundles for Linux, macOS, and Windows:
+
+### Target Generators
+- **Linux**:
+  - `DEB`: Native `.deb` package for Debian and Ubuntu.
+  - `RPM`: Native `.rpm` package for Fedora, CentOS, RHEL.
+  - `TGZ`: Standalone portable tarball (`solix-<version>-Linux.tar.gz`).
+- **macOS**:
+  - `productbuild`: Native `.pkg` installer.
+  - `TGZ`: Standalone portable tarball (`solix-<version>-Darwin.tar.gz`).
+- **Windows**:
+  - `NSIS`: Native `.exe` setup wizard with automatic `PATH` configuration.
+  - `ZIP`: Standalone portable zip archive (`solix-<version>-win64.zip`).
+
+### Bundled Components
+1. **Binaries**: `bin/solix` (CLI launcher) and `bin/solix-lsp` (Language Server Protocol daemon).
+2. **Standard Library**: `share/solix/solixlib/` containing all standard modules and compiled native library `libsolixlib_native`.
+3. **IDE Integration**: `share/solix/vscode/solix-0.1.0.vsix` bundled extension for automated editor installation.
+4. **Documentation**: `share/doc/solix/` containing `LICENSE` and `README.md`.
+
