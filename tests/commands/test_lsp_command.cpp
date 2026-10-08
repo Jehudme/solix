@@ -1491,13 +1491,13 @@ TEST_CASE("Suite 14: LSP Generic Blueprint Scope Resolution & Manifest Discovery
             {"jsonrpc", "2.0"},
             {"id", 1},
             {"method", "initialize"},
-            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+            {"params", {{"rootUri", path_to_uri(test_dir)}, {"capabilities", nlohmann::json::object()}}}
         });
 
         // Open sub/src/Main.slx
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
-                {"uri", "file://" + test_dir + "/sub/src/Main.slx"},
+                {"uri", path_to_uri(test_dir + "/sub/src/Main.slx")},
                 {"languageId", "solix"},
                 {"version", 1},
                 {"text", main_code}
@@ -1532,7 +1532,7 @@ TEST_CASE("Suite 14: LSP Generic Blueprint Scope Resolution & Manifest Discovery
             {"jsonrpc", "2.0"},
             {"id", 1},
             {"method", "initialize"},
-            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+            {"params", {{"rootUri", path_to_uri(test_dir)}, {"capabilities", nlohmann::json::object()}}}
         });
 
         std::string generic_code =
@@ -1546,7 +1546,7 @@ TEST_CASE("Suite 14: LSP Generic Blueprint Scope Resolution & Manifest Discovery
             "    }\n"                                                // 7
             "}\n";                                                   // 8
 
-        std::string file_uri = "file://" + test_dir + "/GenericBox.slx";
+        std::string file_uri = path_to_uri(test_dir + "/GenericBox.slx");
 
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
@@ -1639,7 +1639,7 @@ TEST_CASE("Suite 14: LSP Generic Blueprint Scope Resolution & Manifest Discovery
             {"jsonrpc", "2.0"},
             {"id", 1},
             {"method", "initialize"},
-            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+            {"params", {{"rootUri", path_to_uri(test_dir)}, {"capabilities", nlohmann::json::object()}}}
         });
 
         std::string base_code =
@@ -1649,7 +1649,7 @@ TEST_CASE("Suite 14: LSP Generic Blueprint Scope Resolution & Manifest Discovery
             "    }\n"                                                 // 3
             "}\n";                                                    // 4
 
-        std::string file_uri = "file://" + test_dir + "/ItemBox.slx";
+        std::string file_uri = path_to_uri(test_dir + "/ItemBox.slx");
 
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
@@ -1725,11 +1725,11 @@ TEST_CASE("Suite 15: LSP Package Declaration Autocompletion & Same-Package Impor
             {"jsonrpc", "2.0"},
             {"id", 1},
             {"method", "initialize"},
-            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+            {"params", {{"rootUri", path_to_uri(test_dir)}, {"capabilities", nlohmann::json::object()}}}
         });
 
         std::string client_code = "package ";
-        std::string file_uri = "file://" + test_dir + "/src/net/http/Client.slx";
+        std::string file_uri = path_to_uri(test_dir + "/src/net/http/Client.slx");
 
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
@@ -1797,11 +1797,11 @@ TEST_CASE("Suite 15: LSP Package Declaration Autocompletion & Same-Package Impor
             {"jsonrpc", "2.0"},
             {"id", 1},
             {"method", "initialize"},
-            {"params", {{"rootUri", "file://" + test_dir + "/models"}, {"capabilities", nlohmann::json::object()}}}
+            {"params", {{"rootUri", path_to_uri(test_dir + "/models")}, {"capabilities", nlohmann::json::object()}}}
         });
 
         std::string account_code = "package app.models;\nimport app.models.User;\npublic class Account { public User u; }\n";
-        std::string file_uri = "file://" + test_dir + "/models/Account.slx";
+        std::string file_uri = path_to_uri(test_dir + "/models/Account.slx");
 
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
@@ -1873,11 +1873,11 @@ TEST_CASE("Suite 15: LSP Package Declaration Autocompletion & Same-Package Impor
             {"jsonrpc", "2.0"},
             {"id", 1},
             {"method", "initialize"},
-            {"params", {{"rootUri", "file://" + test_dir + "/models"}, {"capabilities", nlohmann::json::object()}}}
+            {"params", {{"rootUri", path_to_uri(test_dir + "/models")}, {"capabilities", nlohmann::json::object()}}}
         });
 
         std::string beta_code = "package pkg.demo;\nimport pkg.demo.*;\npublic class Beta { public Alpha a; }\n";
-        std::string file_uri = "file://" + test_dir + "/models/Beta.slx";
+        std::string file_uri = path_to_uri(test_dir + "/models/Beta.slx");
 
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
@@ -1916,11 +1916,11 @@ TEST_CASE("Suite 15: LSP Package Declaration Autocompletion & Same-Package Impor
             {"jsonrpc", "2.0"},
             {"id", 1},
             {"method", "initialize"},
-            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+            {"params", {{"rootUri", path_to_uri(test_dir)}, {"capabilities", nlohmann::json::object()}}}
         });
 
         std::string svc_code = "package my.service;\npublic class Svc {}\n";
-        std::string file_uri = "file://" + test_dir + "/Svc.slx";
+        std::string file_uri = path_to_uri(test_dir + "/Svc.slx");
 
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
@@ -1982,11 +1982,11 @@ TEST_CASE("Suite 15: LSP Package Declaration Autocompletion & Same-Package Impor
             {"jsonrpc", "2.0"},
             {"id", 1},
             {"method", "initialize"},
-            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+            {"params", {{"rootUri", path_to_uri(test_dir)}, {"capabilities", nlohmann::json::object()}}}
         });
 
         std::string src = "package foo;\npublic class Cls {\n    public void test() {\n        \n    }\n}\n";
-        std::string file_uri = "file://" + test_dir + "/Cls.slx";
+        std::string file_uri = path_to_uri(test_dir + "/Cls.slx");
 
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
@@ -2043,11 +2043,11 @@ TEST_CASE("Suite 16: Type Alias Declarations, Scope Completion & Import Autocomp
             {"jsonrpc", "2.0"},
             {"id", 1},
             {"method", "initialize"},
-            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+            {"params", {{"rootUri", path_to_uri(test_dir)}, {"capabilities", nlohmann::json::object()}}}
         });
 
         std::string models_code = "public class User {}\npublic enum Status { ACTIVE, INACTIVE }\nalias IdType = int64;\n";
-        std::string models_uri = "file://" + test_dir + "/Models.slx";
+        std::string models_uri = path_to_uri(test_dir + "/Models.slx");
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
                 {"uri", models_uri},
@@ -2058,7 +2058,7 @@ TEST_CASE("Suite 16: Type Alias Declarations, Scope Completion & Import Autocomp
         });
 
         std::string alias_code = "alias MyAlias = ";
-        std::string alias_uri = "file://" + test_dir + "/AliasTest.slx";
+        std::string alias_uri = path_to_uri(test_dir + "/AliasTest.slx");
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
                 {"uri", alias_uri},
@@ -2113,11 +2113,11 @@ TEST_CASE("Suite 16: Type Alias Declarations, Scope Completion & Import Autocomp
             {"jsonrpc", "2.0"},
             {"id", 1},
             {"method", "initialize"},
-            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+            {"params", {{"rootUri", path_to_uri(test_dir)}, {"capabilities", nlohmann::json::object()}}}
         });
 
         std::string src = "alias Number = int64;\npublic class Calc {\n    public void run() {\n        \n    }\n}\n";
-        std::string file_uri = "file://" + test_dir + "/Calc.slx";
+        std::string file_uri = path_to_uri(test_dir + "/Calc.slx");
 
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
@@ -2173,11 +2173,11 @@ TEST_CASE("Suite 16: Type Alias Declarations, Scope Completion & Import Autocomp
             {"jsonrpc", "2.0"},
             {"id", 1},
             {"method", "initialize"},
-            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+            {"params", {{"rootUri", path_to_uri(test_dir)}, {"capabilities", nlohmann::json::object()}}}
         });
 
         std::string pkg_code = "package sub.pkg;\npublic class Helper {}\n";
-        std::string pkg_uri = "file://" + test_dir + "/sub/pkg/Helper.slx";
+        std::string pkg_uri = path_to_uri(test_dir + "/sub/pkg/Helper.slx");
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
                 {"uri", pkg_uri},
@@ -2188,7 +2188,7 @@ TEST_CASE("Suite 16: Type Alias Declarations, Scope Completion & Import Autocomp
         });
 
         std::string imp_code = "import ";
-        std::string imp_uri = "file://" + test_dir + "/Main.slx";
+        std::string imp_uri = path_to_uri(test_dir + "/Main.slx");
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
                 {"uri", imp_uri},
@@ -2240,11 +2240,11 @@ TEST_CASE("Suite 16: Type Alias Declarations, Scope Completion & Import Autocomp
             {"jsonrpc", "2.0"},
             {"id", 1},
             {"method", "initialize"},
-            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+            {"params", {{"rootUri", path_to_uri(test_dir)}, {"capabilities", nlohmann::json::object()}}}
         });
 
         std::string pkg_code = "package sub.pkg;\npublic class Helper {}\npublic enum Status { OK, ERR }\n";
-        std::string pkg_uri = "file://" + test_dir + "/sub/pkg/Helper.slx";
+        std::string pkg_uri = path_to_uri(test_dir + "/sub/pkg/Helper.slx");
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
                 {"uri", pkg_uri},
@@ -2255,7 +2255,7 @@ TEST_CASE("Suite 16: Type Alias Declarations, Scope Completion & Import Autocomp
         });
 
         std::string imp_code = "import sub.pkg.";
-        std::string imp_uri = "file://" + test_dir + "/Main.slx";
+        std::string imp_uri = path_to_uri(test_dir + "/Main.slx");
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
                 {"uri", imp_uri},
@@ -2308,12 +2308,12 @@ TEST_CASE("Suite 16: Type Alias Declarations, Scope Completion & Import Autocomp
             {"jsonrpc", "2.0"},
             {"id", 1},
             {"method", "initialize"},
-            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+            {"params", {{"rootUri", path_to_uri(test_dir)}, {"capabilities", nlohmann::json::object()}}}
         });
 
         std::string helper_code = "package sub.pkg;\npublic class Helper {}\n";
         std::string helper_path = test_dir + "/sub/pkg/Helper.slx";
-        std::string helper_uri = "file://" + helper_path;
+        std::string helper_uri = path_to_uri(helper_path);
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
                 {"uri", helper_uri},
@@ -2324,7 +2324,7 @@ TEST_CASE("Suite 16: Type Alias Declarations, Scope Completion & Import Autocomp
         });
 
         std::string main_code = "package sub.pkg;\nimport sub.pkg.Helper;\npublic class Main {}\n";
-        std::string main_uri = "file://" + test_dir + "/Main.slx";
+        std::string main_uri = path_to_uri(test_dir + "/Main.slx");
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
                 {"uri", main_uri},
@@ -2385,11 +2385,11 @@ TEST_CASE("Suite 16: Type Alias Declarations, Scope Completion & Import Autocomp
             {"jsonrpc", "2.0"},
             {"id", 1},
             {"method", "initialize"},
-            {"params", {{"rootUri", "file://" + test_dir}, {"capabilities", nlohmann::json::object()}}}
+            {"params", {{"rootUri", path_to_uri(test_dir)}, {"capabilities", nlohmann::json::object()}}}
         });
 
         std::string alias_code = "alias ";
-        std::string alias_uri = "file://" + test_dir + "/AliasTest.slx";
+        std::string alias_uri = path_to_uri(test_dir + "/AliasTest.slx");
         transport.send_notification("textDocument/didOpen", {
             {"textDocument", {
                 {"uri", alias_uri},
