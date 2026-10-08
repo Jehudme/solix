@@ -20,7 +20,10 @@ out/
 *.exe
 *.slxb
 *.vsix
-!editors/vscode/solix-*.vsix
+*.pdb
+*.ilk
+*.exp
+*.lib
 node_modules/
 
 # CMake / FetchContent
