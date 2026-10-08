@@ -845,24 +845,24 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 17.1: CPack Staging Manifest and Component Verification [NOT IMPLEMENTED]
+#### Case 17.1: CPack Staging Manifest and Component Verification [IMPLEMENTED]
 - **Command**: CMake install staging & CPack component inspection
 - **Setup**: Configured project build tree in Release mode with CPack enabled.
 - **Expected**: Install staging generates binary targets (`bin/solix`, `bin/solix-lsp`), standard library tree (`share/solix/solixlib/` with `.slx` and `lib/`), documentation (`share/doc/solix/LICENSE`), and VS Code extension bundle (`share/solix/vscode/solix-0.1.0.vsix`).
 
-#### Case 17.2: Standard Library Bundling Integrity in Package Tree [NOT IMPLEMENTED]
+#### Case 17.2: Standard Library Bundling Integrity in Package Tree [IMPLEMENTED]
 - **Command**: Inspection of `share/solix/solixlib` in packaged archive
 - **Setup**: Built CPack package archive (`.tar.gz` / `.zip`).
 - **Expected**: Packaged directory contains valid `solix.json`, standard library `.slx` source modules, and compiled native shared library `libsolixlib_native`.
 
-#### Case 17.3: Portable Archive File Structure and Permissions [NOT IMPLEMENTED]
+#### Case 17.3: Portable Archive File Structure and Permissions [IMPLEMENTED]
 - **Command**: Archive tarball/zip layout validation
 - **Setup**: Generated TGZ / ZIP archive.
 - **Expected**: Top-level directory structured as `solix-<version>-<platform>`, with executable permissions on `bin/solix` and `bin/solix-lsp`.
 
 ### Negative Test Scenarios
 
-#### Case 17.4: Packaging Missing Critical Files Fails Gracefully [NOT IMPLEMENTED]
+#### Case 17.4: Packaging Missing Critical Files Fails Gracefully [IMPLEMENTED]
 - **Command**: CPack invocation without required license or project components
 - **Setup**: Custom build directory lacking mandatory root license file.
 - **Expected**: Configuration or packaging fails gracefully with clear error diagnostic instead of generating incomplete or corrupt installers.
