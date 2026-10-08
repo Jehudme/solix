@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(solix VERSION 0.1.0 LANGUAGES CXX)
+project(solix VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -58,9 +58,10 @@ install(
 )
 
 # Install VS Code extension bundle if present
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/editors/vscode/solix-0.1.0.vsix")
+file(GLOB SOLIX_VSIX_FILES "${CMAKE_CURRENT_SOURCE_DIR}/editors/vscode/solix-*.vsix")
+if(SOLIX_VSIX_FILES)
     install(
-        FILES "${CMAKE_CURRENT_SOURCE_DIR}/editors/vscode/solix-0.1.0.vsix"
+        FILES ${SOLIX_VSIX_FILES}
         DESTINATION share/solix/vscode
         COMPONENT ide
     )
@@ -78,8 +79,8 @@ endif()
 set(CPACK_PACKAGE_NAME "solix")
 set(CPACK_PACKAGE_VENDOR "Solix Team")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Solix Programming Language Compiler, Runtime, and Toolchain")
-set(CPACK_PACKAGE_VERSION_MAJOR 0)
-set(CPACK_PACKAGE_VERSION_MINOR 1)
+set(CPACK_PACKAGE_VERSION_MAJOR 1)
+set(CPACK_PACKAGE_VERSION_MINOR 0)
 set(CPACK_PACKAGE_VERSION_PATCH 0)
 set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
 set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/Jehudme/solix")

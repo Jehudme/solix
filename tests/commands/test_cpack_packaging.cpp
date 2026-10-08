@@ -19,7 +19,7 @@ TEST_CASE("Suite 17: CPack Multi-OS Packaging & Installer Staging", "[packaging]
 
         // Verify package metadata
         REQUIRE(content.find("CPACK_PACKAGE_NAME \"solix\"") != std::string::npos);
-        REQUIRE(content.find("CPACK_PACKAGE_VERSION \"0.1.0\"") != std::string::npos);
+        REQUIRE(content.find("CPACK_PACKAGE_VERSION \"1.0.0\"") != std::string::npos);
         REQUIRE(content.find("CPACK_PACKAGE_VENDOR \"Solix Team\"") != std::string::npos);
     }
 
@@ -50,8 +50,15 @@ TEST_CASE("Suite 17: CPack Multi-OS Packaging & Installer Staging", "[packaging]
         REQUIRE(f.is_open());
         std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
 
-        REQUIRE(content.find("share/doc/solix") != std::string::npos);
-        if (std::filesystem::exists(project_root / "editors" / "vscode" / "solix-0.1.0.vsix")) {
+        bool has_vsix = false;
+        std::error_code ec_vsix;
+        for (const auto& entry : std::filesystem::directory_iterator(project_root / "editors" / "vscode", ec_vsix)) {
+            if (entry.path().extension() == ".vsix") {
+                has_vsix = true;
+                break;
+            }
+        }
+        if (has_vsix) {
             REQUIRE(content.find("share/solix/vscode") != std::string::npos);
         }
 

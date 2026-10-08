@@ -13,18 +13,26 @@ namespace solix::cli {
 static std::optional<std::filesystem::path> find_bundled_vsix() {
     std::filesystem::path exe_dir = solix::get_executable_dir();
 
-    std::vector<std::filesystem::path> candidates = {
-        exe_dir.parent_path() / "share" / "solix" / "vscode" / "solix-0.1.0.vsix",
-        exe_dir / ".." / "share" / "solix" / "vscode" / "solix-0.1.0.vsix",
-        exe_dir / "share" / "solix" / "vscode" / "solix-0.1.0.vsix",
-        exe_dir.parent_path().parent_path() / "editors" / "vscode" / "solix-0.1.0.vsix",
-        exe_dir.parent_path() / "editors" / "vscode" / "solix-0.1.0.vsix"
+    std::vector<std::filesystem::path> search_dirs = {
+        exe_dir.parent_path() / "share" / "solix" / "vscode",
+        exe_dir / ".." / "share" / "solix" / "vscode",
+        exe_dir / "share" / "solix" / "vscode",
+        exe_dir.parent_path().parent_path() / "editors" / "vscode",
+        exe_dir.parent_path() / "editors" / "vscode"
     };
 
-    for (const auto& cand : candidates) {
-        std::filesystem::path normal_cand = cand.lexically_normal();
-        if (std::filesystem::exists(normal_cand)) {
-            return normal_cand;
+    for (const auto& dir : search_dirs) {
+        std::filesystem::path normal_dir = dir.lexically_normal();
+        if (std::filesystem::exists(normal_dir) && std::filesystem::is_directory(normal_dir)) {
+            std::error_code ec;
+            for (const auto& entry : std::filesystem::directory_iterator(normal_dir, ec)) {
+                if (entry.is_regular_file()) {
+                    auto fn = entry.path().filename().string();
+                    if (fn.rfind("solix-", 0) == 0 && entry.path().extension() == ".vsix") {
+                        return entry.path();
+                    }
+                }
+            }
         }
     }
     return std::nullopt;
