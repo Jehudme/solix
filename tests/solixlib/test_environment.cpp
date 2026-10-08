@@ -38,7 +38,16 @@ TEST_CASE("Standard Library - solix.system.Environment", "[system][environment][
 
     SECTION("Case 14.2: Operating system identification and host hardware inspection") {
         auto sources = load_solixlib_sources();
-        sources["main.slx"] = R"(
+        std::string host_os_check;
+#if defined(__APPLE__)
+        host_os_check = "if (!is_mac) return 5;";
+#elif defined(_WIN32)
+        host_os_check = "if (!is_win) return 5;";
+#else
+        host_os_check = "if (!is_lin) return 5;";
+#endif
+
+        sources["main.slx"] = std::string(R"(
             import solix.system.Environment;
             import solix.core.String;
 
@@ -64,7 +73,7 @@ TEST_CASE("Standard Library - solix.system.Environment", "[system][environment][
                     if (is_mac) flag_sum = flag_sum + 1;
                     if (flag_sum != 1) return 4;
 
-                    if (!is_lin) return 5;
+                    )") + host_os_check + R"(
 
                     return 0;
                 }

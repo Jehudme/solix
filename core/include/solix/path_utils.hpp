@@ -7,7 +7,16 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef NOGDI
+#define NOGDI
+#endif
 #include <windows.h>
+#ifdef ERROR
+#undef ERROR
+#endif
 #elif defined(__APPLE__)
 #include <mach-o/dyld.h>
 #include <limits.h>

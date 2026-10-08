@@ -2538,6 +2538,62 @@ Provide comprehensive type alias intelligence, general alias scope completion, a
 - [x] Update documentation in `docs/spec/lsp/intelligence.md`.
 - [x] Rebuild, package, and install `solix-0.1.0.vsix`.
 
+---
+
+## Phase 57: CPack Multi-OS Packaging & Automated Release Pipeline
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `CMakeLists.txt`, `.github/workflows/release.yml`, `editors/vscode/`, `tests/commands/TESTS.md`, `tests/commands/test_package_commands.cpp`, `docs/spec/cli/package.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Configure CPack to generate native installation packages and standalone archives across Linux, macOS, and Windows via GitHub Actions:
+1. **CPack Multi-Generator Setup**:
+   - Linux: `.deb` (Debian/Ubuntu), `.rpm` (Fedora/RHEL), `.tar.gz` (generic portable).
+   - macOS: `.pkg` (native installer package) and `.tar.gz` (portable archive).
+   - Windows: `NSIS` (`.exe` setup wizard with PATH configuration) and `.zip` (portable archive).
+2. **Standard Library Bundling**:
+   - Install `solixlib/project` into `<prefix>/share/solix/solixlib` including all `.slx` source modules and compiled native library.
+3. **VS Code Extension Bundling**:
+   - Package `editors/vscode/solix-0.1.0.vsix` and install into `<prefix>/share/solix/vscode/solix-0.1.0.vsix`.
+4. **Automated GitHub Actions Release Pipeline**:
+   - Update `.github/workflows/release.yml` with a multi-OS build matrix that builds binaries, packages the VS Code extension, executes CPack, and publishes all release assets on tag push.
+
+### Action Items
+- [ ] Configure CPack metadata, components, and platform-specific generators in root `CMakeLists.txt`.
+- [ ] Configure CMake install rules for `solixlib` (`share/solix/solixlib`) and VS Code VSIX (`share/solix/vscode`).
+- [ ] Update `.github/workflows/release.yml` to build CPack installers and upload `.deb`, `.rpm`, `.pkg`, `.exe`, `.tar.gz`, `.zip`, and `.vsix`.
+- [ ] Define test specifications in `tests/commands/TESTS.md`.
+- [ ] Implement unit and integration tests verifying package installation and staging paths.
+- [ ] Update documentation in `docs/spec/cli/package.md` and `docs/guide/release.md`.
+
+---
+
+## Phase 58: Toolchain `solixlib` Auto-Discovery & VS Code Extension Installation (`solix ide install`)
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `cli/src/package_manager.cpp`, `cli/src/dependency_resolver.hpp`, `cli/src/commands/ide.hpp`, `cli/src/commands/ide.cpp`, `cli/CMakeLists.txt`, `tests/commands/TESTS.md`, `tests/commands/test_ide_command.cpp`, `docs/spec/cli/ide.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Provide zero-configuration standard library discovery and automated editor extension installation:
+1. **Toolchain-Relative `solixlib` Auto-Discovery**:
+   - In `PackageManager` and `DependencyManager`, inspect `<exe_dir>/../share/solix/solixlib` as a fallback when `solixlib` is not yet installed in `~/.solix/installed/`.
+   - Automatically register/seed `solixlib` on first run so users can compile immediately after installing or unpacking.
+2. **CLI `solix ide install` Subcommand**:
+   - Provide `solix ide install [--editor <name>]` to discover installed IDEs (`code`, `code-insiders`, `cursor`, `codium`) and run `--install-extension` with the bundled `solix-0.1.0.vsix`.
+3. **Installer Automation Hooks**:
+   - Include post-install hooks in `.pkg` (macOS), `.deb` (Linux), and NSIS `.exe` (Windows) to automatically seed `solixlib` and install the VS Code extension when `code` is detected.
+
+### Action Items
+- [ ] Implement bundled `solixlib` relative discovery and auto-registration in `cli/src/package_manager.cpp`.
+- [ ] Implement `solix ide install` command in `cli/src/commands/ide.cpp` and register in `cli/src/main.cpp`.
+- [ ] Add installer postinstall scripts for CPack generators.
+- [ ] Define test specifications in `tests/commands/TESTS.md`.
+- [ ] Implement Catch2 unit and CLI integration tests for `solix ide install` and bundled `solixlib` auto-discovery.
+- [ ] Author formal command specification in `docs/spec/cli/ide.md`.
+
+
 
 
 

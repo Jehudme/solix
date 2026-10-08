@@ -11,6 +11,10 @@ namespace spdlog {
 
 namespace solix {
 
+#ifdef ERROR
+#undef ERROR
+#endif
+
 enum class ReportSeverity { NOTE, WARNING, ERROR };
 
 struct Report {
