@@ -867,5 +867,38 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Custom build directory lacking mandatory root license file.
 - **Expected**: Configuration or packaging fails gracefully with clear error diagnostic instead of generating incomplete or corrupt installers.
 
+---
+
+# Part XII: Toolchain `solixlib` Auto-Discovery & IDE Extension Management
+
+## IdeCommandAndAutoDiscovery
+
+*Command*: `solix ide install [--editor <name>]`, bundled `solixlib` relative discovery
+
+### Positive Test Scenarios
+
+#### Case 18.1: Bundled `solixlib` Relative Path Auto-Discovery [NOT IMPLEMENTED]
+- **Command**: `PackageManager::discover_bundled_solixlib()` programmatic API
+- **Setup**: Running binary with standard installation prefix `<prefix>/bin/solix` or in-tree build directory.
+- **Expected**: Successfully discovers bundled standard library path containing valid `solix.json` and `src/`.
+
+#### Case 18.2: Automatic Standard Library Seeding on Missing Dependency [NOT IMPLEMENTED]
+- **Command**: Dependency resolution with clean `$SOLIX_HOME`
+- **Setup**: Isolated temporary environment with empty registry requesting dependency `"solixlib"`.
+- **Expected**: Automatically seeds and registers `solixlib` from bundled distribution path; dependency resolution succeeds.
+
+#### Case 18.3: `solix ide install` Execution and Help Inspection [NOT IMPLEMENTED]
+- **Command**: `solix ide --help` and `solix ide install --help`
+- **Setup**: Solix CLI execution.
+- **Expected**: Exits 0; displays `--editor` option and supported editor list (`code`, `code-insiders`, `cursor`, `codium`).
+
+### Negative Test Scenarios
+
+#### Case 18.4: `solix ide install` with Unknown or Missing Editor [NOT IMPLEMENTED]
+- **Command**: `solix ide install --editor non_existent_editor_binary_xyz`
+- **Setup**: Invoking with non-existent editor name.
+- **Expected**: Exits non-zero (exit code 1); reports error indicating specified editor binary was not found in `PATH`.
+
+
 
 
