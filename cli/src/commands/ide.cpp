@@ -51,6 +51,11 @@ void setup_ide_command(CLI::App& app) {
     install_subcmd->add_option("--editor,-e", *editor_opt, "Specific editor binary to target (code, code-insiders, cursor, codium)");
 
     install_subcmd->callback([editor_opt]() {
+        if (!editor_opt->empty() && !is_command_available(*editor_opt)) {
+            std::cerr << "Error: Specified editor binary '" << *editor_opt << "' was not found in PATH." << std::endl;
+            cli_exit(1);
+        }
+
         auto vsix_path = find_bundled_vsix();
         if (!vsix_path) {
             std::cerr << "Error: Bundled Solix VS Code extension (.vsix) not found." << std::endl;

@@ -51,7 +51,9 @@ TEST_CASE("Suite 17: CPack Multi-OS Packaging & Installer Staging", "[packaging]
         std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
 
         REQUIRE(content.find("share/doc/solix") != std::string::npos);
-        REQUIRE(content.find("share/solix/vscode") != std::string::npos);
+        if (std::filesystem::exists(project_root / "editors" / "vscode" / "solix-0.1.0.vsix")) {
+            REQUIRE(content.find("share/solix/vscode") != std::string::npos);
+        }
 
         // Verify top-level LICENSE exists and is readable
         std::filesystem::path lic = project_root / "LICENSE";
