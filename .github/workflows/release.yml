@@ -68,34 +68,41 @@ jobs:
           -DCMAKE_CXX_STANDARD=20
 
       - name: Build
-        run: cmake --build build --config Release --target solix --parallel
+        run: cmake --build build --config Release --parallel
 
-      - name: Package (Linux & macOS)
+      - name: Package with CPack (Linux & macOS)
         if: runner.os != 'Windows'
         run: |
-          strip build/cli/solix || true
-          mkdir -p dist
-          cp build/cli/solix dist/solix
-          [ -f LICENSE ] && cp LICENSE dist/
-          [ -f README.md ] && cp README.md dist/
-          tar -czvf ${{ matrix.archive_name }} -C dist .
+          cd build
+          cpack -C Release
 
-      - name: Package (Windows)
+      - name: Package with CPack (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path dist
-          Copy-Item build\cli\solix.exe -Destination dist\solix.exe
-          if (Test-Path LICENSE) { Copy-Item LICENSE -Destination dist\ }
-          if (Test-Path README.md) { Copy-Item README.md -Destination dist\ }
-          Compress-Archive -Path dist\* -DestinationPath ${{ matrix.archive_name }}
+          cd build
+          cpack -C Release
 
-      - name: Upload build artifact
+      - name: Upload CPack packages
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.archive_name }}
-          if-no-files-found: error
+          path: |
+            build/*.deb
+            build/*.rpm
+            build/*.tar.gz
+            build/*.pkg
+            build/*.exe
+            build/*.zip
+          if-no-files-found: warn
+
+      - name: Upload VS Code extension
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: solix-vscode-extension
+          path: editors/vscode/solix-*.vsix
+          if-no-files-found: warn
 
   create-release:
     name: Create GitHub Release
