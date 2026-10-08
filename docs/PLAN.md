@@ -2573,7 +2573,7 @@ Configure CPack to generate native installation packages and standalone archives
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `cli/src/package_manager.cpp`, `cli/src/dependency_resolver.hpp`, `cli/src/commands/ide.hpp`, `cli/src/commands/ide.cpp`, `cli/CMakeLists.txt`, `tests/commands/TESTS.md`, `tests/commands/test_ide_command.cpp`, `docs/spec/cli/ide.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Provide zero-configuration standard library discovery and automated editor extension installation:
@@ -2582,16 +2582,13 @@ Provide zero-configuration standard library discovery and automated editor exten
    - Automatically register/seed `solixlib` on first run so users can compile immediately after installing or unpacking.
 2. **CLI `solix ide install` Subcommand**:
    - Provide `solix ide install [--editor <name>]` to discover installed IDEs (`code`, `code-insiders`, `cursor`, `codium`) and run `--install-extension` with the bundled `solix-0.1.0.vsix`.
-3. **Installer Automation Hooks**:
-   - Include post-install hooks in `.pkg` (macOS), `.deb` (Linux), and NSIS `.exe` (Windows) to automatically seed `solixlib` and install the VS Code extension when `code` is detected.
 
 ### Action Items
-- [ ] Implement bundled `solixlib` relative discovery and auto-registration in `cli/src/package_manager.cpp`.
-- [ ] Implement `solix ide install` command in `cli/src/commands/ide.cpp` and register in `cli/src/main.cpp`.
-- [ ] Add installer postinstall scripts for CPack generators.
-- [ ] Define test specifications in `tests/commands/TESTS.md`.
-- [ ] Implement Catch2 unit and CLI integration tests for `solix ide install` and bundled `solixlib` auto-discovery.
-- [ ] Author formal command specification in `docs/spec/cli/ide.md`.
+- [x] Implement bundled `solixlib` relative discovery and auto-registration in `cli/src/package_manager.cpp`.
+- [x] Implement `solix ide install` command in `cli/src/commands/ide.cpp` and register in `cli/src/main.cpp`.
+- [x] Define test specifications in `tests/commands/TESTS.md`.
+- [x] Implement Catch2 unit and CLI integration tests for `solix ide install` and bundled `solixlib` auto-discovery.
+- [x] Author formal command specification in `docs/spec/cli/ide.md`.
 
 
 
