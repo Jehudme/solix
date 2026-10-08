@@ -209,7 +209,12 @@ bool PackageManager::uninstall_project(const std::string& name, const std::strin
     return true;
 }
 
+void PackageManager::reload_registry() {
+    load_registry();
+}
+
 std::vector<InstalledProject> PackageManager::list_installed_projects() {
+    load_registry();
     std::vector<InstalledProject> list;
     if (!registry_.contains("projects") || !registry_["projects"].is_object()) {
         return list;
@@ -230,6 +235,7 @@ std::vector<InstalledProject> PackageManager::list_installed_projects() {
 }
 
 std::optional<InstalledProject> PackageManager::get_project_by_name_and_version(const std::string& name, const std::string& version) {
+    load_registry();
     std::string id = compute_project_id(name, version);
     if (registry_["projects"].contains(id)) {
         const auto& item = registry_["projects"][id];
