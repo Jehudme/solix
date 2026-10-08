@@ -23,13 +23,10 @@ std::string path_to_uri(const std::string& path) {
     if (path.empty()) {
         return "";
     }
-    std::filesystem::path p = std::filesystem::absolute(path).lexically_normal();
-    std::string generic = p.generic_string();
-#if defined(_WIN32)
+    std::string generic = std::filesystem::path(path).lexically_normal().generic_string();
     if (!generic.empty() && generic[0] != '/') {
         generic = "/" + generic;
     }
-#endif
     return "file://" + generic;
 }
 

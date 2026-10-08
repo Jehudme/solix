@@ -74,7 +74,7 @@ void LspServer::process_message(const nlohmann::json& msg) {
 }
 
 void LspServer::set_workspace_root(const std::filesystem::path& root) {
-    workspace_root_ = std::filesystem::absolute(root).lexically_normal();
+    workspace_root_ = root.lexically_normal();
     manifest_path_ = workspace_root_ / "solix.json";
     load_project_dependencies();
 }
@@ -1677,7 +1677,7 @@ void LspServer::handle_completion(const nlohmann::json& id, const nlohmann::json
                 rel = std::filesystem::relative(pdir, workspace_root_);
             } catch (...) {}
 
-            std::string rel_str = rel.string();
+            std::string rel_str = rel.generic_string();
             if (rel_str.rfind("src/", 0) == 0) {
                 rel_str = rel_str.substr(4);
             } else if (rel_str == "src") {

@@ -1457,8 +1457,9 @@ TEST_CASE("Suite 13: LSP Hover Signatures & Keyword Suppression", "[lsp][hover]"
 }
 
 TEST_CASE("Suite 14: LSP Generic Blueprint Scope Resolution & Manifest Discovery", "[lsp][commands]") {
-    std::string test_dir = "/tmp/solix_test_lsp_suite14_" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
-    std::filesystem::create_directories(test_dir + "/sub/src");
+    std::filesystem::path test_dir_p = std::filesystem::temp_directory_path() / ("solix_test_lsp_suite14_" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count()));
+    std::string test_dir = test_dir_p.generic_string();
+    std::filesystem::create_directories(test_dir_p / "sub/src");
 
     std::string helper_code = "package sub.pkg;\npublic class Helper { public int32 get_num() { return 42; } }\n";
     std::string main_code = "package sub.pkg;\nimport sub.pkg.Helper;\npublic class Main { public int32 run() { return new Helper().get_num(); } }\n";
@@ -1710,9 +1711,10 @@ TEST_CASE("Suite 14: LSP Generic Blueprint Scope Resolution & Manifest Discovery
 }
 
 TEST_CASE("Suite 15: LSP Package Declaration Autocompletion & Same-Package Import Tolerance", "[lsp][commands]") {
-    std::string test_dir = "/tmp/solix_test_lsp_suite15_" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
-    std::filesystem::create_directories(test_dir + "/src/net/http");
-    std::filesystem::create_directories(test_dir + "/models");
+    std::filesystem::path test_dir_p = std::filesystem::temp_directory_path() / ("solix_test_lsp_suite15_" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count()));
+    std::string test_dir = test_dir_p.generic_string();
+    std::filesystem::create_directories(test_dir_p / "src/net/http");
+    std::filesystem::create_directories(test_dir_p / "models");
 
     SECTION("Case 15.1: Package Declaration Autocompletion Inferred from Directory Path") {
         std::stringstream in;
@@ -2028,8 +2030,9 @@ TEST_CASE("Suite 15: LSP Package Declaration Autocompletion & Same-Package Impor
 }
 
 TEST_CASE("Suite 16: Type Alias Declarations, Scope Completion & Import Autocompletion", "[lsp][alias][import]") {
-    std::string test_dir = "/tmp/solix_lsp_suite16_" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
-    std::filesystem::create_directories(test_dir + "/sub/pkg");
+    std::filesystem::path test_dir_p = std::filesystem::temp_directory_path() / ("solix_lsp_suite16_" + std::to_string(std::chrono::system_clock::now().time_since_epoch().count()));
+    std::string test_dir = test_dir_p.generic_string();
+    std::filesystem::create_directories(test_dir_p / "sub/pkg");
 
     SECTION("Case 16.1: Alias Target Completion") {
         std::stringstream in;
