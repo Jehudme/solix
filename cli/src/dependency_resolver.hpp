@@ -287,6 +287,19 @@ private:
                 }
             }
 
+            if (!matched && (name == "solixlib" || name == "solix")) {
+                if (pm.try_auto_install_bundled_solixlib()) {
+                    if (!version.empty()) {
+                        matched = pm.get_project_by_name_and_version(name, version);
+                    } else {
+                        auto all_matches = pm.get_projects_by_name(name);
+                        if (!all_matches.empty()) {
+                            matched = all_matches.back();
+                        }
+                    }
+                }
+            }
+
             if (!matched) {
                 std::cerr << "Error: Could not find installed project package '" << name
                           << (version.empty() ? "" : "' version '" + version) << "'." << std::endl;

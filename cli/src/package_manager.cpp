@@ -1,4 +1,5 @@
 #include "package_manager.hpp"
+#include "solix/path_utils.hpp"
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
@@ -280,6 +281,37 @@ uintmax_t PackageManager::calculate_directory_size(const std::filesystem::path& 
         }
     }
     return total;
+}
+
+std::optional<std::filesystem::path> PackageManager::discover_bundled_solixlib() {
+    std::filesystem::path exe_dir = solix::get_executable_dir();
+
+    // Candidate 1: Installed package layout: <prefix>/bin/solix -> <prefix>/share/solix/solixlib
+    std::vector<std::filesystem::path> candidates = {
+        exe_dir.parent_path() / "share" / "solix" / "solixlib",
+        exe_dir / ".." / "share" / "solix" / "solixlib",
+        exe_dir / "share" / "solix" / "solixlib",
+        // Candidate 2: In-tree development layout: <repo>/build/cli/solix -> <repo>/solixlib/project
+        exe_dir.parent_path().parent_path() / "solixlib" / "project",
+        exe_dir.parent_path() / "solixlib" / "project"
+    };
+
+    for (const auto& cand : candidates) {
+        std::filesystem::path normal_cand = cand.lexically_normal();
+        if (std::filesystem::exists(normal_cand / "solix.json") && std::filesystem::exists(normal_cand / "src")) {
+            return normal_cand;
+        }
+    }
+    return std::nullopt;
+}
+
+bool PackageManager::try_auto_install_bundled_solixlib() {
+    auto bundled_opt = discover_bundled_solixlib();
+    if (!bundled_opt) {
+        return false;
+    }
+    std::string out_id;
+    return install_project(bundled_opt.value(), true, out_id);
 }
 
 } // namespace solix::cli
