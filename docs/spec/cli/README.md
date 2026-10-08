@@ -51,6 +51,7 @@ solix <subcommand> --help
 | [`uninstall`](package.md#solix-uninstall) | Removes an installed project by name and version | [package.md#solix-uninstall](package.md#solix-uninstall) |
 | [`list`](package.md#solix-list) | Lists all currently installed projects in tabular format | [package.md#solix-list](package.md#solix-list) |
 | [`details`](package.md#solix-details) | Displays comprehensive metadata, profiles, and dependencies | [package.md#solix-details](package.md#solix-details) |
+| [`ide`](ide.md) | Manages IDE integrations and automated extension installation | [ide.md](ide.md) |
 | `version` | Displays toolchain version string (also via `-v` / `--version`) | [README.md](#global-invocation-syntax) |
 
 ---

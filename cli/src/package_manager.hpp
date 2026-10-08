@@ -40,6 +40,11 @@ public:
     // Load full solix.json manifest of an installed project
     static std::optional<nlohmann::json> load_installed_manifest(const InstalledProject& proj);
     static uintmax_t calculate_directory_size(const std::filesystem::path& dir);
+    void reload_registry();
+
+    // Auto-discovery of bundled standard library from toolchain relative paths
+    static std::optional<std::filesystem::path> discover_bundled_solixlib();
+    bool try_auto_install_bundled_solixlib();
 
 private:
     void load_registry();
