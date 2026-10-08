@@ -88,7 +88,13 @@ jobs:
         shell: pwsh
         run: |
           cd build
-          cpack -C Release
+          cpack -C Release -V
+          if ($LASTEXITCODE -ne 0) {
+            if (Test-Path "_CPack_Packages/win64/NSIS/NSISOutput.log") {
+              Get-Content "_CPack_Packages/win64/NSIS/NSISOutput.log"
+            }
+            exit 1
+          }
 
       - name: Upload CPack packages
         uses: actions/upload-artifact@v4
