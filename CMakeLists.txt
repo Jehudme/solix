@@ -46,22 +46,68 @@ add_subdirectory(cli)
 add_subdirectory(solixlib/native)
 add_subdirectory(tests)
 
-# Execute `solix install` on solixlib during cmake --install
-install(CODE "
-    # Resolve the installed solix executable path
-    set(SOLIX_BIN \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin/solix\")
-    if(NOT EXISTS \"\${SOLIX_BIN}\")
-        set(SOLIX_BIN \"$<TARGET_FILE:solix>\")
-    endif()
+# Install standard library into share/solix/solixlib
+install(
+    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/solixlib/project/"
+    DESTINATION share/solix/solixlib
+    COMPONENT solixlib
+    FILES_MATCHING
+    PATTERN "*.slx"
+    PATTERN "solix.json"
+    PATTERN "lib/*"
+)
 
-    set(SOLIXLIB_PATH \"${CMAKE_CURRENT_SOURCE_DIR}/solixlib/project\")
-
-    message(STATUS \"Installing standard library into Solix registry from: \${SOLIXLIB_PATH}\")
-    execute_process(
-        COMMAND \${SOLIX_BIN} install \${SOLIXLIB_PATH} --force
-        RESULT_VARIABLE RES
+# Install VS Code extension bundle if present
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/editors/vscode/solix-0.1.0.vsix")
+    install(
+        FILES "${CMAKE_CURRENT_SOURCE_DIR}/editors/vscode/solix-0.1.0.vsix"
+        DESTINATION share/solix/vscode
+        COMPONENT ide
     )
-    if(NOT RES EQUAL 0)
-        message(WARNING \"Failed to auto-install solixlib package (exit code: \${RES})\")
-    endif()
-")
+endif()
+
+# Documentation and License
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE" DESTINATION share/doc/solix COMPONENT doc)
+endif()
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/README.md" DESTINATION share/doc/solix COMPONENT doc)
+endif()
+
+# CPack Packaging Configuration
+set(CPACK_PACKAGE_NAME "solix")
+set(CPACK_PACKAGE_VENDOR "Solix Team")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Solix Programming Language Compiler, Runtime, and Toolchain")
+set(CPACK_PACKAGE_VERSION_MAJOR 0)
+set(CPACK_PACKAGE_VERSION_MINOR 1)
+set(CPACK_PACKAGE_VERSION_PATCH 0)
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/Jehudme/solix")
+set(CPACK_PACKAGE_CONTACT "Jehudme <info@solix-lang.org>")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+
+if(WIN32)
+    set(CPACK_GENERATOR "ZIP;NSIS")
+    set(CPACK_NSIS_MODIFY_PATH ON)
+    set(CPACK_NSIS_DISPLAY_NAME "Solix Programming Language")
+    set(CPACK_NSIS_PACKAGE_NAME "Solix")
+    set(CPACK_NSIS_HELP_LINK "${CPACK_PACKAGE_HOMEPAGE_URL}")
+    set(CPACK_NSIS_URL_INFO_ABOUT "${CPACK_PACKAGE_HOMEPAGE_URL}")
+elseif(APPLE)
+    set(CPACK_GENERATOR "TGZ;productbuild")
+    set(CPACK_PACKAGE_FILE_NAME "solix-${PROJECT_VERSION}-Darwin")
+else()
+    set(CPACK_GENERATOR "TGZ;DEB;RPM")
+    # Debian package settings
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_CONTACT}")
+    set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+    set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "${CPACK_PACKAGE_HOMEPAGE_URL}")
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
+    # RPM package settings
+    set(CPACK_RPM_PACKAGE_LICENSE "MIT")
+    set(CPACK_RPM_PACKAGE_GROUP "Development/Languages")
+    set(CPACK_RPM_PACKAGE_URL "${CPACK_PACKAGE_HOMEPAGE_URL}")
+endif()
+
+include(CPack)
