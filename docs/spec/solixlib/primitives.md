@@ -46,92 +46,44 @@ public interface IHashable {
 
 ---
 
-## 2. Boxed Primitives
+## 2. Primitive Utilities (`Primitives`)
 
-### `Int`
-Boxed 32-bit signed integer.
-- `public Int(int32 val)`
-- `value() -> int32`: Retrieves underlying integer.
-- `to_string() -> String`: Converts to string representation.
-- `hash_code() -> int32`: Returns integer value.
-- `equals(Int other) -> bool`: Value equality.
-- `compare_to(Int other) -> int32`: Returns `-1`, `0`, or `1`.
-- `static parse(String s) -> int32`: Parses decimal string; throws `FormatException` on invalid format.
-- `static try_parse(String s, Int out_val) -> bool`: Safe parsing without throwing exceptions.
-- `static count_leading_zeros(int32 v) -> int32`: Native `__builtin_clz`.
-- `static count_trailing_zeros(int32 v) -> int32`: Native `__builtin_ctz`.
-- `static bit_count(int32 v) -> int32`: Native `__builtin_popcount`.
-- `static reverse_bytes(int32 v) -> int32`: Native `__builtin_bswap32`.
-- `MIN_VALUE`: `-2147483648`
-- `MAX_VALUE`: `2147483647`
+In Solix v1.1.0, redundant boxed primitive classes (`Int`, `Double`, `Bool`, `Char`, `Byte`, `Short`, `Long`, `UByte`, `UShort`, `UInt`, `ULong`, `Float`) were pruned in favor of Solix's zero-cost native primitive types and the unified `Primitives` static utility class.
 
-### `Double`
-Boxed 64-bit IEEE 754 floating-point number.
-- `public Double(float64 val)`
-- `value() -> float64`: Retrieves underlying float64.
-- `to_string() -> String`: Formats float64 to string.
-- `equals(Double other) -> bool`: Value equality.
-- `compare_to(Double other) -> int32`: Returns `-1`, `0`, or `1`.
-- `static parse(String s) -> float64`: Parses string to double; throws `FormatException` on error.
-- `static is_nan(float64 d) -> bool`: Returns `true` if `d` is quiet NaN.
-- `static is_infinite(float64 d) -> bool`: Returns `true` if `d` is $+ \infty$ or $- \infty$.
-- Constants: `NaN`, `POSITIVE_INFINITY`, `NEGATIVE_INFINITY`, `MIN_VALUE`, `MAX_VALUE`.
+### `Primitives`
+Class `solix.core.Primitives` provides native bit manipulation, floating-point queries/constants, character inspection/case-folding, and string conversion utilities:
 
-### `Bool`
-Boxed boolean wrapper.
-- `public Bool(bool val)`
-- `value() -> bool`: Retrieves underlying boolean.
-- `to_string() -> String`: Returns `"true"` or `"false"`.
-- `hash_code() -> int32`: Returns `1231` for true, `1237` for false.
-- `equals(Bool other) -> bool`
-- `compare_to(Bool other) -> int32`
-- `static parse(String s) -> bool`: Parses `"true"` / `"false"`.
+#### Integer & Bitwise Primitives
+- `static count_leading_zeros(int32 val) -> int32`: Fast native leading zero count (`clz`).
+- `static count_trailing_zeros(int32 val) -> int32`: Fast native trailing zero count (`ctz`).
+- `static bit_count(int32 val) -> int32`: Population count (`popcount`).
+- `static reverse_bytes(int32 val) -> int32`: Byte reversal (`bswap32`).
+- `MIN_INT`: `-2147483648`
+- `MAX_INT`: `2147483647`
 
-### `Char`
-Boxed UTF-8 code point / character wrapper.
-- `public Char(char val)`
-- `value() -> char`: Retrieves character.
-- `to_string() -> String`: Converts character to single-character string.
-- `hash_code() -> int32`: Returns numeric codepoint.
-- `static is_digit(char c) -> bool`: Checks if character is `'0'`..`'9'`.
-- `static is_letter(char c) -> bool`: Checks if character is ASCII alphabetic.
-- `static is_whitespace(char c) -> bool`: Checks if character is `' '`, `'\t'`, `'\n'`, or `'\r'`.
-- `static is_upper_case(char c) -> bool`: Checks if character is `'A'`..`'Z'`.
-- `static to_upper_case(char c) -> char`: In-place case conversion.
-- `static to_lower_case(char c) -> char`: In-place case conversion.
+#### Floating-Point Utilities (IEEE 754)
+- `static is_nan(float64 d) -> bool`: Returns `true` if `d` is quiet/signaling NaN.
+- `static is_infinite(float64 d) -> bool`: Returns `true` if `d` is positive or negative infinity.
+- `static nan() -> float64`: Returns IEEE 754 quiet NaN.
+- `static positive_infinity() -> float64`: Returns positive infinity ($+\infty$).
+- `static negative_infinity() -> float64`: Returns negative infinity ($-\infty$).
+- `static min_double() -> float64`: Smallest normalized positive `float64` (`2.2250738585072014e-308`).
+- `static max_double() -> float64`: Maximum finite `float64` (`1.7976931348623157e+308`).
+- Constants: `NaN`, `POSITIVE_INFINITY`, `NEGATIVE_INFINITY`, `MIN_DOUBLE`, `MAX_DOUBLE`.
 
-### `Byte`, `Short`, `Long`
-Signed integer wrappers for `int8`, `int16`, and `int64`.
-- `public Byte(int8 val)`, `public Short(int16 val)`, `public Long(int64 val)`
-- `value()`: Retrieves underlying primitive.
-- `to_string() -> String`: String representation.
-- `hash_code() -> int32`: Integer hash code.
-- `equals(other) -> bool`: Value equality.
-- `compare_to(other) -> int32`: Ordinal comparison.
-- `static parse(String s)`: Parses string to numeric value; throws `FormatException` on error.
-- Arithmetic and relational operator overloads: `+`, `-`, `*`, `/`, `==`, `!=`, `<`, `<=`, `>`, `>=`.
-- Bounds constants: `MIN_VALUE`, `MAX_VALUE`.
+#### Character Utilities
+- `static is_digit(char c) -> bool`: Returns `true` if `c` is `'0'`..`'9'`.
+- `static is_letter(char c) -> bool`: Returns `true` if `c` is ASCII `'a'`..`'z'` or `'A'`..`'Z'`.
+- `static is_whitespace(char c) -> bool`: Returns `true` if `c` is `' '`, `'\t'`, `'\n'`, or `'\r'`.
+- `static is_upper_case(char c) -> bool`: Returns `true` if `c` is uppercase.
+- `static is_lower_case(char c) -> bool`: Returns `true` if `c` is lowercase.
+- `static to_upper_case(char c) -> char`: Converts lowercase ASCII character to uppercase.
+- `static to_lower_case(char c) -> char`: Converts uppercase ASCII character to lowercase.
 
-### `UByte`, `UShort`, `UInt`, `ULong`
-Unsigned integer wrappers for `uint8`, `uint16`, `uint32`, and `uint64`.
-- `public UByte(uint8 val)`, `public UShort(uint16 val)`, `public UInt(uint32 val)`, `public ULong(uint64 val)`
-- `value()`: Retrieves underlying unsigned primitive.
-- `to_string() -> String`: String representation.
-- `hash_code() -> int32`: Integer hash code.
-- `equals(other) -> bool`: Value equality.
-- `compare_to(other) -> int32`: Ordinal comparison.
-- Arithmetic and relational operator overloads: `+`, `-`, `*`, `/`, `==`, `!=`, `<`, `<=`, `>`, `>=`.
-- Bounds constants: `MIN_VALUE`, `MAX_VALUE`.
-
-### `Float`
-Boxed 32-bit IEEE 754 floating-point number.
-- `public Float(float32 val)`
-- `value() -> float32`: Retrieves underlying float32.
-- `to_string() -> String`: String representation.
-- `equals(Float other) -> bool`: Value equality.
-- `compare_to(Float other) -> int32`: Ordinal comparison.
-- Arithmetic and relational operator overloads: `+`, `-`, `*`, `/`, `==`, `!=`, `<`, `<=`, `>`, `>=`.
-- Bounds constants: `MIN_VALUE`, `MAX_VALUE`.
+#### Parsing Utilities
+- `static parse_int(String s) -> int32`: Parses decimal string to 32-bit signed integer.
+- `static parse_double(String s) -> float64`: Parses string representation to 64-bit float.
+- `static parse_bool(String s) -> bool`: Parses `"true"` or `"false"` to boolean.
 
 ---
 
