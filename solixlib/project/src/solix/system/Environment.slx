@@ -18,12 +18,12 @@ public class Environment {
         native_set_env(key.data, val_data);
     }
 
-    private static int32 string_hash(String s) {
+    public static int32 string_hash(String s) {
         if (s == null) return 0;
         return s.hash_code();
     }
 
-    private static bool string_equals(String a, String b) {
+    public static bool string_equals(String a, String b) {
         if (a == null) return b == null;
         return a.equals(b);
     }

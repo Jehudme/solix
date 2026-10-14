@@ -938,6 +938,69 @@ static int32 main() {
 ```
 *Expected Result*: Weak reference breaks the circular dependency so both objects are deallocated upon scope exit, dropping live object count to zero.
 
+### Case 3.8: Byte-Addressed Contiguous Field Packing and Natural Alignment [IMPLEMENTED]
+```solix
+class PackedStruct {
+    public uint8 b1;
+    public uint8 b2;
+    public uint16 s1;
+    public uint32 i1;
+    public uint64 l1;
+
+    public PackedStruct(uint8 b1, uint8 b2, uint16 s1, uint32 i1, uint64 l1) {
+        this.b1 = b1;
+        this.b2 = b2;
+        this.s1 = s1;
+        this.i1 = i1;
+        this.l1 = l1;
+    }
+}
+
+int32 main() {
+    PackedStruct p = new PackedStruct(10, 20, 300, 40000, 5000000000);
+    if (p.b1 != 10) return 1;
+    if (p.b2 != 20) return 2;
+    if (p.s1 != 300) return 3;
+    if (p.i1 != 40000) return 4;
+    if (p.l1 != 5000000000) return 5;
+    return 0;
+}
+```
+*Expected Result*: Fields are packed according to natural alignment byte offsets (b1 at +8, b2 at +9, s1 at +10, i1 at +12, l1 at +16) and read/write access correctly preserves values.
+
+### Case 3.9: Narrow Signed and Unsigned Field Sign-Extension and Truncation [IMPLEMENTED]
+```solix
+class SignExtensionTest {
+    public int8 s8;
+    public uint8 u8;
+    public int16 s16;
+    public uint16 u16;
+    public int32 s32;
+    public uint32 u32;
+
+    public SignExtensionTest(int8 a, uint8 b, int16 c, uint16 d, int32 e, uint32 f) {
+        this.s8 = a;
+        this.u8 = b;
+        this.s16 = c;
+        this.u16 = d;
+        this.s32 = e;
+        this.u32 = f;
+    }
+}
+
+int32 main() {
+    SignExtensionTest t = new SignExtensionTest(-5, 250, -300, 65000, -70000, 3000000000);
+    if (t.s8 != -5) return 1;
+    if (t.u8 != 250) return 2;
+    if (t.s16 != -300) return 3;
+    if (t.u16 != 65000) return 4;
+    if (t.s32 != -70000) return 5;
+    if (t.u32 != 3000000000) return 6;
+    return 0;
+}
+```
+*Expected Result*: GET_PROPERTY sign-extends signed fields (int8, int16, int32) and zero-extends unsigned fields (uint8, uint16, uint32) correctly onto the 64-bit operand stack.
+
 ---
 
 

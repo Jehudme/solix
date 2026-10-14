@@ -11,9 +11,10 @@
 namespace {
 
 static uint64_t allocate_solix_chars(solix::RuntimeContext &vm, const std::string &s) {
-    uint64_t addr = vm.memory.dynamic_allocation(s.length());
+    uint32_t len = static_cast<uint32_t>(s.length());
+    uint64_t addr = vm.memory.dynamic_allocation(len, solix::BlockTag::ARRAY_U8);
     for (size_t i = 0; i < s.length(); ++i) {
-        vm.memory.heap[addr + i] = static_cast<uint64_t>(static_cast<unsigned char>(s[i]));
+        vm.memory.write_u8(static_cast<solix::Address>(addr), static_cast<uint32_t>(i), static_cast<uint8_t>(s[i]));
     }
     return addr;
 }
@@ -51,13 +52,13 @@ static uint64_t time_native_utc_parts(solix::RuntimeContext &vm, uint64_t self, 
 #endif
 
     if (out_arr != 0) {
-        vm.memory.heap[out_arr + 0] = static_cast<uint64_t>(tm_buf.tm_year + 1900);
-        vm.memory.heap[out_arr + 1] = static_cast<uint64_t>(tm_buf.tm_mon + 1);
-        vm.memory.heap[out_arr + 2] = static_cast<uint64_t>(tm_buf.tm_mday);
-        vm.memory.heap[out_arr + 3] = static_cast<uint64_t>(tm_buf.tm_hour);
-        vm.memory.heap[out_arr + 4] = static_cast<uint64_t>(tm_buf.tm_min);
-        vm.memory.heap[out_arr + 5] = static_cast<uint64_t>(tm_buf.tm_sec);
-        vm.memory.heap[out_arr + 6] = static_cast<uint64_t>(millis);
+        vm.memory.write_u64(static_cast<solix::Address>(out_arr), 0 * 8, static_cast<uint64_t>(tm_buf.tm_year + 1900));
+        vm.memory.write_u64(static_cast<solix::Address>(out_arr), 1 * 8, static_cast<uint64_t>(tm_buf.tm_mon + 1));
+        vm.memory.write_u64(static_cast<solix::Address>(out_arr), 2 * 8, static_cast<uint64_t>(tm_buf.tm_mday));
+        vm.memory.write_u64(static_cast<solix::Address>(out_arr), 3 * 8, static_cast<uint64_t>(tm_buf.tm_hour));
+        vm.memory.write_u64(static_cast<solix::Address>(out_arr), 4 * 8, static_cast<uint64_t>(tm_buf.tm_min));
+        vm.memory.write_u64(static_cast<solix::Address>(out_arr), 5 * 8, static_cast<uint64_t>(tm_buf.tm_sec));
+        vm.memory.write_u64(static_cast<solix::Address>(out_arr), 6 * 8, static_cast<uint64_t>(millis));
     }
     return 0;
 }
@@ -82,13 +83,13 @@ static uint64_t time_native_local_parts(solix::RuntimeContext &vm, uint64_t self
 #endif
 
     if (out_arr != 0) {
-        vm.memory.heap[out_arr + 0] = static_cast<uint64_t>(tm_buf.tm_year + 1900);
-        vm.memory.heap[out_arr + 1] = static_cast<uint64_t>(tm_buf.tm_mon + 1);
-        vm.memory.heap[out_arr + 2] = static_cast<uint64_t>(tm_buf.tm_mday);
-        vm.memory.heap[out_arr + 3] = static_cast<uint64_t>(tm_buf.tm_hour);
-        vm.memory.heap[out_arr + 4] = static_cast<uint64_t>(tm_buf.tm_min);
-        vm.memory.heap[out_arr + 5] = static_cast<uint64_t>(tm_buf.tm_sec);
-        vm.memory.heap[out_arr + 6] = static_cast<uint64_t>(millis);
+        vm.memory.write_u64(static_cast<solix::Address>(out_arr), 0 * 8, static_cast<uint64_t>(tm_buf.tm_year + 1900));
+        vm.memory.write_u64(static_cast<solix::Address>(out_arr), 1 * 8, static_cast<uint64_t>(tm_buf.tm_mon + 1));
+        vm.memory.write_u64(static_cast<solix::Address>(out_arr), 2 * 8, static_cast<uint64_t>(tm_buf.tm_mday));
+        vm.memory.write_u64(static_cast<solix::Address>(out_arr), 3 * 8, static_cast<uint64_t>(tm_buf.tm_hour));
+        vm.memory.write_u64(static_cast<solix::Address>(out_arr), 4 * 8, static_cast<uint64_t>(tm_buf.tm_min));
+        vm.memory.write_u64(static_cast<solix::Address>(out_arr), 5 * 8, static_cast<uint64_t>(tm_buf.tm_sec));
+        vm.memory.write_u64(static_cast<solix::Address>(out_arr), 6 * 8, static_cast<uint64_t>(millis));
     }
     return 0;
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include "solix/runtime.hpp"
 #include "utilities/ast_visitor.hpp"
 #include <string>
 #include <vector>
@@ -105,6 +106,37 @@ struct TypeInfo {
         return res;
     }
 };
+
+inline int get_type_size(const TypeInfo &t) {
+    if (t.array_depth > 0 || t.is_function_pointer) return 8;
+    if (t.name == "bool" || t.name == "char" || t.name == "int8" || t.name == "uint8" || t.name == "byte" || t.name == "ubyte") return 1;
+    if (t.name == "int16" || t.name == "uint16" || t.name == "short" || t.name == "ushort") return 2;
+    if (t.name == "int32" || t.name == "uint32" || t.name == "int" || t.name == "uint" || t.name == "float32" || t.name == "float") return 4;
+    return 8;
+}
+
+inline BlockTag get_array_tag(const TypeInfo &t) {
+    if (t.array_depth > 1 || t.is_function_pointer) return BlockTag::ARRAY_REF;
+    if (t.name == "int8") return BlockTag::ARRAY_I8;
+    if (t.name == "bool" || t.name == "char" || t.name == "uint8" || t.name == "byte" || t.name == "ubyte") return BlockTag::ARRAY_U8;
+    if (t.name == "int16" || t.name == "short") return BlockTag::ARRAY_I16;
+    if (t.name == "uint16" || t.name == "ushort") return BlockTag::ARRAY_U16;
+    if (t.name == "int32" || t.name == "int") return BlockTag::ARRAY_I32;
+    if (t.name == "uint32" || t.name == "uint" || t.name == "float32" || t.name == "float") return BlockTag::ARRAY_U32;
+    if (t.name == "int64" || t.name == "uint64" || t.name == "long" || t.name == "ulong" || t.name == "float64" || t.name == "double") return BlockTag::ARRAY_U64;
+    return BlockTag::ARRAY_REF;
+}
+
+inline uint32_t get_property_width_code(const TypeInfo &t) {
+    if (t.array_depth > 0 || t.is_function_pointer) return 8;
+    if (t.name == "int8") return 5;
+    if (t.name == "int16" || t.name == "short") return 6;
+    if (t.name == "int32" || t.name == "int") return 7;
+    if (t.name == "bool" || t.name == "char" || t.name == "uint8" || t.name == "byte" || t.name == "ubyte") return 1;
+    if (t.name == "uint16" || t.name == "ushort") return 2;
+    if (t.name == "uint32" || t.name == "uint" || t.name == "float32" || t.name == "float") return 4;
+    return 8;
+}
 
 struct Node {
     NodeType node_type;
@@ -644,7 +676,9 @@ struct EnumDeclaration : public Node {
     std::string enum_name;
     TokenType access_modifier = TokenType::KEYWORD_INTERNAL;
     std::vector<std::string> members;
-    EnumDeclaration(const Token& t, std::string name) : Node(NodeType::ENUM_DECL, t), enum_name(std::move(name)) {}
+    EnumDeclaration(const Token& t, std::string name) : Node(NodeType::ENUM_DECL, t), enum_name(std::move(name)) {
+        is_primitive = true;
+    }
 };
 
 struct MethodDeclaration;

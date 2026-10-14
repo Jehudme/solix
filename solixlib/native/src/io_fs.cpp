@@ -14,19 +14,20 @@ namespace {
 
 static std::string read_solix_chars(solix::RuntimeContext &vm, uint64_t addr) {
     if (addr == 0) return "";
-    uint32_t len = static_cast<uint32_t>(vm.memory.heap[addr - 1] >> 32);
+    uint32_t len = vm.memory.get_array_length(static_cast<solix::Address>(addr));
     std::string s;
     s.reserve(len);
     for (uint32_t i = 0; i < len; ++i) {
-        s.push_back(static_cast<char>(vm.memory.heap[addr + i]));
+        s.push_back(vm.memory.read_char(static_cast<solix::Address>(addr), i));
     }
     return s;
 }
 
 static uint64_t allocate_solix_chars(solix::RuntimeContext &vm, const std::string &s) {
-    uint64_t addr = vm.memory.dynamic_allocation(s.length());
+    uint32_t len = static_cast<uint32_t>(s.length());
+    uint64_t addr = vm.memory.dynamic_allocation(len, solix::BlockTag::ARRAY_U8);
     for (size_t i = 0; i < s.length(); ++i) {
-        vm.memory.heap[addr + i] = static_cast<uint64_t>(static_cast<unsigned char>(s[i]));
+        vm.memory.write_u8(static_cast<solix::Address>(addr), static_cast<uint32_t>(i), static_cast<uint8_t>(s[i]));
     }
     return addr;
 }
@@ -110,19 +111,19 @@ static uint64_t file_native_read_all_text(solix::RuntimeContext &vm, uint64_t se
 
     std::error_code ec;
     if (!fs::exists(p, ec) || !fs::is_regular_file(p, ec)) {
-        if (err_box != 0) vm.memory.heap[err_box] = 1ULL; // Not found
+        if (err_box != 0) vm.memory.write_u32(static_cast<solix::Address>(err_box), 0, 1U); // Not found
         return allocate_solix_chars(vm, "");
     }
 
     std::ifstream file(p, std::ios::in | std::ios::binary);
     if (!file.is_open()) {
-        if (err_box != 0) vm.memory.heap[err_box] = 2ULL; // IO error
+        if (err_box != 0) vm.memory.write_u32(static_cast<solix::Address>(err_box), 0, 2U); // IO error
         return allocate_solix_chars(vm, "");
     }
 
     std::string content((std::istreambuf_iterator<char>(file)),
                          std::istreambuf_iterator<char>());
-    if (err_box != 0) vm.memory.heap[err_box] = 0ULL; // Success
+    if (err_box != 0) vm.memory.write_u32(static_cast<solix::Address>(err_box), 0, 0U); // Success
     return allocate_solix_chars(vm, content);
 }
 
@@ -220,7 +221,7 @@ static uint64_t file_native_get_size(solix::RuntimeContext &vm, uint64_t self, u
         return 2ULL;
     }
     if (out_box != 0) {
-        vm.memory.heap[out_box] = static_cast<uint64_t>(sz);
+        vm.memory.write_u64(static_cast<solix::Address>(out_box), 0, static_cast<uint64_t>(sz));
     }
     return 0ULL;
 }
@@ -244,7 +245,7 @@ static uint64_t file_native_get_last_modified(solix::RuntimeContext &vm, uint64_
     );
     int64_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(sctp.time_since_epoch()).count();
     if (out_box != 0) {
-        vm.memory.heap[out_box] = static_cast<uint64_t>(ms);
+        vm.memory.write_u64(static_cast<solix::Address>(out_box), 0, static_cast<uint64_t>(ms));
     }
     return 0ULL;
 }
@@ -297,7 +298,7 @@ static uint64_t directory_native_list_entries(solix::RuntimeContext &vm, uint64_
 
     std::error_code ec;
     if (!fs::exists(p, ec) || !fs::is_directory(p, ec)) {
-        if (err_box != 0) vm.memory.heap[err_box] = 1ULL;
+        if (err_box != 0) vm.memory.write_u32(static_cast<solix::Address>(err_box), 0, 1U);
         return allocate_solix_chars(vm, "");
     }
 
@@ -323,11 +324,11 @@ static uint64_t directory_native_list_entries(solix::RuntimeContext &vm, uint64_
     }
 
     if (ec) {
-        if (err_box != 0) vm.memory.heap[err_box] = 2ULL;
+        if (err_box != 0) vm.memory.write_u32(static_cast<solix::Address>(err_box), 0, 2U);
         return allocate_solix_chars(vm, "");
     }
 
-    if (err_box != 0) vm.memory.heap[err_box] = 0ULL;
+    if (err_box != 0) vm.memory.write_u32(static_cast<solix::Address>(err_box), 0, 0U);
     return allocate_solix_chars(vm, result);
 }
 

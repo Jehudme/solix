@@ -11,36 +11,47 @@
 
 namespace solix {
 
-uint64_t Memory::static_allocation(size_t size_in_words, Address address) {
+uint64_t Memory::static_allocation(size_t size_in_bytes, Address address) {
   if (address == 0) {
-    address = next_free_static;
-    next_free_static += size_in_words;
+    address = (next_free_static + 7) & ~7;
+    next_free_static = address + static_cast<Address>(size_in_bytes);
     if (next_free_static >= heap.size()) {
       throw std::runtime_error("Heap overflow during static allocation!");
     }
   }
-  currently_used_words += size_in_words;
+  currently_used_words += ((size_in_bytes + 7) / 8);
   if (currently_used_words > peak_used_words)
     peak_used_words = currently_used_words;
   return address;
 }
 
-uint64_t Memory::dynamic_allocation(size_t size_in_words, Address address) {
-  if (next_free_dynamic == 1) {
-    next_free_dynamic = heap.size() / 2;
+uint64_t Memory::dynamic_allocation(size_t count, BlockTag tag, Address address) {
+  (void)address;
+  if (next_free_dynamic == 8) {
+    next_free_dynamic = (static_cast<Address>(heap.size() / 2) + 7) & ~7;
   }
+
+  size_t payload_bytes = count;
+  if (tag == BlockTag::ARRAY_U8 || tag == BlockTag::ARRAY_I8) payload_bytes = count * 1;
+  else if (tag == BlockTag::ARRAY_U16 || tag == BlockTag::ARRAY_I16) payload_bytes = count * 2;
+  else if (tag == BlockTag::ARRAY_U32 || tag == BlockTag::ARRAY_I32) payload_bytes = count * 4;
+  else if (tag == BlockTag::ARRAY_U64 || tag == BlockTag::ARRAY_REF || tag == BlockTag::CLOSURE) payload_bytes = count * 8;
+
+  size_t aligned_payload = (payload_bytes + 7) & ~7;
+  if (aligned_payload == 0) aligned_payload = 8;
+  size_t total_block_bytes = aligned_payload + 8; // 8 bytes header
+
   Address header_addr = 0;
-  // Search free_blocks for a best-fit block with capacity >= size_in_words
   size_t best_idx = static_cast<size_t>(-1);
   uint32_t best_size = UINT32_MAX;
 
   for (size_t i = 0; i < free_blocks.size(); ++i) {
     Address blk = free_blocks[i];
-    uint32_t blk_size = static_cast<uint32_t>(heap[blk] >> 32);
-    if (blk_size >= size_in_words && blk_size < best_size) {
+    uint32_t blk_size = read_u32(blk, 0);
+    if (blk_size >= aligned_payload && blk_size < best_size) {
       best_idx = i;
       best_size = blk_size;
-      if (blk_size == size_in_words) break; // Exact match
+      if (blk_size == aligned_payload) break; // Exact match
     }
   }
 
@@ -48,31 +59,31 @@ uint64_t Memory::dynamic_allocation(size_t size_in_words, Address address) {
     header_addr = free_blocks[best_idx];
     free_blocks.erase(free_blocks.begin() + best_idx);
 
-    // If block is significantly larger (at least 1 header + 1 payload word), split remainder
-    if (best_size >= size_in_words + 2) {
-      uint32_t rem_size = best_size - static_cast<uint32_t>(size_in_words) - 1;
-      Address rem_addr = header_addr + static_cast<Address>(size_in_words) + 1;
-      heap[rem_addr] = (static_cast<uint64_t>(rem_size) << 32);
+    if (best_size >= aligned_payload + 16) {
+      uint32_t rem_size = best_size - static_cast<uint32_t>(aligned_payload) - 8;
+      Address rem_addr = header_addr + 8 + static_cast<Address>(aligned_payload);
+      write_u32(rem_addr, 0, rem_size);
       free_blocks.push_back(rem_addr);
     }
   } else {
     header_addr = next_free_dynamic;
-    next_free_dynamic += (size_in_words + 1);
+    next_free_dynamic += static_cast<Address>(total_block_bytes);
     if (next_free_dynamic >= heap.size())
       throw std::runtime_error("Heap overflow during dynamic allocation!");
   }
-  currently_used_words += (size_in_words + 1);
+
+  currently_used_words += (total_block_bytes / 8);
   if (currently_used_words > peak_used_words)
     peak_used_words = currently_used_words;
   live_objects_count++;
 
-  for (size_t i = 0; i < size_in_words; ++i) {
-    heap[header_addr + 1 + i] = 0;
-  }
+  std::memset(&heap[header_addr + 8], 0, aligned_payload);
 
-  uint64_t header = (static_cast<uint64_t>(size_in_words) << 32) | 1ULL;
-  heap[header_addr] = header;
-  return header_addr + 1;
+  write_u32(header_addr, 0, static_cast<uint32_t>(count));
+  uint32_t tag_and_ref = (static_cast<uint32_t>(tag) << 28) | 1U;
+  write_u32(header_addr, 4, tag_and_ref);
+
+  return header_addr + 8;
 }
 
 void Memory::deallocate(Address address) {
@@ -81,35 +92,55 @@ void Memory::deallocate(Address address) {
 
   if (auto it = weak_references.find(address); it != weak_references.end()) {
     for (Address weak_slot : it->second) {
-      heap[weak_slot] = 0;
+      write_u64(weak_slot, 0, 0);
     }
     weak_references.erase(it);
   }
 
-  Address header_addr = address - 1;
-  uint64_t header = heap[header_addr];
-  uint32_t size = static_cast<uint32_t>(header >> 32);
-  currently_used_words -= (size + 1);
+  Address header_addr = address - 8;
+  uint32_t count = read_u32(header_addr, 0);
+  uint32_t tag_and_ref = read_u32(header_addr, 4);
+  BlockTag tag = static_cast<BlockTag>((tag_and_ref >> 28) & 0xF);
+
+  size_t payload_bytes = count;
+  if (tag == BlockTag::ARRAY_U8 || tag == BlockTag::ARRAY_I8) payload_bytes = count * 1;
+  else if (tag == BlockTag::ARRAY_U16 || tag == BlockTag::ARRAY_I16) payload_bytes = count * 2;
+  else if (tag == BlockTag::ARRAY_U32 || tag == BlockTag::ARRAY_I32) payload_bytes = count * 4;
+  else if (tag == BlockTag::ARRAY_U64 || tag == BlockTag::ARRAY_REF || tag == BlockTag::CLOSURE) payload_bytes = count * 8;
+
+  size_t aligned_payload = (payload_bytes + 7) & ~7;
+  if (aligned_payload == 0) aligned_payload = 8;
+  size_t total_block_bytes = aligned_payload + 8;
+
+  currently_used_words -= (total_block_bytes / 8);
   if (live_objects_count > 0) {
     live_objects_count--;
   }
+
+  write_u32(header_addr, 0, static_cast<uint32_t>(aligned_payload));
   free_blocks.push_back(header_addr);
 }
 
 void Memory::increase_reference(Address address) {
-  if (address == 0)
+  if (address < 8 || address >= heap.size())
     return;
-  heap[address - 1]++;
+  Address header_addr = address - 8;
+  uint32_t tag_and_ref = read_u32(header_addr, 4);
+  uint32_t ref_count = (tag_and_ref & 0x0FFFFFFF) + 1;
+  tag_and_ref = (tag_and_ref & 0xF0000000) | (ref_count & 0x0FFFFFFF);
+  write_u32(header_addr, 4, tag_and_ref);
 }
 
 void Memory::decrease_reference(Address address) {
-  if (address == 0)
+  if (address < 8 || address >= heap.size())
     return;
-  uint64_t &header = heap[address - 1];
-  uint32_t ref_count = static_cast<uint32_t>(header & 0xFFFFFFFF);
+  Address header_addr = address - 8;
+  uint32_t tag_and_ref = read_u32(header_addr, 4);
+  uint32_t ref_count = tag_and_ref & 0x0FFFFFFF;
   if (ref_count > 0) {
     ref_count--;
-    header = (header & 0xFFFFFFFF00000000ULL) | ref_count;
+    tag_and_ref = (tag_and_ref & 0xF0000000) | (ref_count & 0x0FFFFFFF);
+    write_u32(header_addr, 4, tag_and_ref);
     if (ref_count == 0) {
       if (object_destructor) {
         object_destructor(*this, address);
@@ -120,23 +151,25 @@ void Memory::decrease_reference(Address address) {
 }
 
 void Memory::decrease_reference_callable(Address env) {
-  if (env == 0)
+  if (env < 8 || env >= heap.size())
     return;
-  uint64_t &header = heap[env - 1];
-  uint32_t ref_count = static_cast<uint32_t>(header & 0xFFFFFFFF);
+  Address header_addr = env - 8;
+  uint32_t tag_and_ref = read_u32(header_addr, 4);
+  uint32_t ref_count = tag_and_ref & 0x0FFFFFFF;
   if (ref_count > 0) {
     ref_count--;
-    header = (header & 0xFFFFFFFF00000000ULL) | ref_count;
+    tag_and_ref = (tag_and_ref & 0xF0000000) | (ref_count & 0x0FFFFFFF);
+    write_u32(header_addr, 4, tag_and_ref);
     if (ref_count == 0) {
-      uint64_t ref_mask = heap[env];
-      uint64_t callable_mask = heap[env + 1];
-      uint32_t size = static_cast<uint32_t>(header >> 32);
-      uint32_t count = size >= 2 ? size - 2 : 0;
-      for (uint32_t i = 0; i < count; ++i) {
+      uint64_t ref_mask = read_u64(env, 0);
+      uint64_t callable_mask = read_u64(env, 8);
+      uint32_t count = read_u32(header_addr, 0);
+      uint32_t cap_count = count >= 2 ? count - 2 : 0;
+      for (uint32_t i = 0; i < cap_count; ++i) {
         if ((ref_mask >> i) & 1) {
-          decrease_reference(static_cast<Address>(heap[env + 2 + i]));
+          decrease_reference(static_cast<Address>(read_u64(env, (2 + i) * 8)));
         } else if ((callable_mask >> i) & 1) {
-          uint64_t val = heap[env + 2 + i];
+          uint64_t val = read_u64(env, (2 + i) * 8);
           Address nested_env = static_cast<Address>(val >> 32);
           decrease_reference_callable(nested_env);
         }
@@ -152,18 +185,29 @@ RuntimeContext::RuntimeContext(const RuntimeOptions &opts)
 
   memory.object_destructor = [this](Memory &mem, Address address) {
     if (address == 0 || address >= mem.heap.size()) return;
-    uint64_t raw_id = mem.heap[address];
-    if (raw_id > 0 && raw_id <= UINT32_MAX) {
-      uint32_t vtable_id = static_cast<uint32_t>(raw_id);
+    BlockTag tag = mem.get_block_tag(address);
+    if (tag == BlockTag::OBJECT) {
+      uint32_t vtable_id = mem.read_u32(address, 0);
       if (vtable_ref_fields.count(vtable_id)) {
         const auto &fields = vtable_ref_fields[vtable_id];
         for (uint32_t offset : fields) {
-          if (address + offset < mem.heap.size()) {
-            Address child_addr = static_cast<Address>(mem.heap[address + offset]);
+          if (address + offset + 8 <= mem.heap.size()) {
+            Address child_addr = static_cast<Address>(mem.read_u64(address, offset));
             if (child_addr != 0) {
-              mem.heap[address + offset] = 0;
+              mem.write_u64(address, offset, 0);
               mem.decrease_reference(child_addr);
             }
+          }
+        }
+      }
+    } else if (tag == BlockTag::ARRAY_REF) {
+      uint32_t len = mem.get_array_length(address);
+      for (uint32_t i = 0; i < len; ++i) {
+        if (address + i * 8 + 8 <= mem.heap.size()) {
+          Address child_addr = static_cast<Address>(mem.read_u64(address, i * 8));
+          if (child_addr != 0) {
+            mem.write_u64(address, i * 8, 0);
+            mem.decrease_reference(child_addr);
           }
         }
       }
@@ -277,7 +321,6 @@ void RuntimeContext::execute() {
 
   const uint8_t *code = bytecode.data();
   uint64_t *stack = memory.stack.data();
-  uint64_t *heap_data = memory.heap.data();
 
   uint64_t *sp = stack + memory.stack_pointer;
 
@@ -292,15 +335,15 @@ void RuntimeContext::execute() {
   call_stack[call_depth++] = Frame(0, 0);
 
   size_t arg_count = options.program_args.size();
-  Address args_array = memory.dynamic_allocation(arg_count);
+  Address args_array = memory.dynamic_allocation(arg_count, BlockTag::ARRAY_REF);
   for (size_t i = 0; i < arg_count; ++i) {
     const std::string &str = options.program_args[i];
     size_t len = str.length();
-    Address str_addr = memory.dynamic_allocation(len);
+    Address str_addr = memory.dynamic_allocation(len, BlockTag::ARRAY_U8);
     for (size_t j = 0; j < len; ++j) {
-      heap_data[str_addr + j] = static_cast<uint64_t>(str[j]);
+      memory.write_u8(str_addr, static_cast<uint32_t>(j), static_cast<uint8_t>(str[j]));
     }
-    heap_data[args_array + i] = str_addr;
+    memory.write_u64(args_array, static_cast<uint32_t>(i * 8), str_addr);
   }
   PUSH(args_array);
 
@@ -549,9 +592,9 @@ op_PUSH_CONST_STRING:
     { // inner scope to avoid goto-over-destructor
       std::string str = read_string(bytecode, program_counter);
       size_t len = str.length();
-      Address addr = memory.dynamic_allocation(len);
+      Address addr = memory.dynamic_allocation(len, BlockTag::ARRAY_U8);
       for (size_t i = 0; i < len; ++i)
-        heap_data[addr + i] = static_cast<uint64_t>(str[i]);
+        memory.write_u8(addr, static_cast<uint32_t>(i), static_cast<uint8_t>(str[i]));
       PUSH(addr);
     }
     DISPATCH();
@@ -798,14 +841,14 @@ op_SET_LOCAL:
 op_GET_GLOBAL:
   {
     uint32_t idx = read_u32(bytecode, program_counter);
-    PUSH(heap_data[idx]);
+    PUSH(memory.read_u64(idx * 8, 0));
     DISPATCH();
   }
 op_SET_GLOBAL:
   {
     uint32_t idx = read_u32(bytecode, program_counter);
     uint64_t val = POP();
-    heap_data[idx] = val;
+    memory.write_u64(idx * 8, 0, val);
     DISPATCH();
   }
 
@@ -835,52 +878,85 @@ op_JUMP_IF_TRUE:
 op_ALLOC_STATIC:
   {
     uint32_t size = static_cast<uint32_t>(POP());
-    memory.static_allocation(size, 0);
+    memory.static_allocation(size * 8, 0);
     DISPATCH();
   }
 op_ALLOC_DYNAMIC:
   {
+    uint8_t tag_val = code[program_counter++];
+    BlockTag tag = static_cast<BlockTag>(tag_val);
     int64_t raw_size = static_cast<int64_t>(POP());
     if (raw_size < 0) {
       throw std::runtime_error("NegativeArraySizeException: Attempted to create array with negative size " + std::to_string(raw_size));
     }
     uint32_t size = static_cast<uint32_t>(raw_size);
-    PUSH(memory.dynamic_allocation(size));
+    PUSH(memory.dynamic_allocation(size, tag));
     DISPATCH();
   }
 op_GET_PROPERTY:
   {
-    uint32_t offset = read_u32(bytecode, program_counter);
+    uint32_t imm = read_u32(bytecode, program_counter);
+    uint32_t offset = imm & 0x0FFFFFFF;
+    uint32_t width = imm >> 28;
+    if (width == 0) width = 8;
     Address obj = static_cast<Address>(POP());
     if (obj == 0) throw std::runtime_error("NullPointer");
-    if (obj + offset >= memory.heap.size())
+    uint32_t byte_width = (width == 5) ? 1 : (width == 6) ? 2 : (width == 7) ? 4 : width;
+    if (obj + offset + byte_width > memory.heap.size())
       throw std::runtime_error("Heap out of bounds on GET_PROPERTY");
-    PUSH(memory.read_u64(obj, offset));
+    uint64_t val = 0;
+    switch (width) {
+      case 1: val = memory.read_u8(obj, offset); break;
+      case 2: val = memory.read_u16(obj, offset); break;
+      case 4: val = memory.read_u32(obj, offset); break;
+      case 5: val = static_cast<uint64_t>(static_cast<int64_t>(static_cast<int8_t>(memory.read_u8(obj, offset)))); break;
+      case 6: val = static_cast<uint64_t>(static_cast<int64_t>(static_cast<int16_t>(memory.read_u16(obj, offset)))); break;
+      case 7: val = static_cast<uint64_t>(static_cast<int64_t>(static_cast<int32_t>(memory.read_u32(obj, offset)))); break;
+      case 8: default: val = memory.read_u64(obj, offset); break;
+    }
+    PUSH(val);
     DISPATCH();
   }
 op_SET_PROPERTY:
   {
-    uint32_t offset = read_u32(bytecode, program_counter);
+    uint32_t imm = read_u32(bytecode, program_counter);
+    uint32_t offset = imm & 0x0FFFFFFF;
+    uint32_t width = imm >> 28;
+    if (width == 0) width = 8;
     Address obj = static_cast<Address>(POP());
     uint64_t val = POP();
     if (obj == 0) throw std::runtime_error("NullPointer");
-    if (obj + offset >= memory.heap.size())
+    uint32_t byte_width = (width == 5) ? 1 : (width == 6) ? 2 : (width == 7) ? 4 : width;
+    if (obj + offset + byte_width > memory.heap.size())
       throw std::runtime_error("Heap out of bounds on SET_PROPERTY");
 
-    memory.write_u64(obj, offset, val);
+    switch (width) {
+      case 1:
+      case 5:
+        memory.write_u8(obj, offset, static_cast<uint8_t>(val)); break;
+      case 2:
+      case 6:
+        memory.write_u16(obj, offset, static_cast<uint16_t>(val)); break;
+      case 4:
+      case 7:
+        memory.write_u32(obj, offset, static_cast<uint32_t>(val)); break;
+      case 8: default:
+        memory.write_u64(obj, offset, val); break;
+    }
     DISPATCH();
   }
 op_WEAK_SET_PROPERTY:
   {
-    uint32_t offset = read_u32(bytecode, program_counter);
+    uint32_t imm = read_u32(bytecode, program_counter);
+    uint32_t offset = imm & 0x0FFFFFFF;
     Address obj = static_cast<Address>(POP());
     uint64_t val = POP();
     if (obj == 0) throw std::runtime_error("NullPointer");
-    if (obj + offset >= memory.heap.size())
+    if (obj + offset + 8 > memory.heap.size())
       throw std::runtime_error("Heap out of bounds on WEAK_SET_PROPERTY");
 
     Address slot_address = obj + offset;
-    Address old_val = memory.read_u64(obj, offset);
+    Address old_val = static_cast<Address>(memory.read_u64(obj, offset));
 
     if (old_val != 0) {
       if (auto it = memory.weak_references.find(old_val);
@@ -894,7 +970,7 @@ op_WEAK_SET_PROPERTY:
     memory.write_u64(obj, offset, val);
 
     if (val != 0) {
-      memory.weak_references[val].insert(slot_address);
+      memory.weak_references[static_cast<Address>(val)].insert(slot_address);
     }
     DISPATCH();
   }
@@ -903,9 +979,37 @@ op_GET_ARRAY:
     uint32_t index = static_cast<uint32_t>(POP());
     Address array_addr = static_cast<Address>(POP());
     if (array_addr == 0) throw std::runtime_error("NullPointer");
-    uint32_t length = static_cast<uint32_t>(heap_data[array_addr - 1] >> 32);
+    uint32_t length = memory.get_array_length(array_addr);
     if (index >= length) throw std::runtime_error("Out of Bounds on GET_ARRAY: index " + std::to_string(index) + " >= length " + std::to_string(length));
-    PUSH(heap_data[array_addr + index]);
+    BlockTag tag = memory.get_block_tag(array_addr);
+    uint64_t val = 0;
+    switch (tag) {
+      case BlockTag::ARRAY_U8:
+        val = memory.read_u8(array_addr, index);
+        break;
+      case BlockTag::ARRAY_I8:
+        val = static_cast<uint64_t>(static_cast<int64_t>(static_cast<int8_t>(memory.read_u8(array_addr, index))));
+        break;
+      case BlockTag::ARRAY_U16:
+        val = memory.read_u16(array_addr, index * 2);
+        break;
+      case BlockTag::ARRAY_I16:
+        val = static_cast<uint64_t>(static_cast<int64_t>(static_cast<int16_t>(memory.read_u16(array_addr, index * 2))));
+        break;
+      case BlockTag::ARRAY_U32:
+        val = memory.read_u32(array_addr, index * 4);
+        break;
+      case BlockTag::ARRAY_I32:
+        val = static_cast<uint64_t>(static_cast<int64_t>(static_cast<int32_t>(memory.read_u32(array_addr, index * 4))));
+        break;
+      case BlockTag::ARRAY_U64:
+      case BlockTag::ARRAY_REF:
+      case BlockTag::CLOSURE:
+      default:
+        val = memory.read_u64(array_addr, index * 8);
+        break;
+    }
+    PUSH(val);
     DISPATCH();
   }
 op_SET_ARRAY:
@@ -914,11 +1018,31 @@ op_SET_ARRAY:
     uint32_t index = static_cast<uint32_t>(POP());
     Address array_addr = static_cast<Address>(POP());
     if (array_addr == 0) throw std::runtime_error("NullPointer");
-    uint32_t length = static_cast<uint32_t>(heap_data[array_addr - 1] >> 32);
+    uint32_t length = memory.get_array_length(array_addr);
     if (index >= length) {
-      throw std::runtime_error("Out of Bounds on SET_ARRAY at PC=" + std::to_string(program_counter) + ": array_addr=" + std::to_string(array_addr) + " index=" + std::to_string(index) + " >= length=" + std::to_string(length) + " (header_val=" + std::to_string(heap_data[array_addr - 1]) + ", val=" + std::to_string(val) + ")");
+      throw std::runtime_error("Out of Bounds on SET_ARRAY at PC=" + std::to_string(program_counter) + ": array_addr=" + std::to_string(array_addr) + " index=" + std::to_string(index) + " >= length=" + std::to_string(length) + ", val=" + std::to_string(val));
     }
-    heap_data[array_addr + index] = val;
+    BlockTag tag = memory.get_block_tag(array_addr);
+    switch (tag) {
+      case BlockTag::ARRAY_U8:
+      case BlockTag::ARRAY_I8:
+        memory.write_u8(array_addr, index, static_cast<uint8_t>(val));
+        break;
+      case BlockTag::ARRAY_U16:
+      case BlockTag::ARRAY_I16:
+        memory.write_u16(array_addr, index * 2, static_cast<uint16_t>(val));
+        break;
+      case BlockTag::ARRAY_U32:
+      case BlockTag::ARRAY_I32:
+        memory.write_u32(array_addr, index * 4, static_cast<uint32_t>(val));
+        break;
+      case BlockTag::ARRAY_U64:
+      case BlockTag::ARRAY_REF:
+      case BlockTag::CLOSURE:
+      default:
+        memory.write_u64(array_addr, index * 8, val);
+        break;
+    }
     PUSH(val);
     DISPATCH();
   }
@@ -926,7 +1050,7 @@ op_ARRAY_LENGTH:
   {
     Address array_addr = static_cast<Address>(POP());
     if (array_addr == 0) throw std::runtime_error("NullPointer");
-    uint32_t length = static_cast<uint32_t>(heap_data[array_addr - 1] >> 32);
+    uint32_t length = memory.get_array_length(array_addr);
     PUSH(length);
     DISPATCH();
   }
@@ -1115,9 +1239,9 @@ op_INSTANCEOF:
 
     bool is_instance = false;
     if (obj != 0) {
-      int32_t current_vtable = static_cast<int32_t>(heap_data[obj]);
+      int32_t current_vtable = static_cast<int32_t>(memory.read_u32(obj, 0));
       while (current_vtable != -1) {
-        if (current_vtable == target_vtable_id ||
+        if (static_cast<uint32_t>(current_vtable) == target_vtable_id ||
             (itables.count(current_vtable) && itables[current_vtable].count(target_vtable_id))) {
           is_instance = true;
           break;
@@ -1137,10 +1261,10 @@ op_CAST_CHECK:
     Address obj = static_cast<Address>(*(sp - 1));
 
     if (obj != 0) {
-      int32_t current_vtable = static_cast<int32_t>(heap_data[obj]);
+      int32_t current_vtable = static_cast<int32_t>(memory.read_u32(obj, 0));
       bool is_instance = false;
       while (current_vtable != -1) {
-        if (current_vtable == target_vtable_id ||
+        if (static_cast<uint32_t>(current_vtable) == target_vtable_id ||
             (itables.count(current_vtable) && itables[current_vtable].count(target_vtable_id))) {
           is_instance = true;
           break;
@@ -1159,7 +1283,7 @@ op_SET_VTABLE:
   {
     uint32_t vtable_id = read_u32(bytecode, program_counter);
     Address obj = static_cast<Address>(*(sp - 1));
-    heap_data[obj] = vtable_id;
+    memory.write_u32(obj, 0, vtable_id);
     DISPATCH();
   }
 op_CALL_VIRTUAL:
@@ -1170,7 +1294,7 @@ op_CALL_VIRTUAL:
     uint32_t current_sp_idx = static_cast<uint32_t>(sp - stack);
     Address obj = static_cast<Address>(stack[current_sp_idx - arg_count]);
     if (obj == 0) throw std::runtime_error("NullPointer");
-    uint32_t vtable_id = heap_data[obj];
+    uint32_t vtable_id = memory.read_u32(obj, 0);
     if (vtables.find(vtable_id) == vtables.end() ||
         vtable_index >= vtables[vtable_id].size()) {
       throw std::runtime_error("Virtual method resolution failed!");
@@ -1195,7 +1319,7 @@ op_CALL_INTERFACE:
     uint32_t current_sp_idx = static_cast<uint32_t>(sp - stack);
     Address obj = static_cast<Address>(stack[current_sp_idx - arg_count]);
     if (obj == 0) throw std::runtime_error("NullPointer");
-    uint32_t class_vtable_id = heap_data[obj];
+    uint32_t class_vtable_id = memory.read_u32(obj, 0);
 
     uint32_t target_ip = 0;
     {
@@ -1423,9 +1547,13 @@ op_SIZEOF:
       if (addr == 0) {
           PUSH(0);
       } else {
-          uint64_t header = memory.heap[addr - 1];
-          uint32_t blk_size = static_cast<uint32_t>(header >> 32);
-          PUSH(static_cast<uint64_t>(blk_size * 8));
+          BlockTag tag = memory.get_block_tag(addr);
+          uint32_t count = memory.get_array_length(addr);
+          uint32_t byte_size = count;
+          if (tag == BlockTag::ARRAY_U16 || tag == BlockTag::ARRAY_I16) byte_size = count * 2;
+          else if (tag == BlockTag::ARRAY_U32 || tag == BlockTag::ARRAY_I32) byte_size = count * 4;
+          else if (tag == BlockTag::ARRAY_U64 || tag == BlockTag::ARRAY_REF || tag == BlockTag::CLOSURE) byte_size = count * 8;
+          PUSH(static_cast<uint64_t>(byte_size));
       }
       DISPATCH();
   }
@@ -1466,7 +1594,7 @@ op_UNPACK_CAPTURES:
               if (fp + dest_slot + i >= memory.stack.size()) {
                   throw std::runtime_error("Frame out of bounds on UNPACK_CAPTURES");
               }
-              stack[fp + dest_slot + i] = heap_data[env + 2 + i];
+              stack[fp + dest_slot + i] = memory.read_u64(env, (2 + i) * 8);
           }
       }
       DISPATCH();
@@ -1506,19 +1634,31 @@ op_DEC_REF_SLOT:
           std::string msg;
           if (has_msg && msg_val > 0 && msg_val < memory.heap.size()) {
               uint64_t char_addr = msg_val;
-              uint32_t len = static_cast<uint32_t>(memory.heap[char_addr - 1] >> 32);
+              uint32_t len = memory.get_array_length(static_cast<Address>(char_addr));
               if (len == 0 || len > 100000) {
-                  uint64_t field0 = memory.heap[msg_val];
-                  if (field0 > 0 && field0 < memory.heap.size()) {
-                      uint32_t f_len = static_cast<uint32_t>(memory.heap[field0 - 1] >> 32);
-                      if (f_len > 0 && f_len <= 100000) {
-                          char_addr = field0;
-                          len = f_len;
+                  if (msg_val + 16 <= memory.heap.size()) {
+                      uint64_t field = memory.read_u64(static_cast<Address>(msg_val), 8);
+                      if (field > 0 && field < memory.heap.size()) {
+                          uint32_t f_len = memory.get_array_length(static_cast<Address>(field));
+                          if (f_len > 0 && f_len <= 100000) {
+                              char_addr = field;
+                              len = f_len;
+                          }
+                      }
+                  }
+                  if (len == 0 || len > 100000) {
+                      uint64_t field0 = memory.read_u64(static_cast<Address>(msg_val), 0);
+                      if (field0 > 0 && field0 < memory.heap.size()) {
+                          uint32_t f_len = memory.get_array_length(static_cast<Address>(field0));
+                          if (f_len > 0 && f_len <= 100000) {
+                              char_addr = field0;
+                              len = f_len;
+                          }
                       }
                   }
               }
               for (uint32_t i = 0; i < len; ++i) {
-                  msg.push_back(static_cast<char>(memory.heap[char_addr + i]));
+                  msg.push_back(memory.read_char(static_cast<Address>(char_addr), i));
               }
           }
           std::string err = "AssertionError";

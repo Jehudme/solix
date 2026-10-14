@@ -29,19 +29,20 @@ namespace {
 
 static std::string read_solix_chars(solix::RuntimeContext &vm, uint64_t addr) {
     if (addr == 0) return "";
-    uint32_t len = static_cast<uint32_t>(vm.memory.heap[addr - 1] >> 32);
+    uint32_t len = vm.memory.get_array_length(static_cast<solix::Address>(addr));
     std::string s;
     s.reserve(len);
     for (uint32_t i = 0; i < len; ++i) {
-        s.push_back(static_cast<char>(vm.memory.heap[addr + i]));
+        s.push_back(vm.memory.read_char(static_cast<solix::Address>(addr), i));
     }
     return s;
 }
 
 static uint64_t allocate_solix_chars(solix::RuntimeContext &vm, const std::string &s) {
-    uint64_t addr = vm.memory.dynamic_allocation(s.length());
+    uint32_t len = static_cast<uint32_t>(s.length());
+    uint64_t addr = vm.memory.dynamic_allocation(len, solix::BlockTag::ARRAY_U8);
     for (size_t i = 0; i < s.length(); ++i) {
-        vm.memory.heap[addr + i] = static_cast<uint64_t>(static_cast<unsigned char>(s[i]));
+        vm.memory.write_u8(static_cast<solix::Address>(addr), static_cast<uint32_t>(i), static_cast<uint8_t>(s[i]));
     }
     return addr;
 }

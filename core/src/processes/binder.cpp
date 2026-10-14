@@ -1353,10 +1353,11 @@ int Binder::calculate_layout(ClassDeclaration *cls) {
   if (layout_calculated.count(cls->mangled_name))
     return cls->instance_size;
   if (layout_in_progress.count(cls->mangled_name))
-    return 1;
+    return 8;
   layout_in_progress.insert(cls->mangled_name);
 
-  int offset = (!cls->base_class_name.empty() ? 0 : 1);
+  // In byte addressing: byte 0..3 is reserved for vtable_id (4 bytes)
+  int offset = (!cls->base_class_name.empty() ? 0 : 4);
   cls->reference_field_offsets.clear();
   if (!cls->base_class_name.empty()) {
     Node *base_node = global_scope.resolve(cls->base_class_name);
@@ -1374,7 +1375,11 @@ int Binder::calculate_layout(ClassDeclaration *cls) {
     if (child->node_type == NodeType::FIELD_DECL) {
       auto *field = static_cast<FieldDeclaration *>(child.get());
       if (!field->is_static) {
-        field->memory_index = offset++;
+        int field_size = get_type_size(field->type_info);
+        int field_align = field_size;
+        offset = (offset + field_align - 1) & ~(field_align - 1);
+        field->memory_index = offset;
+        offset += field_size;
         if (field->is_reference_type && !field->is_weak) {
           cls->reference_field_offsets.push_back(static_cast<uint32_t>(field->memory_index));
         }
@@ -1384,9 +1389,10 @@ int Binder::calculate_layout(ClassDeclaration *cls) {
     }
   }
   layout_in_progress.erase(cls->mangled_name);
-  cls->instance_size = offset;
+  cls->instance_size = (offset + 7) & ~7;
+  if (cls->instance_size == 0) cls->instance_size = 8;
   layout_calculated.insert(cls->mangled_name);
-  log_trace("Class '{}' instance layout computed: size = {} words",
+  log_trace("Class '{}' instance layout computed: size = {} bytes",
             cls->mangled_name, cls->instance_size);
   return cls->instance_size;
 }
@@ -3393,10 +3399,10 @@ void Binder::visit(SizeOfExpression &n) {
     evaluated_type = n.expression_type;
 
     auto get_primitive_size = [](const std::string &name) -> int32_t {
-      if (name == "bool" || name == "char" || name == "int8" || name == "uint8") return 1;
-      if (name == "int16" || name == "uint16") return 2;
-      if (name == "int32" || name == "uint32" || name == "float32") return 4;
-      if (name == "int64" || name == "uint64" || name == "float64") return 8;
+      if (name == "bool" || name == "char" || name == "int8" || name == "uint8" || name == "byte" || name == "ubyte") return 1;
+      if (name == "int16" || name == "uint16" || name == "short" || name == "ushort") return 2;
+      if (name == "int32" || name == "uint32" || name == "float32" || name == "int" || name == "uint" || name == "float") return 4;
+      if (name == "int64" || name == "uint64" || name == "float64" || name == "long" || name == "ulong" || name == "double") return 8;
       if (name == "void") return 0;
       return -1;
     };
@@ -3420,7 +3426,7 @@ void Binder::visit(SizeOfExpression &n) {
           Node *decl = resolve_symbol(n.target_type->name, &n);
           if (decl && decl->node_type == NodeType::CLASS_DECL) {
             auto *cls = static_cast<ClassDeclaration *>(decl);
-            n.constant_size = cls->instance_size * 8;
+            n.constant_size = cls->instance_size;
             n.is_compile_time_constant = true;
           } else if (decl && decl->node_type == NodeType::ENUM_DECL) {
             n.constant_size = 4;
@@ -3454,7 +3460,7 @@ void Binder::visit(SizeOfExpression &n) {
           Node *decl = resolve_symbol(path, &n);
           if (decl && decl->node_type == NodeType::CLASS_DECL) {
             auto *cls = static_cast<ClassDeclaration *>(decl);
-            n.constant_size = cls->instance_size * 8;
+            n.constant_size = cls->instance_size;
             n.is_compile_time_constant = true;
             evaluated_type = n.expression_type;
             return;
