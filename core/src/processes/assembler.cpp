@@ -23,6 +23,22 @@ static bool is_reference_type(const TypeInfo &t) {
   return primitives.find(t.name) == primitives.end();
 }
 
+static inline uint32_t encode_property_imm(const FieldDeclaration *field) {
+  uint32_t width = get_property_width_code(field->type_info);
+  return static_cast<uint32_t>(field->memory_index) | (width << 28);
+}
+
+static inline void emit_conv_for_type(std::vector<uint8_t> &bcode, const TypeInfo &t) {
+  if (t.array_depth > 0 || t.is_function_pointer) return;
+  if (t.name == "int32" || t.name == "int") bcode.push_back(static_cast<uint8_t>(OpCode::CONV_I32));
+  else if (t.name == "uint32" || t.name == "uint") bcode.push_back(static_cast<uint8_t>(OpCode::CONV_U32));
+  else if (t.name == "int16" || t.name == "short") bcode.push_back(static_cast<uint8_t>(OpCode::CONV_I16));
+  else if (t.name == "uint16" || t.name == "ushort") bcode.push_back(static_cast<uint8_t>(OpCode::CONV_U16));
+  else if (t.name == "int8") bcode.push_back(static_cast<uint8_t>(OpCode::CONV_I8));
+  else if (t.name == "uint8" || t.name == "byte" || t.name == "ubyte") bcode.push_back(static_cast<uint8_t>(OpCode::CONV_U8));
+  else if (t.name == "char" || t.name == "bool") bcode.push_back(static_cast<uint8_t>(OpCode::CONV_U8));
+}
+
 static bool produces_retained_reference(Node *expr) {
   if (!expr) return false;
   switch (expr->node_type) {
@@ -229,15 +245,27 @@ std::string Assembler::disassemble() const {
       ss << "\"" << read_str_local(pc) << "\"";
       break;
     }
+    case OpCode::ALLOC_DYNAMIC: {
+      uint8_t tag = (pc < bcode.size()) ? bcode[pc++] : 0;
+      ss << "tag=" << static_cast<int>(tag);
+      break;
+    }
     case OpCode::GET_LOCAL:
     case OpCode::SET_LOCAL:
     case OpCode::GET_GLOBAL:
     case OpCode::SET_GLOBAL:
-    case OpCode::GET_PROPERTY:
-    case OpCode::SET_PROPERTY:
-    case OpCode::WEAK_SET_PROPERTY:
     case OpCode::SET_VTABLE: {
       ss << read_u32_local(pc);
+      break;
+    }
+    case OpCode::GET_PROPERTY:
+    case OpCode::SET_PROPERTY:
+    case OpCode::WEAK_SET_PROPERTY: {
+      uint32_t imm = read_u32_local(pc);
+      uint32_t offset = imm & 0x0FFFFFFF;
+      uint32_t width = imm >> 28;
+      if (width == 0) width = 8;
+      ss << "offset=" << offset << ", width=" << width;
       break;
     }
     case OpCode::JUMP:
@@ -820,7 +848,7 @@ void Assembler::visit(ConstructorDeclaration &node) {
           emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
           emit_int32(0);
           emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
-          emit_int32(field->memory_index);
+          emit_int32(encode_property_imm(field));
         }
       }
     }
@@ -913,6 +941,7 @@ void Assembler::visit(VariableDeclaration &node) {
   auto *var_decl = &node;
   if (var_decl->initializer) {
     compile_expression(var_decl->initializer.get());
+    emit_conv_for_type(bytecode(), var_decl->type_info);
     if (var_decl->is_reference_type && !produces_retained_reference(var_decl->initializer.get())) {
       emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
     }
@@ -1101,6 +1130,28 @@ void Assembler::visit(ReturnStatement &node) {
   auto *ret_stmt = &node;
   if (ret_stmt->value) {
     compile_expression(ret_stmt->value.get());
+
+    Node *find_func = node.parent;
+    TypeInfo ret_type;
+    bool has_ret_type = false;
+    while (find_func) {
+      if (find_func->node_type == NodeType::METHOD_DECL) {
+        ret_type = static_cast<MethodDeclaration *>(find_func)->return_type;
+        has_ret_type = true;
+        break;
+      } else if (find_func->node_type == NodeType::LAMBDA_EXPR) {
+        ret_type = static_cast<LambdaExpression *>(find_func)->inferred_return_type;
+        has_ret_type = true;
+        break;
+      } else if (find_func->node_type == NodeType::CONSTRUCTOR_DECL) {
+        break;
+      }
+      find_func = find_func->parent;
+    }
+    if (has_ret_type) {
+      emit_conv_for_type(bytecode(), ret_type);
+    }
+
     if (is_reference_type(ret_stmt->value->expression_type) &&
         !produces_retained_reference(ret_stmt->value.get())) {
       emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
@@ -1341,7 +1392,7 @@ void Assembler::visit(IdentifierNode &node) {
       emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
       emit_int32(0);
       emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
-      emit_int32(field->memory_index);
+      emit_int32(encode_property_imm(field));
     }
     if (field->is_reference_type) {
       emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
@@ -1486,17 +1537,17 @@ void Assembler::visit(AssignmentExpression &node) {
 
         if (field->is_weak) {
           emit_byte(static_cast<uint8_t>(OpCode::WEAK_SET_PROPERTY));
-          emit_int32(field->memory_index);
+          emit_int32(encode_property_imm(field));
         } else {
           if (field->is_reference_type) {
             emit_byte(static_cast<uint8_t>(OpCode::DUP));
             emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
-            emit_int32(field->memory_index);
+            emit_int32(encode_property_imm(field));
             emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
           }
 
           emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
-          emit_int32(field->memory_index);
+          emit_int32(encode_property_imm(field));
         }
       }
     } else if (ident->resolved_declaration->node_type == NodeType::VAR_DECL) {
@@ -1514,6 +1565,7 @@ void Assembler::visit(AssignmentExpression &node) {
         emit_byte(static_cast<uint8_t>(OpCode::DEC_REF_CALLABLE));
       }
 
+      emit_conv_for_type(bytecode(), var->type_info);
       emit_byte(static_cast<uint8_t>(OpCode::SET_LOCAL));
       emit_int32(var->memory_index);
     }
@@ -1532,23 +1584,24 @@ void Assembler::visit(AssignmentExpression &node) {
         emit_int32(field->memory_index);
         emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
       }
+      emit_conv_for_type(bytecode(), field->type_info);
       emit_byte(static_cast<uint8_t>(OpCode::SET_GLOBAL));
       emit_int32(field->memory_index);
     } else {
       compile_expression(mem_acc->object.get());
       if (field->is_weak) {
         emit_byte(static_cast<uint8_t>(OpCode::WEAK_SET_PROPERTY));
-        emit_int32(field->memory_index);
+        emit_int32(encode_property_imm(field));
       } else {
         if (field->is_reference_type) {
           emit_byte(static_cast<uint8_t>(OpCode::DUP));
           emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
-          emit_int32(field->memory_index);
+          emit_int32(encode_property_imm(field));
           emit_byte(static_cast<uint8_t>(OpCode::DEC_REF));
         }
 
         emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
-        emit_int32(field->memory_index);
+        emit_int32(encode_property_imm(field));
       }
     }
   }
@@ -1749,7 +1802,7 @@ void Assembler::visit(UnaryExpression &node) {
           emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
           emit_int32(0);
           emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
-          emit_int32(field->memory_index);
+          emit_int32(encode_property_imm(field));
           if (!uny->is_prefix) {
             uint8_t rev_opc = (uny->op == TokenType::OPERATOR_INCREMENT)
                                   ? static_cast<uint8_t>(is_float ? OpCode::DEC_F64 : OpCode::DEC_I64)
@@ -1777,7 +1830,7 @@ void Assembler::visit(UnaryExpression &node) {
         emit_byte(opc);
         compile_expression(mem->object.get());
         emit_byte(static_cast<uint8_t>(OpCode::SET_PROPERTY));
-        emit_int32(field->memory_index);
+        emit_int32(encode_property_imm(field));
         if (!uny->is_prefix) {
           uint8_t rev_opc = (uny->op == TokenType::OPERATOR_INCREMENT)
                                 ? static_cast<uint8_t>(is_float ? OpCode::DEC_F64 : OpCode::DEC_I64)
@@ -1970,6 +2023,7 @@ void Assembler::visit(NewInstanceExpression &node) {
   emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
   emit_int32(class_decl->instance_size);
   emit_byte(static_cast<uint8_t>(OpCode::ALLOC_DYNAMIC));
+  emit_byte(static_cast<uint8_t>(BlockTag::OBJECT));
 
   if (class_decl->vtable_id != -1) {
     emit_byte(static_cast<uint8_t>(OpCode::SET_VTABLE));
@@ -2051,7 +2105,7 @@ void Assembler::visit(MemberAccessExpression &node) {
   } else {
     compile_expression(mem_acc->object.get());
     emit_byte(static_cast<uint8_t>(OpCode::GET_PROPERTY));
-    emit_int32(field->memory_index);
+    emit_int32(encode_property_imm(field));
   }
 
   if (field->is_reference_type)
@@ -2074,6 +2128,7 @@ void Assembler::visit(ArrayCreationExpression &node) {
   auto *arr_crea = &node;
   compile_expression(arr_crea->size.get());
   emit_byte(static_cast<uint8_t>(OpCode::ALLOC_DYNAMIC));
+  emit_byte(static_cast<uint8_t>(get_array_tag(arr_crea->expression_type)));
 }
 
 void Assembler::visit(ArrayLiteralExpression &node) {
@@ -2081,6 +2136,7 @@ void Assembler::visit(ArrayLiteralExpression &node) {
   emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
   emit_int32(arr_lit->elements.size());
   emit_byte(static_cast<uint8_t>(OpCode::ALLOC_DYNAMIC));
+  emit_byte(static_cast<uint8_t>(get_array_tag(arr_lit->expression_type)));
 
   for (size_t i = 0; i < arr_lit->elements.size(); i++) {
     emit_byte(static_cast<uint8_t>(OpCode::DUP));
@@ -2246,6 +2302,7 @@ void Assembler::visit(LambdaExpression &node) {
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
     emit_int32(cap_count + 2);
     emit_byte(static_cast<uint8_t>(OpCode::ALLOC_DYNAMIC));
+    emit_byte(static_cast<uint8_t>(BlockTag::CLOSURE));
 
     emit_byte(static_cast<uint8_t>(OpCode::DUP));
     emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));

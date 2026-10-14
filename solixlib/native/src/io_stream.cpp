@@ -15,11 +15,11 @@ static int64_t s_next_stream_id = 1;
 
 static std::string read_solix_chars(solix::RuntimeContext &vm, uint64_t addr) {
     if (addr == 0) return "";
-    uint32_t len = static_cast<uint32_t>(vm.memory.heap[addr - 1] >> 32);
+    uint32_t len = vm.memory.get_array_length(static_cast<solix::Address>(addr));
     std::string s;
     s.reserve(len);
     for (uint32_t i = 0; i < len; ++i) {
-        s.push_back(static_cast<char>(vm.memory.heap[addr + i]));
+        s.push_back(vm.memory.read_char(static_cast<solix::Address>(addr), i));
     }
     return s;
 }
@@ -118,7 +118,7 @@ static uint64_t stream_native_read(solix::RuntimeContext &vm, uint64_t self, uin
     std::vector<uint8_t> temp(static_cast<size_t>(count));
     size_t read_bytes = std::fread(temp.data(), 1, static_cast<size_t>(count), it->second);
     for (size_t i = 0; i < read_bytes; ++i) {
-        vm.memory.heap[buf_addr + offset + i] = static_cast<uint64_t>(temp[i]);
+        vm.memory.write_u8(static_cast<solix::Address>(buf_addr), static_cast<uint32_t>(offset + i), temp[i]);
     }
     return static_cast<uint64_t>(read_bytes);
 }
@@ -140,7 +140,7 @@ static uint64_t stream_native_write(solix::RuntimeContext &vm, uint64_t self, ui
 
     std::vector<uint8_t> temp(static_cast<size_t>(count));
     for (size_t i = 0; i < static_cast<size_t>(count); ++i) {
-        temp[i] = static_cast<uint8_t>(vm.memory.heap[buf_addr + offset + i]);
+        temp[i] = vm.memory.read_u8(static_cast<solix::Address>(buf_addr), static_cast<uint32_t>(offset + i));
     }
     size_t written = std::fwrite(temp.data(), 1, static_cast<size_t>(count), it->second);
     return static_cast<uint64_t>(written);

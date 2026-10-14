@@ -532,39 +532,39 @@ static bool hex_decode(const std::string &in, std::vector<uint8_t> &out) {
 
 static std::string read_solix_chars(solix::RuntimeContext &vm, uint64_t addr) {
     if (addr == 0) return "";
-    uint32_t len = static_cast<uint32_t>(vm.memory.heap[addr - 1] >> 32);
+    uint32_t len = vm.memory.get_array_length(static_cast<solix::Address>(addr));
     std::string s;
     s.reserve(len);
     for (uint32_t i = 0; i < len; ++i) {
-        s.push_back(static_cast<char>(vm.memory.heap[addr + i]));
+        s.push_back(vm.memory.read_char(static_cast<solix::Address>(addr), i));
     }
     return s;
 }
 
 static uint64_t allocate_solix_chars(solix::RuntimeContext &vm, const std::string &s) {
-    uint64_t addr = vm.memory.dynamic_allocation(s.length());
+    uint32_t len = static_cast<uint32_t>(s.length());
+    uint64_t addr = vm.memory.dynamic_allocation(len, solix::BlockTag::ARRAY_U8);
     for (size_t i = 0; i < s.length(); ++i) {
-        vm.memory.heap[addr + i] = static_cast<uint64_t>(static_cast<unsigned char>(s[i]));
+        vm.memory.write_u8(static_cast<solix::Address>(addr), static_cast<uint32_t>(i), static_cast<uint8_t>(s[i]));
     }
     return addr;
 }
 
 static std::vector<uint8_t> read_solix_bytes(solix::RuntimeContext &vm, uint64_t addr) {
     if (addr == 0) return {};
-    uint32_t len = static_cast<uint32_t>(vm.memory.heap[addr - 1] >> 32);
+    uint32_t len = vm.memory.get_array_length(static_cast<solix::Address>(addr));
     std::vector<uint8_t> b;
     b.reserve(len);
     for (uint32_t i = 0; i < len; ++i) {
-        b.push_back(static_cast<uint8_t>(vm.memory.heap[addr + i]));
+        b.push_back(vm.memory.read_u8(static_cast<solix::Address>(addr), i));
     }
     return b;
 }
 
 static uint64_t allocate_solix_bytes(solix::RuntimeContext &vm, const uint8_t *data, size_t len) {
-    uint64_t addr = vm.memory.dynamic_allocation(len);
+    uint64_t addr = vm.memory.dynamic_allocation(len, solix::BlockTag::ARRAY_I8);
     for (size_t i = 0; i < len; ++i) {
-        int8_t sbyte = static_cast<int8_t>(data[i]);
-        vm.memory.heap[addr + i] = static_cast<uint64_t>(static_cast<int64_t>(sbyte));
+        vm.memory.write_u8(static_cast<solix::Address>(addr), static_cast<uint32_t>(i), data[i]);
     }
     return addr;
 }

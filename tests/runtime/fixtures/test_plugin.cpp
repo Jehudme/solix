@@ -12,9 +12,9 @@ static uint64_t native_math_add(solix::RuntimeContext &vm, uint64_t self, uint64
 static uint64_t counter_increment(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
   (void)args;
   (void)argc;
-  uint64_t current = vm.memory.read_u64(static_cast<solix::Address>(self), 1);
+  uint32_t current = vm.memory.read_u32(static_cast<solix::Address>(self), 4);
   current += 1;
-  vm.memory.write_u64(static_cast<solix::Address>(self), 1, current);
+  vm.memory.write_u32(static_cast<solix::Address>(self), 4, current);
   return current;
 }
 

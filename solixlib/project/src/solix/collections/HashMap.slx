@@ -99,7 +99,11 @@ public class HashMap<K, V> implements IMap<K, V>, IStringable {
     }
 
     private int32 index_for(int32 h, int32 length) {
-        return h % length;
+        int32 idx = h % length;
+        if (idx < 0) {
+            idx = idx + length;
+        }
+        return idx;
     }
 
     public int32 size() {
