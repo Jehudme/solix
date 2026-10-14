@@ -865,5 +865,37 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         auto res = run_cli({"build", "-m", (proj_dir / "solix.json").string()});
         CHECK(res.exit_code != 0);
     }
+
+    SECTION("Positive - Case 3.25: Build Project with manifest.json and type library") {
+        auto lib_dir = sandbox.path() / "sample_library";
+        std::filesystem::create_directories(lib_dir / "src");
+        sandbox.create_file("sample_library/manifest.json", R"({
+            "project": "sample_library",
+            "version": "1.0.0",
+            "dependencies": [{"type": "source", "path": "src/lib.slx"}],
+            "profiles": {"debug": {"output_directory": "build/debug", "exe_filename": "lib.slxbin", "compilation": {"entry_point": "lib_init", "multithreaded": false}}}
+        })");
+        sandbox.create_file("sample_library/src/lib.slx", "int32 lib_func() { return 42; }\n");
+
+        auto app_dir = sandbox.path() / "sample_app";
+        std::filesystem::create_directories(app_dir / "src");
+        nlohmann::json app_mf;
+        app_mf["project"] = "sample_app";
+        app_mf["version"] = "1.0.0";
+        app_mf["dependencies"] = nlohmann::json::array({
+            {{"type", "library"}, {"path", "../sample_library"}},
+            {{"type", "source"}, {"path", "src/main.slx"}}
+        });
+        app_mf["profiles"]["debug"]["output_directory"] = "build/debug";
+        app_mf["profiles"]["debug"]["exe_filename"] = "out.slxbin";
+        app_mf["profiles"]["debug"]["compilation"]["entry_point"] = "main";
+        app_mf["profiles"]["debug"]["compilation"]["multithreaded"] = false;
+        sandbox.create_file("sample_app/manifest.json", app_mf.dump(2));
+        sandbox.create_file("sample_app/src/main.slx", "int32 main() { return lib_func(); }\n");
+
+        auto build_res = run_cli({"build", app_dir.string()});
+        CHECK(build_res.exit_code == 0);
+        CHECK(sandbox.exists("sample_app/build/debug/out.slxbin"));
+    }
 }
 

@@ -78,4 +78,17 @@ TEST_CASE("Suite 18: Toolchain solixlib Auto-Discovery & IDE Integration Command
         REQUIRE(res.exit_code != 0);
         REQUIRE(res.err.find("non_existent_editor_binary_xyz") != std::string::npos);
     }
+
+    SECTION("Case 18.5: solix activate Command Execution and Help Inspection") {
+        auto res = run_cli({"activate", "--help"});
+        REQUIRE(res.exit_code == 0);
+        REQUIRE(res.out.find("vscode") != std::string::npos);
+        REQUIRE(res.out.find("cursor") != std::string::npos);
+    }
+
+    SECTION("Case 18.6: solix activate with Non-Existent Editor Binary") {
+        auto res = run_cli({"activate", "non_existent_editor_xyz"});
+        REQUIRE(res.exit_code != 0);
+        REQUIRE(res.err.find("non_existent_editor_xyz") != std::string::npos);
+    }
 }
