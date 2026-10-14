@@ -102,4 +102,46 @@ void setup_ide_command(CLI::App& app) {
     });
 }
 
+void setup_activate_command(CLI::App& app) {
+    auto* act_cmd = app.add_subcommand("activate", "Activate and install Solix tooling into editors (e.g. 'solix activate vscode')");
+
+    auto editor_name = std::make_shared<std::string>("vscode");
+    act_cmd->add_option("editor", *editor_name, "Editor to activate: 'vscode' (or 'code'), 'cursor', 'codium' (default: vscode)");
+
+    act_cmd->callback([editor_name]() {
+        std::string ed = *editor_name;
+        std::string target_bin = ed;
+        if (ed == "vscode" || ed == "code") {
+            if (is_command_available("code")) target_bin = "code";
+            else if (is_command_available("code-insiders")) target_bin = "code-insiders";
+            else target_bin = "code";
+        } else if (ed == "cursor") {
+            target_bin = "cursor";
+        } else if (ed == "codium") {
+            target_bin = "codium";
+        }
+
+        if (!is_command_available(target_bin)) {
+            std::cerr << "Error: Target editor binary '" << target_bin << "' was not found in PATH." << std::endl;
+            cli_exit(1);
+        }
+
+        auto vsix_path = find_bundled_vsix();
+        if (!vsix_path) {
+            std::cerr << "Error: Bundled Solix VS Code extension (.vsix) not found." << std::endl;
+            cli_exit(1);
+        }
+
+        std::cout << "Activating Solix extension for " << target_bin << "..." << std::endl;
+        std::string cmd = target_bin + " --install-extension \"" + vsix_path->string() + "\"";
+        int ret = std::system(cmd.c_str());
+        if (ret == 0) {
+            std::cout << "  ✓ Solix extension successfully activated for " << target_bin << "." << std::endl;
+        } else {
+            std::cerr << "  ✗ Warning: Failed to activate extension for " << target_bin << " (exit code " << ret << ")." << std::endl;
+            cli_exit(1);
+        }
+    });
+}
+
 } // namespace solix::cli

@@ -20,9 +20,6 @@ ProjectBuildResult build_project(const std::filesystem::path& manifest_or_dir,
     result.profile_name = profile_name;
 
     std::string target_str = manifest_or_dir.string();
-    if (target_str.empty()) {
-        target_str = "solix.json";
-    }
 
     std::filesystem::path manifest_path;
     auto at_pos = target_str.find('@');
@@ -35,12 +32,10 @@ ProjectBuildResult build_project(const std::filesystem::path& manifest_or_dir,
             std::cerr << "Error: Installed project '" << pkg << "' with version '" << ver << "' not found" << std::endl;
             return result;
         }
-        manifest_path = installed->path / "solix.json";
+        manifest_path = solix::find_project_manifest(installed->path);
     } else {
-        manifest_path = target_str;
-        if (std::filesystem::is_directory(manifest_path)) {
-            manifest_path /= "solix.json";
-        }
+        std::filesystem::path p = target_str.empty() ? std::filesystem::current_path() : std::filesystem::path(target_str);
+        manifest_path = solix::find_project_manifest(p);
     }
     manifest_path = manifest_path.lexically_normal();
 
@@ -165,13 +160,13 @@ ProjectBuildResult build_project(const std::filesystem::path& manifest_or_dir,
 }
 
 void setup_build_command(CLI::App &app) {
-    auto *build_cmd = app.add_subcommand("build", "Build the Solix project using solix.json");
+    auto *build_cmd = app.add_subcommand("build", "Build the Solix project using manifest.json (or solix.json)");
 
     auto profile_str = std::make_shared<std::string>("debug");
     auto target_str = std::make_shared<std::string>();
 
     build_cmd->add_option("-p,--profile", *profile_str, "Build profile (default: debug)");
-    build_cmd->add_option("target", *target_str, "Path to project directory, solix.json, or package@version (default: solix.json)");
+    build_cmd->add_option("target", *target_str, "Path to project directory, manifest.json, or package@version (default: manifest.json)");
 
     build_cmd->callback([profile_str, target_str]() {
         auto build_res = build_project(*target_str, *profile_str);

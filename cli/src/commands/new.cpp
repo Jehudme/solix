@@ -119,12 +119,14 @@ void setup_new_command(CLI::App &app) {
                     std::cerr << "Error: Could not create file " << main_file.string() << std::endl;
                     cli_exit(1);
                 }
+                slx_out << "import solix.system.Console;\n\n";
                 slx_out << "int32 " << *entry_str << "() {\n";
+                slx_out << "    Console.println(\"Hello, World!\");\n";
                 slx_out << "    return 0;\n";
                 slx_out << "}\n";
                 slx_out.close();
 
-                // Generate solix.json
+                // Generate manifest.json
                 nlohmann::json manifest;
                 manifest["project"] = project_name;
                 manifest["version"] = *version_str;
@@ -134,6 +136,11 @@ void setup_new_command(CLI::App &app) {
                 manifest["license"] = license_str->empty() ? nullptr : nlohmann::json(*license_str);
 
                 manifest["dependencies"] = nlohmann::json::array({
+                    {
+                        {"type", "library"},
+                        {"name", "solixlib"},
+                        {"version", "0.1.0"}
+                    },
                     {
                         {"type", "source"},
                         {"path", "src/main.slx"}
@@ -175,7 +182,7 @@ void setup_new_command(CLI::App &app) {
                 manifest["profiles"]["debug"] = make_profile("debug", "debug", "debug", "logs/debug.log", false);
                 manifest["profiles"]["test"] = make_profile("test", "debug", "debug", "logs/test.log", false);
 
-                std::filesystem::path manifest_path = target_dir / "solix.json";
+                std::filesystem::path manifest_path = target_dir / "manifest.json";
                 std::ofstream manifest_out(manifest_path);
                 if (!manifest_out) {
                     std::cerr << "Error: Could not create file " << manifest_path.string() << std::endl;

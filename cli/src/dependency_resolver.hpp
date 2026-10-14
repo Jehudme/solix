@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <nlohmann/json.hpp>
 #include "solix/compilation.hpp"
+#include "solix/path_utils.hpp"
 #include "package_manager.hpp"
 #include "semver.hpp"
 
@@ -253,10 +254,7 @@ private:
             if (p.is_relative()) {
                 p = current_root / p;
             }
-            if (std::filesystem::is_directory(p)) {
-                p /= "solix.json";
-            }
-            target_manifest = p.lexically_normal();
+            target_manifest = solix::find_project_manifest(p);
         } else if (!raw_pkg.empty()) {
             std::string name;
             std::string version;
@@ -305,9 +303,9 @@ private:
                           << (version.empty() ? "" : "' version '" + version) << "'." << std::endl;
                 return false;
             }
-            target_manifest = (matched->path / "solix.json").lexically_normal();
+            target_manifest = solix::find_project_manifest(matched->path);
         } else {
-            std::cerr << "Error: 'project' dependency must specify 'package' (or 'name') as 'name@version', or 'path'." << std::endl;
+            std::cerr << "Error: 'project' or 'library' dependency must specify 'package' (or 'name') as 'name@version', or 'path'." << std::endl;
             return false;
         }
 
@@ -369,7 +367,7 @@ private:
         for (const auto& dep : manifest["dependencies"]) {
             if (!dep.is_object()) continue;
             std::string type = dep.value("type", "");
-            if (type == "project") {
+            if (type == "project" || type == "library") {
                 if (!discover_single_project_dependency(dep, project_root, visited_manifests, discovered_projects)) {
                     return false;
                 }

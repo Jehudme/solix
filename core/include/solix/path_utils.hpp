@@ -75,4 +75,23 @@ inline std::filesystem::path get_executable_dir() {
     return get_executable_path().parent_path();
 }
 
+/**
+ * @brief Finds the project manifest file in a given directory or directly validates a file path.
+ * Prefers 'manifest.json' (new standard), falling back to 'solix.json' (legacy compatibility).
+ */
+inline std::filesystem::path find_project_manifest(const std::filesystem::path& path_or_dir) {
+    if (std::filesystem::is_regular_file(path_or_dir)) {
+        return path_or_dir.lexically_normal();
+    }
+    std::filesystem::path manifest_json = path_or_dir / "manifest.json";
+    if (std::filesystem::exists(manifest_json)) {
+        return manifest_json.lexically_normal();
+    }
+    std::filesystem::path solix_json = path_or_dir / "solix.json";
+    if (std::filesystem::exists(solix_json)) {
+        return solix_json.lexically_normal();
+    }
+    return manifest_json.lexically_normal();
+}
+
 } // namespace solix
