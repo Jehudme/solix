@@ -14,7 +14,7 @@ This document tracks all planned, in-progress, and completed engineering phases 
 | [Phase 2](#phase-2-manifest-redesign-hello-world-template--ide-activation) | Manifest Redesign (`manifest.json`), Hello World Template & IDE Activation | P1 High | - [x] Completed & Merged |
 | [Phase 3](#phase-3-standard-library-pruning--manifest-ingestion) | Standard Library Pruning & Complete Manifest Ingestion | P1 High | - [x] Completed & Merged |
 | [Phase 4](#phase-4-byte-addressed-memory-model-transition) | Byte-Addressed Memory Model Transition | P0 Blocker | - [x] Completed & Merged |
-| [Phase 5](#phase-5-heap-allocator--arc-overhaul) | Heap Allocator & ARC Overhaul | P1 High | Planned |
+| [Phase 5](#phase-5-heap-allocator--arc-overhaul) | Heap Allocator & ARC Overhaul | P1 High | - [x] Completed & Merged |
 
 ---
 
@@ -122,20 +122,20 @@ Transition the Solix virtual machine heap from word-addressed (`std::vector<uint
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `core/include/solix/runtime.hpp`, `core/src/runtime.cpp`, `core/src/processes/assembler.cpp`, `tests/`
-- **Status**: Planned
+- **Status**: - [x] Completed & Merged (2026-10-14)
 
 ### Objective
 Eliminate array vs. object type confusion, memory leaks on array element replacement, and heap fragmentation. Tag dynamic heap blocks with 4-bit block tags (`RAW`, `OBJECT`, `ARRAY_U8`, `ARRAY_U16`, `ARRAY_U32`, `ARRAY_U64`, `ARRAY_REF`, `CLOSURE`). Implement segregated free-list binning and adjacent block coalescing to eliminate heap fragmentation and achieve $O(1)$ allocation/deallocation. Enforce reference lifecycle (`DEC_REF` old, `INC_REF` new) in `op_SET_ARRAY` for reference arrays. Add execution stack bounds checking and safe opcode dispatch verification.
 
 ### Action Items
-- [ ] Define `BlockTag` enum (RAW, OBJECT, ARRAY_U8, ARRAY_U16, ARRAY_U32, ARRAY_U64, ARRAY_REF, CLOSURE) and encode 4-bit tag in header `tag_and_ref`.
-- [ ] Update `object_destructor` in `RuntimeContext` to branch on `BlockTag`, resolving array vs. object confusion and ensuring child references in reference arrays are decremented on release while primitive arrays are never misinterpreted as vtables.
-- [ ] Update `op_INSTANCEOF` and `op_CAST_CHECK` to verify `tag == BlockTag::OBJECT` before reading vtable IDs, preventing primitive arrays from being miscast as objects.
-- [ ] Implement ARC lifecycle tracking on array element mutation in `op_SET_ARRAY` for `ARRAY_REF` arrays (`DEC_REF` overwritten occupant, `INC_REF` stored occupant).
-- [ ] Implement segregated free-list size classes and adjacent free-block coalescing in `Memory::dynamic_allocation` and `Memory::deallocate`.
-- [ ] Add runtime VM execution stack bounds checking in `PUSH` and `POP` to throw `StackOverflowException` instead of overflowing the process stack.
-- [ ] Add safe opcode validation for computed goto and switch dispatch.
-- [ ] Update test specifications in `tests/statements/TESTS.md` and Catch2 test suites.
-- [ ] Update documentation in `docs/spec/runtime/`.
-- [ ] Verify 100% test pass rate across all 76 test suites with zero warnings under `-Wall -Wextra` and `/W4`.
+- [x] Define `BlockTag` enum (RAW, OBJECT, ARRAY_U8, ARRAY_U16, ARRAY_U32, ARRAY_U64, ARRAY_REF, CLOSURE) and encode 4-bit tag in header `tag_and_ref`.
+- [x] Update `object_destructor` in `RuntimeContext` to branch on `BlockTag`, resolving array vs. object confusion and ensuring child references in reference arrays are decremented on release while primitive arrays are never misinterpreted as vtables.
+- [x] Update `op_INSTANCEOF` and `op_CAST_CHECK` to verify `tag == BlockTag::OBJECT` before reading vtable IDs, preventing primitive arrays from being miscast as objects.
+- [x] Implement ARC lifecycle tracking on array element mutation in `op_SET_ARRAY` for `ARRAY_REF` arrays (`DEC_REF` overwritten occupant, `INC_REF` stored occupant).
+- [x] Implement segregated free-list size classes and adjacent free-block coalescing in `Memory::dynamic_allocation` and `Memory::deallocate`.
+- [x] Add runtime VM execution stack bounds checking in `PUSH` and `POP` to throw `StackOverflowException` instead of overflowing the process stack.
+- [x] Add safe opcode validation for computed goto and switch dispatch.
+- [x] Update test specifications in `tests/statements/TESTS.md` (Cases 3.3 in ArrayAccess, 3.3 in InstanceOf, 3.10 in FieldDeclaration) and Catch2 test suites.
+- [x] Update architecture documentation in `docs/architecture/arc_internals.md`.
+- [x] Verify 100% test pass rate across all 76 test suites with zero warnings under `-Wall -Wextra` and `/W4`.
 
