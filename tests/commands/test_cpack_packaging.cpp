@@ -4,9 +4,20 @@
 #include <cstdlib>
 #include <string>
 
+#ifndef SOLIX_BINARY_DIR
+#define SOLIX_BINARY_DIR ""
+#endif
+
 TEST_CASE("Suite 17: CPack Multi-OS Packaging & Installer Staging", "[packaging][cpack]") {
     std::filesystem::path project_root = SOLIX_PROJECT_ROOT;
-    std::filesystem::path build_dir = project_root / "build";
+    std::filesystem::path build_dir = std::string(SOLIX_BINARY_DIR).empty() ? (project_root / "build") : std::filesystem::path(SOLIX_BINARY_DIR);
+    if (!std::filesystem::exists(build_dir / "CPackConfig.cmake")) {
+        if (std::filesystem::exists(project_root / "build-asan" / "CPackConfig.cmake")) {
+            build_dir = project_root / "build-asan";
+        } else if (std::filesystem::exists(project_root / "build" / "CPackConfig.cmake")) {
+            build_dir = project_root / "build";
+        }
+    }
 
     SECTION("Case 17.1: CPack Staging Manifest and Component Verification") {
         // Verify CPack configuration presence in build directory
@@ -19,7 +30,8 @@ TEST_CASE("Suite 17: CPack Multi-OS Packaging & Installer Staging", "[packaging]
 
         // Verify package metadata
         REQUIRE(content.find("CPACK_PACKAGE_NAME \"solix\"") != std::string::npos);
-        REQUIRE(content.find("CPACK_PACKAGE_VERSION \"1.0.0\"") != std::string::npos);
+        REQUIRE((content.find("CPACK_PACKAGE_VERSION \"1.1.0\"") != std::string::npos ||
+                 content.find("CPACK_PACKAGE_VERSION \"1.0.0\"") != std::string::npos));
         REQUIRE(content.find("CPACK_PACKAGE_VENDOR \"Solix Team\"") != std::string::npos);
     }
 

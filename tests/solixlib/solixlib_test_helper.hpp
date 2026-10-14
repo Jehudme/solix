@@ -49,7 +49,7 @@ inline std::unordered_map<std::string, std::string> load_solixlib_sources() {
                 if (f.is_open()) {
                     std::stringstream ss;
                     ss << f.rdbuf();
-                    sources[entry.path().lexically_relative(lib_dir).string()] = ss.str();
+                    sources[entry.path().lexically_relative(lib_dir).generic_string()] = ss.str();
                 }
             }
         }

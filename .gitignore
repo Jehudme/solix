@@ -20,6 +20,7 @@ out/
 *.exe
 *.slxb
 *.vsix
+!editors/vscode/solix-*.vsix
 *.pdb
 *.ilk
 *.exp
