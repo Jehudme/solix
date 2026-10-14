@@ -8,20 +8,21 @@ Solix uses deterministic Automatic Reference Counting (ARC) for heap memory mana
 
 ## 2. Heap Object Memory Layout
 
-Every heap allocation in Solix is structured as a contiguous block of 64-bit words in the VM `Memory::heap` array:
+Every heap allocation in Solix is structured as a contiguous byte block in the VM `Memory::heap` (`std::vector<uint8_t>`) byte buffer:
 
 ```text
-Address - 1:  [  Block Size (32 bits)  |  Reference Count (32 bits)  ]   <-- Object Header Word
-Address + 0:  [  VTable ID (32 bits)   |  Reserved / Padding (32 bits)]   <-- Field 0 / VTable Pointer
-Address + 1:  [  Instance Field 0 (64 bits)                           ]
-Address + 2:  [  Instance Field 1 (64 bits)                           ]
+Address - 8:  [ BlockTag (4 bits) | Block Size in Bytes (28 bits) ]
+Address - 4:  [ Reference Count (32 bits)                         ]
+Address + 0:  [ VTable ID (64 bits)                               ]   <-- Field 0 / VTable Pointer
+Address + 8:  [ Instance Field 0 (natural alignment)              ]
 ...
 ```
 
-- **Header Word (`heap[address - 1]`)**:
-  - Low 32 bits: Active reference counter (`ref_count`).
-  - High 32 bits: Allocated block size in 64-bit words (`blk_size`).
+- **Header Bytes**:
+  - `address - 8`: 32-bit word combining top 4 bits for `BlockTag` and 28 bits for allocated block byte size.
+  - `address - 4`: 32-bit active reference counter (`ref_count`).
 - **Initial State**: When `ALLOC_DYNAMIC` executes, `ref_count` is set to `1`.
+- For in-depth details on field alignment, property width encodings, and primitive arrays, refer to [`memory_model.md`](memory_model.md).
 
 ---
 
@@ -30,10 +31,9 @@ Address + 2:  [  Instance Field 1 (64 bits)                           ]
 ### 3.1. `INC_REF`
 - Increments the reference count of the object at the given address:
   ```cpp
-  uint64_t header = heap[address - 1];
-  uint32_t ref_count = (uint32_t)(header & 0xFFFFFFFF);
+  uint32_t ref_count = read_u32(address - 4);
   ref_count++;
-  heap[address - 1] = (header & 0xFFFFFFFF00000000ULL) | ref_count;
+  write_u32(address - 4, ref_count);
   ```
 - Emitted when an object reference is copied to another variable, passed by value, or stored into a strong field.
 

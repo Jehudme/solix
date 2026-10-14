@@ -6,5 +6,6 @@ This directory contains technical deep dives into the internal design and mechan
 
 - [`pipeline.md`](pipeline.md) — The complete compilation flow: Lexer $\to$ Parser $\to$ Binder $\to$ Assembler $\to$ Runtime VM
 - [`binder_passes.md`](binder_passes.md) — Detailed mechanics of Binder Passes 1a, 1b, 2, and 3
+- [`memory_model.md`](memory_model.md) — Byte-addressed heap layout, natural alignment, BlockTag metadata, and opcode width encodings
 - [`arc_internals.md`](arc_internals.md) — Object heap layout, Automatic Reference Counting (ARC), and cycle-breaking weak references
 - [`exception_unwinding.md`](exception_unwinding.md) — Bytecode exception handling, VTable catch matching, and cleanup trampolines
