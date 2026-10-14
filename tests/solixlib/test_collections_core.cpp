@@ -9,7 +9,14 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             import solix.collections.IIterator;
             import solix.collections.IIterable;
             import solix.core.IStringable;
-            import solix.core.Int;
+            import solix.core.String;
+
+            class BoxedInt implements IStringable {
+                private int32 val;
+                public BoxedInt(int32 v) { this.val = v; }
+                public int32 value() { return this.val; }
+                public String to_string() { return String.value_of(this.val); }
+            }
 
             class SimpleIterator implements IIterator<IStringable> {
                 private int32[] data;
@@ -30,7 +37,7 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     if (this.index >= this.count) {
                         return null;
                     }
-                    Int res = new Int(this.data[this.index]);
+                    BoxedInt res = new BoxedInt(this.data[this.index]);
                     this.index = this.index + 1;
                     return res;
                 }
@@ -59,15 +66,15 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     IIterator<IStringable> it = seq.iterator();
 
                     if (!it.has_next()) return 1;
-                    Int first = (Int)it.next();
+                    BoxedInt first = (BoxedInt)it.next();
                     if (first == null || first.value() != 10) return 2;
 
                     if (!it.has_next()) return 3;
-                    Int second = (Int)it.next();
+                    BoxedInt second = (BoxedInt)it.next();
                     if (second == null || second.value() != 20) return 4;
 
                     if (!it.has_next()) return 5;
-                    Int third = (Int)it.next();
+                    BoxedInt third = (BoxedInt)it.next();
                     if (third == null || third.value() != 30) return 6;
 
                     if (it.has_next()) return 7;
@@ -87,10 +94,16 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             import solix.collections.IIterable;
             import solix.collections.ICollection;
             import solix.collections.Collections;
-            import solix.core.Int;
             import solix.core.String;
             import solix.core.IStringable;
             import solix.system.Console;
+
+            class BoxedInt implements IStringable {
+                private int32 val;
+                public BoxedInt(int32 v) { this.val = v; }
+                public int32 value() { return this.val; }
+                public String to_string() { return String.value_of(this.val); }
+            }
 
             class ArrayCollection implements ICollection<IStringable> {
                 private IStringable[] elements;
@@ -181,9 +194,9 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     String sEmpty = col.to_string();
                     if (!sEmpty.equals_chars("[]")) return 3;
 
-                    Int c1 = new Int(1);
-                    Int c2 = new Int(2);
-                    Int c3 = new Int(3);
+                    BoxedInt c1 = new BoxedInt(1);
+                    BoxedInt c2 = new BoxedInt(2);
+                    BoxedInt c3 = new BoxedInt(3);
                     col.add(c1);
                     col.add(c2);
                     col.add(c3);
@@ -191,7 +204,7 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     if (col.is_empty()) return 4;
                     if (col.size() != 3) return 5;
                     if (!col.contains(c2)) return 6;
-                    Int c99 = new Int(99);
+                    BoxedInt c99 = new BoxedInt(99);
                     if (col.contains(c99)) return 7;
 
                     // Formatted to_string
@@ -201,7 +214,7 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                     // to_array
                     IStringable[] arr = col.to_array();
                     if (arr.length != 3) return 9;
-                    Int arr1 = (Int)arr[1];
+                    BoxedInt arr1 = (BoxedInt)arr[1];
                     if (arr1.value() != 2) return 10;
 
                     // clear
@@ -225,7 +238,6 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             import solix.collections.IIterator;
             import solix.collections.ICollection;
             import solix.collections.Collections;
-            import solix.core.Int;
             import solix.core.String;
             import solix.core.IStringable;
             import solix.system.Console;
@@ -248,7 +260,7 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                 public bool has_next() { return this.idx < 2; }
                 public IStringable next() {
                     this.idx = this.idx + 1;
-                    return new Int(this.idx);
+                    return String.value_of(this.idx);
                 }
             }
 
@@ -289,9 +301,15 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             import solix.collections.IList;
             import solix.collections.IIterator;
             import solix.collections.Collections;
-            import solix.core.Int;
             import solix.core.IStringable;
             import solix.core.String;
+
+            class BoxedInt implements IStringable {
+                private int32 val;
+                public BoxedInt(int32 v) { this.val = v; }
+                public int32 value() { return this.val; }
+                public String to_string() { return String.value_of(this.val); }
+            }
 
             class SimpleList implements IList<IStringable> {
                 private IStringable[] data;
@@ -387,34 +405,34 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             class Main {
                 public static int32 main() {
                     IList<IStringable> list = new SimpleList();
-                    Int a1 = new Int(10);
-                    Int a2 = new Int(20);
-                    Int a3 = new Int(30);
+                    BoxedInt a1 = new BoxedInt(10);
+                    BoxedInt a2 = new BoxedInt(20);
+                    BoxedInt a3 = new BoxedInt(30);
                     list.add(a1);
                     list.add(a2);
                     list.add(a3);
 
                     if (list.size() != 3) return 1;
-                    Int g1 = (Int)list.get(1);
+                    BoxedInt g1 = (BoxedInt)list.get(1);
                     if (g1.value() != 20) return 2;
 
-                    Int a25 = new Int(25);
+                    BoxedInt a25 = new BoxedInt(25);
                     list.set(1, a25);
-                    Int g1_2 = (Int)list.get(1);
+                    BoxedInt g1_2 = (BoxedInt)list.get(1);
                     if (g1_2.value() != 25) return 3;
 
-                    Int a15 = new Int(15);
+                    BoxedInt a15 = new BoxedInt(15);
                     list.insert(1, a15);
                     // Now: [10, 15, 25, 30]
                     if (list.size() != 4) return 4;
-                    Int g1_3 = (Int)list.get(1);
+                    BoxedInt g1_3 = (BoxedInt)list.get(1);
                     if (g1_3.value() != 15) return 5;
-                    Int g2 = (Int)list.get(2);
+                    BoxedInt g2 = (BoxedInt)list.get(2);
                     if (g2.value() != 25) return 6;
 
                     if (list.index_of(a25) != 2) return 7;
 
-                    Int removed = (Int)list.remove_at(1);
+                    BoxedInt removed = (BoxedInt)list.remove_at(1);
                     if (removed.value() != 15) return 8;
                     if (list.size() != 3) return 9;
 
@@ -440,10 +458,16 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             import solix.collections.IDeque;
             import solix.collections.IIterator;
             import solix.collections.Collections;
-            import solix.core.Int;
             import solix.core.IStringable;
             import solix.core.String;
             import solix.system.Console;
+
+            class BoxedInt implements IStringable {
+                private int32 val;
+                public BoxedInt(int32 v) { this.val = v; }
+                public int32 value() { return this.val; }
+                public String to_string() { return String.value_of(this.val); }
+            }
 
             class SimpleDeque implements IDeque<IStringable> {
                 private IStringable[] data;
@@ -544,28 +568,28 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
             class Main {
                 public static int32 main() {
                     IDeque<IStringable> deque = new SimpleDeque();
-                    Int d10 = new Int(10);
-                    Int d5 = new Int(5);
-                    Int d20 = new Int(20);
+                    BoxedInt d10 = new BoxedInt(10);
+                    BoxedInt d5 = new BoxedInt(5);
+                    BoxedInt d20 = new BoxedInt(20);
                     deque.add_last(d10);
                     deque.add_first(d5);
                     deque.add_last(d20);
                     // Layout: [5, 10, 20]
 
                     if (deque.size() != 3) return 1;
-                    Int p1 = (Int)deque.peek_first();
+                    BoxedInt p1 = (BoxedInt)deque.peek_first();
                     if (p1.value() != 5) return 2;
-                    Int p2 = (Int)deque.peek_last();
+                    BoxedInt p2 = (BoxedInt)deque.peek_last();
                     if (p2.value() != 20) return 3;
 
                     String repr = deque.to_string();
                     if (!repr.equals_chars("[5, 10, 20]")) return 4;
 
-                    Int f = (Int)deque.remove_first();
+                    BoxedInt f = (BoxedInt)deque.remove_first();
                     if (f.value() != 5) return 5;
                     if (deque.size() != 2) return 6;
 
-                    Int l = (Int)deque.remove_last();
+                    BoxedInt l = (BoxedInt)deque.remove_last();
                     if (l.value() != 20) return 7;
                     if (deque.size() != 1) return 8;
 
@@ -583,7 +607,7 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
         sources["main.slx"] = R"(
             import solix.collections.IIterator;
             import solix.exceptions.NoSuchElementException;
-            import solix.core.Int;
+            import solix.core.String;
             import solix.core.IStringable;
 
             class GuardedIterator implements IIterator<IStringable> {
@@ -604,7 +628,7 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
                         throw new NoSuchElementException("Iterator exhausted");
                     }
                     this.pos = this.pos + 1;
-                    return new Int(this.pos);
+                    return String.value_of(this.pos);
                 }
             }
 
@@ -631,7 +655,6 @@ TEST_CASE("Standard Library - solix.collections.Core", "[solixlib][collections]"
         auto sources = load_solixlib_sources();
         sources["main.slx"] = R"(
             import solix.collections.*;
-            import solix.core.Int;
             import solix.core.String;
 
             class Main {

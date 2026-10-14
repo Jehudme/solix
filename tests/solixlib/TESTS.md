@@ -67,15 +67,15 @@ Each test scenario is assigned a permanent identifier and status tag:
 
 ## 4. Primitives & Types (`solix.core.Primitives`, `Optional<T>`, Contracts)
 
-- [x] **Case 4.1 [IMPLEMENTED]**: Boxed `Int` operations: `value()`, `to_string()`, `hash_code()`, `equals()`, `compare_to()`, `parse()`, `try_parse()`, and bitwise utilities (`count_leading_zeros`, `count_trailing_zeros`, `bit_count`, `reverse_bytes`) (`tests/solixlib/test_primitives.cpp`).
-- [x] **Case 4.2 [IMPLEMENTED]**: Boxed `Double` operations, IEEE 754 constants (`NaN`, `POSITIVE_INFINITY`, `NEGATIVE_INFINITY`), queries (`is_nan`, `is_infinite`), and parsing (`tests/solixlib/test_primitives.cpp`).
-- [x] **Case 4.3 [IMPLEMENTED]**: Boxed `Bool` and `Char` operations, character classification (`is_digit`, `is_letter`, `is_whitespace`, `is_upper_case`, `is_lower_case`), and casing transformations (`tests/solixlib/test_primitives.cpp`).
+- [x] **Case 4.1 [IMPLEMENTED]**: `Primitives` bitwise utilities and integer constants: `MIN_INT`, `MAX_INT`, `count_leading_zeros`, `count_trailing_zeros`, `bit_count`, `reverse_bytes`, and `parse_int` (`tests/solixlib/test_primitives.cpp`).
+- [x] **Case 4.2 [IMPLEMENTED]**: `Primitives` IEEE 754 constants (`NaN`, `POSITIVE_INFINITY`, `NEGATIVE_INFINITY`), queries (`is_nan`, `is_infinite`), bounds (`min_double`, `max_double`), and `parse_double` (`tests/solixlib/test_primitives.cpp`).
+- [x] **Case 4.3 [IMPLEMENTED]**: `Primitives` boolean parsing and character operations: `parse_bool`, character classification (`is_digit`, `is_letter`, `is_whitespace`, `is_upper_case`, `is_lower_case`), and casing transformations (`tests/solixlib/test_primitives.cpp`).
 - [x] **Case 4.4 [IMPLEMENTED]**: `Optional<T>` value presence, unwrapping, and fallback (`has_value`, `is_empty`, `value`, `value_or`) (`tests/solixlib/test_primitives.cpp`).
 - [x] **Case 4.5 [IMPLEMENTED]**: Negative: accessing `Optional.empty().value()` throws `InvalidOperationException` (`tests/solixlib/test_primitives.cpp`).
 - [x] **Case 4.6 [IMPLEMENTED]**: `Optional<T>` functional operations: `if_present(consumer)` callback execution and `filter(predicate)` matching/discarding (`tests/solixlib/test_primitives.cpp`).
-- [x] **Case 4.7 [IMPLEMENTED]**: Negative: `Int.parse()` and `Double.parse()` with non-numeric inputs throw `FormatException` (`tests/solixlib/test_primitives.cpp`).
-- [x] **Case 4.8 [IMPLEMENTED]**: Complete boxed integral types (`Byte`, `Short`, `Long`, `UByte`, `UShort`, `UInt`, `ULong`) and floating-point `Float` with bounds, parsing, hashing, and stringification (`tests/solixlib/test_primitives.cpp`).
-- [x] **Case 4.9 [IMPLEMENTED]**: Operator overloading on boxed primitives (`Int`, `Long`, `Double`, `Float`, `Byte`, `Short`) and `String` (`+`, `-`, `*`, `/`, `==`, `!=`, `<`, `>`, `<=`, `>=`) (`tests/solixlib/test_primitives.cpp`).
+- [x] **Case 4.7 [IMPLEMENTED]**: Negative: `Primitives.parse_int()` and `Primitives.parse_double()` with non-numeric inputs throw `FormatException` (`tests/solixlib/test_primitives.cpp`).
+- [x] **Case 4.8 [IMPLEMENTED]**: Primitive scalar types (`int8`/`byte`, `int16`/`short`, `int64`/`long`, `uint8`, `uint16`, `uint32`, `uint64`, `float32`) with bounds, parsing, and type safety (`tests/solixlib/test_primitives.cpp`).
+- [x] **Case 4.9 [IMPLEMENTED]**: Operator overloading on `String` (`+`, `==`, `!=`) (`tests/solixlib/test_primitives.cpp`).
 - [x] **Case 4.10 [IMPLEMENTED]**: Functional parity for `Optional<T>`: `map<U>()` value transformation and `flat_map<U>()` monadic chaining (`tests/solixlib/test_primitives.cpp`).
 - [x] **Case 4.11 [IMPLEMENTED]**: Friendly Primitive Type Aliases: `int`, `long`, `short`, `byte`, `ubyte`, `ushort`, `uint`, `ulong`, `float`, `double` via wildcard `import solix.core.*;` (`tests/solixlib/test_primitives.cpp`).
 - [x] **Case 4.12 [IMPLEMENTED]**: Arithmetic and function signature typing with friendly primitive aliases across multiple modules (`tests/solixlib/test_primitives.cpp`).

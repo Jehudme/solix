@@ -25,7 +25,7 @@ TEST_CASE("Suite 17: CPack Multi-OS Packaging & Installer Staging", "[packaging]
 
     SECTION("Case 17.2: Standard Library Bundling Integrity in Package Tree") {
         std::filesystem::path solixlib_src = project_root / "solixlib" / "project";
-        REQUIRE(std::filesystem::exists(solixlib_src / "solix.json"));
+        REQUIRE((std::filesystem::exists(solixlib_src / "manifest.json") || std::filesystem::exists(solixlib_src / "solix.json")));
         REQUIRE(std::filesystem::exists(solixlib_src / "src"));
         REQUIRE(std::filesystem::exists(solixlib_src / "src" / "solix" / "system" / "Console.slx"));
         REQUIRE(std::filesystem::exists(solixlib_src / "src" / "solix" / "collections" / "List.slx"));
