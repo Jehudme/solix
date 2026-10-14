@@ -1553,12 +1553,22 @@ op_REGISTER_RETURN_CLEANUP:
   }
 op_JMP_TO_OUTER_CLEANUP:
   {
-      if (call_depth == 0) {
+      auto throw_unhandled = [&]() {
+          std::string err = "Unhandled exception reached top level";
+          if (active_exception != 0 && memory.get_block_tag(active_exception) == BlockTag::OBJECT) {
+              uint32_t vtid = memory.read_u32(active_exception, 0);
+              err += " (vtable_id=" + std::to_string(vtid) + ")";
+          }
+          err += ".";
           if (active_exception != 0) {
               memory.decrease_reference(active_exception);
               active_exception = 0;
           }
-          throw std::runtime_error("Unhandled exception reached top level.");
+          throw std::runtime_error(err);
+      };
+
+      if (call_depth == 0) {
+          throw_unhandled();
       }
       Frame current_frame = call_stack[call_depth - 1];
       Address ret_ip = current_frame.return_ip;
@@ -1568,11 +1578,7 @@ op_JMP_TO_OUTER_CLEANUP:
       active_closure_env = current_frame.closure_env;
       
       if (call_depth == 0) {
-          if (active_exception != 0) {
-              memory.decrease_reference(active_exception);
-              active_exception = 0;
-          }
-          throw std::runtime_error("Unhandled exception reached top level.");
+          throw_unhandled();
       }
       
       bool found_cleanup = false;
@@ -1587,11 +1593,7 @@ op_JMP_TO_OUTER_CLEANUP:
       if (!found_cleanup) {
           while (true) {
               if (call_depth == 0) {
-                  if (active_exception != 0) {
-                      memory.decrease_reference(active_exception);
-                      active_exception = 0;
-                  }
-                  throw std::runtime_error("Unhandled exception reached top level.");
+                  throw_unhandled();
               }
               Frame caller = call_stack[call_depth - 1];
               bool inner_found = false;

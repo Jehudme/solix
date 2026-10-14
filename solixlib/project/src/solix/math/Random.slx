@@ -1,5 +1,6 @@
 package solix.math;
 
+import solix.exceptions.*;
 import solix.exceptions.IllegalArgumentException;
 
 public class Random {
@@ -26,14 +27,14 @@ public class Random {
 
     public int32 next_int(int32 max) {
         if (max <= 0) {
-            throw new IllegalArgumentException("max", "Bound must be strictly positive");
+            throw new IllegalArgumentException("Bound must be strictly positive");
         }
         return this.next_int() % max;
     }
 
     public int32 next_int(int32 min, int32 max) {
         if (min >= max) {
-            throw new IllegalArgumentException("min", "Minimum must be strictly less than maximum bound");
+            throw new IllegalArgumentException("Minimum must be strictly less than maximum bound");
         }
         int32 range = max - min;
         return min + this.next_int(range);

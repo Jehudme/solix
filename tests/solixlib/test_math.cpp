@@ -168,6 +168,7 @@ TEST_CASE("Standard Library - solix.math.Math & Random", "[solixlib][math]") {
         sources["main.slx"] = R"(
             import solix.math.Random;
             import solix.exceptions.*;
+            import solix.exceptions.IllegalArgumentException;
 
             class Main {
                 public static int32 main() {
