@@ -97,7 +97,9 @@ void setup_execute_command(CLI::App &app) {
         }
         project_dir = installed->path;
         is_project = true;
-      } else if (std::filesystem::is_directory(t) || std::filesystem::path(t).filename() == "solix.json") {
+      } else if (std::filesystem::is_directory(t) ||
+                 std::filesystem::path(t).filename() == "manifest.json" ||
+                 std::filesystem::path(t).filename() == "solix.json") {
         project_dir = t;
         is_project = true;
       } else if (std::filesystem::exists(t)) {
@@ -109,7 +111,7 @@ void setup_execute_command(CLI::App &app) {
       }
     } else {
       // Neither positional target nor flags specified
-      if (std::filesystem::exists("solix.json")) {
+      if (std::filesystem::exists("manifest.json") || std::filesystem::exists("solix.json")) {
         project_dir = ".";
         is_project = true;
       } else {

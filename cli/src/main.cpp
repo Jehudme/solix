@@ -22,6 +22,7 @@ int main(int argc, char** argv) {
     solix::cli::setup_version_command(app);
     solix::cli::setup_lsp_command(app);
     solix::cli::setup_ide_command(app);
+    solix::cli::setup_activate_command(app);
     
     CLI11_PARSE(app, argc, argv);
     

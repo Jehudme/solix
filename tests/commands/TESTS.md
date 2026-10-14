@@ -295,6 +295,11 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Consumer project manifest specifies `{"type": "project", "package": "helper_pkg@1.2.0"}`.
 - **Expected**: Exits 0; successfully resolves dependency and compiles.
 
+#### Case 3.25: Build Project with manifest.json and "type": "library" Dependency [IMPLEMENTED]
+- **Command**: `solix build`
+- **Setup**: Project configured with `manifest.json` and dependency declared with `{"type": "library", "name": "helper_lib"}`.
+- **Expected**: Exits 0; successfully resolves library dependency and compiles.
+
 ### Negative Test Scenarios
 
 #### Case 3.5: Missing Manifest File [IMPLEMENTED]
@@ -357,11 +362,11 @@ This document is the master test specification for the Solix CLI command suite (
 
 #### Case 4.1: Default Project Scaffolding [IMPLEMENTED]
 - **Command**: `solix new my_project`
-- **Expected**: Exits 0; generates `my_project/solix.json` and `my_project/src/main.slx`.
+- **Expected**: Exits 0; generates `my_project/manifest.json` declaring `solixlib` dependency and `my_project/src/main.slx` printing `"Hello, World!"`.
 
 #### Case 4.2: Scaffolding with Custom Metadata Options [IMPLEMENTED]
 - **Command**: `solix new my_lib -n custom_lib -v 1.2.3 -a "Alice <alice@example.com>" -d "A math lib" -l Apache-2.0 -t math -t fast -e start`
-- **Expected**: Exits 0; `solix.json` contains specified name, version, author, description, license, tags, and entry point.
+- **Expected**: Exits 0; `manifest.json` contains specified name, version, author, description, license, tags, entry point, and builds cleanly.
 
 #### Case 4.3: Scaffolding into an Existing Empty Directory [IMPLEMENTED]
 - **Command**: `solix new empty_dir`
@@ -891,6 +896,21 @@ This document is the master test specification for the Solix CLI command suite (
 - **Command**: `solix ide --help` and `solix ide install --help`
 - **Setup**: Solix CLI execution.
 - **Expected**: Exits 0; displays `--editor` option and supported editor list (`code`, `code-insiders`, `cursor`, `codium`).
+
+#### Case 18.4: `solix ide install` with Unknown or Missing Editor [IMPLEMENTED]
+- **Command**: `solix ide install --editor non_existent_editor_xyz`
+- **Setup**: Execution with invalid editor binary.
+- **Expected**: Exits non-zero; reports missing editor binary in PATH.
+
+#### Case 18.5: `solix activate` Command Execution and Help Inspection [IMPLEMENTED]
+- **Command**: `solix activate --help`
+- **Setup**: Solix CLI execution.
+- **Expected**: Exits 0; displays supported editors (`vscode`, `cursor`, `codium`).
+
+#### Case 18.6: `solix activate` with Non-Existent Editor Binary [IMPLEMENTED]
+- **Command**: `solix activate non_existent_editor_xyz`
+- **Setup**: Invocation with non-existent editor name.
+- **Expected**: Exits non-zero; outputs error diagnostic about missing editor binary.
 
 # Part XIII: Build Hygiene & Sanitizer Verification
 

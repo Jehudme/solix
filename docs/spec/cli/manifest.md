@@ -1,6 +1,6 @@
-# Solix Project Manifest (`solix.json`) Specification
+# Solix Project Manifest (`manifest.json` / `solix.json`) Specification
 
-The `solix.json` file is the declarative build and package descriptor for Solix projects. It defines package metadata, source dependencies, compilation profiles, and runtime parameters.
+The `manifest.json` file (with backward-compatible fallback to `solix.json`) is the declarative build and package descriptor for Solix projects and libraries. It defines package metadata, source dependencies, compilation profiles, and runtime parameters.
 
 ---
 
@@ -111,12 +111,12 @@ Direct source file dependency.
 | `type` | String | **Yes** | Must be `"source"`. |
 | `path` | String | **Yes** | Relative or absolute path to the dependent `.slx` source file. |
 
-#### Project Dependency (`type: "project"`)
-A complete external or local Solix project dependency.
+#### Project / Library Dependency (`type: "project"` or `type: "library"`)
+A complete external or local Solix project or library dependency.
 
 ```json
 {
-  "type": "project",
+  "type": "library",
   "name": "math_lib",
   "version": "1.2.0",
   "path": "../math_lib"
@@ -125,10 +125,10 @@ A complete external or local Solix project dependency.
 
 | Subfield | Type | Required | Description |
 |---|---|---|---|
-| `type` | String | **Yes** | Must be `"project"`. |
-| `name` | String | **Yes** | Unique project/package name matching the target `solix.json`. |
+| `type` | String | **Yes** | Must be `"project"` or `"library"`. |
+| `name` | String | **Yes** | Unique project/package name matching the target manifest (`manifest.json` or `solix.json`). |
 | `version` | String | **Yes** | Semantic version requirement string (e.g. `1.2.0`). |
-| `path` | String | No | Relative or absolute filesystem path to the project directory (or its `solix.json`). If omitted, Solix automatically looks up the package in `$SOLIX_HOME` via `PackageManager`. |
+| `path` | String | No | Relative or absolute filesystem path to the project directory (or its `manifest.json` / `solix.json`). If omitted, Solix automatically looks up the package in `$SOLIX_HOME` via `PackageManager`. |
 
 #### Dependency Resolution & SemVer Rules
 Before any compilation begins, Solix performs graph walking and semantic version resolution across all direct and transitive project dependencies:

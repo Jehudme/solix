@@ -9,4 +9,9 @@ namespace solix::cli {
  */
 void setup_ide_command(CLI::App& app);
 
+/**
+ * @brief Registers the `activate` command (`solix activate <editor>`, e.g. `solix activate vscode`).
+ */
+void setup_activate_command(CLI::App& app);
+
 } // namespace solix::cli

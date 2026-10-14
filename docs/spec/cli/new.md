@@ -1,6 +1,6 @@
 # `solix new` — Project Scaffolding
 
-The `new` subcommand creates and initializes a new Solix project structure with pre-configured build profiles (`debug`, `release`, `test`), a starter source file, and a complete `solix.json` manifest.
+The `new` subcommand creates and initializes a new Solix project structure with pre-configured build profiles (`debug`, `release`, `test`), a starter source file, standard library dependency, and a complete `manifest.json` manifest.
 
 ---
 
@@ -44,14 +44,17 @@ When `--template` is omitted, the CLI scaffolds an isolated, self-contained proj
 
 ```
 <project_root>/
-├── solix.json             # Manifest with debug, release, test profiles
+├── manifest.json          # Manifest with debug, release, test profiles & solixlib dependency
 └── src/
-    └── main.slx           # Starter source with configured entry method
+    └── main.slx           # Starter source printing Hello, World!
 ```
 
 The generated `src/main.slx`:
 ```solix
-static int32 main() {
+import solix.system.Console;
+
+int32 main() {
+    Console.println("Hello, World!");
     return 0;
 }
 ```

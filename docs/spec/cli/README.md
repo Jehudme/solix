@@ -52,6 +52,7 @@ solix <subcommand> --help
 | [`list`](package.md#solix-list) | Lists all currently installed projects in tabular format | [package.md#solix-list](package.md#solix-list) |
 | [`details`](package.md#solix-details) | Displays comprehensive metadata, profiles, and dependencies | [package.md#solix-details](package.md#solix-details) |
 | [`ide`](ide.md) | Manages IDE integrations and automated extension installation | [ide.md](ide.md) |
+| [`activate`](ide.md#solix-activate-modern-activation-alias) | Activates Solix tooling for VS Code, Cursor, or Codium | [ide.md#solix-activate-modern-activation-alias](ide.md#solix-activate-modern-activation-alias) |
 | `version` | Displays toolchain version string (also via `-v` / `--version`) | [README.md](#global-invocation-syntax) |
 
 ---

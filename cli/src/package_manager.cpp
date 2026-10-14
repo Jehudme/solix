@@ -103,14 +103,15 @@ void PackageManager::save_registry() {
 
 bool PackageManager::install_project(const std::filesystem::path& project_path, bool force, std::string& out_id) {
     std::filesystem::path src_dir = std::filesystem::absolute(project_path);
-    if (std::filesystem::is_regular_file(src_dir) && src_dir.filename() == "solix.json") {
+    if (std::filesystem::is_regular_file(src_dir) &&
+        (src_dir.filename() == "manifest.json" || src_dir.filename() == "solix.json")) {
         src_dir = src_dir.parent_path();
     }
     src_dir = src_dir.lexically_normal();
 
-    std::filesystem::path manifest_path = src_dir / "solix.json";
+    std::filesystem::path manifest_path = solix::find_project_manifest(src_dir);
     if (!std::filesystem::exists(manifest_path)) {
-        std::cerr << "Error: solix.json not found in " << src_dir.string() << std::endl;
+        std::cerr << "Error: manifest.json not found (solix.json not found) in " << src_dir.string() << std::endl;
         return false;
     }
 
@@ -263,7 +264,7 @@ std::vector<InstalledProject> PackageManager::get_projects_by_name(const std::st
 }
 
 std::optional<nlohmann::json> PackageManager::load_installed_manifest(const InstalledProject& proj) {
-    std::filesystem::path manifest_path = proj.path / "solix.json";
+    std::filesystem::path manifest_path = solix::find_project_manifest(proj.path);
     if (!std::filesystem::exists(manifest_path)) {
         return std::nullopt;
     }
@@ -304,7 +305,8 @@ std::optional<std::filesystem::path> PackageManager::discover_bundled_solixlib()
 
     for (const auto& cand : candidates) {
         std::filesystem::path normal_cand = cand.lexically_normal();
-        if (std::filesystem::exists(normal_cand / "solix.json") && std::filesystem::exists(normal_cand / "src")) {
+        std::filesystem::path mf = solix::find_project_manifest(normal_cand);
+        if (std::filesystem::exists(mf) && std::filesystem::exists(normal_cand / "src")) {
             return normal_cand;
         }
     }

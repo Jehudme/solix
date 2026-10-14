@@ -75,7 +75,7 @@ void LspServer::process_message(const nlohmann::json& msg) {
 
 void LspServer::set_workspace_root(const std::filesystem::path& root) {
     workspace_root_ = root.lexically_normal();
-    manifest_path_ = workspace_root_ / "solix.json";
+    manifest_path_ = solix::find_project_manifest(workspace_root_);
     load_project_dependencies();
 }
 
@@ -207,7 +207,7 @@ void LspServer::analyze_document(const std::string& target_uri) {
 
     std::filesystem::path search_dir = target_p.parent_path();
     while (!search_dir.empty()) {
-        std::filesystem::path candidate = search_dir / "solix.json";
+        std::filesystem::path candidate = solix::find_project_manifest(search_dir);
         if (std::filesystem::exists(candidate)) {
             current_proj_root = search_dir;
             std::ifstream mf(candidate);

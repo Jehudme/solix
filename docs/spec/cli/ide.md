@@ -20,13 +20,23 @@ The `solix ide` command provides IDE integration, editor tooling management, and
 ## Synopsis
 
 ```bash
+solix activate [editor]
 solix ide install [options]
 ```
 
 Global help:
 ```bash
+solix activate --help
 solix ide --help
 solix ide install --help
+```
+
+### `solix activate` (Modern Activation Alias)
+The `solix activate [editor]` command quickly activates Solix tooling in the chosen editor (`vscode`, `cursor`, `codium`). If `editor` is omitted, it defaults to `vscode`:
+
+```bash
+solix activate vscode
+solix activate cursor
 ```
 
 ---

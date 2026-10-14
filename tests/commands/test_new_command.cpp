@@ -12,18 +12,22 @@ TEST_CASE("CLI Command - new", "[command][new]") {
         auto res = run_cli({"new", proj_dir.string()});
 
         CHECK(res.exit_code == 0);
-        CHECK(std::filesystem::exists(proj_dir / "solix.json"));
+        CHECK(std::filesystem::exists(proj_dir / "manifest.json"));
         CHECK(std::filesystem::exists(proj_dir / "src/main.slx"));
 
-        // Verify solix.json contents
-        std::ifstream mf(proj_dir / "solix.json");
+        // Verify manifest.json contents
+        std::ifstream mf(proj_dir / "manifest.json");
         nlohmann::json manifest;
         mf >> manifest;
         CHECK(manifest["project"] == "default_proj");
         CHECK(manifest["version"] == "0.1.0");
 
-        // Verify the generated project builds cleanly
-        auto build_res = run_cli({"build", (proj_dir / "solix.json").string()});
+        // Verify Hello World output in main.slx
+        std::string src_content = sandbox.read_file("default_proj/src/main.slx");
+        CHECK(src_content.find("Console.println(\"Hello, World!\");") != std::string::npos);
+
+        // Verify the generated project builds cleanly using directory path
+        auto build_res = run_cli({"build", proj_dir.string()});
         CHECK(build_res.exit_code == 0);
         CHECK(std::filesystem::exists(proj_dir / "build/debug/out.slxbin"));
     }
@@ -44,7 +48,7 @@ TEST_CASE("CLI Command - new", "[command][new]") {
 
         CHECK(res.exit_code == 0);
 
-        std::ifstream mf(proj_dir / "solix.json");
+        std::ifstream mf(proj_dir / "manifest.json");
         nlohmann::json manifest;
         mf >> manifest;
 
@@ -71,7 +75,7 @@ TEST_CASE("CLI Command - new", "[command][new]") {
         auto res = run_cli({"new", empty_dir.string()});
 
         CHECK(res.exit_code == 0);
-        CHECK(std::filesystem::exists(empty_dir / "solix.json"));
+        CHECK(std::filesystem::exists(empty_dir / "manifest.json"));
         CHECK(std::filesystem::exists(empty_dir / "src/main.slx"));
     }
 
@@ -83,7 +87,7 @@ TEST_CASE("CLI Command - new", "[command][new]") {
         auto res = run_cli({"new", occupied.string(), "--force"});
 
         CHECK(res.exit_code == 0);
-        CHECK(std::filesystem::exists(occupied / "solix.json"));
+        CHECK(std::filesystem::exists(occupied / "manifest.json"));
         CHECK(std::filesystem::exists(occupied / "dummy.txt"));
     }
 

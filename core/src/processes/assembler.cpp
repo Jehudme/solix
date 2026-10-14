@@ -520,7 +520,7 @@ void Assembler::compile_boot_sequence() {
               auto *method = static_cast<MethodDeclaration *>(child.get());
               if (!method->template_parameters.empty())
                 continue;
-              if (method->method_name == entry_point) {
+              if (method->is_static && method->method_name == entry_point) {
                 candidate_entries.push_back(method);
               }
             }
@@ -1274,12 +1274,12 @@ void Assembler::visit(SwitchStatement &node) {
   loop_break_patches.pop_back();
 }
 
-void Assembler::visit(PackageStatement &node) {}
-void Assembler::visit(AliasStatement &node) {}
-void Assembler::visit(ImportStatement &node) {}
-void Assembler::visit(EnumDeclaration &node) {}
-void Assembler::visit(CaseStatement &node) {}
-void Assembler::visit(FieldDeclaration &node) {}
+void Assembler::visit(PackageStatement &) {}
+void Assembler::visit(AliasStatement &) {}
+void Assembler::visit(ImportStatement &) {}
+void Assembler::visit(EnumDeclaration &) {}
+void Assembler::visit(CaseStatement &) {}
+void Assembler::visit(FieldDeclaration &) {}
 
 void Assembler::visit(LiteralNode &node) {
   auto *lit = &node;
@@ -1833,20 +1833,16 @@ void Assembler::visit(MethodCallExpression &node) {
   bool is_static_method = false;
   bool is_native = false;
   int memory_index = -1;
-  int frame_size = 0;
 
   if (call->resolved_declaration->node_type == NodeType::METHOD_DECL) {
     auto *m = static_cast<MethodDeclaration *>(call->resolved_declaration);
     is_native = m->is_native;
     memory_index = m->memory_index;
-    frame_size = m->frame_size;
     is_static_method = m->is_static;
   } else if (call->resolved_declaration->node_type ==
              NodeType::CONSTRUCTOR_DECL) {
-    auto *c = static_cast<ConstructorDeclaration *>(call->resolved_declaration);
     is_native = false;
     memory_index = -1;
-    frame_size = c->frame_size;
     is_static_method = false;
   } else {
     throw_error(call, "Resolved declaration is not a method or constructor.");
@@ -2416,7 +2412,7 @@ void Assembler::visit(TryStatement& n) {
     }
 }
 
-void Assembler::visit(CatchClause& n) {} // Handled by TryStatement
+void Assembler::visit(CatchClause&) {} // Handled by TryStatement
 
 void Assembler::visit(ThrowStatement& n) {
     if (n.exception_expression) {
