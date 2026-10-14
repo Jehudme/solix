@@ -13,7 +13,7 @@ This document tracks all planned, in-progress, and completed engineering phases 
 | [Phase 1](#phase-1-build-system-hygiene--sanitizer-foundation) | Build System Hygiene & Sanitizer Foundation | P0 Blocker | - [x] Completed & Merged |
 | [Phase 2](#phase-2-manifest-redesign-hello-world-template--ide-activation) | Manifest Redesign (`manifest.json`), Hello World Template & IDE Activation | P1 High | - [x] Completed & Merged |
 | [Phase 3](#phase-3-standard-library-pruning--manifest-ingestion) | Standard Library Pruning & Complete Manifest Ingestion | P1 High | - [x] Completed & Merged |
-| [Phase 4](#phase-4-byte-addressed-memory-model-transition) | Byte-Addressed Memory Model Transition | P0 Blocker | Planned |
+| [Phase 4](#phase-4-byte-addressed-memory-model-transition) | Byte-Addressed Memory Model Transition | P0 Blocker | - [x] Completed & Merged |
 | [Phase 5](#phase-5-heap-allocator--arc-overhaul) | Heap Allocator & ARC Overhaul | P1 High | Planned |
 
 ---
@@ -98,22 +98,23 @@ Enable strict compiler warning flags (`-Wall -Wextra` on GCC/Clang and `/W4` on 
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `core/include/solix/runtime.hpp`, `core/src/runtime.cpp`, `core/src/processes/binder.cpp`, `core/src/processes/assembler.cpp`, `solixlib/native/src/`, `tests/`
-- **Status**: Planned
+- **Status**: - [x] Completed & Merged (2026-10-14)
 
 ### Objective
 Transition the Solix virtual machine heap from word-addressed (`std::vector<uint64_t>`) to byte-addressed (`std::vector<uint8_t>`) memory while preserving 64-bit operand stack slots. Implement safe inline unaligned memory access primitives with `std::memcpy`. Update the compiler `Binder` layout calculator to naturally align and pack instance fields (1, 2, 4, 8 bytes). Update property access opcodes (`GET_PROPERTY`, `SET_PROPERTY`, `WEAK_SET_PROPERTY`) to encode field byte offsets and access widths. Modernize array element access and string layouts to use native byte strides (1 for `char[]`/`bool[]`/`byte[]`, 4 for `int32[]`/`float32[]`, 8 for `int64[]`/`float64[]`/references). Unify standard library native string/array access.
 
 ### Action Items
-- [ ] Convert `Memory::heap` in `core/include/solix/runtime.hpp` to `std::vector<uint8_t>`.
-- [ ] Implement inline unaligned-safe memory access primitives (`read_u8`, `write_u8`, `read_u16`, `write_u16`, `read_u32`, `write_u32`, `read_u64`, `write_u64`, `read_f64`, `write_f64`, `read_char`, `write_char`) using `std::memcpy`.
-- [ ] Update `Memory::dynamic_allocation` and `Memory::static_allocation` to allocate byte buffers with 8-byte aligned headers positioned at `address - 8` (`[ uint32_t length | uint32_t tag_and_ref ]`).
-- [ ] Update `Binder::calculate_layout` in `core/src/processes/binder.cpp` to naturally align primitive fields (1, 2, 4, 8 bytes), reserve bytes 0..3 for `vtable_id`, and record raw byte offsets in `field->memory_index` and `reference_field_offsets`.
-- [ ] Update `GET_PROPERTY`, `SET_PROPERTY`, and `WEAK_SET_PROPERTY` in `core/src/processes/assembler.cpp` and `core/src/runtime.cpp` to encode and execute byte offsets and field access widths (1, 2, 4, 8 bytes).
-- [ ] Update `ALLOC_DYNAMIC`, `GET_ARRAY`, `SET_ARRAY`, and `ARRAY_LENGTH` to handle element strides (1 for 8-bit types, 2 for 16-bit, 4 for 32-bit, 8 for 64-bit and references).
-- [ ] Update `PUSH_CONST_STRING` and string/array handling across `solixlib/native/src/` (`console.cpp`, `string.cpp`, `time.cpp`, `io_fs.cpp`, `io_stream.cpp`, `system.cpp`, `crypto.cpp`).
-- [ ] Update test specifications in `tests/statements/TESTS.md`.
-- [ ] Update runtime specification documentation in `docs/spec/`.
-- [ ] Verify 100% test pass rate across all 76 test suites with zero warnings under `-Wall -Wextra` and `/W4`.
+- [x] Convert `Memory::heap` in `core/include/solix/runtime.hpp` to `std::vector<uint8_t>`.
+- [x] Implement inline unaligned-safe memory access primitives (`read_u8`, `write_u8`, `read_u16`, `write_u16`, `read_u32`, `write_u32`, `read_u64`, `write_u64`, `read_f64`, `write_f64`, `read_char`, `write_char`) using `std::memcpy`.
+- [x] Update `Memory::dynamic_allocation` and `Memory::static_allocation` to allocate byte buffers with 8-byte aligned headers positioned at `address - 8` (`[ uint32_t length | uint32_t tag_and_ref ]`).
+- [x] Update `Binder::calculate_layout` in `core/src/processes/binder.cpp` to naturally align primitive fields (1, 2, 4, 8 bytes), reserve bytes 0..7 for `vtable_id`, and record raw byte offsets in `field->memory_index` and `reference_field_offsets`.
+- [x] Update `GET_PROPERTY`, `SET_PROPERTY`, and `WEAK_SET_PROPERTY` in `core/src/processes/assembler.cpp` and `core/src/runtime.cpp` to encode and execute byte offsets and field access widths (1, 2, 4, 8 bytes).
+- [x] Update `ALLOC_DYNAMIC`, `GET_ARRAY`, `SET_ARRAY`, and `ARRAY_LENGTH` to handle element strides (1 for 8-bit types, 2 for 16-bit, 4 for 32-bit, 8 for 64-bit and references).
+- [x] Update `PUSH_CONST_STRING` and string/array handling across `solixlib/native/src/` (`console.cpp`, `string.cpp`, `time.cpp`, `io_fs.cpp`, `io_stream.cpp`, `system.cpp`, `crypto.cpp`).
+- [x] Update test specifications in `tests/statements/TESTS.md` (Cases 3.8 and 3.9).
+- [x] Implement Catch2 unit tests in `tests/statements/declarations/test_field_declaration.cpp`.
+- [x] Update architecture documentation in `docs/architecture/memory_model.md` and `docs/architecture/arc_internals.md`.
+- [x] Verify 100% test pass rate across all 76 test suites with zero warnings under `-Wall -Wextra` and `/W4`.
 
 ---
 
