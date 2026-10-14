@@ -7,7 +7,7 @@ public class Random {
     private int64 _handle;
 
     public Random() {
-        this._handle = native_init(0);
+        this._handle = native_init(0L);
     }
 
     public Random(int64 seed) {
