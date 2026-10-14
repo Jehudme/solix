@@ -8,40 +8,63 @@ This document tracks all planned, in-progress, and completed engineering phases 
 
 ## Phase Index & Status
 
+## Phase Index & Status
+
 | Phase | Title | Priority | Status |
 |---|---|---|---|
-| [Phase 1](#phase-1-post-v100-repository-hygiene-and-integration-baseline) | Post-v1.0.0 Repository Hygiene & Integration Baseline | P0 Blocker | In Progress |
+| [Phase 1](#phase-1-build-system-hygiene--sanitizer-foundation) | Build System Hygiene & Sanitizer Foundation | P0 Blocker | - [x] Completed & Merged |
+| [Phase 2](#phase-2-manifest-redesign-hello-world-template--ide-activation) | Manifest Redesign (`manifest.json`), Hello World Template & IDE Activation | P1 High | Planned |
+| [Phase 3](#phase-3-standard-library-pruning--manifest-ingestion) | Standard Library Pruning & Complete Manifest Ingestion | P1 High | Planned |
 
 ---
 
-## Phase 1: Post-v1.0.0 Repository Hygiene & Integration Baseline
+## Phase 1: Build System Hygiene & Sanitizer Foundation
 
 - **Priority**: `P0 Blocker`
-- **Affected Modules**: `.gitignore`, `solixlib/project/lib/`, `editors/vscode/`, `docs/PLAN.md`, `docs/archive/`
+- **Affected Modules**: `CMakeLists.txt`, `.github/workflows/integration.yml`, `docs/WORKFLOW.md`, `tests/commands/TESTS.md`, `core/`, `lsp/`
 - **Status**: - [x] Completed & Merged
 
 ### Objective
-Purge non-source binary artifacts, update repository ignore rules, and establish a clean integration baseline starting at Phase 1 for post-v1.0.0 engineering:
-1. **Binary Artifact Purge**:
-   - Remove tracked MSVC symbol database (`solixlib/project/lib/solixlib_native.pdb`).
-   - Remove tracked packaged extension bundle (`editors/vscode/solix-1.0.0.vsix`) so the repository only tracks source files, with releases building the `.vsix` on demand via npm/vsce.
-2. **Repository Ignore Rules Hardening**:
-   - Update `.gitignore` to reject all Windows MSVC debug and symbol files (`*.pdb`, `*.ilk`, `*.exp`, `*.lib`).
-   - Restore comprehensive ignore pattern for `*.vsix`.
-3. **Plan Reset & Archiving**:
-   - Archive the complete v1.0.0 development history (Phases 1–58) to `docs/archive/PLAN_v1.0.0.md`.
-   - Reset `docs/PLAN.md` to begin Phase 1 of the new cycle.
+Enable strict compiler warning flags (`-Wall -Wextra` on GCC/Clang and `/W4` on MSVC), establish a zero-warning policy across all C++ source files, introduce an AddressSanitizer/UBSan CI pipeline, and enforce zero-warning and sanitizer invariants in `WORKFLOW.md`.
 
 ### Action Items
-- [x] Archive previous master plan to `docs/archive/PLAN_v1.0.0.md`.
-- [x] Reset `docs/PLAN.md` for the new integration cycle.
-- [x] Purge tracked `solixlib_native.pdb` from git.
-- [x] Purge tracked `solix-1.0.0.vsix` from git.
-- [x] Update `.gitignore` with `*.pdb`, `*.ilk`, `*.exp`, `*.lib`, and `*.vsix`.
-- [x] Clean in-source build artifacts and ensure a clean working tree.
-- [x] Verify full regression test suite passes 100%.
+- [x] Configure `-Wall -Wextra` (and `/W4` on MSVC) in root `CMakeLists.txt`.
+- [x] Add `ENABLE_SANITIZERS` CMake option with `-fsanitize=address,undefined`.
+- [x] Add automated `sanitizers` CI job in `.github/workflows/integration.yml`.
+- [x] Fix compiler warnings in `statements.hpp`, `ast_visitor.hpp`, `template_substitution.hpp/cpp`, and `lsp/src/main.cpp`.
+- [x] Define test specifications in `tests/commands/TESTS.md` (Part XIII: Cases 19.1 & 19.2).
+- [x] Formalize zero-warning and sanitizer invariants in `docs/WORKFLOW.md`.
+- [x] Verify 100% test pass rate across all 76 test suites.
 
-### Acceptance Criteria
-- Zero untracked or unwanted binary files in repository.
-- `docs/PLAN.md` reset to Phase 1 with previous plan archived.
-- Working tree clean and all regression tests pass.
+---
+
+## Phase 2: Manifest Redesign (`manifest.json`), Hello World Template & IDE Activation
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `cli/src/commands/new.cpp`, `cli/src/commands/ide.cpp`, `cli/src/package_manager.cpp`, `cli/src/dependency_resolver.hpp`, `lsp/src/server.cpp`, `CMakeLists.txt`, `tests/commands/`
+- **Status**: Planned
+
+### Objective
+1. **Manifest File Redesign**:
+   - Rename default project manifest to `manifest.json` while maintaining backward-compatible fallback to `solix.json`.
+   - Update dependency taxonomy: support `{ "type": "library", "name": "foo" }` alongside `{ "type": "project" }`.
+2. **`solix new` Hello World Template**:
+   - `solix new` generates `src/main.slx` printing `"Hello, World!"` with `solix.system.Console` and includes standard library dependency.
+3. **IDE Activation Command**:
+   - Introduce `solix activate vscode` (and `solix activate cursor`) command to activate the Solix extension for the target editor.
+
+---
+
+## Phase 3: Standard Library Pruning & Complete Manifest Ingestion
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `solixlib/project/src/solix/core/`, `solixlib/project/manifest.json`, `tests/solixlib/`
+- **Status**: Planned
+
+### Objective
+1. **Boxed Numeric Wrappers Purge**:
+   - Remove redundant boxed wrapper files: `Bool.slx`, `Byte.slx`, `Char.slx`, `Double.slx`, `Float.slx`, `Int.slx`, `Long.slx`, `Short.slx`, `UByte.slx`, `UInt.slx`, `ULong.slx`, `UShort.slx`.
+   - Maintain static utility methods in `solix.core.Primitives`.
+2. **Complete Manifest Ingestion**:
+   - Add all 21 missing active source files (crypto, streams, process, environment) into `manifest.json`.
+   - Verify all tests pass 100%.
