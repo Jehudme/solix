@@ -1001,6 +1001,24 @@ int32 main() {
 ```
 *Expected Result*: GET_PROPERTY sign-extends signed fields (int8, int16, int32) and zero-extends unsigned fields (uint8, uint16, uint32) correctly onto the 64-bit operand stack.
 
+### Case 3.10: Segregated Free Lists and Adjacent Block Coalescing [IMPLEMENTED]
+```solix
+class Node {
+    public int32 val;
+    public Node(int32 v) { this.val = v; }
+}
+
+int32 main() {
+    for (int32 i = 0; i < 100; i++) {
+        Node n1 = new Node(i);
+        Node n2 = new Node(i + 1);
+        Node n3 = new Node(i + 2);
+    }
+    return 0;
+}
+```
+*Expected Result*: Loop completes cleanly without heap exhaustion or unbounded memory fragmentation, verifying that segregated free lists, coalescing, and dynamic heap boundary retraction recycle freed instance blocks.
+
 ---
 
 
@@ -2936,6 +2954,24 @@ static int32 main() {
 ```
 *Expected Result*: Successfully reads and writes through nested array index chains.
 
+### Case 3.3: Array Slot Mutation ARC Deallocation [IMPLEMENTED]
+```solix
+class Item {
+    public int32 id;
+    public Item(int32 id) { this.id = id; }
+}
+
+int32 main() {
+    Item[] arr = new Item[1];
+    for (int32 i = 0; i < 5; i++) {
+        arr[0] = new Item(i);
+    }
+    Item it = arr[0];
+    return it.id == 4 ? 0 : 1;
+}
+```
+*Expected Result*: Overwriting the element in `arr[0]` on each iteration decrements the old occupant, keeping live object count strictly bounded and reclaiming all previous items.
+
 ---
 
 ### Negative Test Scenarios (Expected Errors & Faults)
@@ -3428,6 +3464,19 @@ static int32 main() {
 }
 ```
 *Expected Result*: Instance of derived class returns true for both base and derived tests.
+
+### Case 3.3: Primitive Array Evaluates False for Class InstanceOf [IMPLEMENTED]
+```solix
+class Dog {}
+
+static int32 main() {
+    int32[] arr = new int32[5];
+    arr[0] = 1;
+    bool check = arr instanceof Dog;
+    return check ? 1 : 0;
+}
+```
+*Expected Result*: Evaluates to false because primitive arrays are tagged with BlockTag::ARRAY_I32 rather than BlockTag::OBJECT, avoiding vtable confusion.
 
 ---
 
