@@ -70,6 +70,7 @@ install(
     COMPONENT solixlib
     FILES_MATCHING
     PATTERN "*.slx"
+    PATTERN "manifest.json"
     PATTERN "solix.json"
     PATTERN "lib/*"
 )

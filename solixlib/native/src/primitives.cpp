@@ -106,4 +106,22 @@ void register_primitives_natives(solix::NativeRegistry &registry) {
     reg_int("native_ctz", int_native_ctz);
     reg_int("native_popcount", int_native_popcount);
     reg_int("native_bswap", int_native_bswap);
+
+    auto reg_prim = [&](const std::string &name, solix::NativeFunctionPtr func) {
+        registry.register_function("Primitives_" + name, func);
+        registry.register_function("solix_core_Primitives_" + name, func);
+    };
+
+    reg_prim("native_min_double", double_native_min_value);
+    reg_prim("native_max_double", double_native_max_value);
+    reg_prim("native_nan", double_native_nan);
+    reg_prim("native_pos_inf", double_native_pos_inf);
+    reg_prim("native_neg_inf", double_native_neg_inf);
+    reg_prim("native_is_nan", double_native_is_nan);
+    reg_prim("native_is_infinite", double_native_is_infinite);
+
+    reg_prim("native_clz", int_native_clz);
+    reg_prim("native_ctz", int_native_ctz);
+    reg_prim("native_popcount", int_native_popcount);
+    reg_prim("native_bswap", int_native_bswap);
 }
