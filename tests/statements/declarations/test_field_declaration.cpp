@@ -212,6 +212,26 @@ int32 main() {
         CHECK(run_source(code) == 0);
     }
 
+    SECTION("Case 3.10: Segregated Free Lists and Adjacent Block Coalescing") {
+        std::string code = R"(
+class Node {
+    public int32 val;
+    public Node(int32 v) { this.val = v; }
+}
+
+int32 main() {
+    for (int32 i = 0; i < 100; i++) {
+        Node n1 = new Node(i);
+        Node n2 = new Node(i + 1);
+        Node n3 = new Node(i + 2);
+    }
+    return 0;
+}
+)";
+        CHECK(run_source(code) == 0);
+        CHECK(solix::get_live_object_count() == 0);
+    }
+
     SECTION("Case 4.1: Duplicate Field Identifier") {
         std::string code = R"(
 class Item {

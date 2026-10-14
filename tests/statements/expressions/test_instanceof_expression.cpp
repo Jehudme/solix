@@ -33,6 +33,20 @@ int32 main() {
         CHECK(run_source(code) == 0);
     }
 
+    SECTION("Case 3.3: Primitive Array Evaluates False for Class InstanceOf") {
+        std::string code = R"(
+class Dog {}
+
+int32 main() {
+    int32[] arr = new int32[5];
+    arr[0] = 1;
+    bool check = arr instanceof Dog;
+    return check ? 1 : 0;
+}
+)";
+        CHECK(run_source(code) == 0);
+    }
+
     SECTION("Case 4.1: Primitive Target") {
         std::string code = R"(
 void test() {

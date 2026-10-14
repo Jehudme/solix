@@ -28,6 +28,26 @@ int32 main() {
         CHECK(run_source(code) == 0);
     }
 
+    SECTION("Case 3.3: Array Slot Mutation ARC Deallocation") {
+        std::string code = R"(
+class Item {
+    public int32 id;
+    public Item(int32 id) { this.id = id; }
+}
+
+int32 main() {
+    Item[] arr = new Item[1];
+    for (int32 i = 0; i < 5; i++) {
+        arr[0] = new Item(i);
+    }
+    Item it = arr[0];
+    return it.id == 4 ? 0 : 1;
+}
+)";
+        CHECK(run_source(code) == 0);
+        CHECK(solix::get_live_object_count() == 0);
+    }
+
     SECTION("Case 4.1: Index Out of Bounds (Runtime Fault)") {
         std::string code = R"(
 int32 main() {
