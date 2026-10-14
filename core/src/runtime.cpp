@@ -15,8 +15,9 @@ uint64_t Memory::static_allocation(size_t size_in_bytes, Address address) {
   if (address == 0) {
     address = (next_free_static + 7) & ~7;
     next_free_static = address + static_cast<Address>(size_in_bytes);
-    if (next_free_static >= heap.size()) {
-      throw std::runtime_error("Heap overflow during static allocation!");
+    Address dynamic_start = (static_cast<Address>(heap.size() / 2) + 7) & ~7;
+    if (next_free_static >= dynamic_start) {
+      throw std::runtime_error("Heap overflow: static memory exceeded boundary into dynamic heap!");
     }
   }
   currently_used_words += ((size_in_bytes + 7) / 8);
@@ -42,30 +43,33 @@ uint64_t Memory::dynamic_allocation(size_t count, BlockTag tag, Address address)
   size_t total_block_bytes = aligned_payload + 8; // 8 bytes header
 
   Address header_addr = 0;
-  size_t best_idx = static_cast<size_t>(-1);
-  uint32_t best_size = UINT32_MAX;
 
-  for (size_t i = 0; i < free_blocks.size(); ++i) {
-    Address blk = free_blocks[i];
-    uint32_t blk_size = read_u32(blk, 0);
-    if (blk_size >= aligned_payload && blk_size < best_size) {
-      best_idx = i;
-      best_size = blk_size;
-      if (blk_size == aligned_payload) break; // Exact match
+  // 1. Look for an exact match in the segregated free lists
+  auto exact_it = free_by_size.find(static_cast<uint32_t>(aligned_payload));
+  if (exact_it != free_by_size.end()) {
+    header_addr = exact_it->second;
+    free_by_size.erase(exact_it);
+    free_by_addr.erase(header_addr);
+  } else {
+    // 2. Look for a block large enough to split (requires aligned_payload + 16 bytes for header + min 8-byte payload)
+    auto split_it = free_by_size.lower_bound(static_cast<uint32_t>(aligned_payload + 16));
+    if (split_it != free_by_size.end()) {
+      uint32_t blk_payload = split_it->first;
+      header_addr = split_it->second;
+      free_by_size.erase(split_it);
+      free_by_addr.erase(header_addr);
+
+      uint32_t rem_payload = blk_payload - static_cast<uint32_t>(aligned_payload) - 8;
+      Address rem_addr = header_addr + 8 + static_cast<Address>(aligned_payload);
+      write_u32(rem_addr, 0, rem_payload);
+      write_u32(rem_addr, 4, 0); // tag RAW, ref 0
+      free_by_addr[rem_addr] = rem_payload;
+      free_by_size.insert({rem_payload, rem_addr});
     }
   }
 
-  if (best_idx != static_cast<size_t>(-1)) {
-    header_addr = free_blocks[best_idx];
-    free_blocks.erase(free_blocks.begin() + best_idx);
-
-    if (best_size >= aligned_payload + 16) {
-      uint32_t rem_size = best_size - static_cast<uint32_t>(aligned_payload) - 8;
-      Address rem_addr = header_addr + 8 + static_cast<Address>(aligned_payload);
-      write_u32(rem_addr, 0, rem_size);
-      free_blocks.push_back(rem_addr);
-    }
-  } else {
+  // 3. If no suitable free block was available, allocate from uncommitted dynamic space
+  if (header_addr == 0) {
     header_addr = next_free_dynamic;
     next_free_dynamic += static_cast<Address>(total_block_bytes);
     if (next_free_dynamic >= heap.size())
@@ -83,6 +87,7 @@ uint64_t Memory::dynamic_allocation(size_t count, BlockTag tag, Address address)
   uint32_t tag_and_ref = (static_cast<uint32_t>(tag) << 28) | 1U;
   write_u32(header_addr, 4, tag_and_ref);
 
+  sync_free_blocks();
   return header_addr + 8;
 }
 
@@ -117,8 +122,55 @@ void Memory::deallocate(Address address) {
     live_objects_count--;
   }
 
-  write_u32(header_addr, 0, static_cast<uint32_t>(aligned_payload));
-  free_blocks.push_back(header_addr);
+  write_u32(header_addr, 4, 0); // tag RAW, ref 0
+  uint32_t free_payload = static_cast<uint32_t>(aligned_payload);
+
+  // Coalesce with adjacent next free block
+  Address next_addr = header_addr + 8 + free_payload;
+  auto next_it = free_by_addr.find(next_addr);
+  if (next_it != free_by_addr.end()) {
+    uint32_t next_payload = next_it->second;
+    auto range = free_by_size.equal_range(next_payload);
+    for (auto it = range.first; it != range.second; ++it) {
+      if (it->second == next_addr) {
+        free_by_size.erase(it);
+        break;
+      }
+    }
+    free_by_addr.erase(next_it);
+    free_payload += 8 + next_payload;
+  }
+
+  // Coalesce with adjacent previous free block
+  auto prev_it = free_by_addr.lower_bound(header_addr);
+  if (prev_it != free_by_addr.begin()) {
+    --prev_it;
+    Address prev_addr = prev_it->first;
+    uint32_t prev_payload = prev_it->second;
+    if (prev_addr + 8 + prev_payload == header_addr) {
+      auto range = free_by_size.equal_range(prev_payload);
+      for (auto it = range.first; it != range.second; ++it) {
+        if (it->second == prev_addr) {
+          free_by_size.erase(it);
+          break;
+        }
+      }
+      free_by_addr.erase(prev_it);
+      header_addr = prev_addr;
+      free_payload += 8 + prev_payload;
+    }
+  }
+
+  // If the coalesced block is at the top of dynamic heap, retract next_free_dynamic
+  if (header_addr + 8 + free_payload == next_free_dynamic) {
+    next_free_dynamic = header_addr;
+  } else {
+    write_u32(header_addr, 0, free_payload);
+    free_by_addr[header_addr] = free_payload;
+    free_by_size.insert({free_payload, header_addr});
+  }
+
+  sync_free_blocks();
 }
 
 void Memory::increase_reference(Address address) {
@@ -142,7 +194,22 @@ void Memory::decrease_reference(Address address) {
     tag_and_ref = (tag_and_ref & 0xF0000000) | (ref_count & 0x0FFFFFFF);
     write_u32(header_addr, 4, tag_and_ref);
     if (ref_count == 0) {
-      if (object_destructor) {
+      BlockTag tag = static_cast<BlockTag>((tag_and_ref >> 28) & 0xF);
+      if (tag == BlockTag::CLOSURE) {
+        uint64_t ref_mask = read_u64(address, 0);
+        uint64_t callable_mask = read_u64(address, 8);
+        uint32_t count = read_u32(header_addr, 0);
+        uint32_t cap_count = count >= 2 ? count - 2 : 0;
+        for (uint32_t i = 0; i < cap_count; ++i) {
+          if ((ref_mask >> i) & 1) {
+            decrease_reference(static_cast<Address>(read_u64(address, (2 + i) * 8)));
+          } else if ((callable_mask >> i) & 1) {
+            uint64_t val = read_u64(address, (2 + i) * 8);
+            Address nested_env = static_cast<Address>(val >> 32);
+            decrease_reference_callable(nested_env);
+          }
+        }
+      } else if (object_destructor) {
         object_destructor(*this, address);
       }
       deallocate(address);
@@ -258,6 +325,9 @@ uint64_t RuntimeContext::pop() {
 }
 
 static inline uint32_t read_u32(const Bytecode &bcode, Address &pc) {
+  if (pc + 4 > bcode.size()) {
+    throw std::runtime_error("Malformed bytecode: unexpected EOF reading uint32 at pc=" + std::to_string(pc));
+  }
   uint32_t val = (bcode[pc] << 24) | (bcode[pc + 1] << 16) |
                  (bcode[pc + 2] << 8) | bcode[pc + 3];
   pc += 4;
@@ -265,6 +335,9 @@ static inline uint32_t read_u32(const Bytecode &bcode, Address &pc) {
 }
 
 static inline uint64_t read_u64(const Bytecode &bcode, Address &pc) {
+  if (pc + 8 > bcode.size()) {
+    throw std::runtime_error("Malformed bytecode: unexpected EOF reading uint64 at pc=" + std::to_string(pc));
+  }
   uint64_t val = (static_cast<uint64_t>(bcode[pc]) << 56) |
                  (static_cast<uint64_t>(bcode[pc + 1]) << 48) |
                  (static_cast<uint64_t>(bcode[pc + 2]) << 40) |
@@ -279,6 +352,9 @@ static inline uint64_t read_u64(const Bytecode &bcode, Address &pc) {
 
 static inline std::string read_string(const Bytecode &bcode, Address &pc) {
   uint32_t length = read_u32(bcode, pc);
+  if (pc + length > bcode.size()) {
+    throw std::runtime_error("Malformed bytecode: unexpected EOF reading string at pc=" + std::to_string(pc));
+  }
   std::string str(reinterpret_cast<const char *>(&bcode[pc]), length);
   pc += length;
   return str;
@@ -324,9 +400,15 @@ void RuntimeContext::execute() {
 
   uint64_t *sp = stack + memory.stack_pointer;
 
-#define PUSH(val) (*sp++ = (val))
-#define POP() (*--sp)
-#define PEEK() (*(sp - 1))
+#define PUSH(val) do { \
+  if (sp >= stack + memory.stack.size()) { \
+    SYNC_SP(); \
+    throw std::runtime_error("StackOverflowException: operand stack overflow"); \
+  } \
+  *sp++ = (val); \
+} while (0)
+#define POP() (sp <= stack ? (SYNC_SP(), throw std::runtime_error("StackUnderflowException: operand stack underflow"), 0ULL) : *--sp)
+#define PEEK() (sp <= stack ? (SYNC_SP(), throw std::runtime_error("StackUnderflowException: operand stack underflow on PEEK"), 0ULL) : *(sp - 1))
 #define SYNC_SP() (memory.stack_pointer = static_cast<uint32_t>(sp - stack))
 #define RESTORE_SP() (sp = stack + memory.stack_pointer)
 
@@ -351,6 +433,7 @@ void RuntimeContext::execute() {
 #define DISPATCH() goto vm_dispatch
   goto vm_dispatch;
 vm_dispatch:
+  if (program_counter >= bytecode.size()) goto op_HALT;
   switch (code[program_counter++]) {
     case 0: goto op_PUSH_CONST_I8;
     case 1: goto op_PUSH_CONST_I16;
@@ -560,7 +643,12 @@ vm_dispatch:
       &&op_EXIT
   };
 
-#define DISPATCH() goto *dispatch_table[code[program_counter++]]
+#define DISPATCH() do { \
+  if (program_counter >= bytecode.size()) goto op_HALT; \
+  uint8_t op = code[program_counter++]; \
+  if (op >= sizeof(dispatch_table) / sizeof(dispatch_table[0])) goto op_HALT; \
+  goto *dispatch_table[op]; \
+} while (0)
 
   DISPATCH();
 #endif
@@ -1036,8 +1124,16 @@ op_SET_ARRAY:
       case BlockTag::ARRAY_I32:
         memory.write_u32(array_addr, index * 4, static_cast<uint32_t>(val));
         break;
-      case BlockTag::ARRAY_U64:
       case BlockTag::ARRAY_REF:
+        {
+          Address old_child = static_cast<Address>(memory.read_u64(array_addr, index * 8));
+          memory.write_u64(array_addr, index * 8, val);
+          if (old_child != 0) {
+            memory.decrease_reference(old_child);
+          }
+        }
+        break;
+      case BlockTag::ARRAY_U64:
       case BlockTag::CLOSURE:
       default:
         memory.write_u64(array_addr, index * 8, val);
@@ -1179,6 +1275,7 @@ op_CALL_NATIVE:
   {
     uint32_t id = read_u32(bytecode, program_counter);
     uint32_t arg_count = read_u32(bytecode, program_counter);
+    if (program_counter >= bytecode.size()) throw std::runtime_error("Malformed bytecode: unexpected EOF");
     bool is_static = bytecode[program_counter++] != 0;
 
     {
@@ -1238,7 +1335,7 @@ op_INSTANCEOF:
     --sp;
 
     bool is_instance = false;
-    if (obj != 0) {
+    if (obj != 0 && memory.get_block_tag(obj) == BlockTag::OBJECT) {
       int32_t current_vtable = static_cast<int32_t>(memory.read_u32(obj, 0));
       while (current_vtable != -1) {
         if (static_cast<uint32_t>(current_vtable) == target_vtable_id ||
@@ -1261,6 +1358,9 @@ op_CAST_CHECK:
     Address obj = static_cast<Address>(*(sp - 1));
 
     if (obj != 0) {
+      if (memory.get_block_tag(obj) != BlockTag::OBJECT) {
+        throw std::runtime_error("TypeCastException: Cannot cast non-object to class instance");
+      }
       int32_t current_vtable = static_cast<int32_t>(memory.read_u32(obj, 0));
       bool is_instance = false;
       while (current_vtable != -1) {
@@ -1563,6 +1663,10 @@ op_ALLOC_FRAME:
       uint32_t arg_count = call_stack[call_depth - 1].arg_count;
       if (frame_size > arg_count) {
           uint32_t diff = frame_size - arg_count;
+          if (sp + diff > stack + memory.stack.size()) {
+              SYNC_SP();
+              throw std::runtime_error("StackOverflowException: execution stack exceeded capacity on ALLOC_FRAME");
+          }
           std::fill(sp, sp + diff, 0);
           sp += diff;
       }

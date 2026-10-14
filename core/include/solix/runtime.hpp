@@ -5,6 +5,7 @@
 #include <cstring>
 #include <filesystem>
 #include <functional>
+#include <map>
 #include <stdint.h>
 #include <string>
 #include <unordered_map>
@@ -72,8 +73,20 @@ struct Memory {
   Address next_free_static = 0;
   Address next_free_dynamic = 8;
 
+  // Segregated / size-indexed free lists and address-indexed blocks for coalescing
+  std::map<Address, uint32_t> free_by_addr;
+  std::multimap<uint32_t, Address> free_by_size;
+
   // Tracks addresses of freed dynamic blocks so we can instantly reuse them
   std::vector<Address> free_blocks;
+
+  inline void sync_free_blocks() {
+    free_blocks.clear();
+    free_blocks.reserve(free_by_addr.size());
+    for (const auto &pair : free_by_addr) {
+      free_blocks.push_back(pair.first);
+    }
+  }
 
   // Weak references tracking: target_object -> set of heap slot addresses
   // holding the weak ref
