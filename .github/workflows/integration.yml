@@ -69,3 +69,31 @@ jobs:
 
       - name: Run Tests
         run: ctest --test-dir build -C Release --output-on-failure --timeout 120
+
+  sanitizers:
+    name: Linux ASan/UBSan (gcc)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential libspdlog-dev libfmt-dev ninja-build
+
+      - name: Configure CMake with Sanitizers
+        run: |
+          cmake -B build-asan -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DENABLE_SANITIZERS=ON \
+            -DCMAKE_CXX_STANDARD=20
+
+      - name: Build with Sanitizers
+        run: cmake --build build-asan --parallel
+
+      - name: Run Tests under Sanitizers
+        env:
+          ASAN_OPTIONS: "detect_leaks=0:symbolize=1"
+          UBSAN_OPTIONS: "print_stacktrace=1"
+        run: ctest --test-dir build-asan --output-on-failure --timeout 180

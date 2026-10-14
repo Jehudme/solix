@@ -117,8 +117,8 @@ void TemplateSubstitutionVisitor::visit(ExpressionStatement& n) {
 void TemplateSubstitutionVisitor::visit(ReturnStatement& n) {
     if (n.value) n.value->accept(*this);
 }
-void TemplateSubstitutionVisitor::visit(BreakStatement& n) {}
-void TemplateSubstitutionVisitor::visit(ContinueStatement& n) {}
+void TemplateSubstitutionVisitor::visit(BreakStatement&) {}
+void TemplateSubstitutionVisitor::visit(ContinueStatement&) {}
 void TemplateSubstitutionVisitor::visit(AssertStatement& n) {
     if (n.condition) n.condition->accept(*this);
     if (n.message) n.message->accept(*this);

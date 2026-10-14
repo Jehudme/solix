@@ -15,8 +15,8 @@ public:
         if (root) root->accept(*this);
     }
 
-    void visit(IdentifierNode& n) override {}
-    void visit(LiteralNode& n) override {}
+    void visit(IdentifierNode&) override {}
+    void visit(LiteralNode&) override {}
     void visit(BinaryExpression& n) override;
     void visit(UnaryExpression& n) override;
     void visit(AssignmentExpression& n) override;
@@ -50,10 +50,10 @@ public:
     void visit(ContinueStatement& n) override;
     void visit(AssertStatement& n) override;
     void visit(ExitStatement& n) override;
-    void visit(PackageStatement& n) override {}
+    void visit(PackageStatement&) override {}
     void visit(AliasStatement& n) override;
 
-    void visit(EnumDeclaration& n) override {}
+    void visit(EnumDeclaration&) override {}
     void visit(ClassDeclaration& n) override;
     void visit(FieldDeclaration& n) override;
     void visit(ConstructorDeclaration& n) override;

@@ -722,7 +722,7 @@ struct MethodDeclaration : public Node {
     std::vector<std::unique_ptr<VariableDeclaration>> parameters;
     int frame_size = 0;
     MethodDeclaration(const Token& t, std::string name, TypeInfo ret_type)
-        : Node(NodeType::METHOD_DECL, t), method_name(std::move(name)), return_type(std::move(ret_type)) {}
+        : Node(NodeType::METHOD_DECL, t), return_type(std::move(ret_type)), method_name(std::move(name)) {}
 };
 
 inline LambdaExpression::~LambdaExpression() = default;
