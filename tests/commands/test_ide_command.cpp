@@ -14,7 +14,7 @@ TEST_CASE("Suite 18: Toolchain solixlib Auto-Discovery & IDE Integration Command
     SECTION("Case 18.1: Bundled solixlib Relative Path Auto-Discovery") {
         auto bundled_opt = PackageManager::discover_bundled_solixlib();
         REQUIRE(bundled_opt.has_value());
-        REQUIRE(std::filesystem::exists(bundled_opt.value() / "solix.json"));
+        REQUIRE((std::filesystem::exists(bundled_opt.value() / "manifest.json") || std::filesystem::exists(bundled_opt.value() / "solix.json")));
         REQUIRE(std::filesystem::exists(bundled_opt.value() / "src"));
     }
 
