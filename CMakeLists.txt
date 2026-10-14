@@ -12,6 +12,23 @@ endif()
 
 add_compile_definitions(SOLIX_VERSION="${PROJECT_VERSION}")
 
+# Compiler warning options
+if(MSVC)
+    add_compile_options(/W4 /permissive-)
+else()
+    add_compile_options(-Wall -Wextra)
+endif()
+
+# Optional Sanitizers
+option(ENABLE_SANITIZERS "Enable Address and UndefinedBehavior Sanitizers" OFF)
+if(ENABLE_SANITIZERS)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+        message(STATUS "Enabling AddressSanitizer and UndefinedBehaviorSanitizer")
+        add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+        add_link_options(-fsanitize=address,undefined)
+    endif()
+endif()
+
 
 include(FetchContent)
 

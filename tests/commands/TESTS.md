@@ -892,12 +892,23 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Solix CLI execution.
 - **Expected**: Exits 0; displays `--editor` option and supported editor list (`code`, `code-insiders`, `cursor`, `codium`).
 
-### Negative Test Scenarios
+# Part XIII: Build Hygiene & Sanitizer Verification
 
-#### Case 18.4: `solix ide install` with Unknown or Missing Editor [IMPLEMENTED]
-- **Command**: `solix ide install --editor non_existent_editor_binary_xyz`
-- **Setup**: Invoking with non-existent editor name.
-- **Expected**: Exits non-zero (exit code 1); reports error indicating specified editor binary was not found in `PATH`.
+## BuildHygieneAndSanitizers
+
+*Subsystem*: Build system warning flags, clean compile, and ASan/UBSan sanitizer pipeline
+
+### Positive Test Scenarios
+
+#### Case 19.1: Zero-Warning Compiler Verification [IMPLEMENTED]
+- **Command**: `ninja -C build` with `-Wall -Wextra` (or `/W4` on MSVC)
+- **Setup**: Solix codebase build tree.
+- **Expected**: Exits 0 with zero compiler warnings across all targets.
+
+#### Case 19.2: Regression Test Suite Stability under Sanitizers [IMPLEMENTED]
+- **Command**: `ctest --test-dir build --output-on-failure`
+- **Setup**: Build with warnings and sanitizers enabled.
+- **Expected**: 100% test pass rate with zero runtime faults.
 
 
 

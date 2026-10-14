@@ -15,6 +15,8 @@ Whenever any construct, feature, command, or standard library module is added, m
    - The specific code modules, classes, and interfaces being modified or introduced.
    - The specific test suites and test cases (positive and negative) required.
    - The specific documentation files and sections to be created or updated.
+4. **Mandatory Zero-Warning & Sanitizer Cleanliness**: All C++ code must compile with zero warnings under `-Wall -Wextra` (and `/W4` on MSVC). Automated CI sanitizer jobs (`-fsanitize=address,undefined`) must pass 100% clean without memory corruption or undefined behavior reports.
+5. **Mandatory Tooling & VS Code Synchronization**: Whenever a language keyword, construct, modifier, or standard library API is added or modified, the VS Code TextMate grammar (`editors/vscode/syntaxes/solix.tmLanguage.json`) and configuration must be updated in lockstep.
 
 ---
 

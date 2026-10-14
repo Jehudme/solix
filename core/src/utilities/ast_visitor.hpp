@@ -87,7 +87,7 @@ struct NodeVisitor {
     virtual void visit(ExitStatement& node) = 0;
     virtual void visit(PackageStatement& node) = 0;
     virtual void visit(AliasStatement& node) = 0;
-    virtual void visit(ImportStatement& node) {}
+    virtual void visit(ImportStatement&) {}
 
     virtual void visit(EnumDeclaration& node) = 0;
     virtual void visit(ClassDeclaration& node) = 0;
