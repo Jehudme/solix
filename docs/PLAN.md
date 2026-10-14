@@ -13,7 +13,7 @@ This document tracks all planned, in-progress, and completed engineering phases 
 | Phase | Title | Priority | Status |
 |---|---|---|---|
 | [Phase 1](#phase-1-build-system-hygiene--sanitizer-foundation) | Build System Hygiene & Sanitizer Foundation | P0 Blocker | - [x] Completed & Merged |
-| [Phase 2](#phase-2-manifest-redesign-hello-world-template--ide-activation) | Manifest Redesign (`manifest.json`), Hello World Template & IDE Activation | P1 High | Planned |
+| [Phase 2](#phase-2-manifest-redesign-hello-world-template--ide-activation) | Manifest Redesign (`manifest.json`), Hello World Template & IDE Activation | P1 High | - [x] Completed & Merged |
 | [Phase 3](#phase-3-standard-library-pruning--manifest-ingestion) | Standard Library Pruning & Complete Manifest Ingestion | P1 High | Planned |
 
 ---
@@ -42,7 +42,7 @@ Enable strict compiler warning flags (`-Wall -Wextra` on GCC/Clang and `/W4` on 
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `cli/src/commands/new.cpp`, `cli/src/commands/ide.cpp`, `cli/src/package_manager.cpp`, `cli/src/dependency_resolver.hpp`, `lsp/src/server.cpp`, `CMakeLists.txt`, `tests/commands/`
-- **Status**: Planned
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 1. **Manifest File Redesign**:
@@ -52,6 +52,17 @@ Enable strict compiler warning flags (`-Wall -Wextra` on GCC/Clang and `/W4` on 
    - `solix new` generates `src/main.slx` printing `"Hello, World!"` with `solix.system.Console` and includes standard library dependency.
 3. **IDE Activation Command**:
    - Introduce `solix activate vscode` (and `solix activate cursor`) command to activate the Solix extension for the target editor.
+
+### Action Items
+- [x] Add `solix::find_project_manifest()` path utility prioritizing `manifest.json` over `solix.json`.
+- [x] Update `solix build`, `solix run`, `solix install`, and dependency resolver to support `manifest.json` and `"type": "library"`.
+- [x] Update LSP workspace root discovery to detect `manifest.json` and `solix.json`.
+- [x] Update `solix new` to scaffold `manifest.json` and `Console.println("Hello, World!")` template with `solixlib` dependency.
+- [x] Implement `solix activate <editor>` command supporting `vscode`, `code`, `cursor`, `codium`.
+- [x] Fix entry point candidate resolution in `assembler.cpp` to ignore non-static class member methods.
+- [x] Update test specifications in `tests/commands/TESTS.md` and Catch2 test suites.
+- [x] Update CLI specifications (`manifest.md`, `new.md`, `ide.md`, `README.md`).
+- [x] Verify 100% test pass rate across all 76 test suites.
 
 ---
 
