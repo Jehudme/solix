@@ -10,16 +10,16 @@ add_library(solix_test_plugin SHARED
     runtime/fixtures/test_plugin.cpp
 )
 target_include_directories(solix_test_plugin PRIVATE
-    ${CMAKE_SOURCE_DIR}/core/include
-    ${CMAKE_SOURCE_DIR}/core/src
+    ${PROJECT_SOURCE_DIR}/core/include
+    ${PROJECT_SOURCE_DIR}/core/src
 )
 
 add_library(solix_test_plugin_b SHARED
     runtime/fixtures/test_plugin_b.cpp
 )
 target_include_directories(solix_test_plugin_b PRIVATE
-    ${CMAKE_SOURCE_DIR}/core/include
-    ${CMAKE_SOURCE_DIR}/core/src
+    ${PROJECT_SOURCE_DIR}/core/include
+    ${PROJECT_SOURCE_DIR}/core/src
 )
 
 file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "statements/*.cpp" "commands/*.cpp" "solixlib/*.cpp")
@@ -38,15 +38,15 @@ target_link_libraries(solix_tests PRIVATE Catch2::Catch2WithMain solix_core soli
 
 target_include_directories(solix_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/core/include
-    ${CMAKE_SOURCE_DIR}/core/src
-    ${CMAKE_SOURCE_DIR}/cli/src
-    ${CMAKE_SOURCE_DIR}/cli/src/commands
-    ${CMAKE_SOURCE_DIR}/lsp/include
+    ${PROJECT_SOURCE_DIR}/core/include
+    ${PROJECT_SOURCE_DIR}/core/src
+    ${PROJECT_SOURCE_DIR}/cli/src
+    ${PROJECT_SOURCE_DIR}/cli/src/commands
+    ${PROJECT_SOURCE_DIR}/lsp/include
 )
 
 target_compile_definitions(solix_tests PRIVATE
-    SOLIX_PROJECT_ROOT="${CMAKE_SOURCE_DIR}"
+    SOLIX_PROJECT_ROOT="${PROJECT_SOURCE_DIR}"
     SOLIX_BINARY_DIR="${CMAKE_BINARY_DIR}"
     SOLIX_TEST_PLUGIN_PATH="${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}solix_test_plugin${CMAKE_SHARED_LIBRARY_SUFFIX}"
     SOLIX_TEST_PLUGIN_B_PATH="${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_SHARED_LIBRARY_PREFIX}solix_test_plugin_b${CMAKE_SHARED_LIBRARY_SUFFIX}"

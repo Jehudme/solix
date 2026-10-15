@@ -61,7 +61,9 @@ add_subdirectory(core)
 add_subdirectory(lsp)
 add_subdirectory(cli)
 add_subdirectory(solixlib/native)
-add_subdirectory(tests)
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    add_subdirectory(tests)
+endif()
 
 # Install standard library into share/solix/solixlib
 install(
