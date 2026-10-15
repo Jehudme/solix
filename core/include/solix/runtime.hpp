@@ -45,6 +45,9 @@ struct RuntimeOptions {
   std::vector<std::string> program_args;
   std::unordered_map<std::string, NativeFunctionPtr> native_functions;
   std::vector<std::filesystem::path> native_libraries;
+  uint64_t instruction_budget = 0;              // 0 = unlimited discrete ISA instructions
+  bool sandboxed = false;                       // true = disable ambient native shared libraries
+  std::function<std::unique_ptr<RuntimeContext>(const RuntimeOptions &)> custom_context_factory = nullptr;
 };
 
 // -----------------------------------------------------------------------------
@@ -213,13 +216,21 @@ struct RuntimeContext {
   std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::vector<uint32_t>>> itables;
   std::unordered_map<uint32_t, std::vector<uint32_t>> vtable_ref_fields;
 
+  // Metering state
+  uint64_t instruction_budget = 0;
+  uint64_t instructions_executed = 0;
+
   RuntimeContext(const RuntimeOptions &opts);
+  virtual ~RuntimeContext() = default;
 
-  void register_native(uint32_t id, NativeFunctionPtr func);
-  void execute();
+  virtual void register_native(uint32_t id, NativeFunctionPtr func);
+  virtual void execute();
 
-  void push(uint64_t val);
-  uint64_t pop();
+  virtual void push(uint64_t val);
+  virtual uint64_t pop();
+
+  virtual void on_budget_exceeded();
+  virtual void on_out_of_memory(size_t requested_bytes);
 };
 
 } // namespace solix

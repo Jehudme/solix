@@ -247,7 +247,8 @@ void Memory::decrease_reference_callable(Address env) {
 }
 
 RuntimeContext::RuntimeContext(const RuntimeOptions &opts)
-    : options(opts), memory(opts.stack_capacity, opts.heap_capacity) {
+    : options(opts), memory(opts.stack_capacity, opts.heap_capacity),
+      instruction_budget(opts.instruction_budget), instructions_executed(0) {
   call_stack.resize(65536);
 
   memory.object_destructor = [this](Memory &mem, Address address) {
@@ -299,8 +300,10 @@ RuntimeContext::RuntimeContext(const RuntimeOptions &opts)
     }
   }
 
-  for (const auto &lib_path : options.native_libraries) {
-    NativeRegistry::global().load_library(lib_path);
+  if (!options.sandboxed) {
+    for (const auto &lib_path : options.native_libraries) {
+      NativeRegistry::global().load_library(lib_path);
+    }
   }
 }
 
@@ -310,6 +313,15 @@ void RuntimeContext::register_native(uint32_t id, NativeFunctionPtr func) {
   }
   native_table[id] = func;
   native_registry[id] = func;
+}
+
+void RuntimeContext::on_budget_exceeded() {
+  exit_code = 75; // EX_TEMPFAIL
+}
+
+void RuntimeContext::on_out_of_memory(size_t requested_bytes) {
+  (void)requested_bytes;
+  exit_code = 71; // EX_OSERR
 }
 
 void RuntimeContext::push(uint64_t val) {
@@ -434,6 +446,11 @@ void RuntimeContext::execute() {
   goto vm_dispatch;
 vm_dispatch:
   if (program_counter >= bytecode.size()) goto op_HALT;
+  instructions_executed++;
+  if (instruction_budget > 0 && instructions_executed >= instruction_budget) {
+    on_budget_exceeded();
+    goto op_HALT;
+  }
   switch (code[program_counter++]) {
     case 0: goto op_PUSH_CONST_I8;
     case 1: goto op_PUSH_CONST_I16;
@@ -646,6 +663,11 @@ vm_dispatch:
 #define DISPATCH() do { \
   if (program_counter >= bytecode.size()) goto op_HALT; \
   uint8_t op = code[program_counter++]; \
+  instructions_executed++; \
+  if (instruction_budget > 0 && instructions_executed >= instruction_budget) { \
+    on_budget_exceeded(); \
+    goto op_HALT; \
+  } \
   if (op >= sizeof(dispatch_table) / sizeof(dispatch_table[0])) goto op_HALT; \
   goto *dispatch_table[op]; \
 } while (0)
@@ -1536,6 +1558,9 @@ op_RETURN:
   }
 op_HALT:
   SYNC_SP();
+  if (instruction_budget > 0 && instructions_executed >= instruction_budget) {
+    return;
+  }
   if (entry_method_called && sp > stack) {
     exit_code = static_cast<int32_t>(POP());
     SYNC_SP();
@@ -1796,7 +1821,9 @@ op_DEC_REF_SLOT:
 }
 
 int32_t run(RuntimeOptions &options) {
-  auto vm = std::make_unique<RuntimeContext>(options);
+  std::unique_ptr<RuntimeContext> vm = options.custom_context_factory
+      ? options.custom_context_factory(options)
+      : std::make_unique<RuntimeContext>(options);
   vm->execute();
   return vm->exit_code;
 }
