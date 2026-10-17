@@ -16,7 +16,7 @@ This document tracks all planned, in-progress, and completed engineering phases 
 | [Phase 4](#phase-4-byte-addressed-memory-model-transition) | Byte-Addressed Memory Model Transition | P0 Blocker | - [x] Completed & Merged |
 | [Phase 5](#phase-5-heap-allocator--arc-overhaul) | Heap Allocator & ARC Overhaul | P1 High | - [x] Completed & Merged |
 | [Phase 6](#phase-6-cross-platform-zip-engine-integration-miniz--solix-pack-command) | Cross-Platform ZIP Engine Integration (`miniz`) & `solix pack` Command | P1 High | - [x] Completed & Merged |
-| [Phase 7](#phase-7-runtime--launcher-bundle-ingestion-and-dynamic-library-loading) | Runtime & Launcher Bundle Ingestion and Dynamic Library Loading | P1 High | - [ ] Planned |
+| [Phase 7](#phase-7-runtime--launcher-bundle-ingestion-and-dynamic-library-loading) | Runtime & Launcher Bundle Ingestion and Dynamic Library Loading | P1 High | - [x] Completed & Merged |
 | [Phase 8](#phase-8-standard-library-solixlib-resource--filesystem-dual-location-api) | Standard Library (`solixlib`) Resource & Filesystem Dual-Location API | P1 High | - [ ] Planned |
 | [Phase 9](#phase-9-end-to-end-cross-platform-verification-tests--documentation) | End-to-End Cross-Platform Verification, Tests & Documentation | P2 Polish | - [ ] Planned |
 
@@ -170,20 +170,20 @@ Integrate the cross-platform, dependency-free `miniz` ZIP compression/decompress
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `cli/src/commands/execute.cpp`, `core/include/solix/runtime.hpp`, `core/src/runtime.cpp`, `tests/commands/test_run_bundle.cpp`, `tests/commands/TESTS.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged (2026-10-17)
 
 ### Objective
 Enable `solix run` and `solix_launcher` to directly accept and execute `.slxpac` bundle archives. Extract the bundle to a content-hashed cache directory (`$TMPDIR/solix_pac/<hash>/`), automatically discover and load bundled native shared libraries in `lib/`, set the application resource root, and execute the entry bytecode.
 
 ### Action Items
-- [ ] Update `cli/src/commands/execute.cpp` to recognize `.slxpac` targets.
-- [ ] Implement content-hashed extraction cache to avoid re-extracting unmodified packages.
-- [ ] Scan and register all native shared libraries in `<bundle>/lib/` into `RuntimeOptions::native_libraries`.
-- [ ] Configure `RuntimeOptions::resource_directory` to point to `<bundle>/resources/`.
-- [ ] Update `tests/commands/TESTS.md` with bundle execution test cases (Cases 20.5 and 20.6).
-- [ ] Implement Catch2 unit & integration tests in `tests/commands/test_run_bundle.cpp`.
-- [ ] Update `docs/spec/runtime/` documentation.
-- [ ] Verify 100% test pass rate across all test suites.
+- [x] Update `cli/src/commands/execute.cpp` to recognize `.slxpac` targets.
+- [x] Implement content-hashed extraction cache to avoid re-extracting unmodified packages.
+- [x] Scan and register all native shared libraries in `<bundle>/lib/` into `RuntimeOptions::native_libraries`.
+- [x] Configure `RuntimeOptions::resource_directory` to point to `<bundle>/resources/`.
+- [x] Update `tests/commands/TESTS.md` with bundle execution test cases (Cases 20.6 to 20.10).
+- [x] Implement Catch2 unit & integration tests in `tests/commands/test_run_bundle.cpp`.
+- [x] Update `docs/spec/cli/run.md` documentation.
+- [x] Verify 100% test pass rate across all test suites.
 
 ---
 
