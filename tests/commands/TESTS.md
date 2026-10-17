@@ -1172,4 +1172,24 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Consumer application depends on `solixlib` with `"profile": "release"`.
 - **Expected**: Exits 0; `solixlib` pre-compile hook compiles multi-platform native companion libraries into `lib/`; packaging includes all platform variants into `consumer.slxpac`; running `consumer.slxpac` filters and executes the host platform native library successfully.
 
+---
+
+## Part XXVI: Release v1.2.0 Packaging, Version Verification & CI Staging
+
+*Command*: `solix version`, `solix --version`, and CPack Packaging
+*Specification Reference*: [Solix Automated Release Guide](../../docs/guide/release.md), [Version Command Specification](../../docs/spec/cli/README.md)
+
+### Positive Test Scenarios
+
+#### Case 26.1: CLI Version Command Verification (v1.2.0) [IMPLEMENTED]
+- **Command**: `solix version`, `solix -v`, `solix --version`
+- **Setup**: Project built with version 1.2.0.
+- **Expected**: Exits 0; outputs `Solix version 1.2.0`.
+
+#### Case 26.2: CPack Packaging Version & Staging Verification (v1.2.0) [IMPLEMENTED]
+- **Command**: `cpack` staging inspection
+- **Setup**: `CPackConfig.cmake` and `cmake_install.cmake` in build directory.
+- **Expected**: `CPACK_PACKAGE_VERSION` matches `"1.2.0"`; `solixlib_native` and standard library resources stage to `share/solix/solixlib`.
+
+
 

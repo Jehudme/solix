@@ -67,18 +67,18 @@ Generated installers extract the following directory hierarchy:
 │   │   └── README.md
 │   └── solix/
 │       ├── solixlib/    # Bundled official standard library
-│       │   ├── solix.json
+│       │   ├── manifest.json
 │       │   ├── lib/libsolixlib_native.so
 │       │   └── src/solix/...
 │       └── vscode/
-│           └── solix-0.1.0.vsix # Bundled editor extension
+│           └── solix-1.2.0.vsix # Bundled editor extension
 ```
 
 ---
 
 ## 4. Automated GitHub Actions CI/CD Pipeline
 
-The `.github/workflows/release.yml` workflow triggers on semantic tag pushes (e.g. `v0.1.0`):
+The `.github/workflows/release.yml` workflow triggers on semantic tag pushes (e.g. `v1.2.0`):
 
 1. **Build Matrix**: Concurrently compiles Release binaries on `ubuntu-latest`, `macos-latest`, and `windows-latest`.
 2. **CPack Execution**: Runs `cpack -C Release` on each host runner to build native `.deb`, `.rpm`, `.pkg`, `.exe`, `.tar.gz`, and `.zip` installers.

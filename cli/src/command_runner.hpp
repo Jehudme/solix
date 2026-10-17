@@ -53,10 +53,15 @@ public:
 
         int raw_status = std::system(cmd_str.c_str());
 
-        int exit_code = 0;
 #ifdef _WIN32
-        exit_code = raw_status;
+        if (raw_status != 0 && cmd_str.rfind("python3 ", 0) == 0) {
+            std::string fallback_cmd = "python " + cmd_str.substr(8);
+            std::cout << "[fallback] $ " << fallback_cmd << std::endl;
+            raw_status = std::system(fallback_cmd.c_str());
+        }
+        int exit_code = raw_status;
 #else
+        int exit_code = 0;
         if (WIFEXITED(raw_status)) {
             exit_code = WEXITSTATUS(raw_status);
         } else if (WIFSIGNALED(raw_status)) {

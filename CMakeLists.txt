@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(solix VERSION 1.1.1 LANGUAGES CXX)
+project(solix VERSION 1.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -106,6 +106,14 @@ install(
     PATTERN "scripts" EXCLUDE
 )
 
+install(
+    TARGETS solixlib_native
+    LIBRARY DESTINATION share/solix/solixlib/lib
+    RUNTIME DESTINATION share/solix/solixlib/lib
+    ARCHIVE DESTINATION share/solix/solixlib/lib
+    COMPONENT solixlib
+)
+
 # Install VS Code extension bundle if present
 file(GLOB SOLIX_VSIX_FILES "${CMAKE_CURRENT_SOURCE_DIR}/editors/vscode/solix-*.vsix")
 if(SOLIX_VSIX_FILES)
@@ -128,9 +136,9 @@ endif()
 set(CPACK_PACKAGE_NAME "solix")
 set(CPACK_PACKAGE_VENDOR "Solix Team")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Solix Programming Language Compiler, Runtime, and Toolchain")
-set(CPACK_PACKAGE_VERSION_MAJOR 1)
-set(CPACK_PACKAGE_VERSION_MINOR 1)
-set(CPACK_PACKAGE_VERSION_PATCH 0)
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
 set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/Jehudme/solix")
 set(CPACK_PACKAGE_CONTACT "Jehudme <info@solix-lang.org>")

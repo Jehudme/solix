@@ -2,7 +2,7 @@
 #include "cli_test_helper.hpp"
 
 #ifndef SOLIX_VERSION
-#define SOLIX_VERSION "1.1.0"
+#define SOLIX_VERSION "1.2.0"
 #endif
 
 using namespace solix::test;
