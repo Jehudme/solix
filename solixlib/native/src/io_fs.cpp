@@ -32,6 +32,30 @@ static uint64_t allocate_solix_chars(solix::RuntimeContext &vm, const std::strin
     return addr;
 }
 
+static std::string get_resource_root() {
+    const char *env = std::getenv("SOLIX_RESOURCE_ROOT");
+    if (env != nullptr && *env != '\0') {
+        return std::string(env);
+    }
+    std::error_code ec;
+    fs::path fallback = fs::current_path(ec) / "resources";
+    return fallback.generic_string();
+}
+
+static fs::path resolve_path(const std::string &p) {
+    if (p.rfind("res://", 0) == 0) {
+        std::string sub = p.substr(6);
+        size_t first_non_slash = sub.find_first_not_of("/\\");
+        if (first_non_slash != std::string::npos) {
+            sub = sub.substr(first_non_slash);
+        } else {
+            sub = "";
+        }
+        return fs::path(get_resource_root()) / fs::path(sub);
+    }
+    return fs::path(p);
+}
+
 // --- Path Native Functions ---
 
 static uint64_t path_native_combine(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
@@ -99,16 +123,18 @@ static uint64_t path_native_get_separator(solix::RuntimeContext &vm, uint64_t se
 
 static uint64_t file_native_exists(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
-    std::string p = read_solix_chars(vm, args[0]);
+    std::string raw = read_solix_chars(vm, args[0]);
+    fs::path p = resolve_path(raw);
     std::error_code ec;
     return fs::is_regular_file(p, ec) ? 1ULL : 0ULL;
 }
 
 static uint64_t file_native_read_all_text(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
-    std::string p = read_solix_chars(vm, args[0]);
+    std::string raw = read_solix_chars(vm, args[0]);
     uint64_t err_box = args[1];
 
+    fs::path p = resolve_path(raw);
     std::error_code ec;
     if (!fs::exists(p, ec) || !fs::is_regular_file(p, ec)) {
         if (err_box != 0) vm.memory.write_u32(static_cast<solix::Address>(err_box), 0, 1U); // Not found
@@ -209,9 +235,10 @@ static uint64_t file_native_move(solix::RuntimeContext &vm, uint64_t self, uint6
 
 static uint64_t file_native_get_size(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
-    std::string p = read_solix_chars(vm, args[0]);
+    std::string raw = read_solix_chars(vm, args[0]);
     uint64_t out_box = args[1];
 
+    fs::path p = resolve_path(raw);
     std::error_code ec;
     if (!fs::exists(p, ec) || !fs::is_regular_file(p, ec)) {
         return 1ULL; // Not found
@@ -228,9 +255,10 @@ static uint64_t file_native_get_size(solix::RuntimeContext &vm, uint64_t self, u
 
 static uint64_t file_native_get_last_modified(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
-    std::string p = read_solix_chars(vm, args[0]);
+    std::string raw = read_solix_chars(vm, args[0]);
     uint64_t out_box = args[1];
 
+    fs::path p = resolve_path(raw);
     std::error_code ec;
     if (!fs::exists(p, ec)) {
         return 1ULL;
@@ -350,6 +378,68 @@ static uint64_t directory_native_set_current(solix::RuntimeContext &vm, uint64_t
     return 0ULL;
 }
 
+// --- Resource Native Functions ---
+
+static uint64_t resource_native_get_resource_root(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
+    (void)self; (void)args; (void)argc;
+    return allocate_solix_chars(vm, get_resource_root());
+}
+
+static uint64_t resource_native_get_path(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
+    (void)self; (void)argc;
+    std::string p = read_solix_chars(vm, args[0]);
+    fs::path target;
+    if (p.rfind("res://", 0) == 0) {
+        target = resolve_path(p);
+    } else {
+        target = fs::path(get_resource_root()) / fs::path(p);
+    }
+    return allocate_solix_chars(vm, target.generic_string());
+}
+
+static uint64_t resource_native_exists(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
+    (void)self; (void)argc;
+    std::string p = read_solix_chars(vm, args[0]);
+    fs::path target;
+    if (p.rfind("res://", 0) == 0) {
+        target = resolve_path(p);
+    } else {
+        target = fs::path(get_resource_root()) / fs::path(p);
+    }
+    std::error_code ec;
+    return fs::is_regular_file(target, ec) ? 1ULL : 0ULL;
+}
+
+static uint64_t resource_native_read_all_text(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
+    (void)self; (void)argc;
+    std::string p = read_solix_chars(vm, args[0]);
+    uint64_t err_box = args[1];
+
+    fs::path target;
+    if (p.rfind("res://", 0) == 0) {
+        target = resolve_path(p);
+    } else {
+        target = fs::path(get_resource_root()) / fs::path(p);
+    }
+
+    std::error_code ec;
+    if (!fs::exists(target, ec) || !fs::is_regular_file(target, ec)) {
+        if (err_box != 0) vm.memory.write_u32(static_cast<solix::Address>(err_box), 0, 1U); // Not found
+        return allocate_solix_chars(vm, "");
+    }
+
+    std::ifstream file(target, std::ios::in | std::ios::binary);
+    if (!file.is_open()) {
+        if (err_box != 0) vm.memory.write_u32(static_cast<solix::Address>(err_box), 0, 2U); // IO error
+        return allocate_solix_chars(vm, "");
+    }
+
+    std::string content((std::istreambuf_iterator<char>(file)),
+                         std::istreambuf_iterator<char>());
+    if (err_box != 0) vm.memory.write_u32(static_cast<solix::Address>(err_box), 0, 0U); // Success
+    return allocate_solix_chars(vm, content);
+}
+
 } // namespace
 
 void register_io_fs_natives(solix::NativeRegistry &registry) {
@@ -388,4 +478,10 @@ void register_io_fs_natives(solix::NativeRegistry &registry) {
     reg("Directory", "native_list_entries", directory_native_list_entries);
     reg("Directory", "native_get_current", directory_native_get_current);
     reg("Directory", "native_set_current", directory_native_set_current);
+
+    // Resource
+    reg("Resource", "native_get_resource_root", resource_native_get_resource_root);
+    reg("Resource", "native_get_path", resource_native_get_path);
+    reg("Resource", "native_exists", resource_native_exists);
+    reg("Resource", "native_read_all_text", resource_native_read_all_text);
 }

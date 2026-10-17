@@ -53,6 +53,10 @@ public class Path implements IStringable {
         return Path.is_absolute(this._value);
     }
 
+    public bool is_resource() {
+        return Path.is_resource_path(this._value);
+    }
+
     public Path normalized() {
         return new Path(Path.normalize(this._value));
     }
@@ -122,6 +126,17 @@ public class Path implements IStringable {
     public static String normalize(String path) {
         if (path == null || path.data == null) return new String("");
         return new String(native_normalize(path.data));
+    }
+
+    public static bool is_resource_path(String path) {
+        if (path == null || path.data == null) return false;
+        return path.starts_with(new String("res://"));
+    }
+
+    public static String to_resource_path(String rel_path) {
+        if (rel_path == null || rel_path.data == null) return new String("res://");
+        if (rel_path.starts_with(new String("res://"))) return rel_path;
+        return new String("res://") + rel_path;
     }
 
     private static native char[] native_combine(char[] p1, char[] p2);

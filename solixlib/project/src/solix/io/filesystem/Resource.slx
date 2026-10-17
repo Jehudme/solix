@@ -1,0 +1,57 @@
+package solix.io.filesystem;
+
+import solix.core.String;
+import solix.collections.List;
+import solix.exceptions.FileNotFoundException;
+import solix.exceptions.IOException;
+
+public class Resource {
+    public static String get_resource_directory() {
+        return new String(native_get_resource_root());
+    }
+
+    public static String get_path(String rel_path) {
+        if (rel_path == null || rel_path.data == null) {
+            return get_resource_directory();
+        }
+        return new String(native_get_path(rel_path.data));
+    }
+
+    public static bool exists(String rel_path) {
+        if (rel_path == null || rel_path.data == null) return false;
+        return native_exists(rel_path.data);
+    }
+
+    public static String read_all_text(String rel_path) {
+        if (rel_path == null || rel_path.data == null) {
+            throw new FileNotFoundException("", "Resource path is null");
+        }
+        int32[] err_box = new int32[1];
+        err_box[0] = 0;
+        char[] content = native_read_all_text(rel_path.data, err_box);
+        if (err_box[0] == 1) {
+            throw new FileNotFoundException(rel_path.data, "Resource not found");
+        }
+        if (err_box[0] == 2) {
+            throw new IOException("Failed to read resource");
+        }
+        return new String(content);
+    }
+
+    public static List<String> read_all_lines(String rel_path) {
+        String full = read_all_text(rel_path);
+        String nl = new String("\n");
+        String[] parts = full.split(nl);
+        List<String> lines = new List<String>(parts.length);
+        for (int32 i = 0; i < parts.length; i = i + 1) {
+            String p = parts[i];
+            lines.add(p);
+        }
+        return lines;
+    }
+
+    private static native char[] native_get_resource_root();
+    private static native char[] native_get_path(char[] rel_path);
+    private static native bool native_exists(char[] rel_path);
+    private static native char[] native_read_all_text(char[] rel_path, int32[] err_box);
+}
