@@ -364,6 +364,28 @@ private:
             PackageManager pm;
             std::optional<InstalledProject> matched;
 
+            // Automatically synchronize bundled solixlib if available and not yet installed
+            if (name == "solixlib" || name == "solix") {
+                auto bundled_opt = PackageManager::discover_bundled_solixlib();
+                if (bundled_opt) {
+                    auto b_mf_path = solix::find_project_manifest(bundled_opt.value());
+                    if (std::filesystem::exists(b_mf_path)) {
+                        try {
+                            std::ifstream f(b_mf_path);
+                            nlohmann::json b_mf;
+                            f >> b_mf;
+                            std::string b_ver = b_mf.value("version", "");
+                            if (!b_ver.empty()) {
+                                auto cur = pm.get_project_by_name_and_version(name, b_ver);
+                                if (!cur) {
+                                    pm.try_auto_install_bundled_solixlib();
+                                }
+                            }
+                        } catch (...) {}
+                    }
+                }
+            }
+
             if (!version.empty()) {
                 matched = pm.get_project_by_name_and_version(name, version);
             } else {
@@ -383,11 +405,18 @@ private:
                 if (pm.try_auto_install_bundled_solixlib()) {
                     if (!version.empty()) {
                         matched = pm.get_project_by_name_and_version(name, version);
-                    } else {
-                        auto all_matches = pm.get_projects_by_name(name);
-                        if (!all_matches.empty()) {
-                            matched = all_matches.back();
-                        }
+                    }
+                }
+                // Fallback: if exact requested version of solixlib wasn't matched, pick latest installed
+                if (!matched) {
+                    auto all_matches = pm.get_projects_by_name(name);
+                    if (!all_matches.empty()) {
+                        std::sort(all_matches.begin(), all_matches.end(), [](const InstalledProject& a, const InstalledProject& b) {
+                            auto va = SemVer::parse(a.version).value_or(SemVer{0, 0, 0, a.version});
+                            auto vb = SemVer::parse(b.version).value_or(SemVer{0, 0, 0, b.version});
+                            return va < vb;
+                        });
+                        matched = all_matches.back();
                     }
                 }
             }

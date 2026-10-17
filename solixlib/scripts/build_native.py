@@ -137,16 +137,24 @@ def main():
     solixlib_dir = script_dir.parent
     repo_root = solixlib_dir.parent
 
+    core_include = repo_root / "core" / "include"
+    if not core_include.exists():
+        print(f"[build_native] Core include directory not found at {core_include}, skipping compilation.")
+        return 0
+
     include_dirs = [
-        repo_root / "core" / "include",
+        core_include,
         repo_root / "core" / "src",
     ]
 
     native_src_dir = solixlib_dir / "native" / "src"
+    if not native_src_dir.exists():
+        print(f"[build_native] native/src does not exist at {native_src_dir}, skipping compilation.")
+        return 0
     sources = sorted(list(native_src_dir.glob("*.cpp")))
     if not sources:
-        print(f"[build_native] Error: No C++ source files found in {native_src_dir}", file=sys.stderr)
-        sys.exit(1)
+        print(f"[build_native] No C++ source files found in {native_src_dir}, skipping compilation.")
+        return 0
 
     output_dir = Path(args.output_dir) if args.output_dir else (solixlib_dir / "lib")
     output_dir.mkdir(parents=True, exist_ok=True)

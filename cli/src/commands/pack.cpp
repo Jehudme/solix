@@ -235,6 +235,7 @@ PackResult pack_project(const std::filesystem::path& manifest_or_dir,
 
 void setup_pack_command(CLI::App &app) {
     auto *pack_cmd = app.add_subcommand("pack", "Package a Solix project into a single .slxpac archive");
+    pack_cmd->alias("package");
 
     auto target_str = std::make_shared<std::string>();
     auto profile_str = std::make_shared<std::string>("release");

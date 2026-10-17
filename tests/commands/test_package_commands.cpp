@@ -116,7 +116,13 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
         std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
         REQUIRE((std::filesystem::exists(solixlib_path / "manifest.json") || std::filesystem::exists(solixlib_path / "solix.json")));
 
-        std::string expected_id = PackageManager::compute_project_id("solixlib", "0.1.0");
+        nlohmann::json solixlib_manifest;
+        {
+            std::ifstream mf(solixlib_path / "manifest.json");
+            mf >> solixlib_manifest;
+        }
+        std::string solixlib_ver = solixlib_manifest.value("version", "1.2.0");
+        std::string expected_id = PackageManager::compute_project_id("solixlib", solixlib_ver);
 
         auto res = run_cli({"install", solixlib_path.string()}, solix_home.path());
         CHECK(res.exit_code == 0);
@@ -132,12 +138,19 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
         auto list_res = run_cli({"list"}, solix_home.path());
         CHECK(list_res.exit_code == 0);
         CHECK(list_res.out.find("solixlib") != std::string::npos);
-        CHECK(list_res.out.find("0.1.0") != std::string::npos);
+        CHECK(list_res.out.find(solixlib_ver) != std::string::npos);
     }
 
     SECTION("Positive - Case 5.9: Consumer Project Builds and Runs with Installed Standard Library (solixlib)") {
         std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
         REQUIRE((std::filesystem::exists(solixlib_path / "manifest.json") || std::filesystem::exists(solixlib_path / "solix.json")));
+
+        nlohmann::json solixlib_manifest;
+        {
+            std::ifstream mf(solixlib_path / "manifest.json");
+            mf >> solixlib_manifest;
+        }
+        std::string solixlib_ver = solixlib_manifest.value("version", "1.2.0");
 
         // Install solixlib
         auto inst_res = run_cli({"install", solixlib_path.string()}, solix_home.path());
@@ -152,7 +165,7 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
         manifest["version"] = "1.0.0";
         manifest["dependencies"] = nlohmann::json::array({
             {{"type", "source"}, {"path", "src/main.slx"}},
-            {{"type", "project"}, {"package", "solixlib@0.1.0"}}
+            {{"type", "project"}, {"package", "solixlib@" + solixlib_ver}}
         });
         manifest["profiles"]["debug"]["output_directory"] = "build/debug";
         manifest["profiles"]["debug"]["exe_filename"] = "out.slxbin";
@@ -327,7 +340,13 @@ TEST_CASE("Package Manager - Canonical Solixlib Project Layout (Part XXIV)", "[p
         REQUIRE(std::filesystem::exists(solixlib_path / "src"));
         REQUIRE(std::filesystem::exists(solixlib_path / "lib"));
 
-        std::string expected_id = PackageManager::compute_project_id("solixlib", "0.1.0");
+        nlohmann::json solixlib_manifest;
+        {
+            std::ifstream mf(solixlib_path / "manifest.json");
+            mf >> solixlib_manifest;
+        }
+        std::string solixlib_ver = solixlib_manifest.value("version", "1.2.0");
+        std::string expected_id = PackageManager::compute_project_id("solixlib", solixlib_ver);
 
         auto res = run_cli({"install", solixlib_path.string()}, solix_home.path());
         CHECK(res.exit_code == 0);
@@ -345,6 +364,13 @@ TEST_CASE("Package Manager - Canonical Solixlib Project Layout (Part XXIV)", "[p
         auto inst_res = run_cli({"install", solixlib_path.string()}, solix_home.path());
         REQUIRE(inst_res.exit_code == 0);
 
+        nlohmann::json solixlib_manifest;
+        {
+            std::ifstream mf(solixlib_path / "manifest.json");
+            mf >> solixlib_manifest;
+        }
+        std::string solixlib_ver = solixlib_manifest.value("version", "1.2.0");
+
         auto consumer_dir = proj_workspace.path() / "canonical_consumer";
         std::filesystem::create_directories(consumer_dir / "src");
 
@@ -353,7 +379,7 @@ TEST_CASE("Package Manager - Canonical Solixlib Project Layout (Part XXIV)", "[p
         manifest["version"] = "1.0.0";
         manifest["dependencies"] = nlohmann::json::array({
             {{"type", "source"}, {"path", "src/main.slx"}},
-            {{"type", "project"}, {"package", "solixlib@0.1.0"}}
+            {{"type", "project"}, {"package", "solixlib@" + solixlib_ver}}
         });
         manifest["profiles"]["debug"]["output_directory"] = "build/debug";
         manifest["profiles"]["debug"]["exe_filename"] = "app.slxbin";

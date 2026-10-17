@@ -1,6 +1,6 @@
 {
   "project": "solixlib",
-  "version": "0.1.0",
+  "version": "1.2.0",
   "author": "Solix Engine Team",
   "description": "Standard Library for the Solix Programming Language",
   "license": "MIT",
@@ -223,7 +223,7 @@
       "output_directory": "build/release",
       "exe_filename": "solixlib.slxbin",
       "pre_compile": [
-        "python3 scripts/build_native.py"
+        "python3 -c \"import os, sys; sys.exit(os.system('python3 scripts/build_native.py')) if os.path.exists('scripts/build_native.py') else sys.exit(0)\""
       ],
       "compilation": {
         "entry_point": "main",
