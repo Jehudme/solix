@@ -4867,6 +4867,19 @@ public class Main {
 
 ---
 
+### Case 49.9: Reject Foreign Platform Native Library Format [NOT IMPLEMENTED]
+```cpp
+// Runtime options specifying a foreign platform library format (e.g. .dll on Linux or .so on Windows)
+#ifdef _WIN32
+options.native_libraries.push_back("plugin.so");
+#else
+options.native_libraries.push_back("plugin.dll");
+#endif
+```
+*Expected Result*: Throws clean `SharedLibraryException` with message detailing unsupported native library format for host platform.
+
+---
+
 ## Suite 50: Language Intrinsics (`assert`, `exit`)
 
 ### Case 50.1: Basic Boolean Assertion Passing Silently [IMPLEMENTED]
