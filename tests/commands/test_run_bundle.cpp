@@ -144,4 +144,46 @@ TEST_CASE("CLI Command - run bundle (.slxpac)", "[command][run][bundle]") {
 
         CHECK(run_res.exit_code != 0);
     }
+
+    SECTION("Positive - Case 20.13: Multi-Platform Bundle Native Library Auto-Discovery Filtering") {
+        auto orig_cwd = std::filesystem::current_path();
+        std::filesystem::current_path(sandbox.path());
+
+        std::filesystem::path plugin_src(SOLIX_TEST_PLUGIN_PATH);
+        if (std::filesystem::exists(plugin_src)) {
+            sandbox.create_file("manifest.json", create_bundle_manifest("multiplatform_bundle_app"));
+            sandbox.create_file("src/main.slx", R"(
+                public class NativeMath {
+                    public static native int32 add(int32 a, int32 b);
+                }
+
+                public class Main {
+                    public static int32 main() {
+                        return NativeMath.add(20, 22) == 42 ? 0 : 1;
+                    }
+                }
+            )");
+
+            // Copy valid host native plugin into lib/
+            auto lib_dir = sandbox.path() / "lib";
+            std::filesystem::create_directories(lib_dir);
+            std::filesystem::copy_file(plugin_src, lib_dir / plugin_src.filename(),
+                                       std::filesystem::copy_options::overwrite_existing);
+
+            // Also create a foreign-platform mock library in lib/ (e.g. .dll on Linux or .so on Windows)
+#ifdef _WIN32
+            sandbox.create_file("lib/foreign_plugin.so", "FOREIGN_LINUX_BINARY");
+#else
+            sandbox.create_file("lib/foreign_plugin.dll", "FOREIGN_WINDOWS_BINARY");
+#endif
+
+            auto pack_res = run_cli({"pack", "-o", "multiplatform_app.slxpac"});
+            REQUIRE(pack_res.exit_code == 0);
+
+            // When running, the foreign library should be ignored and the valid host library loaded
+            auto run_res = run_cli({"run", "multiplatform_app.slxpac"});
+            CHECK(run_res.exit_code == 0);
+        }
+        std::filesystem::current_path(orig_cwd);
+    }
 }

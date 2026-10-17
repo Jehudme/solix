@@ -4867,7 +4867,7 @@ public class Main {
 
 ---
 
-### Case 49.9: Reject Foreign Platform Native Library Format [NOT IMPLEMENTED]
+### Case 49.9: Reject Foreign Platform Native Library Format [IMPLEMENTED]
 ```cpp
 // Runtime options specifying a foreign platform library format (e.g. .dll on Linux or .so on Windows)
 #ifdef _WIN32
