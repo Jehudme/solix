@@ -12,7 +12,45 @@
 #include <dlfcn.h>
 #endif
 
+#include <algorithm>
+
 namespace solix {
+
+std::string_view get_platform_native_library_extension() {
+#ifdef _WIN32
+  return ".dll";
+#elif defined(__APPLE__)
+  return ".dylib";
+#else
+  return ".so";
+#endif
+}
+
+bool is_platform_native_library(const std::filesystem::path &path) {
+  std::string filename = path.filename().string();
+  std::transform(filename.begin(), filename.end(), filename.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  std::string ext = path.extension().string();
+  std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+#ifdef _WIN32
+  return ext == ".dll";
+#elif defined(__APPLE__)
+  return ext == ".dylib" || ext == ".so" || filename.find(".dylib") != std::string::npos;
+#else
+  return ext == ".so" || filename.find(".so.") != std::string::npos;
+#endif
+}
+
+bool is_any_shared_library(const std::filesystem::path &path) {
+  std::string filename = path.filename().string();
+  std::transform(filename.begin(), filename.end(), filename.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  std::string ext = path.extension().string();
+  std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+  return ext == ".so" || ext == ".dll" || ext == ".dylib" ||
+         filename.find(".so.") != std::string::npos ||
+         filename.find(".dylib") != std::string::npos;
+}
 
 namespace {
 
@@ -65,6 +103,11 @@ SharedLibrary &SharedLibrary::operator=(SharedLibrary &&other) noexcept {
 bool SharedLibrary::load(const std::filesystem::path &path) {
   unload();
   path_ = path;
+
+  if (!is_platform_native_library(path)) {
+    std::string ext = path.extension().string();
+    throw SharedLibraryException("Unsupported native library format '" + ext + "' for host platform. Expected '" + std::string(get_platform_native_library_extension()) + "'.");
+  }
 
 #ifdef _WIN32
   // Suppress Windows system error dialogs (bad image format, missing files, media errors)

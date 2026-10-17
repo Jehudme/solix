@@ -5,6 +5,7 @@
 #include "solix/compilation.hpp"
 #include "solix/runtime.hpp"
 #include "solix/zip_utils.hpp"
+#include "solix/shared_library.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -16,19 +17,13 @@ namespace solix::cli {
 
 namespace {
 
-inline bool is_shared_library(const std::filesystem::path &p) {
-  std::string ext = p.extension().string();
-  std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return std::tolower(c); });
-  return ext == ".so" || ext == ".dll" || ext == ".dylib";
-}
-
 inline void scan_directory_for_native_libs(const std::filesystem::path &dir, std::vector<std::filesystem::path> &out) {
   std::error_code ec;
   if (!std::filesystem::exists(dir, ec) || !std::filesystem::is_directory(dir, ec)) {
     return;
   }
   for (const auto &entry : std::filesystem::directory_iterator(dir, ec)) {
-    if (entry.is_regular_file(ec) && is_shared_library(entry.path())) {
+    if (entry.is_regular_file(ec) && solix::is_platform_native_library(entry.path())) {
       out.push_back(entry.path().lexically_normal());
     }
   }

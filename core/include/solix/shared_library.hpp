@@ -12,6 +12,25 @@ public:
       : std::runtime_error(message) {}
 };
 
+/**
+ * @brief Returns the canonical native shared library extension for the host platform (including leading dot).
+ * Examples: ".dll" on Windows, ".dylib" on macOS, ".so" on Linux.
+ */
+std::string_view get_platform_native_library_extension();
+
+/**
+ * @brief Checks if a filesystem path has a valid native library extension for the host platform.
+ * Windows: .dll
+ * macOS: .dylib, .so
+ * Linux/POSIX: .so
+ */
+bool is_platform_native_library(const std::filesystem::path &path);
+
+/**
+ * @brief Checks if a path has any known native shared library extension (.so, .dll, .dylib).
+ */
+bool is_any_shared_library(const std::filesystem::path &path);
+
 class SharedLibrary {
 public:
   SharedLibrary() = default;
