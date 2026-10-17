@@ -17,8 +17,13 @@ This document tracks all planned, in-progress, and completed engineering phases 
 | [Phase 5](#phase-5-heap-allocator--arc-overhaul) | Heap Allocator & ARC Overhaul | P1 High | - [x] Completed & Merged |
 | [Phase 6](#phase-6-cross-platform-zip-engine-integration-miniz--solix-pack-command) | Cross-Platform ZIP Engine Integration (`miniz`) & `solix pack` Command | P1 High | - [x] Completed & Merged |
 | [Phase 7](#phase-7-runtime--launcher-bundle-ingestion-and-dynamic-library-loading) | Runtime & Launcher Bundle Ingestion and Dynamic Library Loading | P1 High | - [x] Completed & Merged |
-| [Phase 8](#phase-8-standard-library-solixlib-resource--filesystem-dual-location-api) | Standard Library (`solixlib`) Resource & Filesystem Dual-Location API | P1 High | - [ ] Planned |
-| [Phase 9](#phase-9-end-to-end-cross-platform-verification-tests--documentation) | End-to-End Cross-Platform Verification, Tests & Documentation | P2 Polish | - [ ] Planned |
+| [Phase 8](#phase-8-standard-library-solixlib-resource--filesystem-dual-location-api) | Standard Library (`solixlib`) Resource & Filesystem Dual-Location API | P1 High | - [x] Completed & Merged |
+| [Phase 9](#phase-9-end-to-end-cross-platform-verification-tests--documentation) | End-to-End Cross-Platform Verification, Tests & Documentation | P2 Polish | - [x] Completed & Merged |
+| [Phase 10](#phase-10-multi-depth-dependency-asset--native-library-staging-in-build-and-package) | Multi-Depth Dependency Asset & Native Library Staging in Build and Package | P1 High | - [x] Completed & Merged |
+| [Phase 11](#phase-11-host-platform-native-library-import-enforcement--filtering) | Host-Platform Native Library Import Enforcement & Filtering | P1 High | - [ ] Planned |
+| [Phase 12](#phase-12-pre-compile--post-compile-command-lifecycle-engine) | Pre-Compile & Post-Compile Command Lifecycle Engine in Build & Pack | P1 High | - [ ] Planned |
+| [Phase 13](#phase-13-dependency-profile-selection--profile-specific-variable-and-dependency-propagation) | Dependency Profile Selection & Profile-Specific Variable/Dependency Propagation | P1 High | - [ ] Planned |
+| [Phase 14](#phase-14-end-to-end-integration-native-cmake-compilation-bundling--documentation) | End-to-End Integration, Native CMake Compilation, Bundling & Documentation | P2 Polish | - [ ] Planned |
 
 ---
 
@@ -246,6 +251,121 @@ Ensure that multi-depth (transitive) dependency libraries automatically have the
 - [x] Update CLI specifications (`docs/spec/cli/build.md`, `docs/spec/cli/pack.md`) and user guide (`docs/guide/packaging_and_resources.md`).
 - [x] Verify 100% test pass rate across all test suites with zero compiler warnings.
 
+---
 
+## Phase 11: Host-Platform Native Library Import Enforcement & Filtering
 
+- **Priority**: `P1 High`
+- **Affected Modules**: `core/include/solix/shared_library.hpp`, `core/src/runtime/shared_library.cpp`, `core/src/runtime/native_registry.cpp`, `cli/src/commands/execute.cpp`, `tests/runtime/test_native_library.cpp`, `tests/commands/test_run_bundle.cpp`, `tests/statements/TESTS.md`, `docs/spec/runtime/native_interop.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Ensure that the Solix runtime and launcher strictly load only host-platform-compatible shared libraries (`.so` on Linux, `.dll` on Windows, `.dylib`/`.so` on macOS). Auto-discovery in `solix run` (from `lib/` or `.slxpac` extraction) ignores incompatible foreign library files, and explicit loading of mismatched library types (via `-L`, manifest, or `NativeRegistry::load_library`) throws a clean `SharedLibraryException` with a clear platform-mismatch diagnostic.
+
+### Action Items
+- [ ] Add `is_platform_native_library(path)` and platform-expected extension helpers in `core/include/solix/shared_library.hpp`.
+- [ ] Enforce platform check in `SharedLibrary::load`: reject unsupported extensions (e.g. `.dll` on Linux) with informative `SharedLibraryException`.
+- [ ] Update `scan_directory_for_native_libs` in `cli/src/commands/execute.cpp` to filter and only load host-platform-compatible libraries from `lib/` and bundle directories.
+- [ ] Update `tests/statements/TESTS.md` with Case 49.9 (Reject foreign platform native library format) tagged with `[NOT IMPLEMENTED]`.
+- [ ] Implement Catch2 test in `tests/runtime/test_native_library.cpp` and `tests/commands/test_run_bundle.cpp` verifying rejection of foreign libraries and seamless loading of valid host libraries.
+- [ ] Update documentation in `docs/spec/runtime/native_interop.md` detailing cross-platform native library discovery rules.
+- [ ] Verify 100% test pass rate with zero warnings and merge via `--no-ff`.
+
+---
+
+## Phase 12: Pre-Compile & Post-Compile Command Lifecycle Engine
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `cli/src/command_runner.hpp`, `cli/src/commands/build.cpp`, `cli/src/commands/build.hpp`, `cli/src/commands/pack.cpp`, `tests/commands/test_build_command.cpp`, `tests/commands/test_pack_command.cpp`, `tests/commands/TESTS.md`, `docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, `docs/spec/cli/pack.md`, `docs/guide/packaging_and_resources.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Introduce declarative lifecycle command hooks (`pre_compile` and `post_compile`) at both the project root level and within individual profiles in `manifest.json` / `solix.json`. Commands execute cross-platform in project-relative working directories with exit-code enforcement, allowing automated CMake builds, native companion library compilation, and asset preprocessing before bytecode compilation and packaging.
+
+### Execution Ordering Invariant
+1. **Root `pre_compile` commands**: In order of declaration (e.g. `cmake -B native/build -S native`).
+2. **Active Profile `pre_compile` commands**: In order of declaration (e.g. `cmake --build native/build --config Release`).
+3. **Bytecode Compilation & Staging**: Compiler compiles `.slx` sources and stages `lib/` and `resources/`.
+4. **Active Profile `post_compile` commands**: In order of declaration (e.g. strip binary, profile-specific testing).
+5. **Root `post_compile` commands**: In order of declaration (e.g. final notification or post-processing).
+
+### Action Items
+- [ ] Create cross-platform command execution utility `CommandRunner` in `cli/src/command_runner.hpp` supporting directory context (`cwd`), command echoing, output streaming, and error code propagation.
+- [ ] Parse root-level `pre_compile` (and `precompile`) and `post_compile` (and `postcompile`) string arrays from manifest.
+- [ ] Parse profile-level `pre_compile` and `post_compile` string arrays from `profiles.<profile_name>`.
+- [ ] Integrate command execution into `build_project` in `cli/src/commands/build.cpp`:
+  - Run root pre-compile followed by profile pre-compile before compilation.
+  - Abort immediately with exit code 1 if any pre-compile command returns non-zero.
+  - Run profile post-compile followed by root post-compile after successful compilation.
+  - Abort immediately with exit code 1 if any post-compile command returns non-zero.
+- [ ] Verify seamless interaction with `solix pack`, ensuring pre-compile commands (e.g. CMake native builds) complete before `.slxpac` packaging gathers `lib/` artifacts.
+- [ ] Define test specifications in `tests/commands/TESTS.md` (Cases 21.1 to 21.6) tagged with `[NOT IMPLEMENTED]`.
+- [ ] Implement Catch2 test cases in `tests/commands/test_build_command.cpp` and `tests/commands/test_pack_command.cpp`:
+  - Case 21.1: Root pre-compile commands execute before compilation.
+  - Case 21.2: Profile-specific pre-compile commands execute after root pre-compile commands.
+  - Case 21.3: Post-compile commands execute in profile-then-root order after compilation.
+  - Case 21.4: Failing pre-compile command aborts build immediately without running compilation.
+  - Case 21.5: Failing post-compile command causes build failure.
+  - Case 21.6: Pre-compile command generating shared library in `lib/` is bundled by `solix pack` into `.slxpac`.
+- [ ] Update documentation in `docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, and `docs/spec/cli/pack.md`.
+- [ ] Verify 100% test pass rate with zero warnings and merge via `--no-ff`.
+
+---
+
+## Phase 13: Dependency Profile Selection & Profile-Specific Variable/Dependency Propagation
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `cli/src/dependency_resolver.hpp`, `cli/src/commands/build.cpp`, `tests/commands/test_dependency_resolution.cpp`, `tests/commands/TESTS.md`, `docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, `docs/guide/packaging_and_resources.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Allow projects to select a specific build profile when referencing project/library dependencies (`"profile": "<name>"`), propagating the chosen profile's settings—specifically `compilation.additional_dependencies` (both source and project dependencies)—throughout the dependency graph.
+
+### Profile Resolution Rules
+1. **Explicit Profile**: If declared with `"profile": "<name>"`, require that profile to exist in the dependency manifest. If absent, abort with a fatal error displaying all valid profiles available.
+2. **Inherited Profile (Default)**: If omitted, inherit the consuming project's active profile name if defined in the dependency; if not found, fallback to `"debug"`; if `"debug"` is not defined, fallback to the first defined profile.
+3. **Profile Variable Ingestion**: Ingest the dependency's selected profile's `compilation.additional_dependencies` (both `type: "source"` and `type: "project"`).
+4. **Topological Dependency Pre-Compile Execution**: Automatically invoke the selected profile's pre-compile commands for dependencies in topological order so that dependency native libraries are built before consuming projects stage them.
+
+### Action Items
+- [ ] Update `ProjectCandidate` in `cli/src/dependency_resolver.hpp` to store `selected_profile`.
+- [ ] Support `"profile"` field in dependency objects within `dependencies` and `compilation.additional_dependencies`.
+- [ ] Implement profile selection, validation, and fallback resolution logic in `DependencyManager`.
+- [ ] Ingest `compilation.additional_dependencies` from each dependency candidate's selected profile.
+- [ ] Support recursive dependency walking for project dependencies declared within dependency profiles.
+- [ ] Execute dependency pre-compile hooks in topological order during `build_project`.
+- [ ] Define test specifications in `tests/commands/TESTS.md` (Cases 22.1 to 22.6) tagged with `[NOT IMPLEMENTED]`.
+- [ ] Implement Catch2 test cases in `tests/commands/test_dependency_resolution.cpp`:
+  - Case 22.1: Explicit profile selection on dependency loads profile-specific source dependencies.
+  - Case 22.2: Profile inheritance when dependency does not specify `"profile"`.
+  - Case 22.3: Profile fallback when inherited profile does not exist in dependency.
+  - Case 22.4: Profile-specific transitive project dependencies discovered and compiled.
+  - Case 22.5: Error when requested profile does not exist in dependency manifest.
+  - Case 22.6: Dependency pre-compile command runs in dependency working directory prior to consumer build.
+- [ ] Update documentation in `docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, and `docs/guide/packaging_and_resources.md`.
+- [ ] Verify 100% test pass rate with zero warnings and merge via `--no-ff`.
+
+---
+
+## Phase 14: End-to-End Integration, Native CMake Compilation, Bundling & Documentation
+
+- **Priority**: `P2 Polish`
+- **Affected Modules**: `tests/commands/test_pack_command.cpp`, `tests/commands/TESTS.md`, `docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, `docs/spec/cli/pack.md`, `docs/guide/packaging_and_resources.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Perform end-to-end integration verification combining dependency profile selection, pre-compile CMake native library builds, transitive staging, single-file `.slxpac` packaging, and bundle execution. Finalize user guides and developer references.
+
+### Action Items
+- [ ] Define integration test specification in `tests/commands/TESTS.md` (Case 23.1).
+- [ ] Implement comprehensive Catch2 integration test in `tests/commands/test_pack_command.cpp`:
+  - Application depends on Library A with `"profile": "release"`.
+  - Library A has a pre-compile command compiling a native shared library into `lib/`.
+  - Application has pre-compile and post-compile commands verifying execution order.
+  - `solix pack` produces `.slxpac` bundle containing compiled bytecode, staged native library, and staged resources.
+  - `solix run` executes the packaged `.slxpac` bundle and successfully invokes native functions and loads resources.
+- [ ] Author comprehensive guide chapter in `docs/guide/packaging_and_resources.md` demonstrating CMake native library compilation via pre-compile lifecycle hooks.
+- [ ] Update manifest specification in `docs/spec/cli/manifest.md` with complete examples and reference tables.
+- [ ] Verify 100% test pass rate across all suites with zero compiler warnings and clean sanitizer runs.
+- [ ] Finalize phase tracking in `docs/PLAN.md`.
 
