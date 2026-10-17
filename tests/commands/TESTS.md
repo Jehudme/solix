@@ -1030,34 +1030,34 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 21.1: Root Pre-Compile Commands Execute Before Compilation [NOT IMPLEMENTED]
+#### Case 21.1: Root Pre-Compile Commands Execute Before Compilation [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: `manifest.json` defines root-level `pre_compile` command creating a source file or asset.
 - **Expected**: Exits 0; the command executes in project root directory before compilation; generated source or asset is compiled/staged successfully.
 
-#### Case 21.2: Profile-Specific Pre-Compile Commands Execute in Coherent Order [NOT IMPLEMENTED]
+#### Case 21.2: Profile-Specific Pre-Compile Commands Execute in Coherent Order [IMPLEMENTED]
 - **Command**: `solix build -p release`
 - **Setup**: `manifest.json` defines both root `pre_compile` and profile `pre_compile` writing sequence markers to a log file.
 - **Expected**: Exits 0; commands execute in order: root `pre_compile` first, then profile `pre_compile`.
 
-#### Case 21.3: Post-Compile Commands Execute in Profile-Then-Root Order [NOT IMPLEMENTED]
+#### Case 21.3: Post-Compile Commands Execute in Profile-Then-Root Order [IMPLEMENTED]
 - **Command**: `solix build -p release`
 - **Setup**: `manifest.json` defines profile `post_compile` and root `post_compile` writing sequence markers to a log file.
 - **Expected**: Exits 0; commands execute after successful compilation in order: profile `post_compile` first, then root `post_compile`.
 
-#### Case 21.6: Pre-Compile Command Generating Native Library Bundled by `solix pack` [NOT IMPLEMENTED]
+#### Case 21.6: Pre-Compile Command Generating Native Library Bundled by `solix pack` [IMPLEMENTED]
 - **Command**: `solix pack -o native_app.slxpac`
 - **Setup**: `manifest.json` has `pre_compile` command that copies or compiles a native shared library into `lib/`.
 - **Expected**: Exits 0; pre-compile command runs before bytecode compilation; `solix pack` stages and archives the generated native library into `native_app.slxpac`.
 
 ### Negative Test Scenarios
 
-#### Case 21.4: Failing Pre-Compile Command Aborts Build Immediately [NOT IMPLEMENTED]
+#### Case 21.4: Failing Pre-Compile Command Aborts Build Immediately [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: `manifest.json` defines a `pre_compile` command that exits with code 42 (e.g. `sh -c 'exit 42'` or `cmake non_existent_dir`).
 - **Expected**: Exits non-zero (1); outputs `Error: pre-compile command failed with exit code 42`; Solix bytecode compilation is aborted and output binary is NOT produced.
 
-#### Case 21.5: Failing Post-Compile Command Causes Build Failure [NOT IMPLEMENTED]
+#### Case 21.5: Failing Post-Compile Command Causes Build Failure [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: `manifest.json` defines a valid project with a `post_compile` command that exits with code 1.
 - **Expected**: Exits non-zero (1); outputs `Error: post-compile command failed with exit code 1`.
