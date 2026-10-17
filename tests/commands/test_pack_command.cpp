@@ -689,5 +689,30 @@ TEST_CASE("Universal Multi-Platform Cross-Compilation & Packaging (Part XXV)", "
         std::filesystem::current_path(orig_cwd);
         CHECK(run_res.exit_code == 0);
     }
+
+    SECTION("Case 25.4: solix package Alias and End-to-End Scaffolding Packaging") {
+        auto proj_dir = sandbox.path() / "scaffold_app";
+
+        // 1. solix new scaffold_app
+        auto new_res = run_cli({"new", proj_dir.string()});
+        REQUIRE(new_res.exit_code == 0);
+        REQUIRE(std::filesystem::exists(proj_dir / "manifest.json"));
+        REQUIRE(std::filesystem::exists(proj_dir / "src" / "main.slx"));
+
+        // 2. solix package scaffold_app -o app.slxpac (using 'package' alias)
+        auto out_pac = sandbox.path() / "app.slxpac";
+        auto pack_res = run_cli({"package", proj_dir.string(), "-o", out_pac.string()});
+        REQUIRE(pack_res.exit_code == 0);
+        REQUIRE(std::filesystem::exists(out_pac));
+
+        solix::ZipArchiveReader reader(out_pac);
+        CHECK(reader.is_valid());
+        CHECK(reader.has_entry("bytecode.slxbin"));
+
+        // 3. solix run app.slxpac
+        auto run_res = run_cli({"run", out_pac.string()});
+        CHECK(run_res.exit_code == 0);
+        CHECK(run_res.out.find("Hello, World!") != std::string::npos);
+    }
 }
 

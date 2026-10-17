@@ -1172,6 +1172,11 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Consumer application depends on `solixlib` with `"profile": "release"`.
 - **Expected**: Exits 0; `solixlib` pre-compile hook compiles multi-platform native companion libraries into `lib/`; packaging includes all platform variants into `consumer.slxpac`; running `consumer.slxpac` filters and executes the host platform native library successfully.
 
+#### Case 25.4: solix package Alias and End-to-End Scaffolding Packaging [IMPLEMENTED]
+- **Command**: `solix new scaffold_app && solix package scaffold_app -o app.slxpac && solix run app.slxpac`
+- **Setup**: Newly scaffolded application using `solix new`.
+- **Expected**: Exits 0; `solix package` functions identically as an alias for `solix pack`; generated `.slxpac` package runs successfully with `solix run` and prints `"Hello, World!"`.
+
 ---
 
 ## Part XXVI: Release v1.2.0 Packaging, Version Verification & CI Staging
