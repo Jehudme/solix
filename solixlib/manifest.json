@@ -222,6 +222,9 @@
     "release": {
       "output_directory": "build/release",
       "exe_filename": "solixlib.slxbin",
+      "pre_compile": [
+        "python3 scripts/build_native.py"
+      ],
       "compilation": {
         "entry_point": "main",
         "multithreaded": false
@@ -229,3 +232,4 @@
     }
   }
 }
+

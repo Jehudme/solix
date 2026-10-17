@@ -556,3 +556,97 @@ TEST_CASE("CLI Command - pack", "[command][pack]") {
         CHECK(run_res.exit_code == 0);
     }
 }
+
+TEST_CASE("Universal Multi-Platform Cross-Compilation & Packaging (Part XXV)", "[pack][zig][cross_compile][phase16]") {
+    TempDir sandbox;
+
+    SECTION("Case 25.1: Multi-Platform Zig Cross-Compilation of solixlib_native") {
+        auto out_dir = sandbox.path() / "native_libs";
+        auto script_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "scripts" / "build_native.py";
+        REQUIRE(std::filesystem::exists(script_path));
+
+        int py_res = std::system(("python3 " + script_path.string() + " --output-dir " + out_dir.string()).c_str());
+        REQUIRE(py_res == 0);
+
+        CHECK(std::filesystem::exists(out_dir / "libsolixlib_native.so"));
+        if (std::system("zig version > /dev/null 2>&1") == 0) {
+            CHECK(std::filesystem::exists(out_dir / "solixlib_native.dll"));
+            CHECK(std::filesystem::exists(out_dir / "libsolixlib_native.dylib"));
+        }
+    }
+
+    SECTION("Case 25.2: Release Packaging of Canonical solixlib into Universal Multi-Platform .slxpac") {
+        auto orig_cwd = std::filesystem::current_path();
+        std::filesystem::path solixlib_dir = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
+        std::filesystem::current_path(solixlib_dir);
+
+        auto out_pac = sandbox.path() / "solixlib.slxpac";
+        auto pack_res = run_cli({"pack", "-p", "release", "-o", out_pac.string()});
+        std::filesystem::current_path(orig_cwd);
+
+        REQUIRE(pack_res.exit_code == 0);
+        REQUIRE(std::filesystem::exists(out_pac));
+
+        solix::ZipArchiveReader reader(out_pac);
+        CHECK(reader.is_valid());
+        CHECK(reader.has_entry("bytecode.slxbin"));
+        CHECK(reader.has_entry("manifest.json"));
+        CHECK(reader.has_entry("lib/libsolixlib_native.so"));
+        if (std::system("zig version > /dev/null 2>&1") == 0) {
+            CHECK(reader.has_entry("lib/solixlib_native.dll"));
+            CHECK(reader.has_entry("lib/libsolixlib_native.dylib"));
+        }
+    }
+
+    SECTION("Case 25.3: Consumer Application Release Packaging and Cross-Platform Native Bundling") {
+        auto orig_cwd = std::filesystem::current_path();
+        auto app_dir = sandbox.path() / "universal_consumer";
+        std::filesystem::create_directories(app_dir / "src");
+
+        std::filesystem::path solixlib_dir = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
+
+        nlohmann::json manifest;
+        manifest["project"] = "universal_consumer";
+        manifest["version"] = "1.0.0";
+        manifest["dependencies"] = nlohmann::json::array({
+            {{"type", "source"}, {"path", "src/main.slx"}},
+            {{"type", "project"}, {"path", solixlib_dir.string()}, {"profile", "release"}}
+        });
+        manifest["profiles"]["release"]["output_directory"] = "build/release";
+        manifest["profiles"]["release"]["exe_filename"] = "app.slxbin";
+        manifest["profiles"]["release"]["compilation"]["entry_point"] = "main";
+        manifest["profiles"]["release"]["compilation"]["multithreaded"] = false;
+
+        std::ofstream mf(app_dir / "manifest.json");
+        mf << manifest.dump(2);
+        mf.close();
+
+        std::ofstream sf(app_dir / "src/main.slx");
+        sf << "import solix.core.Internal;\n"
+           << "int32 main() {\n"
+           << "    return Internal.version() == 1 ? 0 : 1;\n"
+           << "}\n";
+        sf.close();
+
+        std::filesystem::current_path(app_dir);
+        auto out_pac = app_dir / "consumer.slxpac";
+        auto pack_res = run_cli({"pack", "-p", "release", "-o", out_pac.string()});
+        REQUIRE(pack_res.exit_code == 0);
+        REQUIRE(std::filesystem::exists(out_pac));
+
+        solix::ZipArchiveReader reader(out_pac);
+        CHECK(reader.is_valid());
+        CHECK(reader.has_entry("bytecode.slxbin"));
+        CHECK(reader.has_entry("lib/libsolixlib_native.so"));
+        if (std::system("zig version > /dev/null 2>&1") == 0) {
+            CHECK(reader.has_entry("lib/solixlib_native.dll"));
+            CHECK(reader.has_entry("lib/libsolixlib_native.dylib"));
+        }
+
+        // Run the packaged .slxpac
+        auto run_res = run_cli({"run", out_pac.string()});
+        std::filesystem::current_path(orig_cwd);
+        CHECK(run_res.exit_code == 0);
+    }
+}
+

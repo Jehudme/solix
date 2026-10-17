@@ -34,6 +34,7 @@ CMakeFiles/
 
 # Python tooling / one-off patch scripts (never committed)
 *.py
+!solixlib/scripts/*.py
 
 # Debug and scratch artefacts
 debug_*
