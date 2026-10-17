@@ -191,22 +191,22 @@ Enable `solix run` and `solix_launcher` to directly accept and execute `.slxpac`
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `solixlib/project/src/solix/io/filesystem/Resource.slx`, `File.slx`, `Path.slx`, `solixlib/native/src/io_fs.cpp`, `solixlib/project/manifest.json`, `tests/solixlib/test_resource.cpp`, `tests/solixlib/TESTS.md`, `docs/spec/solixlib/resource.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged (2026-10-17)
 
 ### Objective
 Enhance `solixlib` to provide clean, dual-location filesystem operations—allowing Solix programs to explicitly select whether to read from internal bundled application resources (`resources/`) or from outside the application (host filesystem).
 
 ### Action Items
-- [ ] Implement native runtime hooks in `solixlib/native/src/io_fs.cpp` (`native_get_resource_root`, `native_resource_exists`, `native_read_resource_all_text`).
-- [ ] Author `solix.io.filesystem.Resource` class with `exists`, `read_all_text`, `read_all_lines`, `get_path`, and `get_resource_directory`.
-- [ ] Extend `solix.io.filesystem.File` with `read_resource_text`, `resource_exists`, and `read_all_text(path, is_resource)`.
-- [ ] Support `res://` virtual URI prefix scheme in `Path` and `File`.
-- [ ] Support transparent development fallback to `<project_root>/resources/` when running unbundled (`solix run .`).
-- [ ] Register new files in `solixlib/project/manifest.json`.
-- [ ] Update `tests/solixlib/TESTS.md` (Part XI: Cases 11.1 to 11.4).
-- [ ] Implement Catch2 test suite in `tests/solixlib/test_resource.cpp`.
-- [ ] Author specification in `docs/spec/solixlib/resource.md`.
-- [ ] Verify 100% test pass rate across all test suites.
+- [x] Implement native runtime hooks in `solixlib/native/src/io_fs.cpp` (`native_get_resource_root`, `native_resource_exists`, `native_read_resource_all_text`).
+- [x] Author `solix.io.filesystem.Resource` class with `exists`, `read_all_text`, `read_all_lines`, `get_path`, and `get_resource_directory`.
+- [x] Extend `solix.io.filesystem.File` with `read_resource_text`, `resource_exists`, and `read_all_text(path, is_resource)`.
+- [x] Support `res://` virtual URI prefix scheme in `Path` and `File`.
+- [x] Support transparent development fallback to `<project_root>/resources/` when running unbundled (`solix run .`).
+- [x] Register new files in `solixlib/project/manifest.json`.
+- [x] Update `tests/solixlib/TESTS.md` (Part XI / Section 16: Cases 16.1 to 16.4).
+- [x] Implement Catch2 test suite in `tests/solixlib/test_resource.cpp`.
+- [x] Author specification in `docs/spec/solixlib/resource.md`.
+- [x] Verify 100% test pass rate across all test suites.
 
 ---
 
