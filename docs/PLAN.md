@@ -316,7 +316,7 @@ Introduce declarative lifecycle command hooks (`pre_compile` and `post_compile`)
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `cli/src/dependency_resolver.hpp`, `cli/src/commands/build.cpp`, `tests/commands/test_dependency_resolution.cpp`, `tests/commands/TESTS.md`, `docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, `docs/guide/packaging_and_resources.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged (2026-10-17)
 
 ### Objective
 Allow projects to select a specific build profile when referencing project/library dependencies (`"profile": "<name>"`), propagating the chosen profile's settings—specifically `compilation.additional_dependencies` (both source and project dependencies)—throughout the dependency graph.
@@ -328,22 +328,22 @@ Allow projects to select a specific build profile when referencing project/libra
 4. **Topological Dependency Pre-Compile Execution**: Automatically invoke the selected profile's pre-compile commands for dependencies in topological order so that dependency native libraries are built before consuming projects stage them.
 
 ### Action Items
-- [ ] Update `ProjectCandidate` in `cli/src/dependency_resolver.hpp` to store `selected_profile`.
-- [ ] Support `"profile"` field in dependency objects within `dependencies` and `compilation.additional_dependencies`.
-- [ ] Implement profile selection, validation, and fallback resolution logic in `DependencyManager`.
-- [ ] Ingest `compilation.additional_dependencies` from each dependency candidate's selected profile.
-- [ ] Support recursive dependency walking for project dependencies declared within dependency profiles.
-- [ ] Execute dependency pre-compile hooks in topological order during `build_project`.
-- [ ] Define test specifications in `tests/commands/TESTS.md` (Cases 22.1 to 22.6) tagged with `[NOT IMPLEMENTED]`.
-- [ ] Implement Catch2 test cases in `tests/commands/test_dependency_resolution.cpp`:
+- [x] Update `ProjectCandidate` in `cli/src/dependency_resolver.hpp` to store `selected_profile`.
+- [x] Support `"profile"` field in dependency objects within `dependencies` and `compilation.additional_dependencies`.
+- [x] Implement profile selection, validation, and fallback resolution logic in `DependencyManager`.
+- [x] Ingest `compilation.additional_dependencies` from each dependency candidate's selected profile.
+- [x] Support recursive dependency walking for project dependencies declared within dependency profiles.
+- [x] Execute dependency pre-compile hooks in topological order during `build_project`.
+- [x] Define test specifications in `tests/commands/TESTS.md` (Cases 22.1 to 22.6) tagged with `[IMPLEMENTED]`.
+- [x] Implement Catch2 test cases in `tests/commands/test_dependency_resolution.cpp`:
   - Case 22.1: Explicit profile selection on dependency loads profile-specific source dependencies.
   - Case 22.2: Profile inheritance when dependency does not specify `"profile"`.
   - Case 22.3: Profile fallback when inherited profile does not exist in dependency.
   - Case 22.4: Profile-specific transitive project dependencies discovered and compiled.
   - Case 22.5: Error when requested profile does not exist in dependency manifest.
   - Case 22.6: Dependency pre-compile command runs in dependency working directory prior to consumer build.
-- [ ] Update documentation in `docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, and `docs/guide/packaging_and_resources.md`.
-- [ ] Verify 100% test pass rate with zero warnings and merge via `--no-ff`.
+- [x] Update documentation in `docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, and `docs/guide/packaging_and_resources.md`.
+- [x] Verify 100% test pass rate with zero warnings and merge via `--no-ff`.
 
 ---
 
