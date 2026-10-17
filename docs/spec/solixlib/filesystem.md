@@ -3,9 +3,10 @@
 ## Overview
 
 The `solix.io.filesystem` module provides cross-platform filesystem paths, file input/output, and directory operations:
-1. `Path`: Cross-platform path string manipulation, delimiter normalization, extraction of directories, file names, and extensions.
-2. `File`: Static helpers for synchronous file I/O, text reading/writing, line-by-line streaming into collections, copying, moving, and deleting files.
+1. `Path`: Cross-platform path string manipulation, delimiter normalization, extraction of directories, file names, extensions, and `res://` virtual URI detection.
+2. `File`: Static helpers for synchronous file I/O, text reading/writing, line-by-line streaming into collections, copying, moving, deleting files, dual-location (`is_resource`) selection, and `res://` resolution.
 3. `Directory`: Directory management, hierarchical path creation, enumeration of directory contents (files and subdirectories), and recursive/non-recursive deletion.
+4. `Resource`: Application resource access for bundled assets within `.slxpac` packages or development directories. See [Resource Specification](resource.md).
 
 ---
 
@@ -23,20 +24,28 @@ Static path manipulation utilities. Normalizes path separators and provides cros
 - `static bool is_absolute(String path)`: Determines whether the specified path string contains an absolute or relative path reference.
 - `static String get_temp_path()`: Returns the absolute path of the current system's temporary directory.
 - `static String normalize(String path)`: Resolves redundant separators, `.` and `..` components to generate a canonical path representation.
+- `static bool is_resource_path(String path)`: Checks whether the path string starts with the `res://` virtual resource scheme.
+- `static String to_resource_path(String rel_path)`: Prepends `res://` to the relative path if not already present.
 
 ---
 
 ## 2. Class: `solix.io.filesystem.File`
 
-Static file system utilities for reading, writing, and managing files.
+Static file system utilities for reading, writing, and managing files. All read methods transparently resolve `res://` virtual URI paths.
 
 ### Static Methods
 
-- `static bool exists(String path)`: Checks whether the specified file exists and is a regular file.
-- `static String read_all_text(String path)`: Opens a text file, reads all contents into a `String`, and closes the file. Throws `FileNotFoundException` if the file does not exist, or `IOException` on read failure.
+- `static bool exists(String path)`: Checks whether the specified file exists and is a regular file. Transparently resolves `res://` paths.
+- `static bool exists(String path, bool is_resource)`: Checks existence in application resources if `is_resource` is `true`, or host filesystem otherwise.
+- `static bool resource_exists(String rel_path)`: Checks existence in bundled application resources.
+- `static String read_all_text(String path)`: Opens a text file, reads all contents into a `String`, and closes the file. Transparently resolves `res://` paths. Throws `FileNotFoundException` if the file does not exist, or `IOException` on read failure.
+- `static String read_all_text(String path, bool is_resource)`: Reads from application resources if `is_resource` is `true`, or host filesystem otherwise.
+- `static String read_resource_text(String rel_path)`: Reads all text from bundled application resources.
 - `static void write_all_text(String path, String content)`: Creates a new file, writes the specified string to the file, and closes the file. Overwrites existing files. Throws `IOException` on failure.
 - `static void append_all_text(String path, String content)`: Opens a file, appends the specified string to the end of the file, and closes the file. Creates the file if it does not exist. Throws `IOException` on failure.
-- `static List<String> read_all_lines(String path)`: Reads all lines from the specified file and returns them as a `List<String>`.
+- `static List<String> read_all_lines(String path)`: Reads all lines from the specified file and returns them as a `List<String>`. Transparently resolves `res://` paths.
+- `static List<String> read_all_lines(String path, bool is_resource)`: Reads lines from application resources if `is_resource` is `true`, or host filesystem otherwise.
+- `static List<String> read_resource_lines(String rel_path)`: Reads lines from bundled application resources.
 - `static void delete(String path)`: Deletes the specified file. Throws `FileNotFoundException` if the file does not exist, or `IOException` on deletion failure.
 - `static void copy(String source, String destination)`: Copies an existing file to a new file location. Defaults to not overwriting. Throws `FileNotFoundException` or `IOException`.
 - `static void copy_with_overwrite(String source, String destination, bool overwrite)`: Copies an existing file to a new location with optional overwrite semantics.
