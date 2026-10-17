@@ -565,13 +565,30 @@ TEST_CASE("Universal Multi-Platform Cross-Compilation & Packaging (Part XXV)", "
         auto script_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "scripts" / "build_native.py";
         REQUIRE(std::filesystem::exists(script_path));
 
+#ifdef _WIN32
+        const char* zig_check_cmd = "zig version > nul 2>&1";
+#else
+        const char* zig_check_cmd = "zig version > /dev/null 2>&1";
+#endif
+        bool has_zig = (std::system(zig_check_cmd) == 0);
+
         int py_res = std::system(("python3 " + script_path.string() + " --output-dir " + out_dir.string()).c_str());
+        if (py_res != 0) {
+            py_res = std::system(("python " + script_path.string() + " --output-dir " + out_dir.string()).c_str());
+        }
         REQUIRE(py_res == 0);
 
+#ifdef _WIN32
+        CHECK(std::filesystem::exists(out_dir / "solixlib_native.dll"));
+#elif defined(__APPLE__)
+        CHECK(std::filesystem::exists(out_dir / "libsolixlib_native.dylib"));
+#else
         CHECK(std::filesystem::exists(out_dir / "libsolixlib_native.so"));
-        if (std::system("zig version > /dev/null 2>&1") == 0) {
+#endif
+        if (has_zig) {
             CHECK(std::filesystem::exists(out_dir / "solixlib_native.dll"));
             CHECK(std::filesystem::exists(out_dir / "libsolixlib_native.dylib"));
+            CHECK(std::filesystem::exists(out_dir / "libsolixlib_native.so"));
         }
     }
 
@@ -591,10 +608,20 @@ TEST_CASE("Universal Multi-Platform Cross-Compilation & Packaging (Part XXV)", "
         CHECK(reader.is_valid());
         CHECK(reader.has_entry("bytecode.slxbin"));
         CHECK(reader.has_entry("manifest.json"));
+#ifdef _WIN32
+        const char* zig_check_cmd = "zig version > nul 2>&1";
+        CHECK(reader.has_entry("lib/solixlib_native.dll"));
+#elif defined(__APPLE__)
+        const char* zig_check_cmd = "zig version > /dev/null 2>&1";
+        CHECK(reader.has_entry("lib/libsolixlib_native.dylib"));
+#else
+        const char* zig_check_cmd = "zig version > /dev/null 2>&1";
         CHECK(reader.has_entry("lib/libsolixlib_native.so"));
-        if (std::system("zig version > /dev/null 2>&1") == 0) {
+#endif
+        if (std::system(zig_check_cmd) == 0) {
             CHECK(reader.has_entry("lib/solixlib_native.dll"));
             CHECK(reader.has_entry("lib/libsolixlib_native.dylib"));
+            CHECK(reader.has_entry("lib/libsolixlib_native.so"));
         }
     }
 
@@ -637,10 +664,20 @@ TEST_CASE("Universal Multi-Platform Cross-Compilation & Packaging (Part XXV)", "
         solix::ZipArchiveReader reader(out_pac);
         CHECK(reader.is_valid());
         CHECK(reader.has_entry("bytecode.slxbin"));
+#ifdef _WIN32
+        const char* zig_check_cmd = "zig version > nul 2>&1";
+        CHECK(reader.has_entry("lib/solixlib_native.dll"));
+#elif defined(__APPLE__)
+        const char* zig_check_cmd = "zig version > /dev/null 2>&1";
+        CHECK(reader.has_entry("lib/libsolixlib_native.dylib"));
+#else
+        const char* zig_check_cmd = "zig version > /dev/null 2>&1";
         CHECK(reader.has_entry("lib/libsolixlib_native.so"));
-        if (std::system("zig version > /dev/null 2>&1") == 0) {
+#endif
+        if (std::system(zig_check_cmd) == 0) {
             CHECK(reader.has_entry("lib/solixlib_native.dll"));
             CHECK(reader.has_entry("lib/libsolixlib_native.dylib"));
+            CHECK(reader.has_entry("lib/libsolixlib_native.so"));
         }
 
         // Run the packaged .slxpac
