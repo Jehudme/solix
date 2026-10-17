@@ -22,7 +22,7 @@ using Source = std::variant<std::string, std::filesystem::path>;
 class CompilationProcess;
 struct Lexer;
 struct Parser;
-struct Binder;
+class Binder;
 struct Assembler;
 class Diagnostic;
 

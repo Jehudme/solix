@@ -46,6 +46,7 @@ solix <subcommand> --help
 | [`compile`](compile.md) | Compiles one or more `.slx` source files into bytecode (`.slxb`) | [compile.md](compile.md) |
 | [`run`](run.md) | Executes compiled bytecode (`.slxb`) on the Solix VM | [run.md](run.md) |
 | [`build`](build.md) | Builds project artifacts from `solix.json` profiles and dependencies | [build.md](build.md) |
+| [`pack`](pack.md) | Packages project into a single distribution archive (`.slxpac`) | [pack.md](pack.md) |
 | [`new`](new.md) | Scaffolds a new Solix project with standard structure and manifest | [new.md](new.md) |
 | [`install`](package.md#solix-install) | Installs a local Solix project into the user's package repository | [package.md#solix-install](package.md#solix-install) |
 | [`uninstall`](package.md#solix-uninstall) | Removes an installed project by name and version | [package.md#solix-uninstall](package.md#solix-uninstall) |

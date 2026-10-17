@@ -930,6 +930,44 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Build with warnings and sanitizers enabled.
 - **Expected**: 100% test pass rate with zero runtime faults.
 
+---
+
+# Part XIV: Application Packaging Commands (`solix pack`)
+
+## PackCommand
+
+*Command*: `solix pack [target] [-p|--profile <profile>] [-o|--output <path.slxpac>]`
+
+### Positive Test Scenarios
+
+#### Case 20.1: Default Project Packaging to `.slxpac` [IMPLEMENTED]
+- **Command**: `solix pack`
+- **Setup**: Project with valid `manifest.json`, `src/main.slx`, and `resources/` asset.
+- **Expected**: Exits 0; creates `<build_dir>/<name>.slxpac`; archive contains `bytecode.slxbin`, `manifest.json`, and `resources/`.
+
+#### Case 20.2: Custom Output Path and Profile [IMPLEMENTED]
+- **Command**: `solix pack -p release -o dist/custom_app.slxpac`
+- **Setup**: Project with release profile.
+- **Expected**: Exits 0; creates `dist/custom_app.slxpac`; validates archive integrity via `ZipArchiveReader`.
+
+#### Case 20.3: Packaging Project with Native Libraries [IMPLEMENTED]
+- **Command**: `solix pack`
+- **Setup**: Project containing native shared library files in `lib/`.
+- **Expected**: Exits 0; `.slxpac` contains `lib/<libname>` alongside bytecode and resources.
+
+### Negative Test Scenarios
+
+#### Case 20.4: Packaging Non-Existent Project or Missing Manifest [IMPLEMENTED]
+- **Command**: `solix pack non_existent_dir`
+- **Setup**: Target directory does not exist or has no manifest.
+- **Expected**: Exits non-zero; reports missing manifest or directory.
+
+#### Case 20.5: Packaging Project with Compilation Errors [IMPLEMENTED]
+- **Command**: `solix pack`
+- **Setup**: Project source contains syntax or binding errors.
+- **Expected**: Exits non-zero; compilation fails; `.slxpac` is not produced.
+
+
 
 
 
