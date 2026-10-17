@@ -67,7 +67,7 @@ The package includes an internal `manifest.json` metadata file generated during 
 
 ## Packaging Logic & Asset Ingestion
 
-1. **Compilation**: Invokes project compilation under the chosen profile (defaulting to `release`).
+1. **Compilation & Lifecycle Execution**: Invokes `build_project` under the chosen profile (defaulting to `release`), executing declared root and profile `pre_compile` hooks (e.g. building native C/C++ libraries with CMake), Solix bytecode compilation, transitive asset and native library staging, and `post_compile` hooks.
 2. **Bytecode**: The output binary is packaged at the root as `bytecode.slxbin`.
 3. **Transitive Native Shared Libraries**: Automatically scans the project's `lib/` directory, all transitive dependency projects' `lib/` directories across any depth, and the compiler output directory for shared library files (`.so` on Linux, `.dll` on Windows, `.dylib` on macOS), placing them into `lib/`.
 4. **Transitive Resources**: Recursively collects and merges static assets from `resources/` across all transitive dependency projects and the root project into `resources/`. Root project assets override dependency assets on path collision.
