@@ -369,4 +369,58 @@ Perform end-to-end integration verification combining dependency profile selecti
 - [x] Verify 100% test pass rate across all suites with zero compiler warnings and clean sanitizer runs.
 - [x] Finalize phase tracking in `docs/PLAN.md`.
 
+---
 
+## Phase 15: Canonical Solixlib Project Restructuring
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `solixlib/` (flattening `project/` into root), `CMakeLists.txt`, `solixlib/native/CMakeLists.txt`, `cli/src/package_manager.cpp`, `tests/commands/test_package_commands.cpp`, `tests/commands/TESTS.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Restructure the official standard library `solixlib` from its split `solixlib/project/` and `solixlib/native/` layout into a canonical, first-class Solix project located directly at `solixlib/`. Update CMake installation rules and `PackageManager` discovery.
+
+### Action Items
+- [ ] Move `solixlib/project/manifest.json`, `solixlib/project/src/`, and `solixlib/project/lib/` to `solixlib/` root.
+- [ ] Remove empty `solixlib/project/` directory.
+- [ ] Update `solixlib/native/CMakeLists.txt` to output compiled libraries to `${CMAKE_CURRENT_SOURCE_DIR}/../lib`.
+- [ ] Update root `CMakeLists.txt` install directives to install from `solixlib/` excluding `native/` and `build/`.
+- [ ] Update `PackageManager::discover_bundled_solixlib` in `cli/src/package_manager.cpp` to search `solixlib/` directly.
+- [ ] Define test specifications in `tests/commands/TESTS.md` (Part XXIV: Canonical Standard Library Project Structure).
+- [ ] Implement Catch2 tests in `tests/commands/test_package_commands.cpp`.
+- [ ] Verify 100% test pass rate with zero warnings and merge via `--no-ff`.
+
+---
+
+## Phase 16: Universal Multi-Platform Zig/CMake Cross-Compilation Pipeline
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `solixlib/scripts/build_native.py`, `solixlib/manifest.json`, `tests/commands/test_pack_command.cpp`, `tests/commands/TESTS.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Automate multi-platform companion library cross-compilation (`.so` for Linux, `.dll` for Windows, `.dylib` for macOS) using Zig's embedded Clang/LLVM C/C++ cross-compiler via CMake. Hook cross-compilation into `solixlib`'s `release` build profile pre-compile commands.
+
+### Action Items
+- [ ] Implement `solixlib/scripts/build_native.py` cross-compiling for Linux, Windows, and macOS when `zig` is available, with graceful fallback to host compiler.
+- [ ] Configure `solixlib/manifest.json` `release` profile `pre_compile` hook to invoke `build_native.py`.
+- [ ] Define test specifications in `tests/commands/TESTS.md` (Part XXV: Universal Multi-Platform Cross-Compilation).
+- [ ] Implement Catch2 tests verifying multi-platform binary generation and bundle inclusion.
+- [ ] Verify 100% test pass rate with zero warnings and merge via `--no-ff`.
+
+---
+
+## Phase 17: Universal Project Native Template & Documentation
+
+- **Priority**: `P2 Polish`
+- **Affected Modules**: `docs/guide/packaging_and_resources.md`, `docs/spec/cli/manifest.md`, `docs/PLAN.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Generalize the Zig + CMake companion library cross-compilation pattern for any user Solix project, document best practices, and finalize milestone tracking.
+
+### Action Items
+- [ ] Document the universal cross-compilation pattern in `docs/guide/packaging_and_resources.md`.
+- [ ] Update manifest documentation in `docs/spec/cli/manifest.md`.
+- [ ] Verify 100% test pass rate across all suites.
+- [ ] Finalize phase tracking in `docs/PLAN.md`.
