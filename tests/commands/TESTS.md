@@ -975,29 +975,29 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 20.6: Direct `.slxpac` Bundle Execution [NOT IMPLEMENTED]
+#### Case 20.6: Direct `.slxpac` Bundle Execution [IMPLEMENTED]
 - **Command**: `solix run myapp.slxpac`
 - **Setup**: Project packaged into `myapp.slxpac` with exit code 0 or known return value.
 - **Expected**: Exits 0; automatically extracts and runs entry bytecode from package cache.
 
-#### Case 20.7: Bundle Execution with Arguments [NOT IMPLEMENTED]
+#### Case 20.7: Bundle Execution with Arguments [IMPLEMENTED]
 - **Command**: `solix run myapp.slxpac -- arg1 arg2`
 - **Setup**: Package containing program reading CLI arguments.
 - **Expected**: Exits 0; passes arguments correctly to bundle main method.
 
-#### Case 20.8: Bundle Execution with Native Shared Libraries [NOT IMPLEMENTED]
+#### Case 20.8: Bundle Execution with Native Shared Libraries [IMPLEMENTED]
 - **Command**: `solix run native_app.slxpac`
 - **Setup**: Package containing native plugin shared library in `lib/`.
 - **Expected**: Exits 0; runtime automatically discovers and binds native functions from `lib/`.
 
 ### Negative Test Scenarios
 
-#### Case 20.9: Corrupted or Truncated `.slxpac` Archive [NOT IMPLEMENTED]
+#### Case 20.9: Corrupted or Truncated `.slxpac` Archive [IMPLEMENTED]
 - **Command**: `solix run corrupted.slxpac`
 - **Setup**: Corrupted file with invalid zip headers.
 - **Expected**: Exits non-zero; reports invalid or corrupted Solix package.
 
-#### Case 20.10: Bundle Missing `bytecode.slxbin` Entry Point [NOT IMPLEMENTED]
+#### Case 20.10: Bundle Missing `bytecode.slxbin` Entry Point [IMPLEMENTED]
 - **Command**: `solix run invalid_bundle.slxpac`
 - **Setup**: Zip file without `bytecode.slxbin`.
 - **Expected**: Exits non-zero; reports missing entry point.
