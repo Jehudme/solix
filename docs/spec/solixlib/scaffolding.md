@@ -21,12 +21,16 @@ The Solix standard library (`solixlib`) is intentionally **decoupled** from the 
 ```
 solixlib/
 ├── manifest.json                # Canonical package manifest (name: "solixlib", version: "0.1.0")
-├── lib/                         # Destination for compiled native shared library
-│   └── libsolixlib_native.so / solixlib_native.dll / libsolixlib_native.dylib
+├── lib/                         # Destination for compiled native shared libraries
+│   ├── libsolixlib_native.so    # Linux shared library
+│   ├── solixlib_native.dll      # Windows dynamic link library
+│   └── libsolixlib_native.dylib # macOS dynamic library
 ├── src/                         # Pure Solix declarations and implementations
 │   └── solix/
 │       └── core/
 │           └── Internal.slx     # Core internal package declaration
+├── scripts/
+│   └── build_native.py          # Multi-platform Zig/CMake cross-compilation script
 │
 └── native/                      # 100% Pure C/C++ Companion Project
     ├── CMakeLists.txt           # Companion CMake project building solixlib_native
@@ -63,6 +67,9 @@ solixlib/
     "release": {
       "output_directory": "build/release",
       "exe_filename": "solixlib.slxbin",
+      "pre_compile": [
+        "python3 scripts/build_native.py"
+      ],
       "compilation": {
         "entry_point": "main",
         "multithreaded": false
@@ -118,11 +125,16 @@ extern "C" SOLIX_EXPORT void solix_register_natives(solix::NativeRegistry &regis
 ## 5. Build and Installation Lifecycle
 
 ### Step 1: Compile Native Companion
-Building the Solix engine automatically builds `solixlib_native`:
-```bash
-cmake --build build
-```
-This compiles `solixlib_native` and places it in `solixlib/lib/`.
+- **Host Development Build**: Building the Solix engine automatically compiles `solixlib_native` for the host platform via CMake:
+  ```bash
+  cmake --build build
+  ```
+  This compiles `solixlib_native` and places it in `solixlib/lib/`.
+- **Multi-Platform Cross-Compilation**: During release packaging or standalone cross-compilation:
+  ```bash
+  python3 solixlib/scripts/build_native.py
+  ```
+  This cross-compiles `.so` (Linux), `.dll` (Windows), and `.dylib` (macOS) into `solixlib/lib/` using Zig.
 
 ### Step 2: Install into Local Registry
 ```bash
