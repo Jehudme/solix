@@ -27,7 +27,7 @@ This document tracks all planned, in-progress, and completed engineering phases 
 | [Phase 15](#phase-15-canonical-solixlib-project-restructuring) | Canonical Solixlib Project Restructuring | P1 High | - [x] Completed & Merged |
 | [Phase 16](#phase-16-universal-multi-platform-zigcmake-cross-compilation-pipeline) | Universal Multi-Platform Zig/CMake Cross-Compilation Pipeline | P1 High | - [x] Completed & Merged |
 | [Phase 17](#phase-17-universal-project-native-template--documentation) | Universal Project Native Template & Documentation | P2 Polish | - [x] Completed & Merged |
-| [Phase 18](#phase-18-release-v120-packaging-hardening--automated-publishing) | Release v1.2.0 Packaging, Hardening & Automated Publishing | P0 Blocker | - [ ] In Progress |
+| [Phase 18](#phase-18-release-v120-packaging-hardening--automated-publishing) | Release v1.2.0 Packaging, Hardening & Automated Publishing | P0 Blocker | - [x] Completed & Merged |
 
 ---
 
@@ -435,7 +435,7 @@ Generalize the Zig + CMake companion library cross-compilation pattern for any u
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `CMakeLists.txt`, `cli/src/commands/version.cpp`, `cli/src/command_runner.hpp`, `editors/vscode/package.json`, `.github/workflows/integration.yml`, `.github/workflows/release.yml`, `docs/release_notes/RELEASE_NOTES_v1.2.0.md`, `docs/guide/release.md`, `README.md`, `tests/commands/test_cpack_packaging.cpp`, `tests/commands/test_version_command.cpp`, `tests/commands/test_pack_command.cpp`
-- **Status**: - [ ] In Progress
+- **Status**: - [x] Completed & Merged
 
 ### Objective
 Synchronize the project version to `1.2.0`, harden GitHub Actions CI/CD workflows across all host runners with Python 3.12, guarantee CPack installs `solixlib_native` targets to `share/solix/solixlib/lib`, author official v1.2.0 release notes, verify 100% test pass rates across all 83 test suites, and orchestrate the automated multi-platform release.
@@ -450,8 +450,8 @@ Synchronize the project version to `1.2.0`, harden GitHub Actions CI/CD workflow
 - [x] Update test cases in `test_cpack_packaging.cpp`, `test_version_command.cpp`, and `test_pack_command.cpp`.
 - [x] Author official release notes in `docs/release_notes/RELEASE_NOTES_v1.2.0.md`.
 - [x] Update `docs/guide/release.md` and `README.md` (83 test suites, pack command).
-- [ ] Run full test suite regression across all 83 suites.
-- [ ] Merge `phase-18-release-v1.2.0` into `master` via `--no-ff`.
-- [ ] Push `master` to `origin/master` and verify GitHub Actions CI passes across all operating systems.
-- [ ] Tag `v1.2.0` and push tag to trigger automated release publishing.
+- [x] Run full test suite regression across all 83 suites (100% passed).
+- [x] Merge `phase-18-release-v1.2.0` into `master` via `--no-ff`.
+- [x] Push `master` to `origin/master` and verify GitHub Actions CI passes across all operating systems.
+- [x] Tag `v1.2.0` and push tag to trigger automated release publishing.
 
