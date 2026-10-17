@@ -15,7 +15,7 @@ This document tracks all planned, in-progress, and completed engineering phases 
 | [Phase 3](#phase-3-standard-library-pruning--manifest-ingestion) | Standard Library Pruning & Complete Manifest Ingestion | P1 High | - [x] Completed & Merged |
 | [Phase 4](#phase-4-byte-addressed-memory-model-transition) | Byte-Addressed Memory Model Transition | P0 Blocker | - [x] Completed & Merged |
 | [Phase 5](#phase-5-heap-allocator--arc-overhaul) | Heap Allocator & ARC Overhaul | P1 High | - [x] Completed & Merged |
-| [Phase 6](#phase-6-cross-platform-zip-engine-integration-miniz--solix-pack-command) | Cross-Platform ZIP Engine Integration (`miniz`) & `solix pack` Command | P1 High | - [ ] Planned |
+| [Phase 6](#phase-6-cross-platform-zip-engine-integration-miniz--solix-pack-command) | Cross-Platform ZIP Engine Integration (`miniz`) & `solix pack` Command | P1 High | - [x] Completed & Merged |
 | [Phase 7](#phase-7-runtime--launcher-bundle-ingestion-and-dynamic-library-loading) | Runtime & Launcher Bundle Ingestion and Dynamic Library Loading | P1 High | - [ ] Planned |
 | [Phase 8](#phase-8-standard-library-solixlib-resource--filesystem-dual-location-api) | Standard Library (`solixlib`) Resource & Filesystem Dual-Location API | P1 High | - [ ] Planned |
 | [Phase 9](#phase-9-end-to-end-cross-platform-verification-tests--documentation) | End-to-End Cross-Platform Verification, Tests & Documentation | P2 Polish | - [ ] Planned |
@@ -149,20 +149,20 @@ Eliminate array vs. object type confusion, memory leaks on array element replace
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `CMakeLists.txt`, `core/include/solix/zip_utils.hpp`, `core/src/utilities/zip_utils.cpp`, `cli/src/commands/pack.hpp`, `cli/src/commands/pack.cpp`, `cli/CMakeLists.txt`, `cli/src/main.cpp`, `tests/commands/test_pack_command.cpp`, `tests/commands/TESTS.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged (2026-10-17)
 
 ### Objective
 Integrate the cross-platform, dependency-free `miniz` ZIP compression/decompression engine into the Solix core utility layer, and introduce the `solix pack` CLI command. This command packages a Solix project into a single `.slxpac` archive containing the compiled bytecode (`bytecode.slxbin`), native dynamic libraries (`lib/`), application resource assets (`resources/`), and bundle metadata (`manifest.json`).
 
 ### Action Items
-- [ ] Integrate `miniz` in CMake with zero warnings under `-Wall -Wextra` and `/W4`.
-- [ ] Author cross-platform C++ zip utilities (`solix::zip_directory`, `solix::extract_zip`, `solix::read_zip_file_entry`) in `core/`.
-- [ ] Implement `solix pack [target] [-p|--profile <profile>] [-o|--output <path.slxpac>]` in `cli/src/commands/pack.cpp`.
-- [ ] Bundle `bytecode.slxbin`, `lib/` (native shared libraries `.so`, `.dll`, `.dylib`), `resources/` (if present), and write package `manifest.json`.
-- [ ] Add test specifications in `tests/commands/TESTS.md` (Part XIV: Cases 20.1 to 20.4).
-- [ ] Implement Catch2 integration tests in `tests/commands/test_pack_command.cpp`.
-- [ ] Author CLI specification in `docs/spec/cli/pack.md`.
-- [ ] Verify 100% test pass rate across all test suites.
+- [x] Integrate `miniz` in CMake with zero warnings under `-Wall -Wextra` and `/W4`.
+- [x] Author cross-platform C++ zip utilities (`solix::zip_directory`, `solix::extract_zip`, `solix::read_zip_file_entry`) in `core/`.
+- [x] Implement `solix pack [target] [-p|--profile <profile>] [-o|--output <path.slxpac>]` in `cli/src/commands/pack.cpp`.
+- [x] Bundle `bytecode.slxbin`, `lib/` (native shared libraries `.so`, `.dll`, `.dylib`), `resources/` (if present), and write package `manifest.json`.
+- [x] Add test specifications in `tests/commands/TESTS.md` (Part XIV: Cases 20.1 to 20.5).
+- [x] Implement Catch2 integration tests in `tests/commands/test_pack_command.cpp`.
+- [x] Author CLI specification in `docs/spec/cli/pack.md`.
+- [x] Verify 100% test pass rate across all test suites.
 
 ---
 
