@@ -15,6 +15,7 @@ Welcome to the Solix developer guides. These documents are written for developer
 | 7 | [Functions, Function Pointers & Lambdas](07_functions_and_lambdas.md) | Static methods, function pointers `ret(*)(params)`, lambdas `=>`, closures, ARC captures |
 | 8 | [Generics & Template Metaprogramming](08_generics_and_templates.md) | Generic classes, multiple type parameters, generic methods, deduction, monomorphization |
 | 9 | [Native Plugins & C/C++ Interoperability](09_native_plugins.md) | Writing C/C++ plugins, ABI conventions, shared library loading (`.so`/`.dll`/`.dylib`), CLI auto-discovery |
+| 10 | [Application Packaging & Resources](packaging_and_resources.md) | Single-file `.slxpac` distribution, miniz packaging, native library discovery, `Resource` API, dual-location filesystem |
 
 ## Related Resources
 
