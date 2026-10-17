@@ -7,8 +7,8 @@ The `run` subcommand executes compiled Solix bytecode (`.slxb` or `.slxbin`) dir
 ## Synopsis
 
 ```bash
-# 1. Execute standalone bytecode binary
-solix run <file.slxbin> [options] [args...]
+# 1. Execute standalone bytecode binary or single-file package bundle
+solix run <file.slxbin | package.slxpac> [options] [args...]
 
 # 2. Execute uninstalled project from directory
 solix run [<project_dir>] [-P <profile>] [options] [args...]
@@ -54,8 +54,19 @@ When running standalone bytecode or a Solix project, the runtime automatically d
 3. **CLI Overrides (`-L, --native-lib`)**:
    - Additional shared libraries can be explicitly passed at runtime via `-L <path>` or `--native-lib <path>`. All specified libraries are loaded into memory and registered before program execution begins.
 
-
 ---
+
+## Single-File Package Bundle (`.slxpac`) Execution
+
+When invoking `solix run <app.slxpac>`:
+
+1. **Format Detection**: Detects `.slxpac` extension or standard ZIP container magic signature (`PK\x03\x04`).
+2. **Extraction & Content-Hashed Cache**:
+   - Extracts bundle contents into a content-hashed cache directory (`$TMPDIR/solix_pac/<app_name>_<hash>/`).
+   - If the bundle has already been extracted and unmodified, skips extraction and launches immediately.
+3. **Native Dynamic Libraries**: Automatically scans `<unpacked>/lib/` and registers all platform shared libraries (`.so`, `.dll`, `.dylib`) before execution.
+4. **Application Resources**: Mounts `<unpacked>/resources/` as the active application resource root, accessible via `solix.io.filesystem.Resource` and the `res://` virtual path scheme.
+5. **Entry Point Execution**: Executes `<unpacked>/bytecode.slxbin` with any provided command-line arguments.
 
 ## Project Execution Lifecycle
 
