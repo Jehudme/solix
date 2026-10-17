@@ -12,6 +12,17 @@ public class File {
         return native_exists(path.data);
     }
 
+    public static bool exists(String path, bool is_resource) {
+        if (is_resource) {
+            return Resource.exists(path);
+        }
+        return exists(path);
+    }
+
+    public static bool resource_exists(String rel_path) {
+        return Resource.exists(rel_path);
+    }
+
     public static String read_all_text(String path) {
         if (path == null || path.data == null) {
             throw new FileNotFoundException("", "File path is null");
@@ -26,6 +37,17 @@ public class File {
             throw new IOException("Failed to read file");
         }
         return new String(content);
+    }
+
+    public static String read_all_text(String path, bool is_resource) {
+        if (is_resource) {
+            return Resource.read_all_text(path);
+        }
+        return read_all_text(path);
+    }
+
+    public static String read_resource_text(String rel_path) {
+        return Resource.read_all_text(rel_path);
     }
 
     public static void write_all_text(String path, String contents) {
@@ -60,6 +82,17 @@ public class File {
             lines.add(p);
         }
         return lines;
+    }
+
+    public static List<String> read_all_lines(String path, bool is_resource) {
+        if (is_resource) {
+            return Resource.read_all_lines(path);
+        }
+        return read_all_lines(path);
+    }
+
+    public static List<String> read_resource_lines(String rel_path) {
+        return Resource.read_all_lines(rel_path);
     }
 
     public static void delete(String path) {

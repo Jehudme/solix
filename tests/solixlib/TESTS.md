@@ -216,3 +216,12 @@ Each test scenario is assigned a permanent identifier and status tag:
 - [x] **Case 15.4 [IMPLEMENTED]**: Negative: Malformed Base64 payload or padding throws `FormatException` (`tests/solixlib/test_crypto.cpp`).
 - [x] **Case 15.5 [IMPLEMENTED]**: Negative: Odd-length or invalid non-hexadecimal character string throws `FormatException` (`tests/solixlib/test_crypto.cpp`).
 
+---
+
+## 16. Application Resources & Dual-Location Filesystem (`solix.io.filesystem.Resource`, `File`, `Path`)
+
+- [x] **Case 16.1 [IMPLEMENTED]**: `Resource.exists()`, `Resource.get_resource_directory()`, and `Resource.get_path()` relative path resolution (`tests/solixlib/test_resource.cpp`).
+- [x] **Case 16.2 [IMPLEMENTED]**: `Resource.read_all_text()` and `Resource.read_all_lines()` reading bundled application resources (`tests/solixlib/test_resource.cpp`).
+- [x] **Case 16.3 [IMPLEMENTED]**: Dual-location `File.exists(path, is_resource)`, `File.read_all_text(path, is_resource)`, and `res://` virtual URI resolution (`tests/solixlib/test_resource.cpp`).
+- [x] **Case 16.4 [IMPLEMENTED]**: Negative: `Resource.read_all_text()` on non-existent resource throws `FileNotFoundException` (`tests/solixlib/test_resource.cpp`).
+

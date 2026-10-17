@@ -167,6 +167,10 @@
     },
     {
       "type": "source",
+      "path": "src/solix/io/filesystem/Resource.slx"
+    },
+    {
+      "type": "source",
       "path": "src/solix/math/Math.slx"
     },
     {
