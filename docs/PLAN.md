@@ -20,7 +20,7 @@ This document tracks all planned, in-progress, and completed engineering phases 
 | [Phase 8](#phase-8-standard-library-solixlib-resource--filesystem-dual-location-api) | Standard Library (`solixlib`) Resource & Filesystem Dual-Location API | P1 High | - [x] Completed & Merged |
 | [Phase 9](#phase-9-end-to-end-cross-platform-verification-tests--documentation) | End-to-End Cross-Platform Verification, Tests & Documentation | P2 Polish | - [x] Completed & Merged |
 | [Phase 10](#phase-10-multi-depth-dependency-asset--native-library-staging-in-build-and-package) | Multi-Depth Dependency Asset & Native Library Staging in Build and Package | P1 High | - [x] Completed & Merged |
-| [Phase 11](#phase-11-host-platform-native-library-import-enforcement--filtering) | Host-Platform Native Library Import Enforcement & Filtering | P1 High | - [ ] Planned |
+| [Phase 11](#phase-11-host-platform-native-library-import-enforcement--filtering) | Host-Platform Native Library Import Enforcement & Filtering | P1 High | - [x] Completed & Merged |
 | [Phase 12](#phase-12-pre-compile--post-compile-command-lifecycle-engine) | Pre-Compile & Post-Compile Command Lifecycle Engine in Build & Pack | P1 High | - [ ] Planned |
 | [Phase 13](#phase-13-dependency-profile-selection--profile-specific-variable-and-dependency-propagation) | Dependency Profile Selection & Profile-Specific Variable/Dependency Propagation | P1 High | - [ ] Planned |
 | [Phase 14](#phase-14-end-to-end-integration-native-cmake-compilation-bundling--documentation) | End-to-End Integration, Native CMake Compilation, Bundling & Documentation | P2 Polish | - [ ] Planned |
@@ -257,19 +257,19 @@ Ensure that multi-depth (transitive) dependency libraries automatically have the
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `core/include/solix/shared_library.hpp`, `core/src/runtime/shared_library.cpp`, `core/src/runtime/native_registry.cpp`, `cli/src/commands/execute.cpp`, `tests/runtime/test_native_library.cpp`, `tests/commands/test_run_bundle.cpp`, `tests/statements/TESTS.md`, `docs/spec/runtime/native_interop.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged (2026-10-17)
 
 ### Objective
 Ensure that the Solix runtime and launcher strictly load only host-platform-compatible shared libraries (`.so` on Linux, `.dll` on Windows, `.dylib`/`.so` on macOS). Auto-discovery in `solix run` (from `lib/` or `.slxpac` extraction) ignores incompatible foreign library files, and explicit loading of mismatched library types (via `-L`, manifest, or `NativeRegistry::load_library`) throws a clean `SharedLibraryException` with a clear platform-mismatch diagnostic.
 
 ### Action Items
-- [ ] Add `is_platform_native_library(path)` and platform-expected extension helpers in `core/include/solix/shared_library.hpp`.
-- [ ] Enforce platform check in `SharedLibrary::load`: reject unsupported extensions (e.g. `.dll` on Linux) with informative `SharedLibraryException`.
-- [ ] Update `scan_directory_for_native_libs` in `cli/src/commands/execute.cpp` to filter and only load host-platform-compatible libraries from `lib/` and bundle directories.
-- [ ] Update `tests/statements/TESTS.md` with Case 49.9 (Reject foreign platform native library format) tagged with `[NOT IMPLEMENTED]`.
-- [ ] Implement Catch2 test in `tests/runtime/test_native_library.cpp` and `tests/commands/test_run_bundle.cpp` verifying rejection of foreign libraries and seamless loading of valid host libraries.
-- [ ] Update documentation in `docs/spec/runtime/native_interop.md` detailing cross-platform native library discovery rules.
-- [ ] Verify 100% test pass rate with zero warnings and merge via `--no-ff`.
+- [x] Add `is_platform_native_library(path)` and platform-expected extension helpers in `core/include/solix/shared_library.hpp`.
+- [x] Enforce platform check in `SharedLibrary::load`: reject unsupported extensions (e.g. `.dll` on Linux) with informative `SharedLibraryException`.
+- [x] Update `scan_directory_for_native_libs` in `cli/src/commands/execute.cpp` to filter and only load host-platform-compatible libraries from `lib/` and bundle directories.
+- [x] Update `tests/statements/TESTS.md` with Case 49.9 (Reject foreign platform native library format) tagged with `[IMPLEMENTED]`.
+- [x] Implement Catch2 test in `tests/runtime/test_native_library.cpp` and `tests/commands/test_run_bundle.cpp` verifying rejection of foreign libraries and seamless loading of valid host libraries.
+- [x] Update documentation in `docs/spec/runtime/native_interop.md` detailing cross-platform native library discovery rules.
+- [x] Verify 100% test pass rate with zero warnings and merge via `--no-ff`.
 
 ---
 
