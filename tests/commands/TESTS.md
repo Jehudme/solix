@@ -1071,34 +1071,34 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 22.1: Explicit Profile Selection on Dependency Ingests Profile Sources [NOT IMPLEMENTED]
+#### Case 22.1: Explicit Profile Selection on Dependency Ingests Profile Sources [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Root project declares a project dependency `DepA` with `"profile": "fast"`. `DepA` defines profiles `"debug"` and `"fast"`, where `"fast"` defines `compilation.additional_dependencies` pointing to `fast_helper.slx`.
 - **Expected**: Exits 0; `DepA` is resolved with `"fast"` profile; `fast_helper.slx` is ingested and compiled successfully into the root binary.
 
-#### Case 22.2: Profile Inheritance When Dependency Does Not Specify Profile [NOT IMPLEMENTED]
+#### Case 22.2: Profile Inheritance When Dependency Does Not Specify Profile [IMPLEMENTED]
 - **Command**: `solix build -p release`
 - **Setup**: Root project is built with profile `"release"` and declares dependency `DepA` without a `"profile"` field. `DepA` has both `"debug"` and `"release"` profiles, with `"release"` defining profile-specific source dependencies.
 - **Expected**: Exits 0; `DepA` inherits `"release"` profile from the active root profile; `DepA`'s `"release"` profile sources are compiled into the binary.
 
-#### Case 22.3: Profile Fallback When Inherited Profile Does Not Exist in Dependency [NOT IMPLEMENTED]
+#### Case 22.3: Profile Fallback When Inherited Profile Does Not Exist in Dependency [IMPLEMENTED]
 - **Command**: `solix build -p custom_prod`
 - **Setup**: Root project is built with profile `"custom_prod"` and declares dependency `DepA` without a `"profile"` field. `DepA` defines only `"debug"` and `"release"`.
 - **Expected**: Exits 0; `DepA` falls back to `"debug"` profile (or the first available profile) cleanly; `"debug"` sources are compiled into the binary.
 
-#### Case 22.4: Profile-Specific Transitive Project Dependencies Discovered and Compiled [NOT IMPLEMENTED]
+#### Case 22.4: Profile-Specific Transitive Project Dependencies Discovered and Compiled [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Root project declares dependency `DepA` with `"profile": "full"`. `DepA`'s `"full"` profile declares a transitive project dependency `DepB` under `compilation.additional_dependencies`.
 - **Expected**: Exits 0; `DepB` is recursively discovered and linked; functions provided by `DepB` are compiled into the root binary.
 
-#### Case 22.6: Dependency Pre-Compile Command Runs in Dependency Working Directory Prior to Consumer Build [NOT IMPLEMENTED]
+#### Case 22.6: Dependency Pre-Compile Command Runs in Dependency Working Directory Prior to Consumer Build [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Root project depends on `DepA` with `"profile": "release"`. `DepA` has a `pre_compile` hook in its `"release"` profile that generates a native shared library or marker file in `DepA`'s directory. Root project requires that artifact during staging.
 - **Expected**: Exits 0; `DepA`'s pre-compile hook executes inside `DepA`'s directory before the consumer project compiles or stages; generated native library is staged into consumer's `build/<profile>/lib/`.
 
 ### Negative Test Scenarios
 
-#### Case 22.5: Error When Requested Profile Does Not Exist in Dependency Manifest [NOT IMPLEMENTED]
+#### Case 22.5: Error When Requested Profile Does Not Exist in Dependency Manifest [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Root project declares dependency `DepA` with `"profile": "non_existent"`. `DepA` only defines `"debug"` and `"release"`.
 - **Expected**: Exits non-zero (1); outputs `Error: Dependency project 'DepA' does not define requested profile 'non_existent'. Available profiles: [debug, release]` before compilation.

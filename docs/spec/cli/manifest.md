@@ -129,6 +129,18 @@ A complete external or local Solix project or library dependency.
 | `name` | String | **Yes** | Unique project/package name matching the target manifest (`manifest.json` or `solix.json`). |
 | `version` | String | **Yes** | Semantic version requirement string (e.g. `1.2.0`). |
 | `path` | String | No | Relative or absolute filesystem path to the project directory (or its `manifest.json` / `solix.json`). If omitted, Solix automatically looks up the package in `$SOLIX_HOME` via `PackageManager`. |
+| `profile` | String | No | Explicit target build profile to resolve for this dependency (e.g. `"release"`). If omitted, inherits active profile or falls back to `"debug"`. |
+
+#### Dependency Profile Resolution & Variable Propagation
+When resolving project dependencies, Solix evaluates the target build profile for each candidate:
+1. **Explicit Profile Selection**: If `"profile": "<name>"` is specified on the dependency object, that profile must exist in the target dependency manifest. If absent, build halts with:
+   `Error: Dependency project '<name>' does not define requested profile '<profile>'. Available profiles: [...]`.
+2. **Profile Inheritance**: If `"profile"` is omitted, the dependency inherits the active build profile name of the consuming project if defined in the dependency's manifest.
+3. **Profile Fallback**: If the consuming project's active profile does not exist in the dependency, Solix falls back to `"debug"`; if `"debug"` is not defined, it falls back to the first available profile in the dependency manifest.
+4. **Profile-Specific Variable & Dependency Propagation**:
+   - `compilation.additional_dependencies`: Both `type: "source"` and `type: "project"` dependencies declared in the dependency's selected profile are ingested.
+   - Transitive project dependencies declared within a dependency profile are discovered recursively.
+   - Pre-compile command hooks (`pre_compile`) defined at the dependency's root and within its selected profile execute in topological order (deepest dependency first) prior to consuming project compilation.
 
 #### Dependency Resolution & SemVer Rules
 Before any compilation begins, Solix performs graph walking and semantic version resolution across all direct and transitive project dependencies:
