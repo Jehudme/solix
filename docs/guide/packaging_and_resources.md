@@ -246,6 +246,87 @@ When packaging an application with `solix pack`:
 
 ---
 
+---
+
+## Compiling Native Companion Libraries with CMake Lifecycle Hooks
+
+When a Solix project or library relies on native C/C++ companion libraries, you can automate the native build process directly within `solix build` and `solix pack` using the declarative `pre_compile` lifecycle hook.
+
+### 1. Project Directory Layout with CMake
+```
+my_native_app/
+├── solix.json
+├── native/
+│   ├── CMakeLists.txt
+│   └── src/
+│       └── plugin.cpp
+├── src/
+│   └── main.slx
+└── resources/
+    └── config.json
+```
+
+### 2. Manifest Configuration
+
+In `solix.json`, declare `pre_compile` commands to configure and compile the native library before Solix processes bytecode:
+
+```json
+{
+  "project": "my_native_app",
+  "version": "1.0.0",
+
+  "pre_compile": [
+    "cmake -B native/build -S native",
+    "cmake --build native/build --config Release"
+  ],
+
+  "dependencies": [
+    {
+      "type": "project",
+      "path": "../crypto_driver",
+      "profile": "release"
+    },
+    {
+      "type": "source",
+      "path": "src/main.slx"
+    }
+  ],
+
+  "profiles": {
+    "release": {
+      "output_directory": "build/release",
+      "exe_filename": "out.slxbin",
+      "compilation": {
+        "entry_point": "main"
+      }
+    }
+  }
+}
+```
+
+In `native/CMakeLists.txt`, set the library output directory to `${CMAKE_CURRENT_SOURCE_DIR}/../lib` so that compiled shared libraries (`.so`, `.dll`, or `.dylib`) land directly in `lib/`:
+
+```cmake
+cmake_minimum_required(VERSION 3.15)
+project(native_companion CXX)
+
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../lib)
+
+add_library(native_plugin SHARED src/plugin.cpp)
+```
+
+### 3. Topological Dependency Pre-Compile Ordering
+If your application depends on a dependent project that also uses CMake (e.g. `crypto_driver` with `"profile": "release"`):
+1. **Topological Discovery**: Solix resolves `crypto_driver` with profile `"release"`.
+2. **Dependency Pre-Compile**: `crypto_driver`'s pre-compile commands execute first inside `crypto_driver`'s directory, compiling its native library into `crypto_driver/lib/`.
+3. **Application Pre-Compile**: The application's `pre_compile` commands execute next in `my_native_app/`.
+4. **Bytecode Compilation**: Solix compiler compiles bytecode.
+5. **Transitive Staging**: Solix stages all `.so`/`.dll`/`.dylib` files from `crypto_driver/lib/` and `my_native_app/lib/` into `build/release/lib/`.
+6. **Packaging**: `solix pack` packages bytecode, native libraries, and resources into the final `.slxpac` bundle.
+
+---
+
 ## Development vs. Production Workflow
 
 Solix ensures zero code differences between local development and packaged distribution:
@@ -279,4 +360,6 @@ flowchart TD
 1. **Keep Assets in `resources/`**: Place all read-only application assets inside `<project_root>/resources/`.
 2. **Keep Native Libraries in `lib/`**: Place compiled C/C++ plugins (`.so`, `.dll`, `.dylib`) in `<project_root>/lib/`. They are bundled and registered automatically.
 3. **Use `res://` for Uniform Paths**: Use `res://` URIs for internal assets so that configuration strings and file paths remain clear and distinct from host paths.
-4. **Resources are Read-Only**: Bundled resources in `.slxpac` archives represent static assets. For writable data (user preferences, caches, logs), use standard host filesystem paths obtained via `Path.get_temp_path()` or environment paths.
+4. **Automate Native Builds with `pre_compile`**: Use `pre_compile` hooks to invoke CMake or build tools so native libraries are guaranteed to be compiled and up to date prior to bundling.
+5. **Resources are Read-Only**: Bundled resources in `.slxpac` archives represent static assets. For writable data (user preferences, caches, logs), use standard host filesystem paths obtained via `Path.get_temp_path()` or environment paths.
+

@@ -391,4 +391,168 @@ TEST_CASE("CLI Command - pack", "[command][pack]") {
 
         CHECK(run_res.exit_code == 0);
     }
+
+    SECTION("Positive - Case 23.1: End-to-End Native Compilation, Transitive Staging, Packaging, and Execution") {
+        auto orig_cwd = std::filesystem::current_path();
+        std::filesystem::path plugin_src(SOLIX_TEST_PLUGIN_PATH);
+        std::string lib_filename = plugin_src.filename().string();
+
+        auto log_file_path = (sandbox.path() / "lifecycle.log").lexically_normal();
+
+        // 1. Setup lib_a: has "release" profile that copies the native plugin into lib_a/lib/
+        // and appends LIB_A_PRE to lifecycle.log
+        auto lib_a_dir = sandbox.path() / "lib_a";
+        std::filesystem::create_directories(lib_a_dir / "src");
+        std::filesystem::create_directories(lib_a_dir / "resources");
+
+        nlohmann::json lib_a_manifest;
+        lib_a_manifest["project"] = "lib_a";
+        lib_a_manifest["version"] = "1.0.0";
+        lib_a_manifest["dependencies"] = nlohmann::json::array({
+            {{"type", "source"}, {"path", "src/math.slx"}}
+        });
+
+        std::string lib_a_pre_copy;
+        std::string lib_a_pre_log;
+#if defined(_WIN32)
+        lib_a_pre_copy = "cmd /c if not exist lib mkdir lib && copy \"" + plugin_src.string() + "\" lib\\";
+        lib_a_pre_log = "cmd /c echo LIB_A_PRE>> \"" + log_file_path.string() + "\"";
+#else
+        lib_a_pre_copy = "sh -c 'mkdir -p lib && cp \"" + plugin_src.string() + "\" lib/'";
+        lib_a_pre_log = "sh -c 'echo LIB_A_PRE >> \"" + log_file_path.string() + "\"'";
+#endif
+
+        lib_a_manifest["profiles"] = {
+            {"debug", {
+                {"output_directory", "build/debug"},
+                {"compilation", {{"entry_point", "dummy"}}}
+            }},
+            {"release", {
+                {"output_directory", "build/release"},
+                {"pre_compile", nlohmann::json::array({lib_a_pre_copy, lib_a_pre_log})},
+                {"compilation", {{"entry_point", "dummy"}}}
+            }}
+        };
+
+        sandbox.create_file("lib_a/manifest.json", lib_a_manifest.dump(2));
+        sandbox.create_file("lib_a/resources/lib_data.txt", "lib_a_resource_content\n");
+        sandbox.create_file("lib_a/src/math.slx", R"(
+            public class NativeMath {
+                public static native int32 add(int32 a, int32 b);
+            }
+            public class LibMath {
+                public static int32 compute(int32 x) {
+                    return NativeMath.add(x, 10);
+                }
+            }
+        )");
+
+        // 2. Setup app: depends on lib_a with profile "release"
+        auto app_dir = sandbox.path() / "app";
+        std::filesystem::create_directories(app_dir / "src");
+        std::filesystem::create_directories(app_dir / "resources");
+
+        std::string app_root_pre_cmd;
+        std::string app_prof_pre_cmd;
+        std::string app_prof_post_cmd;
+        std::string app_root_post_cmd;
+#if defined(_WIN32)
+        app_root_pre_cmd = "cmd /c echo APP_ROOT_PRE>> \"" + log_file_path.string() + "\"";
+        app_prof_pre_cmd = "cmd /c echo APP_PROF_PRE>> \"" + log_file_path.string() + "\"";
+        app_prof_post_cmd = "cmd /c echo APP_PROF_POST>> \"" + log_file_path.string() + "\"";
+        app_root_post_cmd = "cmd /c echo APP_ROOT_POST>> \"" + log_file_path.string() + "\"";
+#else
+        app_root_pre_cmd = "sh -c 'echo APP_ROOT_PRE >> \"" + log_file_path.string() + "\"'";
+        app_prof_pre_cmd = "sh -c 'echo APP_PROF_PRE >> \"" + log_file_path.string() + "\"'";
+        app_prof_post_cmd = "sh -c 'echo APP_PROF_POST >> \"" + log_file_path.string() + "\"'";
+        app_root_post_cmd = "sh -c 'echo APP_ROOT_POST >> \"" + log_file_path.string() + "\"'";
+#endif
+
+        nlohmann::json app_manifest;
+        app_manifest["project"] = "app";
+        app_manifest["name"] = "e2e_app";
+        app_manifest["version"] = "1.0.0";
+        app_manifest["pre_compile"] = nlohmann::json::array({app_root_pre_cmd});
+        app_manifest["post_compile"] = nlohmann::json::array({app_root_post_cmd});
+        app_manifest["dependencies"] = nlohmann::json::array({
+            {
+                {"type", "project"},
+                {"path", "../lib_a"},
+                {"profile", "release"}
+            },
+            {
+                {"type", "source"},
+                {"path", "src/main.slx"}
+            }
+        });
+        app_manifest["profiles"] = {
+            {"release", {
+                {"output_directory", "build/release"},
+                {"exe_filename", "out.slxbin"},
+                {"pre_compile", nlohmann::json::array({app_prof_pre_cmd})},
+                {"post_compile", nlohmann::json::array({app_prof_post_cmd})},
+                {"compilation", {
+                    {"entry_point", "main"},
+                    {"multithreaded", false}
+                }}
+            }}
+        };
+
+        sandbox.create_file("app/manifest.json", app_manifest.dump(2));
+        sandbox.create_file("app/resources/app_data.txt", "app_resource_content\n");
+        sandbox.create_file("app/src/main.slx", R"(
+            public class Main {
+                public static int32 main() {
+                    int32 res = LibMath.compute(32);
+                    return res == 42 ? 0 : 1;
+                }
+            }
+        )");
+
+        // 3. Run solix pack in app with profile "release"
+        std::filesystem::current_path(app_dir);
+        auto pack_res = run_cli({"pack", "-p", "release", "-o", "bundle.slxpac"});
+        CHECK(pack_res.exit_code == 0);
+
+        auto pac_path = app_dir / "bundle.slxpac";
+        CHECK(std::filesystem::exists(pac_path));
+
+        // 4. Verify bundle contents
+        solix::ZipArchiveReader reader(pac_path);
+        CHECK(reader.is_valid());
+        CHECK(reader.has_entry("bytecode.slxbin"));
+        CHECK(reader.has_entry("manifest.json"));
+        CHECK(reader.has_entry("resources/app_data.txt"));
+        CHECK(reader.has_entry("resources/lib_data.txt"));
+        if (std::filesystem::exists(plugin_src)) {
+            CHECK(reader.has_entry("lib/" + lib_filename));
+        }
+
+        // 5. Verify lifecycle execution order
+        CHECK(std::filesystem::exists(log_file_path));
+        std::ifstream lf(log_file_path);
+        std::vector<std::string> lines;
+        std::string line;
+        while (std::getline(lf, line)) {
+            if (!line.empty() && line.back() == '\r') {
+                line.pop_back();
+            }
+            if (!line.empty()) {
+                lines.push_back(line);
+            }
+        }
+
+        REQUIRE(lines.size() >= 5);
+        CHECK(lines[0] == "LIB_A_PRE");
+        CHECK(lines[1] == "APP_ROOT_PRE");
+        CHECK(lines[2] == "APP_PROF_PRE");
+        CHECK(lines[3] == "APP_PROF_POST");
+        CHECK(lines[4] == "APP_ROOT_POST");
+
+        // 6. Execute packaged bundle and verify native call and exit code
+        auto run_res = run_cli({"run", pac_path.string()});
+        std::filesystem::current_path(orig_cwd);
+
+        CHECK(run_res.exit_code == 0);
+    }
 }
