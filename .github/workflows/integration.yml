@@ -67,12 +67,21 @@ jobs:
 
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
+        env:
+          CC: ${{ matrix.c }}
+          CXX: ${{ matrix.cxx }}
         run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_STANDARD=20
 
       - name: Build
+        env:
+          CC: ${{ matrix.c }}
+          CXX: ${{ matrix.cxx }}
         run: cmake --build build --config Release --parallel
 
       - name: Run Tests
+        env:
+          CC: ${{ matrix.c }}
+          CXX: ${{ matrix.cxx }}
         run: ctest --test-dir build -C Release --output-on-failure --timeout 120
 
   sanitizers:
