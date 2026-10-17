@@ -105,13 +105,25 @@ public:
   - Symbol Resolution: `GetProcAddress(handle, symbol_name.c_str())`.
   - Unloading: `FreeLibrary(handle)`.
   - Diagnostics: Formatted via `GetLastError()` and `FormatMessageA`.
-- **Linux & macOS (POSIX)**:
+  - Valid Extensions: `.dll`.
+- **Linux (POSIX)**:
   - Implementation: `dlopen(path.string().c_str(), RTLD_NOW | RTLD_LOCAL)`.
   - Symbol Resolution: `dlsym(handle, symbol_name.c_str())`.
   - Unloading: `dlclose(handle)`.
   - Diagnostics: Formatted via `dlerror()`.
+  - Valid Extensions: `.so`, `.so.<version>`.
+- **macOS (Darwin)**:
+  - Implementation: `dlopen(path.string().c_str(), RTLD_NOW | RTLD_LOCAL)`.
+  - Symbol Resolution: `dlsym(handle, symbol_name.c_str())`.
+  - Unloading: `dlclose(handle)`.
+  - Diagnostics: Formatted via `dlerror()`.
+  - Valid Extensions: `.dylib`, `.so`.
 
-Failure to load an invalid or missing library throws `solix::SharedLibraryException`.
+### Cross-Platform Filtering & Validation
+- **`solix::is_platform_native_library(path)`**: Returns true if and only if `path` matches the native library format for the host operating system.
+- **`solix::is_any_shared_library(path)`**: Returns true if `path` matches any recognized shared library format across platforms (`.so`, `.dll`, `.dylib`).
+- **Runtime Auto-Discovery Filtering**: When `solix run` scans directory search paths (`lib/` or unpacked `.slxpac` caches), it strictly filters and loads only libraries satisfying `is_platform_native_library`. Incompatible foreign-platform libraries (e.g. `.dll` files on Linux or `.so` files on Windows) are silently skipped. This allows multi-platform single-file application packages (`.slxpac`) to bundle native binaries for multiple OS targets simultaneously.
+- **Explicit Loading Enforcement**: Attempting to load an incompatible foreign library format explicitly via `-L`, manifest `runtime.native_libraries`, or `NativeRegistry::load_library` fails immediately with a `solix::SharedLibraryException` detailing the platform mismatch.
 
 ---
 
