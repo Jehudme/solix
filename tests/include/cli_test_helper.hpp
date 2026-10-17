@@ -18,6 +18,7 @@
 #include "commands/package.hpp"
 #include "commands/version.hpp"
 #include "commands/ide.hpp"
+#include "commands/pack.hpp"
 
 namespace solix::test {
 
@@ -126,6 +127,7 @@ inline CliResult run_cli(const std::vector<std::string>& args, const std::filesy
     solix::cli::setup_compile_command(app);
     solix::cli::setup_execute_command(app);
     solix::cli::setup_build_command(app);
+    solix::cli::setup_pack_command(app);
     solix::cli::setup_new_command(app);
     solix::cli::setup_package_commands(app);
     solix::cli::setup_version_command(app);
