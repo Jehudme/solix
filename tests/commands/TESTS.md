@@ -1157,17 +1157,17 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 25.1: Multi-Platform Zig Cross-Compilation of solixlib_native [NOT IMPLEMENTED]
+#### Case 25.1: Multi-Platform Zig Cross-Compilation of solixlib_native [IMPLEMENTED]
 - **Command**: `python3 scripts/build_native.py --output-dir <custom_dir>`
 - **Setup**: Script executed targeting temporary output directory.
 - **Expected**: Exits 0; compiles shared native companions for Linux (`libsolixlib_native.so`), Windows (`solixlib_native.dll`), and macOS (`libsolixlib_native.dylib`).
 
-#### Case 25.2: Release Packaging of Canonical solixlib into Universal Multi-Platform .slxpac [NOT IMPLEMENTED]
+#### Case 25.2: Release Packaging of Canonical solixlib into Universal Multi-Platform .slxpac [IMPLEMENTED]
 - **Command**: `solix pack -p release -o solixlib.slxpac`
 - **Setup**: `solixlib` project with `release` profile invoking `scripts/build_native.py` in `pre_compile`.
 - **Expected**: Exits 0; `solixlib.slxpac` is created containing `bytecode.slxbin` alongside all multi-platform native libraries (`lib/libsolixlib_native.so`, `lib/solixlib_native.dll`, `lib/libsolixlib_native.dylib`).
 
-#### Case 25.3: Consumer Application Release Packaging and Cross-Platform Native Bundling [NOT IMPLEMENTED]
+#### Case 25.3: Consumer Application Release Packaging and Cross-Platform Native Bundling [IMPLEMENTED]
 - **Command**: `solix pack -p release -o consumer.slxpac && solix run consumer.slxpac`
 - **Setup**: Consumer application depends on `solixlib` with `"profile": "release"`.
 - **Expected**: Exits 0; `solixlib` pre-compile hook compiles multi-platform native companion libraries into `lib/`; packaging includes all platform variants into `consumer.slxpac`; running `consumer.slxpac` filters and executes the host platform native library successfully.
