@@ -298,7 +298,9 @@ std::optional<std::filesystem::path> PackageManager::discover_bundled_solixlib()
         exe_dir.parent_path() / "share" / "solix" / "solixlib",
         exe_dir / ".." / "share" / "solix" / "solixlib",
         exe_dir / "share" / "solix" / "solixlib",
-        // Candidate 2: In-tree development layout: <repo>/build/cli/solix -> <repo>/solixlib/project
+        // Candidate 2: In-tree development layout: <repo>/build/cli/solix -> <repo>/solixlib
+        exe_dir.parent_path().parent_path() / "solixlib",
+        exe_dir.parent_path() / "solixlib",
         exe_dir.parent_path().parent_path() / "solixlib" / "project",
         exe_dir.parent_path() / "solixlib" / "project"
     };

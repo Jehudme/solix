@@ -113,7 +113,7 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
     }
 
     SECTION("Positive - Case 5.7 & 5.8: Install Solix Standard Library Project (solixlib) with Native Companion") {
-        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "project";
+        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
         REQUIRE((std::filesystem::exists(solixlib_path / "manifest.json") || std::filesystem::exists(solixlib_path / "solix.json")));
 
         std::string expected_id = PackageManager::compute_project_id("solixlib", "0.1.0");
@@ -136,7 +136,7 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
     }
 
     SECTION("Positive - Case 5.9: Consumer Project Builds and Runs with Installed Standard Library (solixlib)") {
-        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "project";
+        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
         REQUIRE((std::filesystem::exists(solixlib_path / "manifest.json") || std::filesystem::exists(solixlib_path / "solix.json")));
 
         // Install solixlib
@@ -177,7 +177,7 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
 
 
     SECTION("Negative - Case 5.10: Reinstall solixlib Without Force Flag Fails") {
-        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "project";
+        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
         REQUIRE((std::filesystem::exists(solixlib_path / "manifest.json") || std::filesystem::exists(solixlib_path / "solix.json")));
 
         auto res1 = run_cli({"install", solixlib_path.string()}, solix_home.path());
@@ -316,3 +316,4 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
         CHECK(res.out.find("2.0.0") != std::string::npos);
     }
 }
+
