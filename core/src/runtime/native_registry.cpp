@@ -40,15 +40,24 @@ bool NativeRegistry::load_library(const std::filesystem::path &path) {
   return true;
 }
 
-NativeFunctionPtr NativeRegistry::find_symbol_in_loaded_libraries(const std::string &symbol_name) const {
+void *NativeRegistry::find_raw_symbol(const std::string &symbol_name) const {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   for (const auto &lib : loaded_libraries_) {
     void *sym = lib->get_symbol(symbol_name);
     if (sym) {
-      NativeFunctionPtr func = reinterpret_cast<NativeFunctionPtr>(sym);
-      functions_[symbol_name] = func;
-      return func;
+      return sym;
     }
+  }
+  return nullptr;
+}
+
+NativeFunctionPtr NativeRegistry::find_symbol_in_loaded_libraries(const std::string &symbol_name) const {
+  void *sym = find_raw_symbol(symbol_name);
+  if (sym) {
+    NativeFunctionPtr func = reinterpret_cast<NativeFunctionPtr>(sym);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    functions_[symbol_name] = func;
+    return func;
   }
   return nullptr;
 }

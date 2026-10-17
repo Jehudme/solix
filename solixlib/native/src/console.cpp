@@ -293,3 +293,40 @@ void register_console_natives(solix::NativeRegistry &registry) {
     reg("native_set_title", native_set_title);
     reg("native_try_parse_double", native_try_parse_double);
 }
+
+extern "C" {
+
+SOLIX_EXPORT void* solix_set_cin_rdbuf(void* buf) {
+#ifdef _WIN32
+    auto new_buf = static_cast<std::streambuf*>(buf);
+    if (std::cin.rdbuf() == new_buf) return nullptr;
+    return std::cin.rdbuf(new_buf);
+#else
+    (void)buf;
+    return nullptr;
+#endif
+}
+
+SOLIX_EXPORT void* solix_set_cout_rdbuf(void* buf) {
+#ifdef _WIN32
+    auto new_buf = static_cast<std::streambuf*>(buf);
+    if (std::cout.rdbuf() == new_buf) return nullptr;
+    return std::cout.rdbuf(new_buf);
+#else
+    (void)buf;
+    return nullptr;
+#endif
+}
+
+SOLIX_EXPORT void* solix_set_cerr_rdbuf(void* buf) {
+#ifdef _WIN32
+    auto new_buf = static_cast<std::streambuf*>(buf);
+    if (std::cerr.rdbuf() == new_buf) return nullptr;
+    return std::cerr.rdbuf(new_buf);
+#else
+    (void)buf;
+    return nullptr;
+#endif
+}
+
+} // extern "C"

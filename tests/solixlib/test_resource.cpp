@@ -3,6 +3,13 @@
 #include <fstream>
 #include <chrono>
 
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#endif
+
 using namespace solix::test;
 
 namespace {
@@ -23,6 +30,7 @@ struct ResourceEnvGuard {
             f << "=== Welcome to Solix ===";
         }
 #ifdef _WIN32
+        SetEnvironmentVariableA("SOLIX_RESOURCE_ROOT", temp_dir.string().c_str());
         _putenv_s("SOLIX_RESOURCE_ROOT", temp_dir.string().c_str());
 #else
         setenv("SOLIX_RESOURCE_ROOT", temp_dir.string().c_str(), 1);
@@ -31,6 +39,7 @@ struct ResourceEnvGuard {
 
     ~ResourceEnvGuard() {
 #ifdef _WIN32
+        SetEnvironmentVariableA("SOLIX_RESOURCE_ROOT", nullptr);
         _putenv_s("SOLIX_RESOURCE_ROOT", "");
 #else
         unsetenv("SOLIX_RESOURCE_ROOT");

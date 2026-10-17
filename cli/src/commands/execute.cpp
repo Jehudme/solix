@@ -13,6 +13,13 @@
 #include <algorithm>
 #include <nlohmann/json.hpp>
 
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#endif
+
 namespace solix::cli {
 
 namespace {
@@ -307,6 +314,7 @@ void setup_execute_command(CLI::App &app) {
     // Export SOLIX_RESOURCE_ROOT for ambient native library / process inspection
     if (!opts->resource_directory.empty()) {
 #if defined(_WIN32)
+      SetEnvironmentVariableA("SOLIX_RESOURCE_ROOT", opts->resource_directory.string().c_str());
       _putenv_s("SOLIX_RESOURCE_ROOT", opts->resource_directory.string().c_str());
 #else
       setenv("SOLIX_RESOURCE_ROOT", opts->resource_directory.string().c_str(), 1);
