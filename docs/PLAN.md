@@ -15,6 +15,10 @@ This document tracks all planned, in-progress, and completed engineering phases 
 | [Phase 3](#phase-3-standard-library-pruning--manifest-ingestion) | Standard Library Pruning & Complete Manifest Ingestion | P1 High | - [x] Completed & Merged |
 | [Phase 4](#phase-4-byte-addressed-memory-model-transition) | Byte-Addressed Memory Model Transition | P0 Blocker | - [x] Completed & Merged |
 | [Phase 5](#phase-5-heap-allocator--arc-overhaul) | Heap Allocator & ARC Overhaul | P1 High | - [x] Completed & Merged |
+| [Phase 6](#phase-6-cross-platform-zip-engine-integration-miniz--solix-pack-command) | Cross-Platform ZIP Engine Integration (`miniz`) & `solix pack` Command | P1 High | - [ ] Planned |
+| [Phase 7](#phase-7-runtime--launcher-bundle-ingestion-and-dynamic-library-loading) | Runtime & Launcher Bundle Ingestion and Dynamic Library Loading | P1 High | - [ ] Planned |
+| [Phase 8](#phase-8-standard-library-solixlib-resource--filesystem-dual-location-api) | Standard Library (`solixlib`) Resource & Filesystem Dual-Location API | P1 High | - [ ] Planned |
+| [Phase 9](#phase-9-end-to-end-cross-platform-verification-tests--documentation) | End-to-End Cross-Platform Verification, Tests & Documentation | P2 Polish | - [ ] Planned |
 
 ---
 
@@ -138,4 +142,88 @@ Eliminate array vs. object type confusion, memory leaks on array element replace
 - [x] Update test specifications in `tests/statements/TESTS.md` (Cases 3.3 in ArrayAccess, 3.3 in InstanceOf, 3.10 in FieldDeclaration) and Catch2 test suites.
 - [x] Update architecture documentation in `docs/architecture/arc_internals.md`.
 - [x] Verify 100% test pass rate across all 76 test suites with zero warnings under `-Wall -Wextra` and `/W4`.
+
+---
+
+## Phase 6: Cross-Platform ZIP Engine Integration (`miniz`) & `solix pack` Command
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `CMakeLists.txt`, `core/include/solix/zip_utils.hpp`, `core/src/utilities/zip_utils.cpp`, `cli/src/commands/pack.hpp`, `cli/src/commands/pack.cpp`, `cli/CMakeLists.txt`, `cli/src/main.cpp`, `tests/commands/test_pack_command.cpp`, `tests/commands/TESTS.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Integrate the cross-platform, dependency-free `miniz` ZIP compression/decompression engine into the Solix core utility layer, and introduce the `solix pack` CLI command. This command packages a Solix project into a single `.slxpac` archive containing the compiled bytecode (`bytecode.slxbin`), native dynamic libraries (`lib/`), application resource assets (`resources/`), and bundle metadata (`manifest.json`).
+
+### Action Items
+- [ ] Integrate `miniz` in CMake with zero warnings under `-Wall -Wextra` and `/W4`.
+- [ ] Author cross-platform C++ zip utilities (`solix::zip_directory`, `solix::extract_zip`, `solix::read_zip_file_entry`) in `core/`.
+- [ ] Implement `solix pack [target] [-p|--profile <profile>] [-o|--output <path.slxpac>]` in `cli/src/commands/pack.cpp`.
+- [ ] Bundle `bytecode.slxbin`, `lib/` (native shared libraries `.so`, `.dll`, `.dylib`), `resources/` (if present), and write package `manifest.json`.
+- [ ] Add test specifications in `tests/commands/TESTS.md` (Part XIV: Cases 20.1 to 20.4).
+- [ ] Implement Catch2 integration tests in `tests/commands/test_pack_command.cpp`.
+- [ ] Author CLI specification in `docs/spec/cli/pack.md`.
+- [ ] Verify 100% test pass rate across all test suites.
+
+---
+
+## Phase 7: Runtime & Launcher Bundle Ingestion and Dynamic Library Loading
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `cli/src/commands/execute.cpp`, `core/include/solix/runtime.hpp`, `core/src/runtime.cpp`, `tests/commands/test_run_bundle.cpp`, `tests/commands/TESTS.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Enable `solix run` and `solix_launcher` to directly accept and execute `.slxpac` bundle archives. Extract the bundle to a content-hashed cache directory (`$TMPDIR/solix_pac/<hash>/`), automatically discover and load bundled native shared libraries in `lib/`, set the application resource root, and execute the entry bytecode.
+
+### Action Items
+- [ ] Update `cli/src/commands/execute.cpp` to recognize `.slxpac` targets.
+- [ ] Implement content-hashed extraction cache to avoid re-extracting unmodified packages.
+- [ ] Scan and register all native shared libraries in `<bundle>/lib/` into `RuntimeOptions::native_libraries`.
+- [ ] Configure `RuntimeOptions::resource_directory` to point to `<bundle>/resources/`.
+- [ ] Update `tests/commands/TESTS.md` with bundle execution test cases (Cases 20.5 and 20.6).
+- [ ] Implement Catch2 unit & integration tests in `tests/commands/test_run_bundle.cpp`.
+- [ ] Update `docs/spec/runtime/` documentation.
+- [ ] Verify 100% test pass rate across all test suites.
+
+---
+
+## Phase 8: Standard Library (`solixlib`) Resource & Filesystem Dual-Location API
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `solixlib/project/src/solix/io/filesystem/Resource.slx`, `File.slx`, `Path.slx`, `solixlib/native/src/io_fs.cpp`, `solixlib/project/manifest.json`, `tests/solixlib/test_resource.cpp`, `tests/solixlib/TESTS.md`, `docs/spec/solixlib/resource.md`
+- **Status**: - [ ] Planned
+
+### Objective
+Enhance `solixlib` to provide clean, dual-location filesystem operations—allowing Solix programs to explicitly select whether to read from internal bundled application resources (`resources/`) or from outside the application (host filesystem).
+
+### Action Items
+- [ ] Implement native runtime hooks in `solixlib/native/src/io_fs.cpp` (`native_get_resource_root`, `native_resource_exists`, `native_read_resource_all_text`).
+- [ ] Author `solix.io.filesystem.Resource` class with `exists`, `read_all_text`, `read_all_lines`, `get_path`, and `get_resource_directory`.
+- [ ] Extend `solix.io.filesystem.File` with `read_resource_text`, `resource_exists`, and `read_all_text(path, is_resource)`.
+- [ ] Support `res://` virtual URI prefix scheme in `Path` and `File`.
+- [ ] Support transparent development fallback to `<project_root>/resources/` when running unbundled (`solix run .`).
+- [ ] Register new files in `solixlib/project/manifest.json`.
+- [ ] Update `tests/solixlib/TESTS.md` (Part XI: Cases 11.1 to 11.4).
+- [ ] Implement Catch2 test suite in `tests/solixlib/test_resource.cpp`.
+- [ ] Author specification in `docs/spec/solixlib/resource.md`.
+- [ ] Verify 100% test pass rate across all test suites.
+
+---
+
+## Phase 9: End-to-End Cross-Platform Verification, Tests & Documentation
+
+- **Priority**: `P2 Polish`
+- **Affected Modules**: `docs/`, `editors/vscode/`, `tests/`
+- **Status**: - [ ] Planned
+
+### Objective
+Perform end-to-end integration verification of packaging, resource loading, and execution across platforms, update user guides and IDE integration, and synchronize documentation.
+
+### Action Items
+- [ ] Author comprehensive user guide in `docs/guide/packaging_and_resources.md`.
+- [ ] Synchronize CLI command reference in `docs/spec/cli/README.md`.
+- [ ] Update VS Code extension keywords/syntax if new standard library symbols or commands require highlighting.
+- [ ] Run full regression suite (`ctest --test-dir build --output-on-failure`) with zero warnings and zero sanitizer defects.
+- [ ] Finalize phase updates in `docs/PLAN.md`.
+
 
