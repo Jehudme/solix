@@ -100,6 +100,9 @@ flowchart TD
 4. **Compilation & Artifact Emission**:
    - Executes compiler pipeline with configured entry point and log levels.
    - Emits bytecode binary to the configured profile output directory.
+5. **Transitive Native Library & Resource Staging**:
+   - Automatically collects native dynamic libraries (`.so`, `.dll`, `.dylib`) from the root project and all transitive dependency libraries, staging them into `<output_directory>/lib/`.
+   - Automatically collects and merges static assets from `resources/` across all transitive dependencies and the root project into `<output_directory>/resources/`. Root project assets override dependency assets on collision.
 
 ---
 

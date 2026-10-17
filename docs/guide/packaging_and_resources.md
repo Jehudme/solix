@@ -13,8 +13,9 @@ This guide explains how to package Solix applications into single-file portable 
 5. [The Resource API (`solix.io.filesystem.Resource`)](#the-resource-api-solixiofilesystemresource)
 6. [The `res://` Virtual URI Scheme](#the-res-virtual-uri-scheme)
 7. [Dual-Location Filesystem API](#dual-location-filesystem-api)
-8. [Development vs. Production Workflow](#development-vs-production-workflow)
-9. [Summary of Best Practices](#summary-of-best-practices)
+8. [Multi-Depth (Transitive) Dependency Bundling & Staging](#multi-depth-transitive-dependency-bundling--staging)
+9. [Development vs. Production Workflow](#development-vs-production-workflow)
+10. [Summary of Best Practices](#summary-of-best-practices)
 
 ---
 
@@ -224,6 +225,24 @@ class ConfigLoader {
     }
 }
 ```
+
+---
+
+## Multi-Depth (Transitive) Dependency Bundling & Staging
+
+Real-world projects often depend on libraries that themselves depend on other libraries (e.g., `App -> LibA -> LibB`). Solix handles multi-depth transitive dependencies seamlessly during both `solix build` and `solix pack`:
+
+### 1. Build Directory Staging (`solix build`)
+When you build a project, the build command:
+- Gathers all native shared libraries (`.so`, `.dll`, `.dylib`) from the root project and all transitive dependencies, placing them into `<output_directory>/lib/`.
+- Recursively copies all static assets (`resources/`) from all transitive dependencies and the root project into `<output_directory>/resources/`.
+- **Collision Override**: If the root project provides an asset with the same relative path as a dependency (e.g., `resources/shared/theme.json`), the root project's file automatically takes precedence.
+
+### 2. Single-File Packaging (`solix pack`)
+When packaging an application with `solix pack`:
+- All native shared libraries across all dependency depths are bundled into `<bundle>/lib/`.
+- All static resources across all dependency depths are merged into `<bundle>/resources/`.
+- The resulting `.slxpac` contains everything needed to execute on any machine without needing the original dependency directories.
 
 ---
 
