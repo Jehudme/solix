@@ -248,6 +248,7 @@ void Memory::decrease_reference_callable(Address env) {
 
 RuntimeContext::RuntimeContext(const RuntimeOptions &opts)
     : options(opts), memory(opts.stack_capacity, opts.heap_capacity),
+      resource_directory(opts.resource_directory),
       instruction_budget(opts.instruction_budget), instructions_executed(0) {
   call_stack.resize(65536);
 

@@ -45,6 +45,7 @@ struct RuntimeOptions {
   std::vector<std::string> program_args;
   std::unordered_map<std::string, NativeFunctionPtr> native_functions;
   std::vector<std::filesystem::path> native_libraries;
+  std::filesystem::path resource_directory;
   uint64_t instruction_budget = 0;              // 0 = unlimited discrete ISA instructions
   bool sandboxed = false;                       // true = disable ambient native shared libraries
   std::function<std::unique_ptr<RuntimeContext>(const RuntimeOptions &)> custom_context_factory = nullptr;
@@ -200,6 +201,7 @@ struct RuntimeContext {
   Address program_counter = 0;
   int32_t exit_code = 0;
   bool entry_method_called = false;
+  std::filesystem::path resource_directory;
 
   std::vector<Frame> call_stack;
   size_t call_depth = 0;
