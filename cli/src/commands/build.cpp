@@ -1,6 +1,7 @@
 #include "build.hpp"
 #include "compile.hpp"
 #include "../cli_utils.hpp"
+#include "../command_runner.hpp"
 #include "../dependency_resolver.hpp"
 #include "../package_manager.hpp"
 #include "solix/compilation.hpp"
@@ -248,27 +249,48 @@ ProjectBuildResult build_project(const std::filesystem::path& manifest_or_dir,
         }
     }
 
-    // 3. Pre-Compilation Modular Dependency & Transitive Project Resolution
+    // 3. Pre-Compile Lifecycle Commands (Root -> Active Profile)
+    auto root_pre_cmds = CommandRunner::extract_commands(root, "pre_compile", "precompile");
+    if (!CommandRunner::run_commands(root_pre_cmds, project_root, "pre-compile")) {
+        return result;
+    }
+
+    auto profile_pre_cmds = CommandRunner::extract_commands(profile, "pre_compile", "precompile");
+    if (!CommandRunner::run_commands(profile_pre_cmds, project_root, "pre-compile")) {
+        return result;
+    }
+
+    // 4. Pre-Compilation Modular Dependency & Transitive Project Resolution
     DependencyManager dep_mgr;
     if (!dep_mgr.resolve_all(root, project_root, profile, *opts, &result.dependency_roots)) {
         return result;
     }
-
 
     if (opts->sources.empty()) {
         std::cerr << "Error: No source files found to compile in profile '" << profile_name << "'." << std::endl;
         return result;
     }
 
-    // 4. Execute compilation and write binary
+    // 5. Execute compilation and write binary
     int exit_code = execute_compilation_and_write(*opts, out_exe);
     if (exit_code != 0) {
         return result;
     }
 
-    // 5. Stage transitive native libraries and resources into output directory
+    // 6. Stage transitive native libraries and resources into output directory
     stage_native_libraries(project_root, result.dependency_roots, out_dir);
     stage_resources(project_root, root, result.dependency_roots, out_dir);
+
+    // 7. Post-Compile Lifecycle Commands (Active Profile -> Root)
+    auto profile_post_cmds = CommandRunner::extract_commands(profile, "post_compile", "postcompile");
+    if (!CommandRunner::run_commands(profile_post_cmds, project_root, "post-compile")) {
+        return result;
+    }
+
+    auto root_post_cmds = CommandRunner::extract_commands(root, "post_compile", "postcompile");
+    if (!CommandRunner::run_commands(root_post_cmds, project_root, "post-compile")) {
+        return result;
+    }
 
     result.output_binary = out_exe;
     result.success = true;

@@ -897,5 +897,126 @@ TEST_CASE("CLI Command - build", "[command][build]") {
         CHECK(build_res.exit_code == 0);
         CHECK(sandbox.exists("sample_app/build/debug/out.slxbin"));
     }
+
+    SECTION("Positive - Case 21.1: Root Pre-Compile Commands Execute Before Compilation") {
+        auto orig_cwd = std::filesystem::current_path();
+        std::filesystem::current_path(sandbox.path());
+
+        nlohmann::json manifest = nlohmann::json::parse(create_sample_manifest("precompile_root_app"));
+#ifdef _WIN32
+        manifest["pre_compile"] = nlohmann::json::array({"echo int32 generated_func() { return 100; } > src\\generated.slx"});
+#else
+        manifest["pre_compile"] = nlohmann::json::array({"sh -c 'echo \"int32 generated_func() { return 100; }\" > src/generated.slx'"});
+#endif
+        manifest["dependencies"].push_back({
+            {"type", "source"},
+            {"path", "src/generated.slx"}
+        });
+
+        sandbox.create_file("manifest.json", manifest.dump(2));
+        sandbox.create_file("src/main.slx", "int32 main() { return generated_func() == 100 ? 0 : 1; }\n");
+
+        auto res = run_cli({"build"});
+        std::filesystem::current_path(orig_cwd);
+
+        CHECK(res.exit_code == 0);
+        CHECK(sandbox.exists("build/debug/out.slxbin"));
+        CHECK(sandbox.exists("src/generated.slx"));
+    }
+
+    SECTION("Positive - Case 21.2: Profile-Specific Pre-Compile Commands Execute in Coherent Order") {
+        auto orig_cwd = std::filesystem::current_path();
+        std::filesystem::current_path(sandbox.path());
+
+        nlohmann::json manifest = nlohmann::json::parse(create_sample_manifest("order_app"));
+#ifdef _WIN32
+        manifest["pre_compile"] = nlohmann::json::array({"echo root_pre >> order.log"});
+        manifest["profiles"]["release"]["pre_compile"] = nlohmann::json::array({"echo profile_pre >> order.log"});
+#else
+        manifest["pre_compile"] = nlohmann::json::array({"sh -c 'echo root_pre >> order.log'"});
+        manifest["profiles"]["release"]["pre_compile"] = nlohmann::json::array({"sh -c 'echo profile_pre >> order.log'"});
+#endif
+        sandbox.create_file("manifest.json", manifest.dump(2));
+        sandbox.create_file("src/main.slx", "int32 main() { return 0; }\n");
+
+        auto res = run_cli({"build", "-p", "release"});
+        std::filesystem::current_path(orig_cwd);
+
+        CHECK(res.exit_code == 0);
+        CHECK(sandbox.exists("order.log"));
+        std::ifstream log_file(sandbox.path() / "order.log");
+        std::string line1, line2;
+        std::getline(log_file, line1);
+        std::getline(log_file, line2);
+        CHECK(line1.find("root_pre") != std::string::npos);
+        CHECK(line2.find("profile_pre") != std::string::npos);
+    }
+
+    SECTION("Positive - Case 21.3: Post-Compile Commands Execute in Profile-Then-Root Order") {
+        auto orig_cwd = std::filesystem::current_path();
+        std::filesystem::current_path(sandbox.path());
+
+        nlohmann::json manifest = nlohmann::json::parse(create_sample_manifest("post_order_app"));
+#ifdef _WIN32
+        manifest["post_compile"] = nlohmann::json::array({"echo root_post >> post_order.log"});
+        manifest["profiles"]["release"]["post_compile"] = nlohmann::json::array({"echo profile_post >> post_order.log"});
+#else
+        manifest["post_compile"] = nlohmann::json::array({"sh -c 'echo root_post >> post_order.log'"});
+        manifest["profiles"]["release"]["post_compile"] = nlohmann::json::array({"sh -c 'echo profile_post >> post_order.log'"});
+#endif
+        sandbox.create_file("manifest.json", manifest.dump(2));
+        sandbox.create_file("src/main.slx", "int32 main() { return 0; }\n");
+
+        auto res = run_cli({"build", "-p", "release"});
+        std::filesystem::current_path(orig_cwd);
+
+        CHECK(res.exit_code == 0);
+        CHECK(sandbox.exists("post_order.log"));
+        std::ifstream log_file(sandbox.path() / "post_order.log");
+        std::string line1, line2;
+        std::getline(log_file, line1);
+        std::getline(log_file, line2);
+        CHECK(line1.find("profile_post") != std::string::npos);
+        CHECK(line2.find("root_post") != std::string::npos);
+    }
+
+    SECTION("Negative - Case 21.4: Failing Pre-Compile Command Aborts Build Immediately") {
+        auto orig_cwd = std::filesystem::current_path();
+        std::filesystem::current_path(sandbox.path());
+
+        nlohmann::json manifest = nlohmann::json::parse(create_sample_manifest("fail_pre_app"));
+#ifdef _WIN32
+        manifest["pre_compile"] = nlohmann::json::array({"cmd /c exit 42"});
+#else
+        manifest["pre_compile"] = nlohmann::json::array({"sh -c 'exit 42'"});
+#endif
+        sandbox.create_file("manifest.json", manifest.dump(2));
+        sandbox.create_file("src/main.slx", "int32 main() { return 0; }\n");
+
+        auto res = run_cli({"build"});
+        std::filesystem::current_path(orig_cwd);
+
+        CHECK(res.exit_code != 0);
+        CHECK(!sandbox.exists("build/debug/out.slxbin"));
+    }
+
+    SECTION("Negative - Case 21.5: Failing Post-Compile Command Causes Build Failure") {
+        auto orig_cwd = std::filesystem::current_path();
+        std::filesystem::current_path(sandbox.path());
+
+        nlohmann::json manifest = nlohmann::json::parse(create_sample_manifest("fail_post_app"));
+#ifdef _WIN32
+        manifest["post_compile"] = nlohmann::json::array({"cmd /c exit 1"});
+#else
+        manifest["post_compile"] = nlohmann::json::array({"sh -c 'exit 1'"});
+#endif
+        sandbox.create_file("manifest.json", manifest.dump(2));
+        sandbox.create_file("src/main.slx", "int32 main() { return 0; }\n");
+
+        auto res = run_cli({"build"});
+        std::filesystem::current_path(orig_cwd);
+
+        CHECK(res.exit_code != 0);
+    }
 }
 

@@ -325,4 +325,70 @@ TEST_CASE("CLI Command - pack", "[command][pack]") {
 
         CHECK(run_res.exit_code == 0);
     }
+
+    SECTION("Positive - Case 21.6: Pre-Compile Command Generating Native Library Bundled by solix pack") {
+        auto orig_cwd = std::filesystem::current_path();
+        std::filesystem::current_path(sandbox.path());
+
+        std::filesystem::path plugin_src(SOLIX_TEST_PLUGIN_PATH);
+        std::string lib_filename = plugin_src.filename().string();
+
+        nlohmann::json manifest;
+        manifest["name"] = "precompile_pack_app";
+        manifest["project"] = "precompile_pack_app";
+        manifest["version"] = "1.0.0";
+        manifest["dependencies"] = nlohmann::json::array({
+            {{"type", "source"}, {"path", "src/main.slx"}}
+        });
+
+        // Pre-compile command creates lib/ and copies the plugin library into lib/
+        std::string copy_cmd;
+#ifdef _WIN32
+        copy_cmd = "cmd /c if not exist lib mkdir lib && copy \"" + plugin_src.string() + "\" \"lib\\" + lib_filename + "\"";
+#else
+        copy_cmd = "sh -c 'mkdir -p lib && cp \"" + plugin_src.string() + "\" \"lib/" + lib_filename + "\"'";
+#endif
+        manifest["pre_compile"] = nlohmann::json::array({copy_cmd});
+
+        manifest["profiles"]["debug"] = {
+            {"output_directory", "build/debug"},
+            {"exe_filename", "out.slxbin"},
+            {"compilation", {{"entry_point", "main"}, {"multithreaded", false}}}
+        };
+        manifest["profiles"]["release"] = {
+            {"output_directory", "build/release"},
+            {"exe_filename", "out.slxbin"},
+            {"compilation", {{"entry_point", "main"}, {"multithreaded", false}}}
+        };
+
+        sandbox.create_file("manifest.json", manifest.dump(2));
+        sandbox.create_file("src/main.slx", R"(
+            public class NativeMath {
+                public static native int32 add(int32 a, int32 b);
+            }
+            public class Main {
+                public static int32 main() {
+                    return NativeMath.add(10, 32) == 42 ? 0 : 1;
+                }
+            }
+        )");
+
+        auto pack_res = run_cli({"pack", "-o", "precompile_app.slxpac"});
+        CHECK(pack_res.exit_code == 0);
+
+        auto pac_path = sandbox.path() / "precompile_app.slxpac";
+        CHECK(std::filesystem::exists(pac_path));
+
+        solix::ZipArchiveReader reader(pac_path);
+        CHECK(reader.is_valid());
+        CHECK(reader.has_entry("bytecode.slxbin"));
+        if (std::filesystem::exists(plugin_src)) {
+            CHECK(reader.has_entry("lib/" + lib_filename));
+        }
+
+        auto run_res = run_cli({"run", pac_path.string()});
+        std::filesystem::current_path(orig_cwd);
+
+        CHECK(run_res.exit_code == 0);
+    }
 }

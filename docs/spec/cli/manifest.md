@@ -189,3 +189,43 @@ Root-level array of filesystem paths pointing to compiled C/C++ shared libraries
 ```
 Relative paths are resolved relative to the directory containing `solix.json`. Additionally, any shared libraries placed in the project's `./lib/` directory or alongside the generated `.slxbin` are automatically discovered without requiring explicit manifest entries.
 
+### 5. Lifecycle Command Hooks (`pre_compile`, `post_compile`)
+
+Solix manifests support declarative pre-compile and post-compile lifecycle command hooks at both the root level and within individual profiles:
+
+```json
+{
+  "pre_compile": [
+    "cmake -B native/build -S native"
+  ],
+  "post_compile": [
+    "echo \"Build finished!\""
+  ],
+  "profiles": {
+    "release": {
+      "pre_compile": [
+        "cmake --build native/build --config Release"
+      ],
+      "post_compile": [
+        "strip lib/libplugin.so"
+      ]
+    }
+  }
+}
+```
+
+#### Field Details:
+| Field | Location | Type | Default | Description |
+|---|---|---|---|---|
+| `pre_compile` / `precompile` | Root or Profile | Array of Strings or String | `[]` | Shell commands to execute in `project_root` before bytecode compilation. |
+| `post_compile` / `postcompile` | Root or Profile | Array of Strings or String | `[]` | Shell commands to execute in `project_root` after successful compilation and artifact staging. |
+
+#### Execution Ordering & Semantics:
+1. **Root `pre_compile`**: Executes first in order of declaration.
+2. **Active Profile `pre_compile`**: Executes next in order of declaration.
+3. **Compilation & Staging**: Compiler builds `.slx` bytecode and stages `lib/` and `resources/`.
+4. **Active Profile `post_compile`**: Executes immediately after successful compilation.
+5. **Root `post_compile`**: Executes last.
+- **Fail-Fast Error Handling**: If any pre-compile or post-compile command exits with a non-zero code, the build process immediately terminates with exit code 1. Subsequent commands and compilation stages are skipped.
+
+
