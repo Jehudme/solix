@@ -1112,7 +1112,7 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 23.1: End-to-End Native Compilation, Transitive Staging, Packaging, and Execution [NOT IMPLEMENTED]
+#### Case 23.1: End-to-End Native Compilation, Transitive Staging, Packaging, and Execution [IMPLEMENTED]
 - **Command**: `solix pack -p release -o bundle.slxpac && solix run bundle.slxpac`
 - **Setup**:
   - Application depends on Library A with `"profile": "release"`.
