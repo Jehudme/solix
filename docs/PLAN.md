@@ -21,7 +21,7 @@ This document tracks all planned, in-progress, and completed engineering phases 
 | [Phase 9](#phase-9-end-to-end-cross-platform-verification-tests--documentation) | End-to-End Cross-Platform Verification, Tests & Documentation | P2 Polish | - [x] Completed & Merged |
 | [Phase 10](#phase-10-multi-depth-dependency-asset--native-library-staging-in-build-and-package) | Multi-Depth Dependency Asset & Native Library Staging in Build and Package | P1 High | - [x] Completed & Merged |
 | [Phase 11](#phase-11-host-platform-native-library-import-enforcement--filtering) | Host-Platform Native Library Import Enforcement & Filtering | P1 High | - [x] Completed & Merged |
-| [Phase 12](#phase-12-pre-compile--post-compile-command-lifecycle-engine) | Pre-Compile & Post-Compile Command Lifecycle Engine in Build & Pack | P1 High | - [ ] Planned |
+| [Phase 12](#phase-12-pre-compile--post-compile-command-lifecycle-engine) | Pre-Compile & Post-Compile Command Lifecycle Engine in Build & Pack | P1 High | - [x] Completed & Merged |
 | [Phase 13](#phase-13-dependency-profile-selection--profile-specific-variable-and-dependency-propagation) | Dependency Profile Selection & Profile-Specific Variable/Dependency Propagation | P1 High | - [ ] Planned |
 | [Phase 14](#phase-14-end-to-end-integration-native-cmake-compilation-bundling--documentation) | End-to-End Integration, Native CMake Compilation, Bundling & Documentation | P2 Polish | - [ ] Planned |
 
@@ -277,7 +277,7 @@ Ensure that the Solix runtime and launcher strictly load only host-platform-comp
 
 - **Priority**: `P1 High`
 - **Affected Modules**: `cli/src/command_runner.hpp`, `cli/src/commands/build.cpp`, `cli/src/commands/build.hpp`, `cli/src/commands/pack.cpp`, `tests/commands/test_build_command.cpp`, `tests/commands/test_pack_command.cpp`, `tests/commands/TESTS.md`, `docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, `docs/spec/cli/pack.md`, `docs/guide/packaging_and_resources.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged (2026-10-17)
 
 ### Objective
 Introduce declarative lifecycle command hooks (`pre_compile` and `post_compile`) at both the project root level and within individual profiles in `manifest.json` / `solix.json`. Commands execute cross-platform in project-relative working directories with exit-code enforcement, allowing automated CMake builds, native companion library compilation, and asset preprocessing before bytecode compilation and packaging.
@@ -290,25 +290,25 @@ Introduce declarative lifecycle command hooks (`pre_compile` and `post_compile`)
 5. **Root `post_compile` commands**: In order of declaration (e.g. final notification or post-processing).
 
 ### Action Items
-- [ ] Create cross-platform command execution utility `CommandRunner` in `cli/src/command_runner.hpp` supporting directory context (`cwd`), command echoing, output streaming, and error code propagation.
-- [ ] Parse root-level `pre_compile` (and `precompile`) and `post_compile` (and `postcompile`) string arrays from manifest.
-- [ ] Parse profile-level `pre_compile` and `post_compile` string arrays from `profiles.<profile_name>`.
-- [ ] Integrate command execution into `build_project` in `cli/src/commands/build.cpp`:
+- [x] Create cross-platform command execution utility `CommandRunner` in `cli/src/command_runner.hpp` supporting directory context (`cwd`), command echoing, output streaming, and error code propagation.
+- [x] Parse root-level `pre_compile` (and `precompile`) and `post_compile` (and `postcompile`) string arrays from manifest.
+- [x] Parse profile-level `pre_compile` and `post_compile` string arrays from `profiles.<profile_name>`.
+- [x] Integrate command execution into `build_project` in `cli/src/commands/build.cpp`:
   - Run root pre-compile followed by profile pre-compile before compilation.
   - Abort immediately with exit code 1 if any pre-compile command returns non-zero.
   - Run profile post-compile followed by root post-compile after successful compilation.
   - Abort immediately with exit code 1 if any post-compile command returns non-zero.
-- [ ] Verify seamless interaction with `solix pack`, ensuring pre-compile commands (e.g. CMake native builds) complete before `.slxpac` packaging gathers `lib/` artifacts.
-- [ ] Define test specifications in `tests/commands/TESTS.md` (Cases 21.1 to 21.6) tagged with `[NOT IMPLEMENTED]`.
-- [ ] Implement Catch2 test cases in `tests/commands/test_build_command.cpp` and `tests/commands/test_pack_command.cpp`:
+- [x] Verify seamless interaction with `solix pack`, ensuring pre-compile commands (e.g. CMake native builds) complete before `.slxpac` packaging gathers `lib/` artifacts.
+- [x] Define test specifications in `tests/commands/TESTS.md` (Cases 21.1 to 21.6) tagged with `[IMPLEMENTED]`.
+- [x] Implement Catch2 test cases in `tests/commands/test_build_command.cpp` and `tests/commands/test_pack_command.cpp`:
   - Case 21.1: Root pre-compile commands execute before compilation.
   - Case 21.2: Profile-specific pre-compile commands execute after root pre-compile commands.
   - Case 21.3: Post-compile commands execute in profile-then-root order after compilation.
   - Case 21.4: Failing pre-compile command aborts build immediately without running compilation.
   - Case 21.5: Failing post-compile command causes build failure.
   - Case 21.6: Pre-compile command generating shared library in `lib/` is bundled by `solix pack` into `.slxpac`.
-- [ ] Update documentation in `docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, and `docs/spec/cli/pack.md`.
-- [ ] Verify 100% test pass rate with zero warnings and merge via `--no-ff`.
+- [x] Update documentation in `docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, and `docs/spec/cli/pack.md`.
+- [x] Verify 100% test pass rate with zero warnings and merge via `--no-ff`.
 
 ---
 
