@@ -52,6 +52,13 @@ static uint64_t allocate_solix_chars(solix::RuntimeContext &vm, const std::strin
 static uint64_t env_native_get_env(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     std::string key = read_solix_chars(vm, args[0]);
+#if defined(_WIN32)
+    char buf[32768];
+    DWORD len = GetEnvironmentVariableA(key.c_str(), buf, sizeof(buf));
+    if (len > 0 && len < sizeof(buf)) {
+        return allocate_solix_chars(vm, std::string(buf, len));
+    }
+#endif
     const char *val = std::getenv(key.c_str());
     if (val == nullptr) {
         return 0ULL; // null
@@ -64,6 +71,7 @@ static uint64_t env_native_set_env(solix::RuntimeContext &vm, uint64_t self, uin
     std::string key = read_solix_chars(vm, args[0]);
     std::string val = read_solix_chars(vm, args[1]);
 #if defined(_WIN32)
+    SetEnvironmentVariableA(key.c_str(), val.c_str());
     _putenv_s(key.c_str(), val.c_str());
 #else
     setenv(key.c_str(), val.c_str(), 1);

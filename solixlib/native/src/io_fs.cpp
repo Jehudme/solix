@@ -8,6 +8,13 @@
 #include <vector>
 #include <chrono>
 
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#endif
+
 namespace fs = std::filesystem;
 
 namespace {
@@ -33,6 +40,13 @@ static uint64_t allocate_solix_chars(solix::RuntimeContext &vm, const std::strin
 }
 
 static std::string get_resource_root() {
+#ifdef _WIN32
+    char buf[32768];
+    DWORD len = GetEnvironmentVariableA("SOLIX_RESOURCE_ROOT", buf, sizeof(buf));
+    if (len > 0 && len < sizeof(buf)) {
+        return std::string(buf, len);
+    }
+#endif
     const char *env = std::getenv("SOLIX_RESOURCE_ROOT");
     if (env != nullptr && *env != '\0') {
         return std::string(env);

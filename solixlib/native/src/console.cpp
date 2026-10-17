@@ -293,3 +293,19 @@ void register_console_natives(solix::NativeRegistry &registry) {
     reg("native_set_title", native_set_title);
     reg("native_try_parse_double", native_try_parse_double);
 }
+
+extern "C" {
+
+SOLIX_EXPORT void* solix_set_cin_rdbuf(void* buf) {
+    return std::cin.rdbuf(static_cast<std::streambuf*>(buf));
+}
+
+SOLIX_EXPORT void* solix_set_cout_rdbuf(void* buf) {
+    return std::cout.rdbuf(static_cast<std::streambuf*>(buf));
+}
+
+SOLIX_EXPORT void* solix_set_cerr_rdbuf(void* buf) {
+    return std::cerr.rdbuf(static_cast<std::streambuf*>(buf));
+}
+
+} // extern "C"
