@@ -187,4 +187,25 @@ TEST_CASE("NativeInteroperability - Dynamic Shared Library Loader", "[runtime][n
             Catch::Matchers::ContainsSubstring("Call to unknown native function")
         );
     }
+
+    SECTION("Case 49.9: Reject Foreign Platform Native Library Format") {
+        const std::string code = R"(
+            public class Main {
+                public static int32 main() {
+                    return 0;
+                }
+            }
+        )";
+        assert_compile_success(code);
+
+#ifdef _WIN32
+        std::filesystem::path foreign_lib = "mock_plugin.so";
+#else
+        std::filesystem::path foreign_lib = "mock_plugin.dll";
+#endif
+        REQUIRE_THROWS_WITH(
+            run_with_libraries(code, {foreign_lib}),
+            Catch::Matchers::ContainsSubstring("Unsupported native library format")
+        );
+    }
 }

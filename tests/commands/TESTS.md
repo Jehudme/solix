@@ -1016,6 +1016,11 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Transitive project chain `App -> LibA -> LibB` packaged into `.slxpac`.
 - **Expected**: Exits 0; `bundle.slxpac` archives all transitive native libraries and merged resources; bundle execution loads native functions and reads multi-depth resources.
 
+#### Case 20.13: Multi-Platform Bundle Native Library Auto-Discovery Filtering [IMPLEMENTED]
+- **Command**: `solix run bundle.slxpac`
+- **Setup**: A `.slxpac` bundle containing both host-platform native shared libraries and foreign-platform shared libraries in `lib/` (e.g. both `.so` and `.dll`).
+- **Expected**: Exits 0; `solix run` filters out foreign-platform shared libraries and only loads the host-platform compatible library, executing successfully without `SharedLibraryException`.
+
 
 
 

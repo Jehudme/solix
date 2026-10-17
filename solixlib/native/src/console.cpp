@@ -218,7 +218,7 @@ static uint64_t native_set_color(solix::RuntimeContext &vm, uint64_t self, uint6
 }
 
 static uint64_t native_reset_color(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
-    (void)vm; (void)self; (void)argc;
+    (void)vm; (void)self; (void)args; (void)argc;
     ensure_terminal_initialized();
     std::cout << "\033[0m";
     return 0;

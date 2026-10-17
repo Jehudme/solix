@@ -12,6 +12,7 @@
 #include <string>
 #include <map>
 #include <algorithm>
+#include "solix/shared_library.hpp"
 #include <nlohmann/json.hpp>
 
 namespace solix::cli {
@@ -19,9 +20,7 @@ namespace solix::cli {
 namespace {
 
 inline bool is_shared_library(const std::filesystem::path& p) {
-    std::string ext = p.extension().string();
-    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    return ext == ".so" || ext == ".dll" || ext == ".dylib";
+    return solix::is_any_shared_library(p);
 }
 
 void stage_native_libraries(const std::filesystem::path& project_root,
