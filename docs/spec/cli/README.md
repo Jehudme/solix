@@ -63,6 +63,7 @@ solix <subcommand> --help
 | Variable | Description | Default Value |
 |---|---|---|
 | `SOLIX_HOME` | Root directory for local package installations and registry metadata | Windows: `%LOCALAPPDATA%\solix`<br>macOS: `~/Library/Application Support/solix`<br>Linux: `~/.solix` (or `$XDG_DATA_HOME/solix`) |
+| `SOLIX_RESOURCE_ROOT` | Root directory for bundled application resources | Auto-configured when executing `.slxpac` archives; falls back to `<cwd>/resources` |
 
 When `SOLIX_HOME` is defined, the package manager redirects all registry writes (`$SOLIX_HOME/installed.json`) and installed package directories (`$SOLIX_HOME/installed/<id>/`) to that folder. This provides full test isolation and sandbox reproducibility.
 
@@ -81,8 +82,9 @@ When `SOLIX_HOME` is defined, the package manager redirects all registry writes 
 ## Detailed Subcommand Specifications
 
 - [**compile Subcommand**](compile.md): Single/multi-file compiler, assembly dumping, log level controls.
-- [**run Subcommand**](run.md): VM runtime execution, memory limits, program argument passing.
+- [**run Subcommand**](run.md): VM runtime execution, `.slxpac` bundle ingestion, memory limits, program argument passing.
 - [**build Subcommand**](build.md): Profile-driven multi-file building, dependency resolution.
+- [**pack Subcommand**](pack.md): Single-file distribution archive (`.slxpac`) generation, resource bundling, native library packaging.
 - [**new Subcommand**](new.md): Project scaffolding, custom templates, collision protection.
 - [**package Management (`install`, `uninstall`, `list`, `details`)**](package.md): Local project lifecycle, deterministic SHA-256 IDs, registry inspection.
-- [**Project Manifest (`solix.json`) Specification**](manifest.md): Complete schema documentation for project manifests.
+- [**Project Manifest (`manifest.json`) Specification**](manifest.md): Complete schema documentation for project manifests.
