@@ -89,7 +89,7 @@ The toolchain dynamically locates the bundled extension relative to the running 
 Complementing IDE extension management, the Solix toolchain automatically discovers and registers the standard library (`solixlib`) relative to the executable path:
 
 1. **Installed layout**: `<prefix>/share/solix/solixlib`
-2. **Development layout**: `<repo>/solixlib/project`
+2. **Development layout**: `<repo>/solixlib`
 
 When a project references `solixlib` as a dependency and `$SOLIX_HOME` does not yet contain it, the toolchain automatically seeds and installs the bundled standard library into the user's local package repository on first use.
 

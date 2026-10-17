@@ -427,12 +427,12 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Project already installed.
 - **Expected**: Exits 0; updates existing installation and timestamp in registry.
 
-#### Case 5.7: Install Solix Standard Library Project (solixlib) [NOT IMPLEMENTED]
+#### Case 5.7: Install Solix Standard Library Project (solixlib) [IMPLEMENTED]
 - **Command**: `solix install solixlib`
 - **Setup**: `solixlib` directory containing valid `manifest.json` (`solixlib` v0.1.0) and compiled native shared library `solixlib_native` in `lib/`.
 - **Expected**: Exits 0; installs into `$SOLIX_HOME/installed/<hash_id>/`; lists project as `solixlib` version 0.1.0 in registry.
 
-#### Case 5.8: Verify Installed Standard Library Contains Native lib Directory [NOT IMPLEMENTED]
+#### Case 5.8: Verify Installed Standard Library Contains Native lib Directory [IMPLEMENTED]
 - **Setup**: `solixlib` installed via `solix install solixlib`.
 - **Expected**: The target folder `$SOLIX_HOME/installed/<hash_id>/lib/` exists and contains `solixlib_native` shared library.
 
@@ -457,7 +457,7 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Project already installed.
 - **Expected**: Exits non-zero; error message stating project is already installed and recommending `--force`.
 
-#### Case 5.10: Reinstall solixlib Without Force Flag Fails [NOT IMPLEMENTED]
+#### Case 5.10: Reinstall solixlib Without Force Flag Fails [IMPLEMENTED]
 - **Command**: `solix install solixlib`
 - **Setup**: `solixlib` already installed in `$SOLIX_HOME`.
 - **Expected**: Exits non-zero (exit code 1); error message indicating `solixlib` version 0.1.0 is already installed and recommending `--force`.
@@ -1133,17 +1133,17 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Positive Test Scenarios
 
-#### Case 24.1: Direct Installation of Canonical Standard Library from solixlib/ [NOT IMPLEMENTED]
+#### Case 24.1: Direct Installation of Canonical Standard Library from solixlib/ [IMPLEMENTED]
 - **Command**: `solix install solixlib`
 - **Setup**: Project root directory `solixlib/` containing canonical `manifest.json`, `src/solix/`, and native companion in `lib/`.
 - **Expected**: Exits 0; installs into `$SOLIX_HOME/installed/<hash_id>/`; installed directory contains `manifest.json`, `src/`, and `lib/`.
 
-#### Case 24.2: Consumer Dependency Resolution of Canonical solixlib [NOT IMPLEMENTED]
+#### Case 24.2: Consumer Dependency Resolution of Canonical solixlib [IMPLEMENTED]
 - **Command**: `solix run ./consumer_app`
 - **Setup**: `consumer_app` declaring dependency on `solixlib@0.1.0`. `solixlib` installed in local registry.
 - **Expected**: Exits 0; compiles and executes successfully resolving `solix.core.Internal.version()`.
 
-#### Case 24.3: Bundled Discovery Fallback to Canonical solixlib/ [NOT IMPLEMENTED]
+#### Case 24.3: Bundled Discovery Fallback to Canonical solixlib/ [IMPLEMENTED]
 - **Command**: `PackageManager::discover_bundled_solixlib()`
 - **Setup**: Solix repository tree with canonical layout directly in `solixlib/`.
 - **Expected**: Discovers valid path returning `solixlib/` containing `manifest.json` and `src/solix/`.
