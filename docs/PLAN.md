@@ -214,16 +214,17 @@ Enhance `solixlib` to provide clean, dual-location filesystem operations—allow
 
 - **Priority**: `P2 Polish`
 - **Affected Modules**: `docs/`, `editors/vscode/`, `tests/`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged (2026-10-17)
 
 ### Objective
 Perform end-to-end integration verification of packaging, resource loading, and execution across platforms, update user guides and IDE integration, and synchronize documentation.
 
 ### Action Items
-- [ ] Author comprehensive user guide in `docs/guide/packaging_and_resources.md`.
-- [ ] Synchronize CLI command reference in `docs/spec/cli/README.md`.
-- [ ] Update VS Code extension keywords/syntax if new standard library symbols or commands require highlighting.
-- [ ] Run full regression suite (`ctest --test-dir build --output-on-failure`) with zero warnings and zero sanitizer defects.
-- [ ] Finalize phase updates in `docs/PLAN.md`.
+- [x] Author comprehensive user guide in `docs/guide/packaging_and_resources.md`.
+- [x] Synchronize CLI command reference in `docs/spec/cli/README.md`.
+- [x] Update VS Code extension keywords/syntax if new standard library symbols or commands require highlighting.
+- [x] Run full regression suite (`ctest --test-dir build --output-on-failure`) with zero warnings and zero sanitizer defects (80/80 passed 100%).
+- [x] Finalize phase updates in `docs/PLAN.md`.
+
 
 
