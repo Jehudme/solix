@@ -344,7 +344,9 @@ TEST_CASE("CLI Command - pack", "[command][pack]") {
         // Pre-compile command creates lib/ and copies the plugin library into lib/
         std::string copy_cmd;
 #ifdef _WIN32
-        copy_cmd = "cmd /c if not exist lib mkdir lib && copy \"" + plugin_src.string() + "\" \"lib\\" + lib_filename + "\"";
+        std::string win_plugin_path = plugin_src.string();
+        std::replace(win_plugin_path.begin(), win_plugin_path.end(), '/', '\\');
+        copy_cmd = "cmd /c if not exist lib mkdir lib && copy /Y \"" + win_plugin_path + "\" \"lib\\" + lib_filename + "\"";
 #else
         copy_cmd = "sh -c 'mkdir -p lib && cp \"" + plugin_src.string() + "\" \"lib/" + lib_filename + "\"'";
 #endif
@@ -415,7 +417,9 @@ TEST_CASE("CLI Command - pack", "[command][pack]") {
         std::string lib_a_pre_copy;
         std::string lib_a_pre_log;
 #if defined(_WIN32)
-        lib_a_pre_copy = "cmd /c if not exist lib mkdir lib && copy \"" + plugin_src.string() + "\" lib\\";
+        std::string win_plugin_path = plugin_src.string();
+        std::replace(win_plugin_path.begin(), win_plugin_path.end(), '/', '\\');
+        lib_a_pre_copy = "cmd /c if not exist lib mkdir lib && copy /Y \"" + win_plugin_path + "\" lib\\";
         lib_a_pre_log = "cmd /c echo LIB_A_PRE>> \"" + log_file_path.string() + "\"";
 #else
         lib_a_pre_copy = "sh -c 'mkdir -p lib && cp \"" + plugin_src.string() + "\" lib/'";

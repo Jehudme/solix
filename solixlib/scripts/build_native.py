@@ -84,12 +84,20 @@ def build_with_zig(zig_bin, sources, include_dirs, target_key, output_path, rele
 
 
 def build_host_fallback(sources, include_dirs, output_path, release=True):
-    cxx = os.environ.get("CXX") or shutil.which("g++") or shutil.which("clang++")
+    is_win = sys.platform in ("win32", "cygwin")
+    if is_win:
+        cxx = os.environ.get("CXX") or shutil.which("clang++") or shutil.which("cl") or shutil.which("g++")
+    else:
+        cxx = os.environ.get("CXX") or shutil.which("clang++") or shutil.which("g++")
+
     if not cxx:
-        print("[build_native] Error: No C++ compiler found (g++ or clang++)", file=sys.stderr)
+        print("[build_native] Error: No C++ compiler found (clang++ or g++)", file=sys.stderr)
         return False
 
-    cmd = [cxx, "-shared", "-fPIC", "-std=c++20"]
+    cmd = [cxx, "-shared", "-std=c++20"]
+    if not is_win:
+        cmd.append("-fPIC")
+
     if release:
         cmd.append("-O3")
     else:

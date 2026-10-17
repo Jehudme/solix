@@ -72,6 +72,9 @@ jobs:
 
       - name: Configure CMake (Windows)
         if: runner.os == 'Windows'
+        env:
+          CC: clang
+          CXX: clang++
         run: >
           cmake -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
@@ -80,6 +83,9 @@ jobs:
           -DCMAKE_CXX_STANDARD=20
 
       - name: Build
+        env:
+          CC: clang
+          CXX: clang++
         run: cmake --build build --config Release --parallel
 
       - name: Package with CPack (Linux & macOS)
