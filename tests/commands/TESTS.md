@@ -1102,3 +1102,25 @@ This document is the master test specification for the Solix CLI command suite (
 - **Command**: `solix build`
 - **Setup**: Root project declares dependency `DepA` with `"profile": "non_existent"`. `DepA` only defines `"debug"` and `"release"`.
 - **Expected**: Exits non-zero (1); outputs `Error: Dependency project 'DepA' does not define requested profile 'non_existent'. Available profiles: [debug, release]` before compilation.
+
+---
+
+## Part XXIII: End-to-End Lifecycle Integration, Native Compilation, Packaging & Execution
+
+*Command*: `solix pack` and `solix run`
+*Specification Reference*: [Project Manifest Specification](../../docs/spec/cli/manifest.md), [`solix build` Specification](../../docs/spec/cli/build.md), [`solix pack` Specification](../../docs/spec/cli/pack.md)
+
+### Positive Test Scenarios
+
+#### Case 23.1: End-to-End Native Compilation, Transitive Staging, Packaging, and Execution [NOT IMPLEMENTED]
+- **Command**: `solix pack -p release -o bundle.slxpac && solix run bundle.slxpac`
+- **Setup**:
+  - Application depends on Library A with `"profile": "release"`.
+  - Library A has a pre-compile command in `"release"` profile that builds/copies a native companion shared library into `lib/` and provides resources.
+  - Application defines root and profile pre-compile and post-compile commands recording lifecycle execution markers.
+  - Application source calls native methods defined in Library A and accesses staged resources.
+- **Expected**:
+  - Exits 0; lifecycle commands execute in strictly deterministic order: Library A pre-compile -> App root pre-compile -> App profile pre-compile -> Bytecode compilation & Staging -> App profile post-compile -> App root post-compile.
+  - `bundle.slxpac` is created containing `bytecode.slxbin`, `lib/<native_library>`, `resources/`, and package manifest.
+  - `solix run bundle.slxpac` loads the host-platform native library, binds native methods, accesses resources, and exits with 0.
+
