@@ -15,7 +15,8 @@ This guide explains how to package Solix applications into single-file portable 
 7. [Dual-Location Filesystem API](#dual-location-filesystem-api)
 8. [Multi-Depth (Transitive) Dependency Bundling & Staging](#multi-depth-transitive-dependency-bundling--staging)
 9. [Development vs. Production Workflow](#development-vs-production-workflow)
-10. [Summary of Best Practices](#summary-of-best-practices)
+10. [Universal Multi-Platform Cross-Compilation with Zig](#universal-multi-platform-cross-compilation-with-zig)
+11. [Summary of Best Practices](#summary-of-best-practices)
 
 ---
 
@@ -355,11 +356,105 @@ flowchart TD
 
 ---
 
-## Summary of Best Practices
+## 10. Universal Multi-Platform Cross-Compilation with Zig
+
+When distributing native libraries or applications across multiple operating systems, developers traditionally needed separate physical machines, complex virtual machines, or heavy Docker containers for Linux, Windows, and macOS.
+
+Solix companion native projects solve this elegantly through **Zig's embedded C/C++ cross-compiler (`zig c++`)** combined with Solix pre-compile lifecycle hooks.
+
+### 10.1 Canonical Project Layout for Native Projects
+
+Any Solix project with companion native C++ code can follow the canonical project architecture:
+
+```
+my_native_project/
+├── manifest.json              # Solix project manifest
+├── src/                       # Pure Solix declarations and source files
+│   └── mypackage/
+│       └── Math.slx           # Declares native methods (e.g. public static native int32 add(...);)
+├── lib/                       # Destination for cross-compiled shared libraries
+│   ├── libmy_native.so        # Linux ELF shared object
+│   ├── my_native.dll          # Windows PE DLL
+│   └── libmy_native.dylib     # macOS Mach-O dynamic library
+├── native/                    # 100% C/C++ source code
+│   ├── CMakeLists.txt         # Standard CMake configuration for local host development
+│   └── src/
+│       └── register.cpp       # Exports solix_register_natives hook
+└── scripts/
+    └── build_native.py        # Cross-compilation driver script using Zig
+```
+
+### 10.2 The Zig Cross-Compilation Driver (`scripts/build_native.py`)
+
+Zig includes complete, drop-in Clang/LLVM compilers and target sysroots for all major platforms out of the box:
+- `x86_64-linux-gnu` (Linux ELF `.so`)
+- `x86_64-windows-gnu` (Windows PE `.dll`)
+- `x86_64-macos-none` (macOS Mach-O `.dylib`)
+
+To preserve maximum runtime stability:
+1. **Host Target**: When compiling for the host system (e.g. Linux on a Linux build machine), the driver invokes the host compiler (`g++` or `clang++`) to guarantee 100% ABI compatibility with the local C++ standard library.
+2. **Foreign Targets**: For all other platforms, the driver invokes `zig c++ -shared -fPIC -std=c++20 -target <target>` to generate cross-compiled binaries with zero dependencies.
+3. **Graceful Fallback**: If `zig` is not installed on the system, the driver falls back to building only the host platform library, allowing seamless local development without requiring Zig.
+
+### 10.3 Automating Cross-Compilation in `manifest.json`
+
+Hook cross-compilation directly into your `release` profile using `pre_compile`:
+
+```json
+{
+  "project": "my_native_project",
+  "version": "1.0.0",
+  "dependencies": [
+    { "type": "source", "path": "src/mypackage/Math.slx" }
+  ],
+  "profiles": {
+    "debug": {
+      "output_directory": "build/debug",
+      "exe_filename": "app.slxbin"
+    },
+    "release": {
+      "output_directory": "build/release",
+      "exe_filename": "app.slxbin",
+      "pre_compile": [
+        "python3 scripts/build_native.py"
+      ]
+    }
+  }
+}
+```
+
+### 10.4 Packaging Universal `.slxpac` Bundles
+
+When you run:
+```bash
+solix pack -p release -o my_app.slxpac
+```
+Solix executes the build lifecycle:
+1. Executes `python3 scripts/build_native.py`, depositing `libmy_native.so`, `my_native.dll`, and `libmy_native.dylib` into `lib/`.
+2. Packages the compiled bytecode alongside all three platform shared libraries into `my_app.slxpac`.
+
+### 10.5 Safe Multi-Platform Execution
+
+The resulting `.slxpac` archive is **universal**: it can be distributed to users running Linux, Windows, or macOS.
+
+When a user runs:
+```bash
+solix run my_app.slxpac
+```
+The Solix runtime dynamic loader inspects the host operating system:
+- On Linux, it loads `lib/libmy_native.so` and ignores `.dll` and `.dylib`.
+- On Windows, it loads `lib/my_native.dll` and ignores `.so` and `.dylib`.
+- On macOS, it loads `lib/libmy_native.dylib` and ignores `.so` and `.dll`.
+
+---
+
+## 11. Summary of Best Practices
 
 1. **Keep Assets in `resources/`**: Place all read-only application assets inside `<project_root>/resources/`.
 2. **Keep Native Libraries in `lib/`**: Place compiled C/C++ plugins (`.so`, `.dll`, `.dylib`) in `<project_root>/lib/`. They are bundled and registered automatically.
-3. **Use `res://` for Uniform Paths**: Use `res://` URIs for internal assets so that configuration strings and file paths remain clear and distinct from host paths.
-4. **Automate Native Builds with `pre_compile`**: Use `pre_compile` hooks to invoke CMake or build tools so native libraries are guaranteed to be compiled and up to date prior to bundling.
-5. **Resources are Read-Only**: Bundled resources in `.slxpac` archives represent static assets. For writable data (user preferences, caches, logs), use standard host filesystem paths obtained via `Path.get_temp_path()` or environment paths.
+3. **Use Zig for Universal Packaging**: Use Zig in `scripts/build_native.py` and hook it into the `release` profile `pre_compile` list to generate cross-platform `.slxpac` archives containing binaries for Linux, Windows, and macOS.
+4. **Use `res://` for Uniform Paths**: Use `res://` URIs for internal assets so that configuration strings and file paths remain clear and distinct from host paths.
+5. **Automate Native Builds with `pre_compile`**: Use `pre_compile` hooks to invoke build tools so native libraries are guaranteed to be compiled and up to date prior to bundling.
+6. **Resources are Read-Only**: Bundled resources in `.slxpac` archives represent static assets. For writable data (user preferences, caches, logs), use standard host filesystem paths obtained via `Path.get_temp_path()` or environment paths.
+
 

@@ -216,6 +216,7 @@ Solix manifests support declarative pre-compile and post-compile lifecycle comma
   "profiles": {
     "release": {
       "pre_compile": [
+        "python3 scripts/build_native.py",
         "cmake --build native/build --config Release"
       ],
       "post_compile": [
