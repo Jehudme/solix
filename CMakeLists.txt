@@ -57,6 +57,31 @@ if(NOT TARGET spdlog AND NOT TARGET spdlog::spdlog)
     FetchContent_MakeAvailable(spdlog)
 endif()
 
+# Fetch miniz for cross-platform ZIP handling (.slxpac)
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
+set(INSTALL_PROJECT OFF CACHE BOOL "" FORCE)
+set(AMALGAMATE_SOURCES OFF CACHE BOOL "" FORCE)
+
+find_package(miniz QUIET)
+if(NOT TARGET miniz AND NOT TARGET miniz::miniz)
+    FetchContent_Declare(
+        miniz
+        GIT_REPOSITORY https://github.com/richgel999/miniz.git
+        GIT_TAG        3.1.2
+    )
+    FetchContent_MakeAvailable(miniz)
+endif()
+
+if(TARGET miniz)
+    set_target_properties(miniz PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    if(MSVC)
+        target_compile_options(miniz PRIVATE /W0)
+    else()
+        target_compile_options(miniz PRIVATE -w)
+    endif()
+endif()
+
 add_subdirectory(core)
 add_subdirectory(lsp)
 add_subdirectory(cli)

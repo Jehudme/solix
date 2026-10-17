@@ -12,6 +12,7 @@ add_library(solix_core
     src/runtime.cpp
     src/runtime/shared_library.cpp
     src/runtime/native_registry.cpp
+    src/utilities/zip_utils.cpp
 )
 
 add_library(solix_language ALIAS solix_core)
@@ -26,6 +27,7 @@ target_include_directories(solix_core
 target_link_libraries(solix_core PUBLIC
     $<IF:$<TARGET_EXISTS:spdlog::spdlog>,spdlog::spdlog,spdlog>
     $<IF:$<TARGET_EXISTS:fmt::fmt>,fmt::fmt,fmt>
+    miniz
     ${CMAKE_DL_LIBS}
 )
 
