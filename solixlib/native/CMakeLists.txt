@@ -21,9 +21,9 @@ target_include_directories(solixlib_native PRIVATE
 
 target_link_libraries(solixlib_native PRIVATE solix_core)
 
-set(SOLIXLIB_OUTPUT_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../project/lib")
+set(SOLIXLIB_OUTPUT_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../lib")
 
-# Output compiled library directly into solixlib/project/lib/
+# Output compiled library directly into solixlib/lib/
 set_target_properties(solixlib_native PROPERTIES
     OUTPUT_NAME "solixlib_native"
     RUNTIME_OUTPUT_DIRECTORY "${SOLIXLIB_OUTPUT_LIB_DIR}"

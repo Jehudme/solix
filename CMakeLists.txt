@@ -92,7 +92,7 @@ endif()
 
 # Install standard library into share/solix/solixlib
 install(
-    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/solixlib/project/"
+    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/solixlib/"
     DESTINATION share/solix/solixlib
     COMPONENT solixlib
     FILES_MATCHING
@@ -100,6 +100,10 @@ install(
     PATTERN "manifest.json"
     PATTERN "solix.json"
     PATTERN "lib/*"
+    PATTERN "resources/*"
+    PATTERN "native" EXCLUDE
+    PATTERN "build" EXCLUDE
+    PATTERN "scripts" EXCLUDE
 )
 
 # Install VS Code extension bundle if present

@@ -113,7 +113,7 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
     }
 
     SECTION("Positive - Case 5.7 & 5.8: Install Solix Standard Library Project (solixlib) with Native Companion") {
-        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "project";
+        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
         REQUIRE((std::filesystem::exists(solixlib_path / "manifest.json") || std::filesystem::exists(solixlib_path / "solix.json")));
 
         std::string expected_id = PackageManager::compute_project_id("solixlib", "0.1.0");
@@ -136,7 +136,7 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
     }
 
     SECTION("Positive - Case 5.9: Consumer Project Builds and Runs with Installed Standard Library (solixlib)") {
-        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "project";
+        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
         REQUIRE((std::filesystem::exists(solixlib_path / "manifest.json") || std::filesystem::exists(solixlib_path / "solix.json")));
 
         // Install solixlib
@@ -177,7 +177,7 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
 
 
     SECTION("Negative - Case 5.10: Reinstall solixlib Without Force Flag Fails") {
-        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "project";
+        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
         REQUIRE((std::filesystem::exists(solixlib_path / "manifest.json") || std::filesystem::exists(solixlib_path / "solix.json")));
 
         auto res1 = run_cli({"install", solixlib_path.string()}, solix_home.path());
@@ -316,3 +316,71 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
         CHECK(res.out.find("2.0.0") != std::string::npos);
     }
 }
+
+TEST_CASE("Package Manager - Canonical Solixlib Project Layout (Part XXIV)", "[package_manager][solixlib][phase15]") {
+    TempDir proj_workspace;
+    TempDir solix_home;
+
+    SECTION("Case 24.1: Direct Installation of Canonical Standard Library from solixlib/") {
+        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
+        REQUIRE(std::filesystem::exists(solixlib_path / "manifest.json"));
+        REQUIRE(std::filesystem::exists(solixlib_path / "src"));
+        REQUIRE(std::filesystem::exists(solixlib_path / "lib"));
+
+        std::string expected_id = PackageManager::compute_project_id("solixlib", "0.1.0");
+
+        auto res = run_cli({"install", solixlib_path.string()}, solix_home.path());
+        CHECK(res.exit_code == 0);
+        CHECK(res.out.find("Successfully installed project") != std::string::npos);
+        CHECK(res.out.find(expected_id) != std::string::npos);
+
+        auto installed_dir = solix_home.path() / "installed" / expected_id;
+        CHECK(std::filesystem::exists(installed_dir / "manifest.json"));
+        CHECK(std::filesystem::exists(installed_dir / "src"));
+        CHECK(std::filesystem::exists(installed_dir / "lib"));
+    }
+
+    SECTION("Case 24.2: Consumer Dependency Resolution of Canonical solixlib") {
+        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
+        auto inst_res = run_cli({"install", solixlib_path.string()}, solix_home.path());
+        REQUIRE(inst_res.exit_code == 0);
+
+        auto consumer_dir = proj_workspace.path() / "canonical_consumer";
+        std::filesystem::create_directories(consumer_dir / "src");
+
+        nlohmann::json manifest;
+        manifest["project"] = "canonical_consumer";
+        manifest["version"] = "1.0.0";
+        manifest["dependencies"] = nlohmann::json::array({
+            {{"type", "source"}, {"path", "src/main.slx"}},
+            {{"type", "project"}, {"package", "solixlib@0.1.0"}}
+        });
+        manifest["profiles"]["debug"]["output_directory"] = "build/debug";
+        manifest["profiles"]["debug"]["exe_filename"] = "app.slxbin";
+        manifest["profiles"]["debug"]["compilation"]["entry_point"] = "main";
+        manifest["profiles"]["debug"]["compilation"]["multithreaded"] = false;
+
+        std::ofstream mf(consumer_dir / "solix.json");
+        mf << manifest.dump(2);
+        mf.close();
+
+        std::ofstream sf(consumer_dir / "src/main.slx");
+        sf << "import solix.core.Internal;\n"
+           << "int32 main() {\n"
+           << "    return Internal.version() == 1 ? 0 : 1;\n"
+           << "}\n";
+        sf.close();
+
+        auto run_res = run_cli({"run", consumer_dir.string()}, solix_home.path());
+        CHECK(run_res.exit_code == 0);
+    }
+
+    SECTION("Case 24.3: Bundled Discovery Fallback to Canonical solixlib/") {
+        auto discovered = PackageManager::discover_bundled_solixlib();
+        REQUIRE(discovered.has_value());
+        CHECK(std::filesystem::exists(*discovered / "manifest.json"));
+        CHECK(std::filesystem::exists(*discovered / "src" / "solix"));
+    }
+}
+
+
