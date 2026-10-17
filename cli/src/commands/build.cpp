@@ -249,20 +249,52 @@ ProjectBuildResult build_project(const std::filesystem::path& manifest_or_dir,
         }
     }
 
-    // 3. Pre-Compile Lifecycle Commands (Root -> Active Profile)
+    // 3. Resolve Dependency Graph & Selected Profiles
+    DependencyManager dep_mgr;
+    std::vector<ProjectCandidate> candidates;
+    if (!dep_mgr.resolve_graph(root, project_root, profile, profile_name, candidates)) {
+        return result;
+    }
+
+    for (const auto& proj : candidates) {
+        if (proj.project_root != project_root) {
+            result.dependency_roots.push_back(proj.project_root);
+        }
+    }
+
+    // 4. Topological Dependency Pre-Compile Hooks (Deepest dependencies first, in dependency roots)
+    for (const auto& dep : candidates) {
+        if (dep.project_root == project_root) {
+            continue;
+        }
+        auto dep_root_pre = CommandRunner::extract_commands(dep.manifest, "pre_compile", "precompile");
+        if (!CommandRunner::run_commands(dep_root_pre, dep.project_root, "pre-compile")) {
+            return result;
+        }
+        if (!dep.selected_profile.empty() && dep.manifest.contains("profiles") &&
+            dep.manifest["profiles"].is_object() && dep.manifest["profiles"].contains(dep.selected_profile)) {
+            const auto& dep_prof = dep.manifest["profiles"][dep.selected_profile];
+            auto dep_prof_pre = CommandRunner::extract_commands(dep_prof, "pre_compile", "precompile");
+            if (!CommandRunner::run_commands(dep_prof_pre, dep.project_root, "pre-compile")) {
+                return result;
+            }
+        }
+    }
+
+    // 5. Root Project Pre-Compile Lifecycle Commands
     auto root_pre_cmds = CommandRunner::extract_commands(root, "pre_compile", "precompile");
     if (!CommandRunner::run_commands(root_pre_cmds, project_root, "pre-compile")) {
         return result;
     }
 
+    // 6. Active Profile Pre-Compile Lifecycle Commands
     auto profile_pre_cmds = CommandRunner::extract_commands(profile, "pre_compile", "precompile");
     if (!CommandRunner::run_commands(profile_pre_cmds, project_root, "pre-compile")) {
         return result;
     }
 
-    // 4. Pre-Compilation Modular Dependency & Transitive Project Resolution
-    DependencyManager dep_mgr;
-    if (!dep_mgr.resolve_all(root, project_root, profile, *opts, &result.dependency_roots)) {
+    // 7. Source Ingestion across all candidates
+    if (!dep_mgr.ingest_sources(candidates, *opts, profile, project_root)) {
         return result;
     }
 
