@@ -24,6 +24,8 @@ struct ProjectCandidate {
     std::filesystem::path manifest_path;
     std::filesystem::path project_root;
     nlohmann::json manifest;
+    std::string selected_profile;
+    bool explicit_profile{false};
 };
 
 /**
@@ -95,25 +97,23 @@ public:
     }
 
     /**
-     * @brief Resolves all dependencies for a project manifest and active profile before compilation.
-     * Performs transitive dependency walking, cycle de-duplication, SemVer conflict resolution,
-     * and source code ingestion.
+     * @brief Resolves the complete dependency graph and candidate profiles in topological order.
      */
-    bool resolve_all(const nlohmann::json& root_manifest,
-                     const std::filesystem::path& root_project_root,
-                     const nlohmann::json& active_profile,
-                     CompilationOptions& opts,
-                     std::vector<std::filesystem::path>* out_dependency_roots = nullptr) {
+    bool resolve_graph(const nlohmann::json& root_manifest,
+                       const std::filesystem::path& root_project_root,
+                       const nlohmann::json& active_profile_json,
+                       const std::string& active_profile_name,
+                       std::vector<ProjectCandidate>& out_candidates) {
         std::set<std::string> visited_manifests;
-
         std::vector<ProjectCandidate> discovered_projects;
+        std::vector<std::string> discovery_order;
 
         // Register root project
         std::string root_name = root_manifest.value("project", "root_project");
         std::string root_version_str = root_manifest.value("version", "0.1.0");
         auto root_ver = SemVer::parse(root_version_str).value_or(SemVer{0, 1, 0, root_version_str});
 
-        std::filesystem::path root_manifest_path = (root_project_root / "solix.json").lexically_normal();
+        std::filesystem::path root_manifest_path = solix::find_project_manifest(root_project_root).lexically_normal();
         visited_manifests.insert(root_manifest_path.string());
 
         ProjectCandidate root_cand;
@@ -122,25 +122,42 @@ public:
         root_cand.manifest_path = root_manifest_path;
         root_cand.project_root = root_project_root;
         root_cand.manifest = root_manifest;
-        discovered_projects.push_back(root_cand);
+        root_cand.selected_profile = active_profile_name;
+        root_cand.explicit_profile = true;
 
         // 1. Discover all project-type dependencies recursively
-        if (!discover_dependencies(root_manifest, root_project_root, visited_manifests, discovered_projects)) {
+        if (!discover_dependencies(root_manifest, root_project_root, active_profile_name, visited_manifests, discovered_projects, discovery_order)) {
             return false;
         }
 
         // Also discover any project dependencies in active profile's additional_dependencies
-        if (active_profile.contains("compilation") && active_profile["compilation"].is_object()) {
-            const auto& comp = active_profile["compilation"];
-            if (comp.contains("additional_dependencies") && comp["additional_dependencies"].is_array()) {
-                for (const auto& dep : comp["additional_dependencies"]) {
-                    if (dep.is_object() && dep.value("type", "") == "project") {
-                        if (!discover_single_project_dependency(dep, root_project_root, visited_manifests, discovered_projects)) {
+        const nlohmann::json* comp_ptr = nullptr;
+        if (active_profile_json.contains("compilation") && active_profile_json["compilation"].is_object()) {
+            comp_ptr = &active_profile_json["compilation"];
+        } else if (root_manifest.contains("profiles") && root_manifest["profiles"].is_object() &&
+                   root_manifest["profiles"].contains(active_profile_name) &&
+                   root_manifest["profiles"][active_profile_name].contains("compilation") &&
+                   root_manifest["profiles"][active_profile_name]["compilation"].is_object()) {
+            comp_ptr = &root_manifest["profiles"][active_profile_name]["compilation"];
+        }
+
+        if (comp_ptr && comp_ptr->contains("additional_dependencies") && (*comp_ptr)["additional_dependencies"].is_array()) {
+            for (const auto& dep : (*comp_ptr)["additional_dependencies"]) {
+                if (dep.is_object()) {
+                    std::string type = dep.value("type", "");
+                    if (type == "project" || type == "library") {
+                        if (!discover_single_project_dependency(dep, root_project_root, active_profile_name, visited_manifests, discovered_projects, discovery_order)) {
                             return false;
                         }
                     }
                 }
             }
+        }
+
+        // Add root project candidate after all dependencies
+        discovered_projects.push_back(root_cand);
+        if (std::find(discovery_order.begin(), discovery_order.end(), root_name) == discovery_order.end()) {
+            discovery_order.push_back(root_name);
         }
 
         // 2. Group discovered projects by name and apply SemVer conflict resolution
@@ -151,7 +168,11 @@ public:
 
         std::vector<ProjectCandidate> final_selected_projects;
 
-        for (auto& [name, candidates] : projects_by_name) {
+        for (const auto& name : discovery_order) {
+            auto it = projects_by_name.find(name);
+            if (it == projects_by_name.end() || it->second.empty()) continue;
+            auto& candidates = it->second;
+
             if (candidates.size() == 1) {
                 final_selected_projects.push_back(candidates[0]);
                 continue;
@@ -163,7 +184,7 @@ public:
             });
 
             const auto& lowest = candidates.front();
-            const auto& highest = candidates.back();
+            auto highest = candidates.back();
 
             // Check for incompatible major versions
             for (size_t i = 0; i < candidates.size(); ++i) {
@@ -184,41 +205,73 @@ public:
                           << "). Selecting highest version " << highest.version.raw << "." << std::endl;
             }
 
-            // Select highest version candidate
+            // If highest candidate didn't have explicit profile, adopt explicit profile from any candidate if available
+            if (!highest.explicit_profile) {
+                for (const auto& c : candidates) {
+                    if (c.explicit_profile) {
+                        highest.selected_profile = c.selected_profile;
+                        highest.explicit_profile = true;
+                        break;
+                    }
+                }
+            }
+
             final_selected_projects.push_back(highest);
         }
 
-        // 3. Pre-compilation Source Ingestion across all selected projects
-        for (const auto& proj : final_selected_projects) {
+        out_candidates = std::move(final_selected_projects);
+        return true;
+    }
+
+    /**
+     * @brief Ingests all sources across selected candidates into CompilationOptions.
+     */
+    bool ingest_sources(const std::vector<ProjectCandidate>& candidates,
+                        CompilationOptions& opts,
+                        const nlohmann::json& active_profile_json = nlohmann::json::object(),
+                        const std::filesystem::path& root_project_root = {}) {
+        SourceDependencyResolver resolver;
+        for (const auto& proj : candidates) {
+            // 1. Manifest top-level source dependencies
             if (proj.manifest.contains("dependencies") && proj.manifest["dependencies"].is_array()) {
                 for (const auto& dep : proj.manifest["dependencies"]) {
                     if (dep.is_object() && dep.value("type", "") == "source") {
-                        if (!resolve_source_dependency(dep, proj.project_root, opts)) {
+                        if (!resolver.resolve(dep, proj.project_root, opts)) {
                             return false;
+                        }
+                    }
+                }
+            }
+
+            // 2. Profile-specific source dependencies from selected profile
+            if (!proj.selected_profile.empty() && proj.manifest.contains("profiles") &&
+                proj.manifest["profiles"].is_object() && proj.manifest["profiles"].contains(proj.selected_profile)) {
+                const auto& prof = proj.manifest["profiles"][proj.selected_profile];
+                if (prof.contains("compilation") && prof["compilation"].is_object()) {
+                    const auto& comp = prof["compilation"];
+                    if (comp.contains("additional_dependencies") && comp["additional_dependencies"].is_array()) {
+                        for (const auto& dep : comp["additional_dependencies"]) {
+                            if (dep.is_object() && dep.value("type", "") == "source") {
+                                if (!resolver.resolve(dep, proj.project_root, opts)) {
+                                    return false;
+                                }
+                            }
                         }
                     }
                 }
             }
         }
 
-        // Ingest profile-specific source dependencies from the root project
-        if (active_profile.contains("compilation") && active_profile["compilation"].is_object()) {
-            const auto& comp = active_profile["compilation"];
+        // 3. Fallback for ad-hoc active_profile not in manifest["profiles"]
+        if (!root_project_root.empty() && active_profile_json.contains("compilation") && active_profile_json["compilation"].is_object()) {
+            const auto& comp = active_profile_json["compilation"];
             if (comp.contains("additional_dependencies") && comp["additional_dependencies"].is_array()) {
                 for (const auto& dep : comp["additional_dependencies"]) {
                     if (dep.is_object() && dep.value("type", "") == "source") {
-                        if (!resolve_source_dependency(dep, root_project_root, opts)) {
+                        if (!resolver.resolve(dep, root_project_root, opts)) {
                             return false;
                         }
                     }
-                }
-            }
-        }
-
-        if (out_dependency_roots) {
-            for (const auto& proj : final_selected_projects) {
-                if (proj.project_root != root_project_root) {
-                    out_dependency_roots->push_back(proj.project_root);
                 }
             }
         }
@@ -226,6 +279,45 @@ public:
         return true;
     }
 
+    /**
+     * @brief Resolves all dependencies for a project manifest and active profile before compilation.
+     * Performs transitive dependency walking, cycle de-duplication, SemVer conflict resolution,
+     * and source code ingestion.
+     */
+    bool resolve_all(const nlohmann::json& root_manifest,
+                     const std::filesystem::path& root_project_root,
+                     const nlohmann::json& active_profile,
+                     CompilationOptions& opts,
+                     std::vector<std::filesystem::path>* out_dependency_roots = nullptr,
+                     const std::string& active_profile_name = "debug",
+                     std::vector<ProjectCandidate>* out_resolved_dependencies = nullptr) {
+        std::vector<ProjectCandidate> candidates;
+        if (!resolve_graph(root_manifest, root_project_root, active_profile, active_profile_name, candidates)) {
+            return false;
+        }
+
+        if (!ingest_sources(candidates, opts, active_profile, root_project_root)) {
+            return false;
+        }
+
+        if (out_dependency_roots) {
+            for (const auto& proj : candidates) {
+                if (proj.project_root != root_project_root) {
+                    out_dependency_roots->push_back(proj.project_root);
+                }
+            }
+        }
+
+        if (out_resolved_dependencies) {
+            for (const auto& proj : candidates) {
+                if (proj.project_root != root_project_root) {
+                    out_resolved_dependencies->push_back(proj);
+                }
+            }
+        }
+
+        return true;
+    }
 
 private:
     bool resolve_source_dependency(const nlohmann::json& dep_node,
@@ -237,8 +329,10 @@ private:
 
     bool discover_single_project_dependency(const nlohmann::json& dep_node,
                                            const std::filesystem::path& current_root,
+                                           const std::string& parent_active_profile,
                                            std::set<std::string>& visited_manifests,
-                                           std::vector<ProjectCandidate>& discovered_projects) {
+                                           std::vector<ProjectCandidate>& discovered_projects,
+                                           std::vector<std::string>& discovery_order) {
         std::filesystem::path target_manifest;
 
         std::string raw_pkg;
@@ -315,11 +409,19 @@ private:
         }
 
         // Circular & Diamond Dependency Guard:
-        // If manifest was already visited, stop recursion cleanly without error.
         if (visited_manifests.count(target_manifest.string())) {
+            // If current reference has an explicit profile and previous didn't, adopt it
+            if (dep_node.contains("profile") && dep_node["profile"].is_string() && !dep_node["profile"].get<std::string>().empty()) {
+                std::string req = dep_node["profile"].get<std::string>();
+                for (auto& cand : discovered_projects) {
+                    if (cand.manifest_path == target_manifest && !cand.explicit_profile) {
+                        cand.selected_profile = req;
+                        cand.explicit_profile = true;
+                    }
+                }
+            }
             return true;
         }
-        visited_manifests.insert(target_manifest.string());
 
         std::ifstream mf(target_manifest);
         if (!mf.is_open()) {
@@ -344,22 +446,95 @@ private:
         std::string ver_str = manifest.value("version", "0.1.0");
         auto ver = SemVer::parse(ver_str).value_or(SemVer{0, 1, 0, ver_str});
 
+        // Resolve selected profile
+        bool explicit_profile = false;
+        std::string selected_profile;
+
+        if (dep_node.contains("profile") && dep_node["profile"].is_string() && !dep_node["profile"].get<std::string>().empty()) {
+            std::string requested = dep_node["profile"].get<std::string>();
+            explicit_profile = true;
+            if (!manifest.contains("profiles") || !manifest["profiles"].is_object() || !manifest["profiles"].contains(requested)) {
+                std::string avail_str = "[";
+                if (manifest.contains("profiles") && manifest["profiles"].is_object()) {
+                    size_t idx = 0;
+                    for (auto& [k, _] : manifest["profiles"].items()) {
+                        if (idx > 0) avail_str += ", ";
+                        avail_str += k;
+                        idx++;
+                    }
+                }
+                avail_str += "]";
+                std::cerr << "Error: Dependency project '" << proj_name << "' does not define requested profile '"
+                          << requested << "'. Available profiles: " << avail_str << std::endl;
+                return false;
+            }
+            selected_profile = requested;
+        } else {
+            // Fallback / inheritance
+            if (manifest.contains("profiles") && manifest["profiles"].is_object() && !manifest["profiles"].empty()) {
+                if (!parent_active_profile.empty() && manifest["profiles"].contains(parent_active_profile)) {
+                    selected_profile = parent_active_profile;
+                } else if (manifest["profiles"].contains("debug")) {
+                    selected_profile = "debug";
+                } else {
+                    selected_profile = manifest["profiles"].begin().key();
+                }
+            }
+        }
+
+        visited_manifests.insert(target_manifest.string());
+        std::filesystem::path cand_root = target_manifest.parent_path();
+
+        // Recurse into this project's dependencies (Transitive dependencies) in post-order:
+        // 1. Top-level project dependencies
+        if (!discover_dependencies(manifest, cand_root, selected_profile, visited_manifests, discovered_projects, discovery_order)) {
+            return false;
+        }
+
+        // 2. Profile-specific project dependencies
+        if (!selected_profile.empty() && manifest.contains("profiles") &&
+            manifest["profiles"].is_object() && manifest["profiles"].contains(selected_profile)) {
+            const auto& prof_node = manifest["profiles"][selected_profile];
+            if (prof_node.contains("compilation") && prof_node["compilation"].is_object()) {
+                const auto& comp_node = prof_node["compilation"];
+                if (comp_node.contains("additional_dependencies") && comp_node["additional_dependencies"].is_array()) {
+                    for (const auto& child_dep : comp_node["additional_dependencies"]) {
+                        if (child_dep.is_object()) {
+                            std::string type = child_dep.value("type", "");
+                            if (type == "project" || type == "library") {
+                                if (!discover_single_project_dependency(child_dep, cand_root, selected_profile, visited_manifests, discovered_projects, discovery_order)) {
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         ProjectCandidate cand;
         cand.name = proj_name;
         cand.version = ver;
         cand.manifest_path = target_manifest;
-        cand.project_root = target_manifest.parent_path();
+        cand.project_root = cand_root;
         cand.manifest = manifest;
-        discovered_projects.push_back(cand);
+        cand.selected_profile = selected_profile;
+        cand.explicit_profile = explicit_profile;
 
-        // Recurse into this project's dependencies (Transitive dependencies)
-        return discover_dependencies(manifest, cand.project_root, visited_manifests, discovered_projects);
+        discovered_projects.push_back(cand);
+        if (std::find(discovery_order.begin(), discovery_order.end(), proj_name) == discovery_order.end()) {
+            discovery_order.push_back(proj_name);
+        }
+
+        return true;
     }
 
     bool discover_dependencies(const nlohmann::json& manifest,
                                const std::filesystem::path& project_root,
+                               const std::string& parent_active_profile,
                                std::set<std::string>& visited_manifests,
-                               std::vector<ProjectCandidate>& discovered_projects) {
+                               std::vector<ProjectCandidate>& discovered_projects,
+                               std::vector<std::string>& discovery_order) {
         if (!manifest.contains("dependencies") || !manifest["dependencies"].is_array()) {
             return true;
         }
@@ -368,7 +543,7 @@ private:
             if (!dep.is_object()) continue;
             std::string type = dep.value("type", "");
             if (type == "project" || type == "library") {
-                if (!discover_single_project_dependency(dep, project_root, visited_manifests, discovered_projects)) {
+                if (!discover_single_project_dependency(dep, project_root, parent_active_profile, visited_manifests, discovered_projects, discovery_order)) {
                     return false;
                 }
             }

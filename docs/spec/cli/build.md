@@ -69,13 +69,15 @@ When `solix build` is executed:
 
 ```mermaid
 flowchart TD
-    A["Resolve Target (directory, solix.json, or name@version)"] --> B["Parse & Validate Profiles"]
-    B --> C["Pre-Compile Lifecycle Commands<br>(Root pre_compile -> Profile pre_compile)"]
-    C --> D["Transitive Dependency Walking & SemVer Resolution"]
-    D --> E["Pre-Compilation Source Ingestion"]
-    E --> F["Invoke Compiler Pipeline & Emit out.slxbin"]
-    F --> G["Transitive Native Library & Resource Staging"]
-    G --> H["Post-Compile Lifecycle Commands<br>(Profile post_compile -> Root post_compile)"]
+    A["Resolve Target & Parse solix.json Profiles"] --> B["Resolve Dependency Graph & Target Profiles"]
+    B --> C["Topological Dependency Pre-Compile Hooks<br>(Deepest dependencies first, in dependency roots)"]
+    C --> D["Root Project Pre-Compile Hooks<br>(manifest.json pre_compile)"]
+    D --> E["Active Profile Pre-Compile Hooks<br>(profiles[P].pre_compile)"]
+    E --> F["Pre-Compilation Source Ingestion<br>(All project and profile sources)"]
+    F --> G["Invoke Compiler Pipeline & Emit out.slxbin"]
+    G --> H["Transitive Native Library & Resource Staging"]
+    H --> I["Active Profile Post-Compile Hooks<br>(profiles[P].post_compile)"]
+    I --> J["Root Project Post-Compile Hooks<br>(manifest.json post_compile)"]
 ```
 
 1. **Target & Manifest Discovery**:
@@ -87,27 +89,26 @@ flowchart TD
    - Ensures `profiles` exists and contains the requested profile object.
    - Extracts output paths (`output_directory`, `exe_filename`, `asm_filename`).
    - Relative paths are resolved against the project root.
-3. **Pre-Compile Lifecycle Execution**:
+3. **Dependency Graph & Profile Resolution**:
+   - Recursively walks `type: "project"` and `type: "library"` dependencies.
+   - Evaluates `"profile"` selector on each dependency: explicit request (fails if missing), inheritance from active profile, or fallback to `"debug"` or first defined profile.
+   - Recursively discovers dependencies defined within each dependency candidate's selected profile (`compilation.additional_dependencies`).
+   - SemVer resolution resolves compatible versions and rejects incompatible major versions.
+4. **Topological Dependency Pre-Compile Execution**:
+   - Executes pre-compile commands (`pre_compile` / `precompile`) for all resolved dependencies in topological order (deepest dependencies first) within their respective project root directories.
+5. **Root Project & Active Profile Pre-Compile Execution**:
    - Executes root-level `pre_compile` commands sequentially in `project_root`.
    - Executes active profile's `pre_compile` commands sequentially in `project_root`.
    - If any command exits with a non-zero exit code, compilation immediately aborts with error code `1`.
-4. **Pre-Compilation Dependency Resolution**:
-   - **Transitive Project Traversal**: Recursively scans `type: "project"` dependencies declared in `dependencies` and active profile's `compilation.additional_dependencies`. Projects are resolved either via explicit `path` or discovered in the local `$SOLIX_HOME` registry via `name@version`.
-   - **Circular Dependency Handling**: Cycles (e.g. A depends on B and B depends on A) are recognized and de-duplicated gracefully.
-   - **Semantic Version Conflict Resolution**:
-     | Version Discrepancy | Behavior | Output |
-     |---|---|---|
-     | Different Major | Fatal Error; build aborts before compilation | `Error: Incompatible major versions for dependency '...'` |
-     | Same Major, Different Minor | Warning; automatically selects highest minor version | `Warning: Project '...' has multiple minor versions (...)` |
-     | Same Major and Minor, Different Patch | Clean resolution; silently selects highest patch version | None |
-   - **Source Ingestion**: All unique source files across the root and all selected dependent projects are validated and read into in-memory buffers.
-5. **Compilation & Artifact Emission**:
+6. **Pre-Compilation Source Ingestion**:
+   - Ingests all top-level and profile-specific `type: "source"` dependencies across all resolved project candidates.
+7. **Compilation & Artifact Emission**:
    - Executes compiler pipeline with configured entry point and log levels.
    - Emits bytecode binary to the configured profile output directory.
-6. **Transitive Native Library & Resource Staging**:
+8. **Transitive Native Library & Resource Staging**:
    - Automatically collects native dynamic libraries (`.so`, `.dll`, `.dylib`) from the root project and all transitive dependency libraries, staging them into `<output_directory>/lib/`.
    - Automatically collects and merges static assets from `resources/` across all transitive dependencies and the root project into `<output_directory>/resources/`. Root project assets override dependency assets on collision.
-7. **Post-Compile Lifecycle Execution**:
+9. **Post-Compile Lifecycle Execution**:
    - Executes active profile's `post_compile` commands sequentially in `project_root`.
    - Executes root-level `post_compile` commands sequentially in `project_root`.
    - If any command exits with a non-zero exit code, the build terminates with error code `1`.
