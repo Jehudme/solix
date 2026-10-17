@@ -1006,12 +1006,12 @@ This document is the master test specification for the Solix CLI command suite (
 
 ### Multi-Depth Dependency Asset & Native Library Staging
 
-#### Case 20.11: Multi-Depth Dependency Staging in Build [NOT IMPLEMENTED]
+#### Case 20.11: Multi-Depth Dependency Staging in Build [IMPLEMENTED]
 - **Command**: `solix build`
 - **Setup**: Transitive project chain `App -> LibA -> LibB`, where `LibB` provides native libraries and resources, `LibA` provides resources, and `App` provides resources with an override.
 - **Expected**: Exits 0; `build/<profile>/lib/` contains `LibB`'s native library; `build/<profile>/resources/` contains merged assets from all dependency depths with root project overrides.
 
-#### Case 20.12: Multi-Depth Dependency Packaging and Execution [NOT IMPLEMENTED]
+#### Case 20.12: Multi-Depth Dependency Packaging and Execution [IMPLEMENTED]
 - **Command**: `solix pack -o bundle.slxpac && solix run bundle.slxpac`
 - **Setup**: Transitive project chain `App -> LibA -> LibB` packaged into `.slxpac`.
 - **Expected**: Exits 0; `bundle.slxpac` archives all transitive native libraries and merged resources; bundle execution loads native functions and reads multi-depth resources.
