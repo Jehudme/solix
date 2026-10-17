@@ -40,6 +40,9 @@ public:
   // Searches loaded libraries for an exported C symbol matching the given name.
   NativeFunctionPtr find_symbol_in_loaded_libraries(const std::string &symbol_name) const;
 
+  // Searches loaded libraries for a raw exported symbol address.
+  void *find_raw_symbol(const std::string &symbol_name) const;
+
   void clear();
 
 private:

@@ -84,23 +84,65 @@ struct StreamRedirectGuard {
     std::streambuf* orig_cout = nullptr;
     std::streambuf* orig_cerr = nullptr;
 
+#ifdef _WIN32
+    void* dll_orig_cin = nullptr;
+    void* dll_orig_cout = nullptr;
+    void* dll_orig_cerr = nullptr;
+#endif
+
     std::stringstream cin_stream;
     std::stringstream cout_stream;
     std::stringstream cerr_stream;
 
     StreamRedirectGuard(const std::string& input = "") {
+        init_solixlib_natives();
+
+#ifdef _WIN32
+        using SetBufFn = void* (*)(void*);
+        auto set_cin = reinterpret_cast<SetBufFn>(solix::NativeRegistry::global().find_raw_symbol("solix_set_cin_rdbuf"));
+        auto set_cout = reinterpret_cast<SetBufFn>(solix::NativeRegistry::global().find_raw_symbol("solix_set_cout_rdbuf"));
+        auto set_cerr = reinterpret_cast<SetBufFn>(solix::NativeRegistry::global().find_raw_symbol("solix_set_cerr_rdbuf"));
+
+        if (!input.empty()) {
+            cin_stream.str(input);
+            if (set_cin) dll_orig_cin = set_cin(cin_stream.rdbuf());
+            orig_cin = std::cin.rdbuf(cin_stream.rdbuf());
+        }
+        if (set_cout) dll_orig_cout = set_cout(cout_stream.rdbuf());
+        orig_cout = std::cout.rdbuf(cout_stream.rdbuf());
+
+        if (set_cerr) dll_orig_cerr = set_cerr(cerr_stream.rdbuf());
+        orig_cerr = std::cerr.rdbuf(cerr_stream.rdbuf());
+#else
         if (!input.empty()) {
             cin_stream.str(input);
             orig_cin = std::cin.rdbuf(cin_stream.rdbuf());
         }
         orig_cout = std::cout.rdbuf(cout_stream.rdbuf());
         orig_cerr = std::cerr.rdbuf(cerr_stream.rdbuf());
+#endif
     }
 
     ~StreamRedirectGuard() {
+#ifdef _WIN32
+        using SetBufFn = void* (*)(void*);
+        auto set_cin = reinterpret_cast<SetBufFn>(solix::NativeRegistry::global().find_raw_symbol("solix_set_cin_rdbuf"));
+        auto set_cout = reinterpret_cast<SetBufFn>(solix::NativeRegistry::global().find_raw_symbol("solix_set_cout_rdbuf"));
+        auto set_cerr = reinterpret_cast<SetBufFn>(solix::NativeRegistry::global().find_raw_symbol("solix_set_cerr_rdbuf"));
+
+        if (dll_orig_cin && set_cin) set_cin(dll_orig_cin);
+        if (orig_cin) std::cin.rdbuf(orig_cin);
+
+        if (dll_orig_cout && set_cout) set_cout(dll_orig_cout);
+        if (orig_cout) std::cout.rdbuf(orig_cout);
+
+        if (dll_orig_cerr && set_cerr) set_cerr(dll_orig_cerr);
+        if (orig_cerr) std::cerr.rdbuf(orig_cerr);
+#else
         if (orig_cin) std::cin.rdbuf(orig_cin);
         if (orig_cout) std::cout.rdbuf(orig_cout);
         if (orig_cerr) std::cerr.rdbuf(orig_cerr);
+#endif
     }
 };
 
