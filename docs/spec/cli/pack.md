@@ -69,8 +69,8 @@ The package includes an internal `manifest.json` metadata file generated during 
 
 1. **Compilation**: Invokes project compilation under the chosen profile (defaulting to `release`).
 2. **Bytecode**: The output binary is packaged at the root as `bytecode.slxbin`.
-3. **Native Shared Libraries**: Automatically scans the project's `lib/` directory, all dependency projects' `lib/` directories, and the compiler output directory for shared library files (`.so` on Linux, `.dll` on Windows, `.dylib` on macOS), placing them into `lib/`.
-4. **Resources**: If the project contains a `resources/` directory (or custom paths specified in `manifest.json`), its contents are recursively added under `resources/`.
+3. **Transitive Native Shared Libraries**: Automatically scans the project's `lib/` directory, all transitive dependency projects' `lib/` directories across any depth, and the compiler output directory for shared library files (`.so` on Linux, `.dll` on Windows, `.dylib` on macOS), placing them into `lib/`.
+4. **Transitive Resources**: Recursively collects and merges static assets from `resources/` across all transitive dependency projects and the root project into `resources/`. Root project assets override dependency assets on path collision.
 
 ---
 

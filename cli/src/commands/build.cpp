@@ -10,9 +10,122 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <map>
+#include <algorithm>
 #include <nlohmann/json.hpp>
 
 namespace solix::cli {
+
+namespace {
+
+inline bool is_shared_library(const std::filesystem::path& p) {
+    std::string ext = p.extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return ext == ".so" || ext == ".dll" || ext == ".dylib";
+}
+
+void stage_native_libraries(const std::filesystem::path& project_root,
+                            const std::vector<std::filesystem::path>& dependency_roots,
+                            const std::filesystem::path& out_dir) {
+    std::map<std::string, std::filesystem::path> libs_to_copy;
+    std::error_code ec;
+
+    // 1. Collect from dependencies (transitive)
+    for (const auto& dep_root : dependency_roots) {
+        std::filesystem::path dep_lib = dep_root / "lib";
+        if (std::filesystem::exists(dep_lib, ec) && std::filesystem::is_directory(dep_lib, ec)) {
+            for (const auto& entry : std::filesystem::directory_iterator(dep_lib, ec)) {
+                if (entry.is_regular_file(ec) && is_shared_library(entry.path())) {
+                    libs_to_copy[entry.path().filename().string()] = entry.path();
+                }
+            }
+        }
+    }
+
+    // 2. Collect from root project (overrides dependencies on collision)
+    std::filesystem::path root_lib = project_root / "lib";
+    if (std::filesystem::exists(root_lib, ec) && std::filesystem::is_directory(root_lib, ec)) {
+        for (const auto& entry : std::filesystem::directory_iterator(root_lib, ec)) {
+            if (entry.is_regular_file(ec) && is_shared_library(entry.path())) {
+                libs_to_copy[entry.path().filename().string()] = entry.path();
+            }
+        }
+    }
+
+    // 3. Stage into out_dir / "lib"
+    if (!libs_to_copy.empty()) {
+        std::filesystem::path target_lib_dir = out_dir / "lib";
+        std::filesystem::create_directories(target_lib_dir, ec);
+        for (const auto& [filename, src_path] : libs_to_copy) {
+            std::filesystem::path dst_path = target_lib_dir / filename;
+            if (src_path != dst_path) {
+                std::filesystem::copy_file(src_path, dst_path, std::filesystem::copy_options::overwrite_existing, ec);
+            }
+        }
+    }
+}
+
+void collect_resources_from_dir(const std::filesystem::path& base_dir,
+                                std::map<std::string, std::filesystem::path>& resource_map) {
+    std::error_code ec;
+    if (!std::filesystem::exists(base_dir, ec) || !std::filesystem::is_directory(base_dir, ec)) {
+        return;
+    }
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(base_dir, ec)) {
+        if (entry.is_regular_file(ec)) {
+            std::filesystem::path rel = std::filesystem::relative(entry.path(), base_dir, ec);
+            resource_map[rel.generic_string()] = entry.path();
+        }
+    }
+}
+
+void stage_resources(const std::filesystem::path& project_root,
+                     const nlohmann::json& manifest,
+                     const std::vector<std::filesystem::path>& dependency_roots,
+                     const std::filesystem::path& out_dir) {
+    std::map<std::string, std::filesystem::path> resources_to_copy;
+    std::error_code ec;
+
+    // 1. Collect from dependencies (transitive)
+    for (const auto& dep_root : dependency_roots) {
+        collect_resources_from_dir(dep_root / "resources", resources_to_copy);
+    }
+
+    // 2. Collect from root project (overrides dependencies on collision)
+    collect_resources_from_dir(project_root / "resources", resources_to_copy);
+
+    if (manifest.contains("resources")) {
+        const auto& res_item = manifest["resources"];
+        if (res_item.is_string()) {
+            std::filesystem::path custom_res = project_root / res_item.get<std::string>();
+            collect_resources_from_dir(custom_res, resources_to_copy);
+        } else if (res_item.is_array()) {
+            for (const auto& elem : res_item) {
+                if (elem.is_string()) {
+                    std::filesystem::path custom_res = project_root / elem.get<std::string>();
+                    collect_resources_from_dir(custom_res, resources_to_copy);
+                }
+            }
+        }
+    }
+
+    // 3. Stage into out_dir / "resources"
+    if (!resources_to_copy.empty()) {
+        std::filesystem::path target_res_dir = out_dir / "resources";
+        std::filesystem::create_directories(target_res_dir, ec);
+        for (const auto& [rel_path_str, src_path] : resources_to_copy) {
+            std::filesystem::path dst_path = target_res_dir / rel_path_str;
+            if (dst_path.has_parent_path()) {
+                std::filesystem::create_directories(dst_path.parent_path(), ec);
+            }
+            if (src_path != dst_path) {
+                std::filesystem::copy_file(src_path, dst_path, std::filesystem::copy_options::overwrite_existing, ec);
+            }
+        }
+    }
+}
+
+} // namespace
 
 ProjectBuildResult build_project(const std::filesystem::path& manifest_or_dir,
                                  const std::string& profile_name) {
@@ -153,6 +266,10 @@ ProjectBuildResult build_project(const std::filesystem::path& manifest_or_dir,
     if (exit_code != 0) {
         return result;
     }
+
+    // 5. Stage transitive native libraries and resources into output directory
+    stage_native_libraries(project_root, result.dependency_roots, out_dir);
+    stage_resources(project_root, root, result.dependency_roots, out_dir);
 
     result.output_binary = out_exe;
     result.success = true;

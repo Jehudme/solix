@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iomanip>
 #include <set>
+#include <map>
 #include <algorithm>
 
 namespace solix::cli {
@@ -134,29 +135,73 @@ PackResult pack_project(const std::filesystem::path& manifest_or_dir,
         }
     }
 
-    // 7. Collect and add resources into resources/
-    std::filesystem::path default_res_dir = build_res.project_root / "resources";
-    if (std::filesystem::exists(default_res_dir, ec) && std::filesystem::is_directory(default_res_dir, ec)) {
-        writer.add_directory_recursive(default_res_dir, "resources");
+    // 7. Collect and add resources into resources/ (merging transitive dependencies and root project)
+    std::map<std::string, std::filesystem::path> resource_entries;
+
+    // A. Transitive dependencies resources
+    for (const auto& dep_root : build_res.dependency_roots) {
+        std::filesystem::path dep_res = dep_root / "resources";
+        if (std::filesystem::exists(dep_res, ec) && std::filesystem::is_directory(dep_res, ec)) {
+            for (const auto& entry : std::filesystem::recursive_directory_iterator(dep_res, ec)) {
+                if (entry.is_regular_file(ec)) {
+                    std::filesystem::path rel = std::filesystem::relative(entry.path(), dep_res, ec);
+                    resource_entries[rel.generic_string()] = entry.path();
+                }
+            }
+        }
     }
 
-    // Check custom manifest resources definition if present
-    if (build_res.manifest.contains("resources")) {
-        const auto& res_item = build_res.manifest["resources"];
-        if (res_item.is_string()) {
-            std::filesystem::path custom_res = build_res.project_root / res_item.get<std::string>();
-            if (std::filesystem::exists(custom_res, ec) && std::filesystem::is_directory(custom_res, ec) && custom_res != default_res_dir) {
-                writer.add_directory_recursive(custom_res, "resources");
+    // B. Root project resources (overrides dependencies on collision)
+    std::filesystem::path default_res_dir = build_res.project_root / "resources";
+    if (std::filesystem::exists(default_res_dir, ec) && std::filesystem::is_directory(default_res_dir, ec)) {
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(default_res_dir, ec)) {
+            if (entry.is_regular_file(ec)) {
+                std::filesystem::path rel = std::filesystem::relative(entry.path(), default_res_dir, ec);
+                resource_entries[rel.generic_string()] = entry.path();
             }
-        } else if (res_item.is_array()) {
-            for (const auto& elem : res_item) {
-                if (elem.is_string()) {
-                    std::filesystem::path custom_res = build_res.project_root / elem.get<std::string>();
-                    if (std::filesystem::exists(custom_res, ec) && std::filesystem::is_directory(custom_res, ec)) {
-                        writer.add_directory_recursive(custom_res, "resources");
+        }
+    }
+
+    // C. Custom manifest resources definition if present
+    if (build_res.manifest.contains("resources")) {
+        auto add_custom = [&](const std::filesystem::path& base_dir) {
+            if (std::filesystem::exists(base_dir, ec) && std::filesystem::is_directory(base_dir, ec)) {
+                for (const auto& entry : std::filesystem::recursive_directory_iterator(base_dir, ec)) {
+                    if (entry.is_regular_file(ec)) {
+                        std::filesystem::path rel = std::filesystem::relative(entry.path(), base_dir, ec);
+                        resource_entries[rel.generic_string()] = entry.path();
                     }
                 }
             }
+        };
+
+        const auto& res_item = build_res.manifest["resources"];
+        if (res_item.is_string()) {
+            add_custom(build_res.project_root / res_item.get<std::string>());
+        } else if (res_item.is_array()) {
+            for (const auto& elem : res_item) {
+                if (elem.is_string()) {
+                    add_custom(build_res.project_root / elem.get<std::string>());
+                }
+            }
+        }
+    }
+
+    // D. Output binary parent resources (if staged during build)
+    std::filesystem::path staged_res_dir = build_res.output_binary.parent_path() / "resources";
+    if (std::filesystem::exists(staged_res_dir, ec) && std::filesystem::is_directory(staged_res_dir, ec)) {
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(staged_res_dir, ec)) {
+            if (entry.is_regular_file(ec)) {
+                std::filesystem::path rel = std::filesystem::relative(entry.path(), staged_res_dir, ec);
+                resource_entries[rel.generic_string()] = entry.path();
+            }
+        }
+    }
+
+    for (const auto& [rel_path_str, src_file] : resource_entries) {
+        std::string entry_name = "resources/" + rel_path_str;
+        if (writer.add_file(entry_name, src_file)) {
+            total_entries++;
         }
     }
 

@@ -141,4 +141,188 @@ TEST_CASE("CLI Command - pack", "[command][pack]") {
         CHECK(res.exit_code != 0);
         CHECK(!sandbox.exists("broken.slxpac"));
     }
+
+    SECTION("Positive - Case 20.11: Multi-Depth Dependency Staging in Build") {
+        auto orig_cwd = std::filesystem::current_path();
+        std::filesystem::current_path(sandbox.path());
+
+        // Setup multi-depth dependency tree: app -> lib_a -> lib_b
+        sandbox.create_file("lib_b/manifest.json", R"({
+            "name": "lib_b",
+            "project": "lib_b",
+            "version": "1.0.0",
+            "type": "library",
+            "dependencies": [
+                { "type": "source", "path": "src/b.slx" }
+            ]
+        })");
+        sandbox.create_file("lib_b/src/b.slx", "class HelperB { public static int32 get_b() { return 10; } }\n");
+        sandbox.create_file("lib_b/lib/lib_b_native.so", "NATIVE_LIB_B_BYTES");
+        sandbox.create_file("lib_b/resources/b_data.txt", "from lib_b\n");
+        sandbox.create_file("lib_b/resources/shared.txt", "from lib_b shared\n");
+
+        sandbox.create_file("lib_a/manifest.json", R"({
+            "name": "lib_a",
+            "project": "lib_a",
+            "version": "1.0.0",
+            "type": "library",
+            "dependencies": [
+                { "type": "source", "path": "src/a.slx" },
+                { "type": "project", "path": "../lib_b" }
+            ]
+        })");
+        sandbox.create_file("lib_a/src/a.slx", "class HelperA { public static int32 get_a() { return HelperB.get_b() + 5; } }\n");
+        sandbox.create_file("lib_a/resources/a_data.txt", "from lib_a\n");
+
+        sandbox.create_file("app/manifest.json", R"({
+            "name": "app",
+            "project": "app",
+            "version": "1.0.0",
+            "dependencies": [
+                { "type": "source", "path": "src/main.slx" },
+                { "type": "project", "path": "../lib_a" }
+            ],
+            "profiles": {
+                "debug": {
+                    "output_directory": "build/debug",
+                    "exe_filename": "out.slxbin",
+                    "compilation": {
+                        "entry_point": "main",
+                        "multithreaded": false
+                    }
+                }
+            }
+        })");
+        sandbox.create_file("app/src/main.slx", "class Main { public static int32 main() { return HelperA.get_a() == 15 ? 0 : 1; } }\n");
+        sandbox.create_file("app/resources/app_data.txt", "from app\n");
+        sandbox.create_file("app/resources/shared.txt", "overridden by app\n");
+
+        // Run solix build in app
+        std::filesystem::current_path(sandbox.path() / "app");
+        auto build_res = run_cli({"build"});
+        std::filesystem::current_path(orig_cwd);
+
+        CHECK(build_res.exit_code == 0);
+
+        auto app_build_dir = sandbox.path() / "app" / "build" / "debug";
+        CHECK(std::filesystem::exists(app_build_dir / "out.slxbin"));
+
+        // Verify native libraries staged from transitive dependency lib_b
+        CHECK(std::filesystem::exists(app_build_dir / "lib" / "lib_b_native.so"));
+
+        // Verify resources staged from all dependency depths
+        CHECK(std::filesystem::exists(app_build_dir / "resources" / "b_data.txt"));
+        CHECK(std::filesystem::exists(app_build_dir / "resources" / "a_data.txt"));
+        CHECK(std::filesystem::exists(app_build_dir / "resources" / "app_data.txt"));
+        CHECK(std::filesystem::exists(app_build_dir / "resources" / "shared.txt"));
+
+        // Verify collision override: app overrides lib_b
+        std::ifstream shared_f(app_build_dir / "resources" / "shared.txt");
+        std::string shared_content((std::istreambuf_iterator<char>(shared_f)), std::istreambuf_iterator<char>());
+        CHECK(shared_content.find("overridden by app") != std::string::npos);
+    }
+
+    SECTION("Positive - Case 20.12: Multi-Depth Dependency Packaging and Execution") {
+        auto orig_cwd = std::filesystem::current_path();
+        std::filesystem::current_path(sandbox.path());
+
+        std::filesystem::path plugin_src(SOLIX_TEST_PLUGIN_PATH);
+        std::string lib_filename = plugin_src.filename().string();
+
+        // Setup multi-depth dependency tree: multi_app -> multi_lib_a -> multi_lib_b
+        sandbox.create_file("multi_b/manifest.json", R"({
+            "name": "multi_b",
+            "project": "multi_b",
+            "version": "1.0.0",
+            "type": "library",
+            "dependencies": [
+                { "type": "source", "path": "src/b.slx" }
+            ]
+        })");
+        sandbox.create_file("multi_b/src/b.slx", R"(
+            public class NativeMath {
+                public static native int32 add(int32 a, int32 b);
+            }
+            class DepB {
+                public static int32 val() { return NativeMath.add(10, 10); }
+            }
+        )");
+
+        if (std::filesystem::exists(plugin_src)) {
+            std::filesystem::create_directories(sandbox.path() / "multi_b" / "lib");
+            std::filesystem::copy_file(plugin_src, sandbox.path() / "multi_b" / "lib" / lib_filename,
+                                       std::filesystem::copy_options::overwrite_existing);
+        }
+
+        sandbox.create_file("multi_b/resources/b_res.txt", "resource from b\n");
+
+        sandbox.create_file("multi_a/manifest.json", R"({
+            "name": "multi_a",
+            "project": "multi_a",
+            "version": "1.0.0",
+            "type": "library",
+            "dependencies": [
+                { "type": "source", "path": "src/a.slx" },
+                { "type": "project", "path": "../multi_b" }
+            ]
+        })");
+        sandbox.create_file("multi_a/src/a.slx", "class DepA { public static int32 val() { return DepB.val() + 10; } }\n");
+        sandbox.create_file("multi_a/resources/a_res.txt", "resource from a\n");
+
+        sandbox.create_file("multi_app/manifest.json", R"({
+            "name": "multi_app",
+            "project": "multi_app",
+            "version": "1.0.0",
+            "dependencies": [
+                { "type": "source", "path": "src/main.slx" },
+                { "type": "project", "path": "../multi_a" }
+            ],
+            "profiles": {
+                "debug": {
+                    "output_directory": "build/debug",
+                    "exe_filename": "out.slxbin",
+                    "compilation": {
+                        "entry_point": "main",
+                        "multithreaded": false
+                    }
+                },
+                "release": {
+                    "output_directory": "build/release",
+                    "exe_filename": "out.slxbin",
+                    "compilation": {
+                        "entry_point": "main",
+                        "multithreaded": false
+                    }
+                }
+            }
+        })");
+        sandbox.create_file("multi_app/src/main.slx", "class Main { public static int32 main() { return DepA.val() == 30 ? 0 : 1; } }\n");
+        sandbox.create_file("multi_app/resources/app_res.txt", "resource from app\n");
+
+        // Run solix pack in multi_app
+        std::filesystem::current_path(sandbox.path() / "multi_app");
+        auto pack_res = run_cli({"pack", "-o", "multi.slxpac"});
+        CHECK(pack_res.exit_code == 0);
+
+        auto pac_path = sandbox.path() / "multi_app" / "multi.slxpac";
+        CHECK(std::filesystem::exists(pac_path));
+
+        // Verify package contents contains transitive native libs and resources
+        solix::ZipArchiveReader reader(pac_path);
+        CHECK(reader.is_valid());
+        CHECK(reader.has_entry("bytecode.slxbin"));
+        CHECK(reader.has_entry("manifest.json"));
+        if (std::filesystem::exists(plugin_src)) {
+            CHECK(reader.has_entry("lib/" + lib_filename));
+        }
+        CHECK(reader.has_entry("resources/b_res.txt"));
+        CHECK(reader.has_entry("resources/a_res.txt"));
+        CHECK(reader.has_entry("resources/app_res.txt"));
+
+        // Execute bundle with solix run
+        auto run_res = run_cli({"run", pac_path.string()});
+        std::filesystem::current_path(orig_cwd);
+
+        CHECK(run_res.exit_code == 0);
+    }
 }

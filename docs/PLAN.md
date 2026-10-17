@@ -226,5 +226,26 @@ Perform end-to-end integration verification of packaging, resource loading, and 
 - [x] Run full regression suite (`ctest --test-dir build --output-on-failure`) with zero warnings and zero sanitizer defects (80/80 passed 100%).
 - [x] Finalize phase updates in `docs/PLAN.md`.
 
+---
+
+## Phase 10: Multi-Depth Dependency Asset & Native Library Staging in Build and Package
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `cli/src/commands/build.cpp`, `cli/src/commands/pack.cpp`, `tests/commands/test_pack_command.cpp`, `tests/commands/TESTS.md`, `docs/spec/cli/build.md`, `docs/spec/cli/pack.md`, `docs/guide/packaging_and_resources.md`
+- **Status**: - [ ] In Progress
+
+### Objective
+Ensure that multi-depth (transitive) dependency libraries automatically have their native libraries (`lib/`) and application resources (`resources/`) staged into the build output directory during `solix build`, and merged into the single-file distribution archive during `solix pack`. Root project assets take precedence over dependency assets on collision.
+
+### Action Items
+- [ ] Implement `stage_native_libraries` in `cli/src/commands/build.cpp` to stage native libraries from root and all transitive dependencies into `<output_dir>/lib/`.
+- [ ] Implement `stage_resources` in `cli/src/commands/build.cpp` to stage static resources from root and all transitive dependencies into `<output_dir>/resources/` with root overrides.
+- [ ] Update `pack_project` in `cli/src/commands/pack.cpp` to collect and merge resources from all transitive dependency roots into the package archive.
+- [ ] Update `tests/commands/TESTS.md` with multi-depth dependency staging test specifications (Cases 20.11 and 20.12).
+- [ ] Implement Catch2 unit/integration tests in `tests/commands/test_pack_command.cpp` with multi-depth transitive dependency chains (`App -> LibA -> LibB`).
+- [ ] Update CLI specifications (`docs/spec/cli/build.md`, `docs/spec/cli/pack.md`) and user guide (`docs/guide/packaging_and_resources.md`).
+- [ ] Verify 100% test pass rate across all test suites with zero compiler warnings.
+
+
 
 
