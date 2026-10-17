@@ -4,10 +4,13 @@
 #include "../package_manager.hpp"
 #include "solix/compilation.hpp"
 #include "solix/runtime.hpp"
+#include "solix/zip_utils.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <filesystem>
+#include <algorithm>
+#include <nlohmann/json.hpp>
 
 namespace solix::cli {
 
@@ -29,6 +32,44 @@ inline void scan_directory_for_native_libs(const std::filesystem::path &dir, std
       out.push_back(entry.path().lexically_normal());
     }
   }
+}
+
+inline std::filesystem::path resolve_and_unpack_bundle(const std::filesystem::path& pac_path) {
+  std::error_code ec;
+  uintmax_t fsize = std::filesystem::file_size(pac_path, ec);
+  auto mtime = std::filesystem::last_write_time(pac_path, ec).time_since_epoch().count();
+
+  std::string pac_stem = pac_path.stem().string();
+  uint64_t hash = 14695981039346656037ULL;
+  for (char c : pac_path.filename().string()) {
+    hash = (hash ^ static_cast<uint8_t>(c)) * 1099511628211ULL;
+  }
+  hash = (hash ^ fsize) * 1099511628211ULL;
+  hash = (hash ^ static_cast<uint64_t>(mtime)) * 1099511628211ULL;
+
+  std::stringstream ss;
+  ss << std::hex << hash;
+  std::string hash_str = ss.str();
+
+  std::filesystem::path cache_dir = std::filesystem::temp_directory_path() / "solix_pac" / (pac_stem + "_" + hash_str);
+
+  // If cache directory exists and contains bytecode.slxbin, reuse it immediately
+  if (std::filesystem::exists(cache_dir / "bytecode.slxbin", ec)) {
+    return cache_dir;
+  }
+
+  std::filesystem::create_directories(cache_dir, ec);
+
+  ZipArchiveReader reader(pac_path);
+  if (!reader.is_valid()) {
+    throw std::runtime_error("Invalid or corrupted Solix package: " + pac_path.string() + " (" + reader.get_error() + ")");
+  }
+
+  if (!reader.extract_all(cache_dir)) {
+    throw std::runtime_error("Failed to unpack Solix package: " + reader.get_error());
+  }
+
+  return cache_dir;
 }
 
 } // namespace
@@ -64,7 +105,9 @@ void setup_execute_command(CLI::App &app) {
   execute_cmd->callback([opts, input_target, profile_str, package_name, version_str, project_path_str, native_libs_cli, stack_opt, heap_opt]() {
     std::filesystem::path bytecode_path;
     std::filesystem::path project_dir;
+    std::filesystem::path bundle_path;
     bool is_project = false;
+    bool is_bundle = false;
 
     // 1. Resolve Target Mode
     if (!package_name->empty()) {
@@ -103,8 +146,14 @@ void setup_execute_command(CLI::App &app) {
         project_dir = t;
         is_project = true;
       } else if (std::filesystem::exists(t)) {
-        bytecode_path = t;
-        is_project = false;
+        std::filesystem::path tp(t);
+        if (tp.extension() == ".slxpac" || is_zip_archive(tp)) {
+          bundle_path = tp.lexically_normal();
+          is_bundle = true;
+        } else {
+          bytecode_path = tp.lexically_normal();
+          is_project = false;
+        }
       } else {
         std::cerr << "Error: File does not exist: " << t << std::endl;
         cli_exit(1);
@@ -120,8 +169,48 @@ void setup_execute_command(CLI::App &app) {
       }
     }
 
-    // 2. Handle Project Mode
-    if (is_project) {
+    // 2. Handle Execution Modes
+    if (is_bundle) {
+      std::filesystem::path unpacked_dir;
+      try {
+        unpacked_dir = resolve_and_unpack_bundle(bundle_path);
+      } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        cli_exit(1);
+      }
+
+      bytecode_path = unpacked_dir / "bytecode.slxbin";
+      if (!std::filesystem::exists(bytecode_path)) {
+        std::cerr << "Error: Bundle missing bytecode.slxbin entry point: " << bundle_path.string() << std::endl;
+        cli_exit(1);
+      }
+
+      // Check bundle manifest for runtime settings
+      std::filesystem::path manifest_path = unpacked_dir / "manifest.json";
+      if (std::filesystem::exists(manifest_path)) {
+        std::ifstream mf(manifest_path);
+        nlohmann::json bm;
+        try {
+          mf >> bm;
+          if (bm.contains("runtime") && bm["runtime"].is_object()) {
+            const auto& rt = bm["runtime"];
+            if (stack_opt->count() == 0 && rt.contains("stack_size") && !rt["stack_size"].is_null()) {
+              opts->stack_capacity = rt["stack_size"].get<uint64_t>();
+            }
+            if (heap_opt->count() == 0 && rt.contains("heap_size") && !rt["heap_size"].is_null()) {
+              opts->heap_capacity = rt["heap_size"].get<uint64_t>();
+            }
+          }
+        } catch (...) {}
+      }
+
+      // Auto-discover in bundle lib/
+      scan_directory_for_native_libs(unpacked_dir / "lib", opts->native_libraries);
+
+      // Set resource directory to bundle resources/
+      opts->resource_directory = (unpacked_dir / "resources").lexically_normal();
+
+    } else if (is_project) {
       auto build_res = build_project(project_dir, *profile_str);
       if (!build_res.success) {
         cli_exit(1);
@@ -176,11 +265,17 @@ void setup_execute_command(CLI::App &app) {
         scan_directory_for_native_libs(dep_root / "lib", opts->native_libraries);
       }
       scan_directory_for_native_libs(bytecode_path.parent_path(), opts->native_libraries);
+
+      // Set resource directory to project resources/
+      opts->resource_directory = (build_res.project_root / "resources").lexically_normal();
+
     } else {
 
       // Standalone bytecode file mode: scan parent directory and parent/lib
       scan_directory_for_native_libs(bytecode_path.parent_path(), opts->native_libraries);
       scan_directory_for_native_libs(bytecode_path.parent_path() / "lib", opts->native_libraries);
+
+      opts->resource_directory = (bytecode_path.parent_path() / "resources").lexically_normal();
     }
 
     // Ingest CLI flags: -L, --native-lib
@@ -213,6 +308,15 @@ void setup_execute_command(CLI::App &app) {
     }
 
     opts->bytecode_source = bytecode_path;
+
+    // Export SOLIX_RESOURCE_ROOT for ambient native library / process inspection
+    if (!opts->resource_directory.empty()) {
+#if defined(_WIN32)
+      _putenv_s("SOLIX_RESOURCE_ROOT", opts->resource_directory.string().c_str());
+#else
+      setenv("SOLIX_RESOURCE_ROOT", opts->resource_directory.string().c_str(), 1);
+#endif
+    }
 
     int32_t exit_code = 0;
     try {
