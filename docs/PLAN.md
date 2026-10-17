@@ -351,21 +351,22 @@ Allow projects to select a specific build profile when referencing project/libra
 
 - **Priority**: `P2 Polish`
 - **Affected Modules**: `tests/commands/test_pack_command.cpp`, `tests/commands/TESTS.md`, `docs/spec/cli/manifest.md`, `docs/spec/cli/build.md`, `docs/spec/cli/pack.md`, `docs/guide/packaging_and_resources.md`
-- **Status**: - [ ] Planned
+- **Status**: - [x] Completed & Merged (2026-10-17)
 
 ### Objective
 Perform end-to-end integration verification combining dependency profile selection, pre-compile CMake native library builds, transitive staging, single-file `.slxpac` packaging, and bundle execution. Finalize user guides and developer references.
 
 ### Action Items
-- [ ] Define integration test specification in `tests/commands/TESTS.md` (Case 23.1).
-- [ ] Implement comprehensive Catch2 integration test in `tests/commands/test_pack_command.cpp`:
+- [x] Define integration test specification in `tests/commands/TESTS.md` (Case 23.1).
+- [x] Implement comprehensive Catch2 integration test in `tests/commands/test_pack_command.cpp`:
   - Application depends on Library A with `"profile": "release"`.
   - Library A has a pre-compile command compiling a native shared library into `lib/`.
   - Application has pre-compile and post-compile commands verifying execution order.
   - `solix pack` produces `.slxpac` bundle containing compiled bytecode, staged native library, and staged resources.
   - `solix run` executes the packaged `.slxpac` bundle and successfully invokes native functions and loads resources.
-- [ ] Author comprehensive guide chapter in `docs/guide/packaging_and_resources.md` demonstrating CMake native library compilation via pre-compile lifecycle hooks.
-- [ ] Update manifest specification in `docs/spec/cli/manifest.md` with complete examples and reference tables.
-- [ ] Verify 100% test pass rate across all suites with zero compiler warnings and clean sanitizer runs.
-- [ ] Finalize phase tracking in `docs/PLAN.md`.
+- [x] Author comprehensive guide chapter in `docs/guide/packaging_and_resources.md` demonstrating CMake native library compilation via pre-compile lifecycle hooks.
+- [x] Update manifest specification in `docs/spec/cli/manifest.md` with complete examples and reference tables.
+- [x] Verify 100% test pass rate across all suites with zero compiler warnings and clean sanitizer runs.
+- [x] Finalize phase tracking in `docs/PLAN.md`.
+
 
