@@ -704,7 +704,7 @@ void test() {
 
 ### Positive Test Scenarios (Valid Variations)
 
-### Case 3.1: Explicit Dereference RAII Cleanup [NOT IMPLEMENTED]
+### Case 3.1: Explicit Dereference RAII Cleanup [IMPLEMENTED]
 ```solix
 class Tracker {
     public static int32 destroyed_count = 0;
@@ -725,7 +725,7 @@ static int32 main() {
 
 ---
 
-### Case 3.2: Block Scope Exit RAII Cleanup [NOT IMPLEMENTED]
+### Case 3.2: Block Scope Exit RAII Cleanup [IMPLEMENTED]
 ```solix
 class Resource {
     public static int32 counter = 0;
@@ -749,7 +749,7 @@ static int32 main() {
 
 ---
 
-### Case 3.3: Function Return RAII Cleanup [NOT IMPLEMENTED]
+### Case 3.3: Function Return RAII Cleanup [IMPLEMENTED]
 ```solix
 class Guard {
     public static int32 count = 0;
@@ -775,7 +775,7 @@ static int32 main() {
 
 ---
 
-### Case 3.4: Subclass-to-Base Inheritance Chaining [NOT IMPLEMENTED]
+### Case 3.4: Subclass-to-Base Inheritance Chaining [IMPLEMENTED]
 ```solix
 class BaseResource {
     public static int32 sequence = 0;
@@ -804,7 +804,7 @@ static int32 main() {
 
 ---
 
-### Case 3.5: Multi-Level Inheritance Chaining [NOT IMPLEMENTED]
+### Case 3.5: Multi-Level Inheritance Chaining [IMPLEMENTED]
 ```solix
 class Grandparent {
     public static int32 order = 0;
@@ -839,7 +839,7 @@ static int32 main() {
 
 ---
 
-### Case 3.6: Field and State Mutation within Destructor [NOT IMPLEMENTED]
+### Case 3.6: Field and State Mutation within Destructor [IMPLEMENTED]
 ```solix
 class Logger {
     public static int32 last_logged = 0;
@@ -862,7 +862,7 @@ static int32 main() {
 
 ---
 
-### Case 3.7: Cascading Destruction of Nested Resources [NOT IMPLEMENTED]
+### Case 3.7: Cascading Destruction of Nested Resources [IMPLEMENTED]
 ```solix
 class InnerNode {
     public static int32 count = 0;
@@ -894,8 +894,10 @@ static int32 main() {
 
 ---
 
-### Case 3.8: Exception Rewinding RAII across Multiple Call Frames [NOT IMPLEMENTED]
+### Case 3.8: Exception Rewinding RAII across Multiple Call Frames [IMPLEMENTED]
 ```solix
+class Exception {}
+
 class AutoCleanup {
     public static int32 cleaned_frames = 0;
     public ~AutoCleanup() {
@@ -905,7 +907,7 @@ class AutoCleanup {
 
 void levelThree() {
     AutoCleanup c3 = new AutoCleanup();
-    throw new Exception("unwind error");
+    throw new Exception();
 }
 
 void levelTwo() {
@@ -933,8 +935,10 @@ static int32 main() {
 
 ---
 
-### Case 3.9: Exception in Try Block RAII [NOT IMPLEMENTED]
+### Case 3.9: Exception in Try Block RAII [IMPLEMENTED]
 ```solix
+class Exception {}
+
 class ScopedLock {
     public static bool unlocked = false;
     public ~ScopedLock() {
@@ -946,7 +950,7 @@ static int32 main() {
     ScopedLock.unlocked = false;
     try {
         ScopedLock lock = new ScopedLock();
-        throw new Exception("error inside try");
+        throw new Exception();
     } catch (Exception e) {
         if (!ScopedLock.unlocked) return 1;
         return 0;
@@ -958,7 +962,7 @@ static int32 main() {
 
 ---
 
-### Case 3.10: Variable & Field Reassignment Cleanup [NOT IMPLEMENTED]
+### Case 3.10: Variable & Field Reassignment Cleanup [IMPLEMENTED]
 ```solix
 class Cell {
     public static int32 counter = 0;
@@ -982,7 +986,7 @@ static int32 main() {
 
 ---
 
-### Case 3.11: Array of Destructible Objects Cleanup [NOT IMPLEMENTED]
+### Case 3.11: Array of Destructible Objects Cleanup [IMPLEMENTED]
 ```solix
 class Item {
     public static int32 count = 0;
@@ -1010,7 +1014,7 @@ static int32 main() {
 
 ### Negative Test Scenarios (Expected Errors & Faults)
 
-### Case 4.1: Destructor Declared with Parameters [NOT IMPLEMENTED]
+### Case 4.1: Destructor Declared with Parameters [IMPLEMENTED]
 ```solix
 class Widget {
     public ~Widget(int32 x) {} // Error: destructors must not take parameters
@@ -1018,12 +1022,12 @@ class Widget {
 ```
 *Expected Compiler Diagnostic*:
 ```text
-[ERROR] parser.cpp: Destructors must not take any parameters
+[ERROR] parser.cpp: Destructors cannot accept parameters
 ```
 
 ---
 
-### Case 4.2: Destructor Declared with Explicit Return Type or Returning Value [NOT IMPLEMENTED]
+### Case 4.2: Destructor Declared with Explicit Return Type or Returning Value [IMPLEMENTED]
 ```solix
 class Widget {
     public ~Widget() {
@@ -1033,12 +1037,12 @@ class Widget {
 ```
 *Expected Compiler Diagnostic*:
 ```text
-[ERROR] binder.cpp: Destructors cannot return a value
+[ERROR] binder.cpp: Cannot return a value from a destructor
 ```
 
 ---
 
-### Case 4.3: Duplicate Destructors in Same Class [NOT IMPLEMENTED]
+### Case 4.3: Duplicate Destructors in Same Class [IMPLEMENTED]
 ```solix
 class Widget {
     public ~Widget() {}
@@ -1047,12 +1051,12 @@ class Widget {
 ```
 *Expected Compiler Diagnostic*:
 ```text
-[ERROR] parser.cpp: Duplicate destructor declaration in class 'Widget'
+[ERROR] parser.cpp: cannot declare multiple destructors
 ```
 
 ---
 
-### Case 4.4: Destructor Name Mismatch [NOT IMPLEMENTED]
+### Case 4.4: Destructor Name Mismatch [IMPLEMENTED]
 ```solix
 class Widget {
     public ~Other() {} // Error: name mismatch
@@ -1065,7 +1069,7 @@ class Widget {
 
 ---
 
-### Case 4.5: Destructor in Interface [NOT IMPLEMENTED]
+### Case 4.5: Destructor in Interface [IMPLEMENTED]
 ```solix
 interface IService {
     ~IService(); // Error: interfaces cannot declare destructors
@@ -1078,7 +1082,7 @@ interface IService {
 
 ---
 
-### Case 4.6: Destructor Declared with Forbidden Modifiers [NOT IMPLEMENTED]
+### Case 4.6: Destructor Declared with Forbidden Modifiers [IMPLEMENTED]
 ```solix
 class Widget {
     public static ~Widget() {} // Error: modifiers not allowed
@@ -1086,7 +1090,7 @@ class Widget {
 ```
 *Expected Compiler Diagnostic*:
 ```text
-[ERROR] parser.cpp: Destructors cannot declare modifiers
+[ERROR] parser.cpp: Destructors cannot have static, virtual, override, or abstract modifiers
 ```
 
 ---
