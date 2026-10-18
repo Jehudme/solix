@@ -232,6 +232,28 @@ public:
                         const std::filesystem::path& root_project_root = {}) {
         SourceDependencyResolver resolver;
         for (const auto& proj : candidates) {
+            // 0. Auto-discover all *.slx files recursively under src/
+            std::error_code ec;
+            std::filesystem::path src_dir = proj.project_root / "src";
+            if (std::filesystem::exists(src_dir, ec) && std::filesystem::is_directory(src_dir, ec)) {
+                for (const auto& entry : std::filesystem::recursive_directory_iterator(src_dir, ec)) {
+                    if (entry.is_regular_file(ec) && entry.path().extension() == ".slx") {
+                        if (proj.project_root != root_project_root && entry.path().filename() == "main.slx") {
+                            continue;
+                        }
+                        std::filesystem::path file_path = entry.path().lexically_normal();
+                        if (opts.sources.find(file_path.string()) == opts.sources.end()) {
+                            std::ifstream t(file_path);
+                            if (t.is_open()) {
+                                std::stringstream buffer;
+                                buffer << t.rdbuf();
+                                opts.sources[file_path.string()] = buffer.str();
+                            }
+                        }
+                    }
+                }
+            }
+
             // 1. Manifest top-level source dependencies
             if (proj.manifest.contains("dependencies") && proj.manifest["dependencies"].is_array()) {
                 for (const auto& dep : proj.manifest["dependencies"]) {
@@ -467,6 +489,13 @@ private:
         std::string proj_name = manifest.value("project", "");
         if (proj_name.empty()) {
             std::cerr << "Error: Dependency manifest missing 'project' name: " << target_manifest.string() << std::endl;
+            return false;
+        }
+
+        std::string proj_type = manifest.value("type", "app");
+        std::transform(proj_type.begin(), proj_type.end(), proj_type.begin(), [](unsigned char c) { return std::tolower(c); });
+        if (proj_type == "app") {
+            std::cerr << "Error: Cannot include project '" << proj_name << "' as a dependency because it is an 'app' (only 'library' projects can be included)." << std::endl;
             return false;
         }
 

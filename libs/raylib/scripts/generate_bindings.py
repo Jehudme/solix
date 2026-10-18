@@ -881,6 +881,7 @@ static std::vector<unsigned int> unpack_uint32_array(solix::RuntimeContext &vm, 
         rel = str(s.relative_to(root))
         deps.append({"type": "source", "path": rel})
     mf["dependencies"] = deps
+    mf["type"] = "library"
     with open(manifest_path, "w") as mf_file:
         json.dump(mf, mf_file, indent=2)
     print(f"Updated manifest.json with {len(src_files)} files.")
