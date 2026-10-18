@@ -374,6 +374,12 @@ std::string Assembler::disassemble() const {
       ss << "has_msg=" << static_cast<int>(has_msg) << ", line=" << line << ", col=" << col;
       break;
     }
+    case OpCode::DEFINE_DESTRUCTOR: {
+      uint32_t vtid = read_u32_local(pc);
+      uint32_t dtor_ip = read_u32_local(pc);
+      ss << "vtable_id=" << vtid << ", dtor_ip=" << dtor_ip;
+      break;
+    }
     default:
       break;
     }
@@ -438,6 +444,8 @@ void Assembler::apply_linker_patches() {
         name = static_cast<MethodDeclaration *>(target)->mangled_name;
       else if (target->node_type == NodeType::CONSTRUCTOR_DECL)
         name = static_cast<ConstructorDeclaration *>(target)->mangled_name;
+      else if (target->node_type == NodeType::DESTRUCTOR_DECL)
+        name = "~" + static_cast<DestructorDeclaration *>(target)->class_name;
       throw std::runtime_error(
           "Linker Error: Target function not found for patching: " + name);
     }
@@ -529,6 +537,15 @@ void Assembler::compile_boot_sequence() {
           emit_int32(slot);
         }
       }
+    }
+  }
+
+  for (auto *cls : classes_with_vtables) {
+    if (cls->destructor) {
+      emit_byte(static_cast<uint8_t>(OpCode::DEFINE_DESTRUCTOR));
+      emit_int32(cls->vtable_id);
+      linker_patches.push_back({bytecode().size(), cls->destructor});
+      emit_int32(0xFFFFFFFF);
     }
   }
 
@@ -665,6 +682,8 @@ void Assembler::compile_class(ClassDeclaration *class_node) {
     } else if (child->node_type == NodeType::METHOD_DECL) {
       compile_function(child.get());
     } else if (child->node_type == NodeType::CONSTRUCTOR_DECL) {
+      compile_node(child.get());
+    } else if (child->node_type == NodeType::DESTRUCTOR_DECL) {
       compile_node(child.get());
     }
   }
@@ -865,6 +884,40 @@ void Assembler::visit(ConstructorDeclaration &node) {
   current_compiling_function = prev_func;
 }
 
+void Assembler::visit(DestructorDeclaration &node) {
+  auto *d = &node;
+
+  auto *prev_func = current_compiling_function;
+  current_compiling_function = d;
+
+  function_ips[d] = bytecode().size();
+
+  emit_byte(static_cast<uint8_t>(OpCode::ALLOC_FRAME));
+  emit_int32(d->frame_size);
+
+  for (const auto &child : d->children) {
+    compile_node(child.get());
+  }
+
+  // If super_destructor exists, call it with 'this' (local 0)
+  if (d->super_destructor) {
+    emit_byte(static_cast<uint8_t>(OpCode::GET_LOCAL));
+    emit_int32(0); // push 'this'
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    linker_patches.push_back({bytecode().size(), d->super_destructor});
+    emit_int32(0xFFFFFFFF);
+    emit_byte(static_cast<uint8_t>(OpCode::PUSH_CONST_I32));
+    emit_int32(1); // 1 arg (this)
+    emit_byte(static_cast<uint8_t>(OpCode::CALL));
+    emit_byte(static_cast<uint8_t>(OpCode::POP)); // pop return value
+  }
+
+  emit_byte(static_cast<uint8_t>(OpCode::PUSH_NULL));
+  emit_byte(static_cast<uint8_t>(OpCode::RETURN));
+
+  current_compiling_function = prev_func;
+}
+
 void Assembler::visit(BlockStatement &node) {
   if (node.block_kind == BlockKind::TRANSPARENT) {
     for (const auto &child : node.children) {
@@ -903,9 +956,10 @@ void Assembler::visit(BlockStatement &node) {
   emit_cleanup_for_node(&node);
 
   bool is_func_body = (node.block_kind == BlockKind::FUNCTION_BODY) ||
-                      (node.parent != nullptr && (node.parent->node_type == NodeType::METHOD_DECL || node.parent->node_type == NodeType::CONSTRUCTOR_DECL));
+                      (node.parent != nullptr && (node.parent->node_type == NodeType::METHOD_DECL || node.parent->node_type == NodeType::CONSTRUCTOR_DECL || node.parent->node_type == NodeType::DESTRUCTOR_DECL));
 
   if (is_func_body) {
+      emit_cleanup_for_function(current_compiling_function);
       emit_byte(static_cast<uint8_t>(OpCode::JMP_TO_OUTER_CLEANUP));
   } else if (node.block_kind == BlockKind::TRY_BODY) {
       // The TryStatement will need to patch this to jump to the Catch matching block!
@@ -1378,6 +1432,8 @@ void Assembler::visit(IdentifierNode &node) {
         func_name = "method " + static_cast<MethodDeclaration *>(current_compiling_function)->method_name;
       } else if (current_compiling_function->node_type == NodeType::CONSTRUCTOR_DECL) {
         func_name = "constructor " + static_cast<ConstructorDeclaration *>(current_compiling_function)->class_name;
+      } else if (current_compiling_function->node_type == NodeType::DESTRUCTOR_DECL) {
+        func_name = "destructor ~" + static_cast<DestructorDeclaration *>(current_compiling_function)->class_name;
       }
     }
     throw_error(ident, fmt::format("Unresolved identifier in assembler: '{}' at line {} col {} in class '{}', func '{}'",

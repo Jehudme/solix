@@ -101,6 +101,7 @@ private:
     void visit(ClassDeclaration& node) override;
     void visit(FieldDeclaration& node) override;
     void visit(ConstructorDeclaration& node) override;
+    void visit(DestructorDeclaration& node) override;
     void visit(MethodDeclaration& node) override;
 };
 

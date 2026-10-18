@@ -1420,6 +1420,9 @@ std::unique_ptr<Node> ParserState::parse_interface_declaration(TokenType modifie
 
   consume(TokenType::PUNCTUATION_OPEN_BRACE, "Expected '{' before interface body");
   while (!check(TokenType::PUNCTUATION_CLOSE_BRACE) && !is_at_end()) {
+    if (check(TokenType::OPERATOR_BITWISE_NOT)) {
+      throw ParseError("Interfaces cannot declare destructors", peek().line, peek().column);
+    }
     TypeInfo type = parse_type_info();
     Token m_name = consume(TokenType::IDENTIFIER, "Expected method name");
     std::string m_name_str = std::get<std::string>(m_name.value);
@@ -1555,6 +1558,43 @@ std::unique_ptr<Node> ParserState::parse_class_declaration(TokenType modifier, b
     }
     if (match(TokenType::KEYWORD_ENUM)) {
       decl->children.push_back(parse_enum_declaration(field_mod));
+      continue;
+    }
+
+    // Destructor check: ~ClassName()
+    if (check(TokenType::OPERATOR_BITWISE_NOT)) {
+      if (decl->is_interface) {
+        throw ParseError("Destructors are not allowed in interfaces", peek().line, peek().column);
+      }
+      if (decl->destructor != nullptr) {
+        throw ParseError("Class '" + decl->class_name + "' cannot declare multiple destructors", peek().line, peek().column);
+      }
+      if (is_static || is_virtual || is_override || is_abstract || is_weak || is_const || is_native || is_inline) {
+        throw ParseError("Destructors cannot have static, virtual, override, or abstract modifiers", peek().line, peek().column);
+      }
+      advance(); // consume '~'
+      Token dtor_name = consume(TokenType::IDENTIFIER, "Expected class name after '~'");
+      std::string name_str = std::get<std::string>(dtor_name.value);
+      if (name_str != decl->class_name) {
+        throw ParseError("Destructor name '~" + name_str + "' does not match enclosing class '" + decl->class_name + "'", dtor_name.line, dtor_name.column);
+      }
+      consume(TokenType::PUNCTUATION_OPEN_PAREN, "Expected '(' after destructor name");
+      if (!check(TokenType::PUNCTUATION_CLOSE_PAREN)) {
+        throw ParseError("Destructors cannot accept parameters", peek().line, peek().column);
+      }
+      consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after '(' in destructor declaration");
+
+      auto body = parse_block();
+      if (auto* b = dynamic_cast<BlockStatement*>(body.get())) {
+        b->block_kind = BlockKind::FUNCTION_BODY;
+      }
+      auto dtor = std::make_unique<DestructorDeclaration>(dtor_name, decl->class_name);
+      dtor->access_modifier = field_mod;
+      dtor->end_line = body->end_line;
+      dtor->end_column = body->end_column;
+      dtor->children.push_back(std::move(body));
+      decl->destructor = dtor.get();
+      decl->children.push_back(std::move(dtor));
       continue;
     }
 

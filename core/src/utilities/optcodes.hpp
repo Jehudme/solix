@@ -138,7 +138,10 @@ enum class OpCode : uint8_t {
 
   // Language Intrinsics
   ASSERT,
-  EXIT
+  EXIT,
+
+  // Destructors
+  DEFINE_DESTRUCTOR
 };
 
 inline const char* opcode_to_string(uint8_t op) {
@@ -244,6 +247,7 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::DEC_REF_SLOT: return "DEC_REF_SLOT";
         case OpCode::ASSERT: return "ASSERT";
         case OpCode::EXIT: return "EXIT";
+        case OpCode::DEFINE_DESTRUCTOR: return "DEFINE_DESTRUCTOR";
         default: return "UNKNOWN";
     }
 }
@@ -350,6 +354,7 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "DEC_REF_SLOT") return OpCode::DEC_REF_SLOT;
     if (str == "ASSERT") return OpCode::ASSERT;
     if (str == "EXIT") return OpCode::EXIT;
+    if (str == "DEFINE_DESTRUCTOR") return OpCode::DEFINE_DESTRUCTOR;
     return OpCode::HALT; // fallback
 }
 

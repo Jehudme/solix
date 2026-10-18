@@ -57,6 +57,7 @@ public:
     void visit(ClassDeclaration& n) override;
     void visit(FieldDeclaration& n) override;
     void visit(ConstructorDeclaration& n) override;
+    void visit(DestructorDeclaration& n) override;
     void visit(MethodDeclaration& n) override;
 
 private:

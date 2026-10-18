@@ -280,6 +280,8 @@ struct RuntimeContext {
   std::unordered_map<uint32_t, int32_t> vtable_bases;
   std::unordered_map<uint32_t, std::unordered_map<uint32_t, std::vector<uint32_t>>> itables;
   std::unordered_map<uint32_t, std::vector<uint32_t>> vtable_ref_fields;
+  std::unordered_map<uint32_t, uint32_t> vtable_destructors;
+  std::unordered_set<Address> active_destructors;
 
   // Metering state
   uint64_t instruction_budget = 0;
@@ -290,6 +292,8 @@ struct RuntimeContext {
 
   virtual void register_native(uint32_t id, NativeFunctionPtr func);
   virtual void execute();
+  virtual void run_bytecode(size_t stop_call_depth);
+  virtual void invoke_destructor(Address obj_addr, uint32_t dtor_ip);
 
   virtual void push(uint64_t val);
   virtual uint64_t pop();

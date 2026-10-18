@@ -156,6 +156,11 @@ void TemplateSubstitutionVisitor::visit(ConstructorDeclaration& n) {
         if (child) child->accept(*this);
     }
 }
+void TemplateSubstitutionVisitor::visit(DestructorDeclaration& n) {
+    for (auto& child : n.children) {
+        if (child) child->accept(*this);
+    }
+}
 void TemplateSubstitutionVisitor::visit(MethodDeclaration& n) {
     substitute_type(n.return_type);
     for (auto& param : n.parameters) {

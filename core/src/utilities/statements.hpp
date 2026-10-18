@@ -26,7 +26,7 @@ enum class NodeType {
     ASSERT_STMT, EXIT_STMT,
 
     // Top Level
-    PACKAGE_STMT, ALIAS_STMT, IMPORT_STMT, ENUM_DECL, CLASS_DECL, FIELD_DECL, CONSTRUCTOR_DECL, METHOD_DECL
+    PACKAGE_STMT, ALIAS_STMT, IMPORT_STMT, ENUM_DECL, CLASS_DECL, FIELD_DECL, CONSTRUCTOR_DECL, DESTRUCTOR_DECL, METHOD_DECL
 };
 
 struct TypeInfo {
@@ -682,6 +682,7 @@ struct EnumDeclaration : public Node {
 };
 
 struct MethodDeclaration;
+struct DestructorDeclaration;
 struct ClassDeclaration : public Node {
     std::unique_ptr<Node> clone() const override;
 
@@ -702,6 +703,7 @@ struct ClassDeclaration : public Node {
     std::vector<TypeInfo> interface_types;
     int instance_size = 0;
     std::vector<uint32_t> reference_field_offsets;
+    DestructorDeclaration* destructor = nullptr;
     ClassDeclaration(const Token& t, std::string name) : Node(NodeType::CLASS_DECL, t), class_name(std::move(name)) {}
 };
 
@@ -734,6 +736,19 @@ struct ConstructorDeclaration : public Node {
     std::vector<std::unique_ptr<VariableDeclaration>> parameters;
     int frame_size = 0;
     ConstructorDeclaration(const Token& t, std::string name) : Node(NodeType::CONSTRUCTOR_DECL, t), class_name(std::move(name)) {}
+};
+
+struct DestructorDeclaration : public Node {
+    std::unique_ptr<Node> clone() const override;
+
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
+    TokenType access_modifier = TokenType::KEYWORD_PUBLIC;
+    std::string class_name;
+    DestructorDeclaration* super_destructor = nullptr;
+    int frame_size = 0;
+    DestructorDeclaration(const Token& t, std::string name)
+        : Node(NodeType::DESTRUCTOR_DECL, t), class_name(std::move(name)) {}
 };
 
 struct MethodDeclaration : public Node {

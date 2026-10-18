@@ -79,6 +79,7 @@ public:
     void visit(ClassDeclaration& node) override;
     void visit(FieldDeclaration& node) override;
     void visit(ConstructorDeclaration& node) override;
+    void visit(DestructorDeclaration& node) override;
     void visit(MethodDeclaration& node) override;
 
 private:
@@ -112,6 +113,7 @@ public:
     
     ClassDeclaration* current_class = nullptr;
     ConstructorDeclaration* current_constructor = nullptr;
+    DestructorDeclaration* current_destructor = nullptr;
     MethodDeclaration* current_method = nullptr;
     bool super_allowed = false;
     std::string current_package;
