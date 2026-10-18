@@ -1271,6 +1271,73 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: Empty sandbox directory.
 - **Expected**: Exits non-zero; outputs `Error: Invalid project type 'invalid_type'. Must be 'app' or 'library'.`
 
+---
+
+## Part XXIX: CLI Modernization, List Table Refinements, Pack Ingestion & Edge-Case Guards
+
+*Command*: `solix create`, `solix list`, `solix details`, `solix pack`, `solix install`, `solix run`
+*Specification Reference*: [Solix CLI Specification](../../docs/spec/cli/README.md), [Package Management Guide](../../docs/spec/cli/package.md)
+
+### Positive Test Scenarios
+
+#### Case 29.1: Scaffolding with solix create and solix new Alias with -T plugin Support [NOT IMPLEMENTED]
+- **Command**: `solix create test_plugin -T plugin` and `solix new test_app_alias`
+- **Setup**: Isolated sandbox directory.
+- **Expected**: Exits 0; `test_plugin` generates `manifest.json` with `"type": "plugin"`, starter plugin source; `solix new` continues to function as a backward-compatible alias of `solix create`.
+
+#### Case 29.2: solix list Displays TYPE Column with Filtering, Sorting, and JSON Output [NOT IMPLEMENTED]
+- **Command**: `solix list -t app`, `solix list -s name --reverse`, and `solix list --json`
+- **Setup**: Registry containing an installed `app`, `library`, and `plugin`.
+- **Expected**: Exits 0; default output table includes `TYPE` column (`app`, `library`, `plugin`); `-t app` filters only applications; `-s name --reverse` sorts in descending order; `--json` outputs a valid JSON array of installed projects.
+
+#### Case 29.3: solix details Scripting Query Flags [NOT IMPLEMENTED]
+- **Command**: `solix details my_lib -v`, `solix details my_lib -t`, `solix details my_lib -n`, `solix details my_lib --json`
+- **Setup**: Installed project `my_lib` version `1.2.0` of type `library`.
+- **Expected**: Exits 0; `-v` outputs `1.2.0`; `-t` outputs `library`; `-n` outputs `my_lib`; `--json` outputs raw JSON.
+
+#### Case 29.4: solix details on .slxpac Archives and name@version Parsing [NOT IMPLEMENTED]
+- **Command**: `solix details bundle.slxpac` and `solix details my_app@1.0.0`
+- **Setup**: Pre-built `.slxpac` archive containing embedded `manifest.json`, and installed `my_app`.
+- **Expected**: Exits 0; reading `.slxpac` inspects embedded `manifest.json` directly without unpacking; `<name>@<version>` is parsed into distinct name and version.
+
+#### Case 29.5: Direct Installation of .slxpac Package Bundles via solix install [NOT IMPLEMENTED]
+- **Command**: `solix install app_bundle.slxpac`
+- **Setup**: A valid `.slxpac` package bundle.
+- **Expected**: Exits 0; unpacks the bundle directly into `$SOLIX_HOME/installed/<id>` using `--archive` fast-path and registers it into the global registry.
+
+#### Case 29.6: Pack Installed App and Simplified Packaging with Embedded Manifest [NOT IMPLEMENTED]
+- **Command**: `solix pack my_app@1.0.0 -o out.slxpac`
+- **Setup**: An application installed in `$SOLIX_HOME`.
+- **Expected**: Exits 0; packs the installed application into `out.slxpac`; the generated `.slxpac` contains root `manifest.json`, `bytecode.slxbin`, `lib/`, and `resources/`.
+
+#### Case 29.7: Active Profile Additional Dependencies Overrides Root Dependency Profile [NOT IMPLEMENTED]
+- **Command**: `solix build -p prod`
+- **Setup**: Root project defines dependency `DepA` with `"profile": "debug"`. Profile `"prod"` declares `DepA` under `compilation.additional_dependencies` with `"profile": "optimized"`.
+- **Expected**: Exits 0; `DepA` is resolved with `"optimized"` profile (active profile dependency overrides root dependency profile).
+
+#### Case 29.8: Staging Alias on solix archive and solix install -o [NOT IMPLEMENTED]
+- **Command**: `solix archive my_lib -o dist/ --alias custom_name`
+- **Setup**: Valid library project `my_lib`.
+- **Expected**: Exits 0; the staged directory is exported with project name `"custom_name"` in the generated `manifest.json`.
+
+### Negative & Guard Test Scenarios
+
+#### Case 29.9: Reject solix run on Library Projects [NOT IMPLEMENTED]
+- **Command**: `solix run my_lib@1.0.0`
+- **Setup**: Installed project with `"type": "library"`.
+- **Expected**: Exits non-zero (1); outputs `Error: Cannot run 'my_lib' because it is a library (libraries do not contain an executable entry point).`
+
+#### Case 29.10: Reject solix pack on Library Projects [NOT IMPLEMENTED]
+- **Command**: `solix pack my_lib`
+- **Setup**: Project configured with `"type": "library"`.
+- **Expected**: Exits non-zero (1); outputs `Error: Cannot package library 'my_lib' into an application archive (.slxpac). Use 'solix archive' to export libraries.`
+
+#### Case 29.11: Warning Diagnostic When Running Pre-Built Target with Profile Option [NOT IMPLEMENTED]
+- **Command**: `solix run my_app@1.0.0 -P debug`
+- **Setup**: Installed application or pre-built `.slxbin` / `.slxpac`.
+- **Expected**: Exits 0; emits `Warning: Option --profile is ignored when running a pre-built package or binary.` and proceeds to execute.
+
+
 
 
 
