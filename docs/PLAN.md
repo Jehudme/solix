@@ -28,6 +28,7 @@ This document tracks all planned, in-progress, and completed engineering phases 
 | [Phase 16](#phase-16-universal-multi-platform-zigcmake-cross-compilation-pipeline) | Universal Multi-Platform Zig/CMake Cross-Compilation Pipeline | P1 High | - [x] Completed & Merged |
 | [Phase 17](#phase-17-universal-project-native-template--documentation) | Universal Project Native Template & Documentation | P2 Polish | - [x] Completed & Merged |
 | [Phase 18](#phase-18-release-v120-packaging-hardening--automated-publishing) | Release v1.2.0 Packaging, Hardening & Automated Publishing | P0 Blocker | - [x] Completed & Merged |
+| [Phase 19](#phase-19-release-v121-companion-library-reorganization--bundled-auto-installation) | Release v1.2.1 Companion Library Reorganization & Bundled Auto-Installation | P0 Blocker | - [x] Completed & Merged |
 
 ---
 
@@ -454,4 +455,29 @@ Synchronize the project version to `1.2.0`, harden GitHub Actions CI/CD workflow
 - [x] Merge `phase-18-release-v1.2.0` into `master` via `--no-ff`.
 - [x] Push `master` to `origin/master` and verify GitHub Actions CI passes across all operating systems.
 - [x] Tag `v1.2.0` and push tag to trigger automated release publishing.
+
+---
+
+## Phase 19: Release v1.2.1 Companion Library Reorganization & Bundled Auto-Installation
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `CMakeLists.txt`, `cli/src/commands/version.cpp`, `cli/src/commands/new.cpp`, `cli/src/package_manager.hpp`, `cli/src/package_manager.cpp`, `cli/src/dependency_resolver.hpp`, `libs/solixlib/`, `libs/raylib/`, `editors/vscode/package.json`, `docs/release_notes/RELEASE_NOTES_v1.2.1.md`, `tests/commands/TESTS.md`, `tests/commands/test_cpack_packaging.cpp`, `tests/commands/test_version_command.cpp`, `tests/commands/test_package_commands.cpp`
+- **Status**: - [x] Completed & Merged
+
+### Objective
+Migrate the standard library `solixlib` into `libs/` alongside companion graphics library `libs/raylib`, update CMakeLists.txt and CPack packaging rules to stage all companion libraries to `share/solix/<name>`, generalize bundled project auto-discovery and dependency synchronization in `PackageManager` and `dependency_resolver`, author official v1.2.1 release notes, bump version across the toolchain to `1.2.1`, verify 100% test pass rate across all 83 test suites, and orchestrate the v1.2.1 release.
+
+### Action Items
+- [x] Relocate `solixlib` to `libs/solixlib` and initialize `libs/raylib`.
+- [x] Update root `CMakeLists.txt` for `libs/solixlib` native build and CPack staging of `libs/solixlib` and `libs/raylib`.
+- [x] Implement generalized bundled library discovery and automatic dependency synchronization (`discover_bundled_library`, `discover_all_bundled_libraries`, `try_auto_install_bundled_library`).
+- [x] Harden cross-compilation `build_native.py` scripts for nested directory structures.
+- [x] Bump project version to `1.2.1` across `CMakeLists.txt`, `cli/src/commands/version.cpp`, `cli/src/commands/new.cpp`, `libs/solixlib/manifest.json`, `libs/raylib/manifest.json`, and `editors/vscode/package.json`.
+- [x] Update test specifications in `tests/commands/TESTS.md` (Part XXVII: Cases 27.1 and 27.2).
+- [x] Author official release notes in `docs/release_notes/RELEASE_NOTES_v1.2.1.md`.
+- [x] Run full regression test suite across all 83 suites (100% passed).
+- [x] Merge `release-v1.2.1` into `master` via `--no-ff`.
+- [x] Push `master` to `origin/master` and push tag `v1.2.1`.
+- [x] Install updated Solix v1.2.1 toolchain to host environment (`~/.local`).
+
 
