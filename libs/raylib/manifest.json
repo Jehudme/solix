@@ -150,7 +150,7 @@
     },
     "release": {
       "pre_compile": [
-        "python3 scripts/build_native.py"
+        "python3 -c \"import os, sys; sys.exit(os.system('python3 scripts/build_native.py')) if os.path.exists('scripts/build_native.py') else sys.exit(0)\""
       ],
       "asm_filename": "out.slxasm",
       "compilation": {
