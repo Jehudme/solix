@@ -139,7 +139,7 @@ void setup_new_command(CLI::App &app) {
                     {
                         {"type", "library"},
                         {"name", "solixlib"},
-                        {"version", "1.2.0"}
+                        {"version", "1.2.1"}
                     },
                     {
                         {"type", "source"},

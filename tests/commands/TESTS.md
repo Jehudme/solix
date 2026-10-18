@@ -1201,5 +1201,25 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: `CPackConfig.cmake` and `cmake_install.cmake` in build directory.
 - **Expected**: `CPACK_PACKAGE_VERSION` matches `"1.2.0"`; `solixlib_native` and standard library resources stage to `share/solix/solixlib`.
 
+---
+
+## Part XXVII: Release v1.2.1 Packaging, Version Verification & Companion Library Bundling
+
+*Command*: `solix version`, `solix --version`, and CPack Packaging
+*Specification Reference*: [Solix Automated Release Guide](../../docs/guide/release.md), [Version Command Specification](../../docs/spec/cli/README.md)
+
+### Positive Test Scenarios
+
+#### Case 27.1: CLI Version Command Verification (v1.2.1) [IMPLEMENTED]
+- **Command**: `solix version`, `solix -v`, `solix --version`
+- **Setup**: Project built with version 1.2.1.
+- **Expected**: Exits 0; outputs `Solix version 1.2.1`.
+
+#### Case 27.2: CPack Packaging Version & Staging Verification (v1.2.1) [IMPLEMENTED]
+- **Command**: `cpack` staging inspection
+- **Setup**: `CPackConfig.cmake` and `cmake_install.cmake` in build directory.
+- **Expected**: `CPACK_PACKAGE_VERSION` matches `"1.2.1"`; `libs/solixlib` and `libs/raylib` resources stage to `share/solix/solixlib` and `share/solix/raylib`.
+
+
 
 

@@ -30,7 +30,8 @@ TEST_CASE("Suite 17: CPack Multi-OS Packaging & Installer Staging", "[packaging]
 
         // Verify package metadata
         REQUIRE(content.find("CPACK_PACKAGE_NAME \"solix\"") != std::string::npos);
-        REQUIRE((content.find("CPACK_PACKAGE_VERSION \"1.2.0\"") != std::string::npos ||
+        REQUIRE((content.find("CPACK_PACKAGE_VERSION \"1.2.1\"") != std::string::npos ||
+                 content.find("CPACK_PACKAGE_VERSION \"1.2.0\"") != std::string::npos ||
                  content.find("CPACK_PACKAGE_VERSION \"1.1.1\"") != std::string::npos ||
                  content.find("CPACK_PACKAGE_VERSION \"1.1.0\"") != std::string::npos ||
                  content.find("CPACK_PACKAGE_VERSION \"1.0.0\"") != std::string::npos));

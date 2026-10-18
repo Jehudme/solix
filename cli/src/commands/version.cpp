@@ -2,7 +2,7 @@
 #include <iostream>
 
 #ifndef SOLIX_VERSION
-#define SOLIX_VERSION "1.2.0"
+#define SOLIX_VERSION "1.2.1"
 #endif
 
 namespace solix::cli {
