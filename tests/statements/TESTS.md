@@ -11,6 +11,7 @@ This document is the definitive master test specification for the Solix language
 - **Part II: Declarations**
   - [ClassDeclaration](#classdeclaration)
   - [ConstructorDeclaration](#constructordeclaration)
+  - [DestructorDeclaration](#destructordeclaration)
   - [EnumDeclaration](#enumdeclaration)
   - [FieldDeclaration](#fielddeclaration)
   - [InterfaceDeclaration](#interfacedeclaration)
@@ -693,6 +694,399 @@ void test() {
 *Expected Compiler Diagnostic*:
 ```text
 [ERROR] parser.cpp: Constructors can only be declared inside a class body
+```
+
+---
+
+## DestructorDeclaration
+
+*Specification Reference*: [DestructorDeclaration](statements/declarations/destructors.md)
+
+### Positive Test Scenarios (Valid Variations)
+
+### Case 3.1: Explicit Dereference RAII Cleanup [NOT IMPLEMENTED]
+```solix
+class Tracker {
+    public static int32 destroyed_count = 0;
+    public ~Tracker() {
+        Tracker.destroyed_count = Tracker.destroyed_count + 1;
+    }
+}
+
+static int32 main() {
+    Tracker t = new Tracker();
+    if (Tracker.destroyed_count != 0) return 1;
+    t = null;
+    if (Tracker.destroyed_count != 1) return 2;
+    return 0;
+}
+```
+*Expected Result*: Setting reference to `null` immediately runs `~Tracker()`, incrementing `destroyed_count` to 1.
+
+---
+
+### Case 3.2: Block Scope Exit RAII Cleanup [NOT IMPLEMENTED]
+```solix
+class Resource {
+    public static int32 counter = 0;
+    public ~Resource() {
+        Resource.counter = Resource.counter + 1;
+    }
+}
+
+static int32 main() {
+    Resource.counter = 0;
+    {
+        Resource r1 = new Resource();
+        Resource r2 = new Resource();
+        if (Resource.counter != 0) return 1;
+    }
+    if (Resource.counter != 2) return 2;
+    return 0;
+}
+```
+*Expected Result*: Leaving block scope decrements active object references, triggering `~Resource()` for both locals.
+
+---
+
+### Case 3.3: Function Return RAII Cleanup [NOT IMPLEMENTED]
+```solix
+class Guard {
+    public static int32 count = 0;
+    public ~Guard() {
+        Guard.count = Guard.count + 1;
+    }
+}
+
+int32 doWork() {
+    Guard g = new Guard();
+    return 42;
+}
+
+static int32 main() {
+    Guard.count = 0;
+    int32 val = doWork();
+    if (val != 42) return 1;
+    if (Guard.count != 1) return 2;
+    return 0;
+}
+```
+*Expected Result*: Returning from a function cleans up all local objects in the frame before returning value to caller.
+
+---
+
+### Case 3.4: Subclass-to-Base Inheritance Chaining [NOT IMPLEMENTED]
+```solix
+class BaseResource {
+    public static int32 sequence = 0;
+    public ~BaseResource() {
+        BaseResource.sequence = BaseResource.sequence * 10 + 1;
+    }
+}
+
+class DerivedResource extends BaseResource {
+    public ~DerivedResource() {
+        BaseResource.sequence = BaseResource.sequence * 10 + 2;
+    }
+}
+
+static int32 main() {
+    BaseResource.sequence = 0;
+    {
+        DerivedResource d = new DerivedResource();
+    }
+    // Expected sequence: Derived runs (2), then Base runs (21)
+    if (BaseResource.sequence != 21) return 1;
+    return 0;
+}
+```
+*Expected Result*: `~DerivedResource()` runs first, followed automatically by ancestor `~BaseResource()`.
+
+---
+
+### Case 3.5: Multi-Level Inheritance Chaining [NOT IMPLEMENTED]
+```solix
+class Grandparent {
+    public static int32 order = 0;
+    public ~Grandparent() {
+        Grandparent.order = Grandparent.order * 10 + 1;
+    }
+}
+
+class Parent extends Grandparent {
+    public ~Parent() {
+        Grandparent.order = Grandparent.order * 10 + 2;
+    }
+}
+
+class Child extends Parent {
+    public ~Child() {
+        Grandparent.order = Grandparent.order * 10 + 3;
+    }
+}
+
+static int32 main() {
+    Grandparent.order = 0;
+    {
+        Child c = new Child();
+    }
+    // Expected order: Child (3) -> Parent (32) -> Grandparent (321)
+    if (Grandparent.order != 321) return 1;
+    return 0;
+}
+```
+*Expected Result*: Strict reverse-inheritance destructor chaining across three hierarchy tiers.
+
+---
+
+### Case 3.6: Field and State Mutation within Destructor [NOT IMPLEMENTED]
+```solix
+class Logger {
+    public static int32 last_logged = 0;
+    public int32 id;
+    public Logger(int32 id) { this.id = id; }
+    public ~Logger() {
+        Logger.last_logged = this.id;
+    }
+}
+
+static int32 main() {
+    {
+        Logger l = new Logger(777);
+    }
+    if (Logger.last_logged != 777) return 1;
+    return 0;
+}
+```
+*Expected Result*: Destructor safely accesses instance fields through `this` before deallocation.
+
+---
+
+### Case 3.7: Cascading Destruction of Nested Resources [NOT IMPLEMENTED]
+```solix
+class InnerNode {
+    public static int32 count = 0;
+    public ~InnerNode() {
+        InnerNode.count = InnerNode.count + 1;
+    }
+}
+
+class OuterContainer {
+    public InnerNode node;
+    public OuterContainer() {
+        this.node = new InnerNode();
+    }
+    public ~OuterContainer() {
+        this.node = null;
+    }
+}
+
+static int32 main() {
+    InnerNode.count = 0;
+    {
+        OuterContainer c = new OuterContainer();
+    }
+    if (InnerNode.count != 1) return 1;
+    return 0;
+}
+```
+*Expected Result*: Dropping reference to outer container triggers cascade to inner member node.
+
+---
+
+### Case 3.8: Exception Rewinding RAII across Multiple Call Frames [NOT IMPLEMENTED]
+```solix
+class AutoCleanup {
+    public static int32 cleaned_frames = 0;
+    public ~AutoCleanup() {
+        AutoCleanup.cleaned_frames = AutoCleanup.cleaned_frames + 1;
+    }
+}
+
+void levelThree() {
+    AutoCleanup c3 = new AutoCleanup();
+    throw new Exception("unwind error");
+}
+
+void levelTwo() {
+    AutoCleanup c2 = new AutoCleanup();
+    levelThree();
+}
+
+void levelOne() {
+    AutoCleanup c1 = new AutoCleanup();
+    levelTwo();
+}
+
+static int32 main() {
+    AutoCleanup.cleaned_frames = 0;
+    try {
+        levelOne();
+    } catch (Exception e) {
+        if (AutoCleanup.cleaned_frames != 3) return 1;
+        return 0;
+    }
+    return 2;
+}
+```
+*Expected Result*: When exception unwinds `levelThree`, `levelTwo`, and `levelOne`, all local objects run their destructors in reverse declaration order before control enters the `catch` handler.
+
+---
+
+### Case 3.9: Exception in Try Block RAII [NOT IMPLEMENTED]
+```solix
+class ScopedLock {
+    public static bool unlocked = false;
+    public ~ScopedLock() {
+        ScopedLock.unlocked = true;
+    }
+}
+
+static int32 main() {
+    ScopedLock.unlocked = false;
+    try {
+        ScopedLock lock = new ScopedLock();
+        throw new Exception("error inside try");
+    } catch (Exception e) {
+        if (!ScopedLock.unlocked) return 1;
+        return 0;
+    }
+    return 2;
+}
+```
+*Expected Result*: Local objects declared in try block are destroyed before matching catch block executes.
+
+---
+
+### Case 3.10: Variable & Field Reassignment Cleanup [NOT IMPLEMENTED]
+```solix
+class Cell {
+    public static int32 counter = 0;
+    public ~Cell() {
+        Cell.counter = Cell.counter + 1;
+    }
+}
+
+static int32 main() {
+    Cell.counter = 0;
+    Cell c = new Cell();
+    if (Cell.counter != 0) return 1;
+    c = new Cell();
+    if (Cell.counter != 1) return 2;
+    c = null;
+    if (Cell.counter != 2) return 3;
+    return 0;
+}
+```
+*Expected Result*: Overwriting reference variable immediately destroys previous object.
+
+---
+
+### Case 3.11: Array of Destructible Objects Cleanup [NOT IMPLEMENTED]
+```solix
+class Item {
+    public static int32 count = 0;
+    public ~Item() {
+        Item.count = Item.count + 1;
+    }
+}
+
+static int32 main() {
+    Item.count = 0;
+    {
+        Item[] arr = new Item[3];
+        arr[0] = new Item();
+        arr[1] = new Item();
+        arr[2] = new Item();
+        if (Item.count != 0) return 1;
+    }
+    if (Item.count != 3) return 2;
+    return 0;
+}
+```
+*Expected Result*: Scope exit of array drops reference to array and recursively decrements and destructs all contained elements.
+
+---
+
+### Negative Test Scenarios (Expected Errors & Faults)
+
+### Case 4.1: Destructor Declared with Parameters [NOT IMPLEMENTED]
+```solix
+class Widget {
+    public ~Widget(int32 x) {} // Error: destructors must not take parameters
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Destructors must not take any parameters
+```
+
+---
+
+### Case 4.2: Destructor Declared with Explicit Return Type or Returning Value [NOT IMPLEMENTED]
+```solix
+class Widget {
+    public ~Widget() {
+        return 10; // Error: destructors cannot return a value
+    }
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] binder.cpp: Destructors cannot return a value
+```
+
+---
+
+### Case 4.3: Duplicate Destructors in Same Class [NOT IMPLEMENTED]
+```solix
+class Widget {
+    public ~Widget() {}
+    public ~Widget() {} // Error: duplicate destructor
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Duplicate destructor declaration in class 'Widget'
+```
+
+---
+
+### Case 4.4: Destructor Name Mismatch [NOT IMPLEMENTED]
+```solix
+class Widget {
+    public ~Other() {} // Error: name mismatch
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Destructor name '~Other' does not match enclosing class 'Widget'
+```
+
+---
+
+### Case 4.5: Destructor in Interface [NOT IMPLEMENTED]
+```solix
+interface IService {
+    ~IService(); // Error: interfaces cannot declare destructors
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Interfaces cannot declare destructors
+```
+
+---
+
+### Case 4.6: Destructor Declared with Forbidden Modifiers [NOT IMPLEMENTED]
+```solix
+class Widget {
+    public static ~Widget() {} // Error: modifiers not allowed
+}
+```
+*Expected Compiler Diagnostic*:
+```text
+[ERROR] parser.cpp: Destructors cannot declare modifiers
 ```
 
 ---
