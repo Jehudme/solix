@@ -59,7 +59,7 @@ namespace solix::cli {
     }
 
     void setup_compile_command(CLI::App& app) {
-        auto* compile_cmd = app.add_subcommand("compile", "Compile Solix source code to bytecode");
+        auto* compile_cmd = app.add_subcommand("compile", "Compile Solix source code to bytecode (.slxb)");
         
         auto opts = std::make_shared<CompilationOptions>();
         auto files = std::make_shared<std::vector<std::string>>();

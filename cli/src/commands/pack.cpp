@@ -1,41 +1,18 @@
 #include "pack.hpp"
 #include "build.hpp"
 #include "../cli_utils.hpp"
+#include "../package_manager.hpp"
 #include "solix/zip_utils.hpp"
 #include "solix/path_utils.hpp"
-#include "solix/shared_library.hpp"
 #include <iostream>
 #include <iomanip>
-#include <set>
-#include <map>
+#include <chrono>
 #include <algorithm>
+#include <cctype>
 
 namespace solix::cli {
 
 namespace {
-
-inline bool is_shared_library(const std::filesystem::path& p) {
-    return solix::is_any_shared_library(p);
-}
-
-inline void collect_native_libs_from_dir(const std::filesystem::path& dir,
-                                        std::vector<std::filesystem::path>& out,
-                                        std::set<std::string>& seen_filenames) {
-    std::error_code ec;
-    if (!std::filesystem::exists(dir, ec) || !std::filesystem::is_directory(dir, ec)) {
-        return;
-    }
-
-    for (const auto& entry : std::filesystem::directory_iterator(dir, ec)) {
-        if (entry.is_regular_file(ec) && is_shared_library(entry.path())) {
-            std::string filename = entry.path().filename().string();
-            if (seen_filenames.find(filename) == seen_filenames.end()) {
-                seen_filenames.insert(filename);
-                out.push_back(entry.path().lexically_normal());
-            }
-        }
-    }
-}
 
 static std::string format_size(uintmax_t bytes) {
     if (bytes < 1024) return std::to_string(bytes) + " B";
@@ -55,179 +32,141 @@ PackResult pack_project(const std::filesystem::path& manifest_or_dir,
                         const std::string& profile_name,
                         const std::filesystem::path& explicit_output_path) {
     PackResult result;
+    PackageManager pm;
 
-    // 1. Build the project using the specified profile
-    ProjectBuildResult build_res = build_project(manifest_or_dir, profile_name);
-    if (!build_res.success) {
-        result.error_message = "Failed to build project before packaging.";
-        return result;
-    }
-
-    // 2. Extract project metadata from manifest
+    std::filesystem::path staging_dir;
+    std::filesystem::path temp_staging_dir;
+    bool is_temp = false;
     std::string project_name = "app";
     std::string version = "1.0.0";
-    if (build_res.manifest.contains("name") && build_res.manifest["name"].is_string()) {
-        project_name = build_res.manifest["name"].get<std::string>();
-    }
-    if (build_res.manifest.contains("version") && build_res.manifest["version"].is_string()) {
-        version = build_res.manifest["version"].get<std::string>();
+    std::filesystem::path base_project_dir;
+
+    std::string target_str = manifest_or_dir.string();
+    auto at_pos = target_str.find('@');
+
+    // Check if target is an installed package (<name>@<version> or name in pm)
+    if (at_pos != std::string::npos && !std::filesystem::exists(manifest_or_dir)) {
+        std::string req_name = target_str.substr(0, at_pos);
+        std::string req_ver = target_str.substr(at_pos + 1);
+        auto installed = pm.get_project_by_name_and_version(req_name, req_ver);
+        if (!installed) {
+            result.error_message = "Installed project '" + req_name + "' version '" + req_ver + "' not found.";
+            return result;
+        }
+        staging_dir = installed->path;
+        project_name = installed->name;
+        version = installed->version;
+    } else if (!std::filesystem::exists(manifest_or_dir) && !target_str.empty()) {
+        auto matches = pm.get_projects_by_name(target_str);
+        if (!matches.empty()) {
+            const auto& installed = matches[0];
+            staging_dir = installed.path;
+            project_name = installed.name;
+            version = installed.version;
+        } else {
+            result.error_message = "Target directory, manifest, or installed package not found: " + target_str;
+            return result;
+        }
+    } else {
+        // Project directory or manifest file
+        std::filesystem::path proj_root = std::filesystem::absolute(manifest_or_dir);
+        if (std::filesystem::is_regular_file(proj_root)) {
+            proj_root = proj_root.parent_path();
+        }
+        proj_root = proj_root.lexically_normal();
+        base_project_dir = proj_root;
+
+        std::filesystem::path mf_path = solix::find_project_manifest(proj_root);
+        if (!std::filesystem::exists(mf_path)) {
+            result.error_message = "manifest.json (or solix.json) not found in " + proj_root.string();
+            return result;
+        }
+
+        nlohmann::json manifest;
+        try {
+            std::ifstream f(mf_path);
+            f >> manifest;
+        } catch (const std::exception& e) {
+            result.error_message = "Failed to parse manifest: " + std::string(e.what());
+            return result;
+        }
+
+        project_name = manifest.value("project", manifest.value("name", proj_root.filename().string()));
+        version = manifest.value("version", "0.1.0");
+        std::string proj_type = manifest.value("type", "app");
+        std::transform(proj_type.begin(), proj_type.end(), proj_type.begin(), [](unsigned char c) { return std::tolower(c); });
+        if (proj_type == "lib") proj_type = "library";
+
+
+        // Create temporary staging directory
+        auto temp_base = std::filesystem::temp_directory_path() / "solix_pack_staging";
+        std::error_code tec;
+        std::filesystem::create_directories(temp_base, tec);
+        auto t_now = std::chrono::steady_clock::now().time_since_epoch().count();
+        temp_staging_dir = temp_base / ("stage_" + std::to_string(t_now));
+        std::filesystem::create_directories(temp_staging_dir, tec);
+
+        std::string out_id;
+        if (!pm.install_project(proj_root, profile_name, true, false, temp_staging_dir, out_id)) {
+            std::filesystem::remove_all(temp_staging_dir, tec);
+            result.error_message = "Failed to build and stage project before packaging.";
+            return result;
+        }
+        staging_dir = temp_staging_dir;
+        is_temp = true;
     }
 
-    // 3. Determine output .slxpac file path
+    struct TempDirGuard {
+        std::filesystem::path dir;
+        bool active;
+        ~TempDirGuard() {
+            if (active && !dir.empty()) {
+                std::error_code tec;
+                std::filesystem::remove_all(dir, tec);
+            }
+        }
+    } guard{temp_staging_dir, is_temp};
+
+    // Determine output package path
     std::filesystem::path out_pac;
     if (!explicit_output_path.empty()) {
         out_pac = explicit_output_path;
         if (out_pac.is_relative()) {
             out_pac = std::filesystem::current_path() / out_pac;
         }
+    } else if (!base_project_dir.empty()) {
+        out_pac = base_project_dir / "build" / profile_name / (project_name + ".slxpac");
     } else {
-        out_pac = build_res.output_binary.parent_path() / (project_name + ".slxpac");
+        out_pac = std::filesystem::current_path() / (project_name + "-" + version + ".slxpac");
     }
     out_pac = out_pac.lexically_normal();
     result.output_package = out_pac;
 
-    // Ensure parent directory exists
     std::error_code ec;
     if (out_pac.has_parent_path()) {
         std::filesystem::create_directories(out_pac.parent_path(), ec);
     }
-
-    // Remove existing file if any
     std::filesystem::remove(out_pac, ec);
 
-    // 4. Initialize ZipArchiveWriter
+    // Initialize ZipArchiveWriter and pack
     ZipArchiveWriter writer(out_pac);
     if (!writer.is_valid()) {
         result.error_message = "Failed to open output package archive: " + writer.get_error();
         return result;
     }
 
-    size_t total_entries = 0;
-
-    // 5. Add bytecode as bytecode.slxbin
-    if (!writer.add_file("bytecode.slxbin", build_res.output_binary)) {
-        result.error_message = "Failed to add bytecode to package: " + writer.get_error();
+    if (!writer.add_directory_recursive(staging_dir, "")) {
+        result.error_message = "Failed to add files to package archive: " + writer.get_error();
         return result;
     }
-    total_entries++;
 
-    // 6. Collect and add native libraries into lib/
-    std::vector<std::filesystem::path> native_libs;
-    std::set<std::string> seen_lib_filenames;
-
-    // A. Root project lib/
-    collect_native_libs_from_dir(build_res.project_root / "lib", native_libs, seen_lib_filenames);
-
-    // B. Dependency projects lib/
-    for (const auto& dep_root : build_res.dependency_roots) {
-        collect_native_libs_from_dir(dep_root / "lib", native_libs, seen_lib_filenames);
-    }
-
-    // C. Output binary parent directory (and parent/lib)
-    collect_native_libs_from_dir(build_res.output_binary.parent_path(), native_libs, seen_lib_filenames);
-    collect_native_libs_from_dir(build_res.output_binary.parent_path() / "lib", native_libs, seen_lib_filenames);
-
-    for (const auto& lib_path : native_libs) {
-        std::string entry_name = "lib/" + lib_path.filename().string();
-        if (writer.add_file(entry_name, lib_path)) {
-            total_entries++;
-        }
-    }
-
-    // 7. Collect and add resources into resources/ (merging transitive dependencies and root project)
-    std::map<std::string, std::filesystem::path> resource_entries;
-
-    // A. Transitive dependencies resources
-    for (const auto& dep_root : build_res.dependency_roots) {
-        std::filesystem::path dep_res = dep_root / "resources";
-        if (std::filesystem::exists(dep_res, ec) && std::filesystem::is_directory(dep_res, ec)) {
-            for (const auto& entry : std::filesystem::recursive_directory_iterator(dep_res, ec)) {
-                if (entry.is_regular_file(ec)) {
-                    std::filesystem::path rel = std::filesystem::relative(entry.path(), dep_res, ec);
-                    resource_entries[rel.generic_string()] = entry.path();
-                }
-            }
-        }
-    }
-
-    // B. Root project resources (overrides dependencies on collision)
-    std::filesystem::path default_res_dir = build_res.project_root / "resources";
-    if (std::filesystem::exists(default_res_dir, ec) && std::filesystem::is_directory(default_res_dir, ec)) {
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(default_res_dir, ec)) {
-            if (entry.is_regular_file(ec)) {
-                std::filesystem::path rel = std::filesystem::relative(entry.path(), default_res_dir, ec);
-                resource_entries[rel.generic_string()] = entry.path();
-            }
-        }
-    }
-
-    // C. Custom manifest resources definition if present
-    if (build_res.manifest.contains("resources")) {
-        auto add_custom = [&](const std::filesystem::path& base_dir) {
-            if (std::filesystem::exists(base_dir, ec) && std::filesystem::is_directory(base_dir, ec)) {
-                for (const auto& entry : std::filesystem::recursive_directory_iterator(base_dir, ec)) {
-                    if (entry.is_regular_file(ec)) {
-                        std::filesystem::path rel = std::filesystem::relative(entry.path(), base_dir, ec);
-                        resource_entries[rel.generic_string()] = entry.path();
-                    }
-                }
-            }
-        };
-
-        const auto& res_item = build_res.manifest["resources"];
-        if (res_item.is_string()) {
-            add_custom(build_res.project_root / res_item.get<std::string>());
-        } else if (res_item.is_array()) {
-            for (const auto& elem : res_item) {
-                if (elem.is_string()) {
-                    add_custom(build_res.project_root / elem.get<std::string>());
-                }
-            }
-        }
-    }
-
-    // D. Output binary parent resources (if staged during build)
-    std::filesystem::path staged_res_dir = build_res.output_binary.parent_path() / "resources";
-    if (std::filesystem::exists(staged_res_dir, ec) && std::filesystem::is_directory(staged_res_dir, ec)) {
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(staged_res_dir, ec)) {
-            if (entry.is_regular_file(ec)) {
-                std::filesystem::path rel = std::filesystem::relative(entry.path(), staged_res_dir, ec);
-                resource_entries[rel.generic_string()] = entry.path();
-            }
-        }
-    }
-
-    for (const auto& [rel_path_str, src_file] : resource_entries) {
-        std::string entry_name = "resources/" + rel_path_str;
-        if (writer.add_file(entry_name, src_file)) {
-            total_entries++;
-        }
-    }
-
-    // 8. Generate and add internal bundle manifest.json
-    nlohmann::json bundle_manifest;
-    bundle_manifest["name"] = project_name;
-    bundle_manifest["version"] = version;
-    bundle_manifest["format_version"] = 1;
-    bundle_manifest["entry"] = "bytecode.slxbin";
-    bundle_manifest["resources_dir"] = "resources";
-    bundle_manifest["native_lib_dir"] = "lib";
-    bundle_manifest["profile"] = profile_name;
-    bundle_manifest["created_by"] = "solix pack";
-
-    if (!writer.add_string("manifest.json", bundle_manifest.dump(2))) {
-        result.error_message = "Failed to add manifest.json to package: " + writer.get_error();
-        return result;
-    }
-    total_entries++;
-
-    // 9. Finalize package archive
     if (!writer.finalize()) {
         result.error_message = "Failed to finalize package archive: " + writer.get_error();
         return result;
     }
 
-    result.file_count = total_entries;
+    ZipArchiveReader reader(out_pac);
+    result.file_count = reader.get_file_count();
     result.package_size_bytes = std::filesystem::file_size(out_pac, ec);
     result.success = true;
     return result;
@@ -240,13 +179,26 @@ void setup_pack_command(CLI::App &app) {
     auto target_str = std::make_shared<std::string>();
     auto profile_str = std::make_shared<std::string>("release");
     auto output_str = std::make_shared<std::string>();
+    auto package_opt = std::make_shared<std::string>();
+    auto path_opt = std::make_shared<std::string>();
 
-    pack_cmd->add_option("target", *target_str, "Path to project directory or manifest.json (default: current directory)");
+    pack_cmd->add_option("target", *target_str, "Path to project directory, manifest.json, or package@version (default: current directory)");
     pack_cmd->add_option("-p,--profile", *profile_str, "Build profile to use (default: release)");
     pack_cmd->add_option("-o,--output", *output_str, "Output .slxpac package file path");
+    pack_cmd->add_option("-P,--package", *package_opt, "Installed package name in $SOLIX_HOME");
+    pack_cmd->add_option("-i,--input,--path", *path_opt, "Path to project directory or manifest.json");
 
-    pack_cmd->callback([target_str, profile_str, output_str]() {
-        std::filesystem::path target_path = target_str->empty() ? std::filesystem::current_path() : std::filesystem::path(*target_str);
+    pack_cmd->callback([target_str, profile_str, output_str, package_opt, path_opt]() {
+        std::string raw_target = ".";
+        if (!package_opt->empty()) {
+            raw_target = *package_opt;
+        } else if (!path_opt->empty()) {
+            raw_target = *path_opt;
+        } else if (!target_str->empty()) {
+            raw_target = *target_str;
+        }
+
+        std::filesystem::path target_path(raw_target);
         std::filesystem::path explicit_out = output_str->empty() ? std::filesystem::path() : std::filesystem::path(*output_str);
 
         auto pack_res = pack_project(target_path, *profile_str, explicit_out);

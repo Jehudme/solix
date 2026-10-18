@@ -78,7 +78,7 @@ inline std::filesystem::path resolve_and_unpack_bundle(const std::filesystem::pa
 } // namespace
 
 void setup_execute_command(CLI::App &app) {
-  auto *execute_cmd = app.add_subcommand("run", "Run compiled bytecode or Solix project");
+  auto *execute_cmd = app.add_subcommand("run", "Run compiled bytecode (.slxbin), Solix project, or package bundle (.slxpac)");
 
   auto opts = std::make_shared<RuntimeOptions>();
   auto input_target = std::make_shared<std::string>();
@@ -88,12 +88,12 @@ void setup_execute_command(CLI::App &app) {
   auto project_path_str = std::make_shared<std::string>();
   auto native_libs_cli = std::make_shared<std::vector<std::string>>();
 
-  execute_cmd->add_option("target", *input_target, "Solix bytecode file (.slxbin), project directory, or package@version");
+  execute_cmd->add_option("target", *input_target, "Solix bytecode file (.slxbin), package bundle (.slxpac), project directory, or package@version");
 
-  execute_cmd->add_option("-P,--profile", *profile_str, "Build profile to run (default: debug)");
+  auto *profile_opt = execute_cmd->add_option("-P,--profile", *profile_str, "Build profile to run (default: debug)");
   execute_cmd->add_option("-n,--package", *package_name, "Installed package name in $SOLIX_HOME");
   execute_cmd->add_option("-v,--version", *version_str, "Installed package version");
-  execute_cmd->add_option("--project", *project_path_str, "Path to project directory or solix.json");
+  execute_cmd->add_option("-i,--input,--path,--project", *project_path_str, "Path to project directory, solix.json, or package bundle");
   execute_cmd->add_option("-L,--native-lib", *native_libs_cli, "Path to native shared library (.dll, .so, .dylib)");
 
   auto *stack_opt = execute_cmd->add_option("-s,--stack", opts->stack_capacity,
@@ -105,7 +105,7 @@ void setup_execute_command(CLI::App &app) {
   execute_cmd->add_option("args", opts->program_args,
                           "Arguments passed to the Solix program");
 
-  execute_cmd->callback([opts, input_target, profile_str, package_name, version_str, project_path_str, native_libs_cli, stack_opt, heap_opt]() {
+  execute_cmd->callback([opts, input_target, profile_str, profile_opt, package_name, version_str, project_path_str, native_libs_cli, stack_opt, heap_opt]() {
     std::filesystem::path bytecode_path;
     std::filesystem::path project_dir;
     std::filesystem::path bundle_path;
@@ -114,21 +114,36 @@ void setup_execute_command(CLI::App &app) {
 
     // 1. Resolve Target Mode
     if (!package_name->empty()) {
-      if (version_str->empty()) {
+      std::string pkg = *package_name;
+      std::string ver = *version_str;
+      auto at_pos = pkg.find('@');
+      if (at_pos != std::string::npos) {
+        if (ver.empty()) {
+          ver = pkg.substr(at_pos + 1);
+        }
+        pkg = pkg.substr(0, at_pos);
+      }
+      if (ver.empty()) {
         std::cerr << "Error: --version is required when specifying --package" << std::endl;
         cli_exit(1);
       }
       PackageManager pkg_mgr;
-      auto installed = pkg_mgr.get_project_by_name_and_version(*package_name, *version_str);
+      auto installed = pkg_mgr.get_project_by_name_and_version(pkg, ver);
       if (!installed) {
-        std::cerr << "Error: Installed project '" << *package_name << "' with version '" << *version_str << "' not found" << std::endl;
+        std::cerr << "Error: Installed project '" << pkg << "' with version '" << ver << "' not found" << std::endl;
         cli_exit(1);
       }
       project_dir = installed->path;
       is_project = true;
     } else if (!project_path_str->empty()) {
-      project_dir = *project_path_str;
-      is_project = true;
+      std::filesystem::path p(*project_path_str);
+      if (p.extension() == ".slxpac" || (std::filesystem::is_regular_file(p) && is_zip_archive(p))) {
+        bundle_path = p.lexically_normal();
+        is_bundle = true;
+      } else {
+        project_dir = p;
+        is_project = true;
+      }
     } else if (!input_target->empty()) {
       std::string t = *input_target;
       auto at_pos = t.find('@');
@@ -174,6 +189,9 @@ void setup_execute_command(CLI::App &app) {
 
     // 2. Handle Execution Modes
     if (is_bundle) {
+      if (profile_opt->count() > 0) {
+        std::cerr << "Warning: Option --profile is ignored when running a pre-built package or binary." << std::endl;
+      }
       std::filesystem::path unpacked_dir;
       try {
         unpacked_dir = resolve_and_unpack_bundle(bundle_path);
@@ -182,29 +200,44 @@ void setup_execute_command(CLI::App &app) {
         cli_exit(1);
       }
 
+      // Check bundle manifest for runtime settings and project type
+      std::filesystem::path manifest_path = unpacked_dir / "manifest.json";
+      if (!std::filesystem::exists(manifest_path)) {
+        manifest_path = unpacked_dir / "solix.json";
+      }
+      if (std::filesystem::exists(manifest_path)) {
+        nlohmann::json bm;
+        try {
+          std::ifstream mf(manifest_path);
+          mf >> bm;
+        } catch (...) {}
+
+        std::string btype = bm.value("type", "app");
+        std::transform(btype.begin(), btype.end(), btype.begin(), [](unsigned char c) { return std::tolower(c); });
+        if (btype == "library" || btype == "lib") {
+          std::cerr << "Cannot run '" << bundle_path.filename().string() << "' because it is a library (libraries do not contain an executable entry point)." << std::endl;
+          cli_exit(1);
+        }
+        if (btype == "plugin") {
+          std::cerr << "Cannot run '" << bundle_path.filename().string() << "' because it is a plugin (plugins do not contain an executable entry point)." << std::endl;
+          cli_exit(1);
+        }
+
+        if (bm.contains("runtime") && bm["runtime"].is_object()) {
+          const auto& rt = bm["runtime"];
+          if (stack_opt->count() == 0 && rt.contains("stack_size") && !rt["stack_size"].is_null()) {
+            opts->stack_capacity = rt["stack_size"].get<uint64_t>();
+          }
+          if (heap_opt->count() == 0 && rt.contains("heap_size") && !rt["heap_size"].is_null()) {
+            opts->heap_capacity = rt["heap_size"].get<uint64_t>();
+          }
+        }
+      }
+
       bytecode_path = unpacked_dir / "bytecode.slxbin";
       if (!std::filesystem::exists(bytecode_path)) {
         std::cerr << "Error: Bundle missing bytecode.slxbin entry point: " << bundle_path.string() << std::endl;
         cli_exit(1);
-      }
-
-      // Check bundle manifest for runtime settings
-      std::filesystem::path manifest_path = unpacked_dir / "manifest.json";
-      if (std::filesystem::exists(manifest_path)) {
-        std::ifstream mf(manifest_path);
-        nlohmann::json bm;
-        try {
-          mf >> bm;
-          if (bm.contains("runtime") && bm["runtime"].is_object()) {
-            const auto& rt = bm["runtime"];
-            if (stack_opt->count() == 0 && rt.contains("stack_size") && !rt["stack_size"].is_null()) {
-              opts->stack_capacity = rt["stack_size"].get<uint64_t>();
-            }
-            if (heap_opt->count() == 0 && rt.contains("heap_size") && !rt["heap_size"].is_null()) {
-              opts->heap_capacity = rt["heap_size"].get<uint64_t>();
-            }
-          }
-        } catch (...) {}
       }
 
       // Auto-discover in bundle lib/
@@ -222,16 +255,32 @@ void setup_execute_command(CLI::App &app) {
         try {
           std::ifstream f(mf_p);
           f >> app_mf;
-          if (app_mf.value("installed", false) && app_mf.value("type", "") == "app") {
-            is_prebuilt_app = true;
-          }
         } catch (...) {}
+
+        std::string p_type = app_mf.value("type", "app");
+        std::transform(p_type.begin(), p_type.end(), p_type.begin(), [](unsigned char c) { return std::tolower(c); });
+        if (p_type == "library" || p_type == "lib") {
+          std::string name = app_mf.value("project", project_dir.filename().string());
+          std::cerr << "Cannot run '" << name << "' because it is a library (libraries do not contain an executable entry point)." << std::endl;
+          cli_exit(1);
+        }
+        if (p_type == "plugin") {
+          std::string name = app_mf.value("project", project_dir.filename().string());
+          std::cerr << "Cannot run '" << name << "' because it is a plugin (plugins do not contain an executable entry point)." << std::endl;
+          cli_exit(1);
+        }
+        if (app_mf.value("installed", false) && p_type == "app") {
+          is_prebuilt_app = true;
+        }
       }
       if (!is_prebuilt_app && std::filesystem::exists(prebuilt_bin)) {
         is_prebuilt_app = true;
       }
 
       if (is_prebuilt_app && std::filesystem::exists(prebuilt_bin)) {
+        if (profile_opt->count() > 0) {
+          std::cerr << "Warning: Option --profile is ignored when running a pre-built package or binary." << std::endl;
+        }
         bytecode_path = prebuilt_bin.lexically_normal();
         scan_directory_for_native_libs(project_dir / "lib", opts->native_libraries);
         std::error_code ec;
@@ -298,6 +347,9 @@ void setup_execute_command(CLI::App &app) {
         opts->resource_directory = (build_res.project_root / "resources").lexically_normal();
       }
     } else {
+      if (profile_opt->count() > 0) {
+        std::cerr << "Warning: Option --profile is ignored when running a pre-built package or binary." << std::endl;
+      }
 
       // Standalone bytecode file mode: scan parent directory and parent/lib
       scan_directory_for_native_libs(bytecode_path.parent_path(), opts->native_libraries);

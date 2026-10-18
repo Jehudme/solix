@@ -52,29 +52,35 @@ solix install [path] [options]
 ### Arguments & Options
 | Argument / Option | Type | Default | Description |
 |---|---|---|---|
-| `[path]` | Path | `.` (Current directory) | Path to project folder containing `solix.json` or `manifest.json`. |
+| `[path]` | Path | `.` (Current directory) | Path to project folder, manifest (`solix.json`/`manifest.json`), or `.slxpac` package bundle. |
 | `-p`, `--profile` | String | `release` | Compilation profile to use during build before installation. |
 | `-o`, `--output` | Path | `""` | Optional export directory path. If specified, stages the prepared distribution directory to this path without registering into the global registry. |
-| `--as-is` | Flag | `false` | Installs an already prepared distribution directory directly without invoking the compiler or build scripts. |
+| `--archive`, `--as-is` | Flag | `false` | Installs an already prepared distribution directory or bundle directly without invoking the compiler or build scripts. |
+| `--alias`, `--as` | String | `""` | Installs or stages the project under an alternative package name. |
 | `--force`, `-f` | Flag | `false` | Reinstall and overwrite if already installed. |
 
 ### Behavior & Clean Staging
-1. Validates that `manifest.json` (or `solix.json`) exists in the target directory and contains valid `project` and `version` fields.
-2. If `--as-is` is set:
+1. Supports installing directly from project directories, manifest files, or pre-built `.slxpac` package bundles.
+2. If given a `.slxpac` package bundle:
+   - Extracts bundle contents into a staging location and copies into `$SOLIX_HOME/installed/<id>/` without rebuilding.
+3. If `--archive` (or `--as-is`) is set:
    - Copies the distribution directory directly to `$SOLIX_HOME/installed/<id>/` without running builds or pre-compile hooks.
-3. Otherwise:
+4. Otherwise:
    - Pre-installs any local path dependencies (with collision warnings if already present in the registry).
    - Builds the project using the requested profile (default: `release`).
    - If project is a **Library** (`"type": "library"`):
      - Copies its own `src/` directory (excluding any local testing `main.slx`).
      - Stages native shared libraries in `lib/` and merged assets in `resources/`.
      - Emits a clean, reduced `manifest.json` with `"installed": true`, stripping build profiles, commands, and bytecode, while retaining normalized external package dependencies.
+   - If project is a **Plugin** (`"type": "plugin"`):
+     - Stages `src/` (if present), native shared libraries in `lib/`, and merged assets in `resources/`.
+     - Emits a clean, reduced `manifest.json` with `"type": "plugin"`.
    - If project is an **Application** (`"type": "app"`):
      - Stages compiled `bytecode.slxbin` at the root.
      - Stages native shared libraries in `lib/` and merged assets in `resources/`.
      - Strips source code (`src/`), build profiles, and commands.
      - Emits a clean, reduced `manifest.json` with `"installed": true` and `"entry": "bytecode.slxbin"`.
-4. If `-o, --output` is specified, writes to the given directory without registering in `$SOLIX_HOME/installed.json`. Otherwise, installs to `$SOLIX_HOME/installed/<id>/` and updates the registry.
+5. If `-o, --output` is specified, writes to the given directory without registering in `$SOLIX_HOME/installed.json`. Otherwise, installs to `$SOLIX_HOME/installed/<id>/` and updates the registry.
 
 ---
 
@@ -93,6 +99,7 @@ solix archive [path] [options]
 | `[path]` | Path | `.` | Target project path. |
 | `-p`, `--profile` | String | `release` | Build profile to use. |
 | `-o`, `--output` | Path | (Required) | Destination directory for the exported distribution. |
+| `--alias`, `--as` | String | `""` | Export staged distribution under an alternative project name. |
 | `-f`, `--force` | Flag | `false` | Overwrite destination directory if it already exists. |
 
 ---
@@ -122,12 +129,21 @@ solix uninstall <name> <version>
 
 ## `solix list`
 
-Lists all installed Solix projects in a formatted summary table.
+Lists installed Solix projects with project type, filtering, and sorting.
 
 ### Synopsis
 ```bash
-solix list
+solix list [options]
 ```
+
+### Options & Flags
+| Option | Shorthand | Type | Default | Description |
+|---|---|---|---|---|
+| `--type` | `-t` | String | `""` | Filter by project type (`app`, `library`, `plugin`). |
+| `--filter` | `-f` | String | `""` | Case-insensitive query to filter by name, description, or ID. |
+| `--sort`, `--order` | `-s` | String | `name` | Sort field: `name`, `version`, `type`, `date`. |
+| `--reverse` | | Flag | `false` | Reverse sort order. |
+| `--json` | | Flag | `false` | Output list as raw JSON array. |
 
 ### Output Format
 If no projects are installed:
@@ -137,30 +153,43 @@ No Solix projects are currently installed.
 
 When projects are present:
 ```
-Installed Solix Projects (2):
+Installed Solix Projects (3):
 
-NAME                     VERSION     ID                INSTALLED PATH
---------------------------------------------------------------------------------
-math_lib                 1.0.0       8df34a2e57b901fc  /home/user/.solix/installed/8df34a2e57b901fc
-logger_util              2.1.0       c40b8e192aa3f7d1  /home/user/.solix/installed/c40b8e192aa3f7d1
+NAME                     VERSION     TYPE        ID                INSTALLED PATH
+------------------------------------------------------------------------------------------------
+math_lib                 1.0.0       library     8df34a2e57b901fc  /home/user/.solix/installed/8df34a2e57b901fc
+logger_util              2.1.0       library     c40b8e192aa3f7d1  /home/user/.solix/installed/c40b8e192aa3f7d1
+my_app                   1.0.0       app         7f8e9a0b1c2d3e4f  /home/user/.solix/installed/7f8e9a0b1c2d3e4f
 ```
 
 ---
 
 ## `solix details`
 
-Displays extensive metadata, file sizes, dependencies, and configured profiles for an installed package.
+Displays extensive metadata, file sizes, dependencies, and configured profiles for an installed package or a `.slxpac` package bundle.
 
 ### Synopsis
 ```bash
-solix details <name> [version]
+solix details <target> [version] [options]
 ```
 
-### Arguments
-| Argument | Type | Required | Description |
-|---|---|---|---|
-| `<name>` | String | **Yes** | Name of the installed package. |
-| `[version]` | String | No | Version of the package. Optional if only one version is installed. |
+Target can be specified as:
+- An installed package name (e.g. `solix details math_lib 1.0.0` or `solix details math_lib@1.0.0`)
+- A `.slxpac` package bundle path (e.g. `solix details my_app.slxpac`)
+
+### Scripting Query Flags
+| Flag | Description |
+|---|---|
+| `-v`, `--version` | Print only the project version string. |
+| `-n`, `--name` | Print only the project name. |
+| `-t`, `--type` | Print only the project type (`app`, `library`, `plugin`). |
+| `-d`, `--description` | Print only the project description. |
+| `-a`, `--author` | Print only the project author. |
+| `-l`, `--license` | Print only the project license. |
+| `--id` | Print only the computed project ID. |
+| `--path` | Print only the installed filesystem path. |
+| `--entry` | Print only the entry point binary. |
+| `--json` | Print full project metadata as formatted JSON. |
 
 ### Ambiguity Handling
 If `[version]` is omitted:

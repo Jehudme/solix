@@ -1,7 +1,9 @@
 #include "package_manager.hpp"
 #include "commands/build.hpp"
+#include "dependency_resolver.hpp"
 #include "solix/path_utils.hpp"
 #include "solix/shared_library.hpp"
+#include "solix/zip_utils.hpp"
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
@@ -155,8 +157,44 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
                                     bool force,
                                     bool as_is,
                                     const std::filesystem::path& custom_output_dir,
-                                    std::string& out_id) {
-    std::filesystem::path src_dir = std::filesystem::absolute(project_path);
+                                    std::string& out_id,
+                                    const std::string& alias_name) {
+    std::filesystem::path orig_source_path = std::filesystem::absolute(project_path).lexically_normal();
+    std::filesystem::path input_path = orig_source_path;
+    std::filesystem::path temp_bundle_dir;
+    bool is_from_bundle = false;
+
+    if (std::filesystem::is_regular_file(input_path) &&
+        (input_path.extension() == ".slxpac" || solix::is_zip_archive(input_path))) {
+        auto temp_base = std::filesystem::temp_directory_path() / "solix_install_bundle";
+        std::error_code tec;
+        std::filesystem::create_directories(temp_base, tec);
+        auto t_now = std::chrono::steady_clock::now().time_since_epoch().count();
+        temp_bundle_dir = temp_base / ("bundle_" + std::to_string(t_now));
+        std::filesystem::create_directories(temp_bundle_dir, tec);
+
+        solix::ZipArchiveReader reader(input_path);
+        if (!reader.is_valid() || !reader.extract_all(temp_bundle_dir)) {
+            std::cerr << "Error: Failed to extract package bundle: " << input_path.string() << std::endl;
+            return false;
+        }
+        input_path = temp_bundle_dir;
+        is_from_bundle = true;
+        as_is = true;
+    }
+
+    struct TempDirGuard {
+        std::filesystem::path dir;
+        bool active;
+        ~TempDirGuard() {
+            if (active && !dir.empty()) {
+                std::error_code tec;
+                std::filesystem::remove_all(dir, tec);
+            }
+        }
+    } temp_guard{temp_bundle_dir, is_from_bundle};
+
+    std::filesystem::path src_dir = input_path;
     if (std::filesystem::is_regular_file(src_dir) &&
         (src_dir.filename() == "manifest.json" || src_dir.filename() == "solix.json")) {
         src_dir = src_dir.parent_path();
@@ -179,6 +217,12 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
     }
 
     std::string name = manifest.value("project", "");
+    if (name.empty()) {
+        name = manifest.value("name", "");
+    }
+    if (!alias_name.empty()) {
+        name = alias_name;
+    }
     std::string version = manifest.value("version", "");
 
     if (name.empty()) {
@@ -210,9 +254,10 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
 
     if (!is_already_prepared) {
         // 1. Inspect dependencies with "path" - check if already installed, warn if so, otherwise install first
-        if (manifest.contains("dependencies") && manifest["dependencies"].is_array()) {
+        if (!is_custom && manifest.contains("dependencies") && manifest["dependencies"].is_array()) {
             for (const auto& dep : manifest["dependencies"]) {
                 if (dep.is_object() && dep.contains("path") && dep["path"].is_string()) {
+                    if (dep.value("type", "") == "source") continue;
                     std::filesystem::path dep_path = dep["path"].get<std::string>();
                     if (dep_path.is_relative()) dep_path = src_dir / dep_path;
                     dep_path = dep_path.lexically_normal();
@@ -223,6 +268,7 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
                             nlohmann::json dep_mf;
                             f >> dep_mf;
                             std::string dep_name = dep_mf.value("project", "");
+                            if (dep_name.empty()) dep_name = dep_mf.value("name", "");
                             std::string dep_ver = dep_mf.value("version", "0.1.0");
                             if (!dep_name.empty()) {
                                 std::string dep_id = compute_project_id(dep_name, dep_ver);
@@ -244,8 +290,9 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
             }
         }
 
-        std::string effective_profile = profile_name;
-        if (manifest.contains("profiles") && manifest["profiles"].is_object() && !manifest["profiles"].empty()) {
+        bool has_profiles = manifest.contains("profiles") && manifest["profiles"].is_object() && !manifest["profiles"].empty();
+        if (has_profiles) {
+            std::string effective_profile = profile_name;
             if (!manifest["profiles"].contains(effective_profile)) {
                 if (manifest["profiles"].contains("debug")) {
                     effective_profile = "debug";
@@ -253,13 +300,29 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
                     effective_profile = manifest["profiles"].begin().key();
                 }
             }
-        }
 
-        // 2. Build the project using the requested profile
-        build_res = build_project(src_dir, effective_profile);
-        if (!build_res.success) {
-            std::cerr << "Error: Failed to build project before installation." << std::endl;
-            return false;
+            // 2. Build the project using the requested profile
+            build_res = build_project(src_dir, effective_profile);
+            if (!build_res.success) {
+                std::cerr << "Error: Failed to build project before installation." << std::endl;
+                return false;
+            }
+        } else {
+            if (proj_type == "library" || proj_type == "plugin") {
+                build_res.success = true;
+                DependencyManager dep_mgr;
+                std::vector<ProjectCandidate> candidates;
+                if (dep_mgr.resolve_graph(manifest, src_dir, nlohmann::json::object(), profile_name, candidates)) {
+                    for (const auto& proj : candidates) {
+                        if (proj.project_root != src_dir) {
+                            build_res.dependency_roots.push_back(proj.project_root);
+                        }
+                    }
+                }
+            } else {
+                std::cerr << "Error: 'profiles' section missing or invalid in " << manifest_path.filename().string() << std::endl;
+                return false;
+            }
         }
     }
 
@@ -293,6 +356,21 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
                                  std::filesystem::copy_options::overwrite_existing,
                                  ec);
         }
+        if (!alias_name.empty()) {
+            std::filesystem::path staged_mf = solix::find_project_manifest(dest_dir);
+            if (std::filesystem::exists(staged_mf)) {
+                try {
+                    std::ifstream f(staged_mf);
+                    nlohmann::json mj;
+                    f >> mj;
+                    f.close();
+                    mj["project"] = alias_name;
+                    mj["name"] = alias_name;
+                    std::ofstream of(staged_mf);
+                    of << mj.dump(2) << std::endl;
+                } catch (...) {}
+            }
+        }
     } else if (!has_explicit_type && custom_output_dir.empty()) {
         // Legacy untyped project: preserve full original directory contents (excluding build/.git/.vscode)
         for (const auto& entry : std::filesystem::directory_iterator(src_dir, ec)) {
@@ -313,6 +391,9 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
         // A. Copy its own src/
         if (std::filesystem::exists(src_dir / "src", ec)) {
             copy_dir_recursive(src_dir / "src", dest_dir / "src", true);
+        }
+        if (name == "solixlib" && !build_res.output_binary.empty() && std::filesystem::exists(build_res.output_binary)) {
+            std::filesystem::copy_file(build_res.output_binary, dest_dir / "bytecode.slxbin", std::filesystem::copy_options::overwrite_existing, ec);
         }
 
         // B. Stage native shared libraries
@@ -340,6 +421,7 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
         // D. Reduced manifest.json
         nlohmann::json reduced;
         reduced["project"] = name;
+        reduced["name"] = name;
         reduced["version"] = version;
         reduced["type"] = "library";
         reduced["installed"] = true;
@@ -391,6 +473,57 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
             out_alt << reduced.dump(2) << std::endl;
         }
 
+    } else if (proj_type == "plugin") {
+        // Plugin distribution:
+        // A. Copy src/ if exists
+        if (std::filesystem::exists(src_dir / "src", ec)) {
+            copy_dir_recursive(src_dir / "src", dest_dir / "src", true);
+        }
+        if (!build_res.output_binary.empty() && std::filesystem::exists(build_res.output_binary)) {
+            std::filesystem::copy_file(build_res.output_binary, dest_dir / "bytecode.slxbin", std::filesystem::copy_options::overwrite_existing, ec);
+        }
+
+        // B. Stage native shared libraries
+        std::vector<std::filesystem::path> native_libs;
+        std::set<std::string> seen_libs;
+        collect_native_libs(src_dir / "lib", native_libs, seen_libs);
+        for (const auto& droot : build_res.dependency_roots) {
+            collect_native_libs(droot / "lib", native_libs, seen_libs);
+        }
+        collect_native_libs(build_res.output_binary.parent_path() / "lib", native_libs, seen_libs);
+        if (!native_libs.empty()) {
+            std::filesystem::create_directories(dest_dir / "lib", ec);
+            for (const auto& lib : native_libs) {
+                std::filesystem::copy_file(lib, dest_dir / "lib" / lib.filename(), std::filesystem::copy_options::overwrite_existing, ec);
+            }
+        }
+
+        // C. Stage resources
+        for (const auto& droot : build_res.dependency_roots) {
+            copy_dir_recursive(droot / "resources", dest_dir / "resources");
+        }
+        copy_dir_recursive(src_dir / "resources", dest_dir / "resources");
+        copy_dir_recursive(build_res.output_binary.parent_path() / "resources", dest_dir / "resources");
+
+        // D. Reduced manifest.json
+        nlohmann::json reduced;
+        reduced["project"] = name;
+        reduced["name"] = name;
+        reduced["version"] = version;
+        reduced["type"] = "plugin";
+        reduced["installed"] = true;
+        if (manifest.contains("description") && !manifest["description"].is_null()) reduced["description"] = manifest["description"];
+        if (manifest.contains("author") && !manifest["author"].is_null()) reduced["author"] = manifest["author"];
+        if (manifest.contains("license") && !manifest["license"].is_null()) reduced["license"] = manifest["license"];
+        if (manifest.contains("tags") && manifest["tags"].is_array()) reduced["tags"] = manifest["tags"];
+
+        std::ofstream out_mf(dest_dir / manifest_path.filename());
+        out_mf << reduced.dump(2) << std::endl;
+        if (manifest_path.filename() != "manifest.json") {
+            std::ofstream out_alt(dest_dir / "manifest.json");
+            out_alt << reduced.dump(2) << std::endl;
+        }
+
     } else {
         // App distribution:
         // A. Copy compiled bytecode
@@ -423,6 +556,7 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
         // D. Reduced manifest.json
         nlohmann::json reduced;
         reduced["project"] = name;
+        reduced["name"] = name;
         reduced["version"] = version;
         reduced["type"] = "app";
         reduced["installed"] = true;
@@ -458,7 +592,7 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
             {"version", version},
             {"type", proj_type},
             {"path", dest_dir.string()},
-            {"original_path", src_dir.string()},
+            {"original_path", orig_source_path.string()},
             {"installed_at", installed_at},
             {"description", description}
         };
@@ -509,10 +643,28 @@ std::vector<InstalledProject> PackageManager::list_installed_projects() {
         p.id = item.value("id", "");
         p.name = item.value("name", "");
         p.version = item.value("version", "");
+        p.type = item.value("type", "");
         p.path = std::filesystem::path(item.value("path", ""));
         p.original_path = std::filesystem::path(item.value("original_path", ""));
         p.installed_at = item.value("installed_at", "");
         p.description = item.value("description", "");
+
+        if (p.type.empty()) {
+            std::filesystem::path mf = solix::find_project_manifest(p.path);
+            if (std::filesystem::exists(mf)) {
+                try {
+                    std::ifstream f(mf);
+                    nlohmann::json j;
+                    f >> j;
+                    p.type = j.value("type", "app");
+                } catch (...) {
+                    p.type = "app";
+                }
+            } else {
+                p.type = "app";
+            }
+        }
+
         list.push_back(p);
     }
     return list;
@@ -527,10 +679,28 @@ std::optional<InstalledProject> PackageManager::get_project_by_name_and_version(
         p.id = item.value("id", "");
         p.name = item.value("name", "");
         p.version = item.value("version", "");
+        p.type = item.value("type", "");
         p.path = std::filesystem::path(item.value("path", ""));
         p.original_path = std::filesystem::path(item.value("original_path", ""));
         p.installed_at = item.value("installed_at", "");
         p.description = item.value("description", "");
+
+        if (p.type.empty()) {
+            std::filesystem::path mf = solix::find_project_manifest(p.path);
+            if (std::filesystem::exists(mf)) {
+                try {
+                    std::ifstream f(mf);
+                    nlohmann::json j;
+                    f >> j;
+                    p.type = j.value("type", "app");
+                } catch (...) {
+                    p.type = "app";
+                }
+            } else {
+                p.type = "app";
+            }
+        }
+
         return p;
     }
     return std::nullopt;
@@ -556,6 +726,23 @@ std::optional<nlohmann::json> PackageManager::load_installed_manifest(const Inst
         nlohmann::json root;
         file >> root;
         return root;
+    } catch (...) {
+        return std::nullopt;
+    }
+}
+
+std::optional<nlohmann::json> PackageManager::load_manifest_from_bundle(const std::filesystem::path& pac_path) {
+    std::error_code ec;
+    if (!std::filesystem::exists(pac_path, ec)) return std::nullopt;
+    solix::ZipArchiveReader reader(pac_path);
+    if (!reader.is_valid()) return std::nullopt;
+    auto content = reader.read_entry_as_string("manifest.json");
+    if (!content) {
+        content = reader.read_entry_as_string("solix.json");
+    }
+    if (!content) return std::nullopt;
+    try {
+        return nlohmann::json::parse(*content);
     } catch (...) {
         return std::nullopt;
     }

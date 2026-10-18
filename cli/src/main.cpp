@@ -6,7 +6,6 @@
 #include "commands/package.hpp"
 #include "commands/version.hpp"
 #include "commands/lsp.hpp"
-#include "commands/ide.hpp"
 #include "commands/pack.hpp"
 #include <iostream>
 
@@ -19,12 +18,11 @@ int main(int argc, char** argv) {
     solix::cli::setup_execute_command(app);
     solix::cli::setup_build_command(app);
     solix::cli::setup_pack_command(app);
+    solix::cli::setup_create_command(app);
     solix::cli::setup_new_command(app);
     solix::cli::setup_package_commands(app);
     solix::cli::setup_version_command(app);
     solix::cli::setup_lsp_command(app);
-    solix::cli::setup_ide_command(app);
-    solix::cli::setup_activate_command(app);
     
     CLI11_PARSE(app, argc, argv);
     

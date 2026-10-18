@@ -10,8 +10,8 @@
 
 namespace solix::cli {
 
-void setup_new_command(CLI::App &app) {
-    auto *new_cmd = app.add_subcommand("new", "Create a new Solix project");
+static void register_create_command(CLI::App &app, const std::string& command_name, const std::string& description) {
+    auto *new_cmd = app.add_subcommand(command_name, description);
 
     auto path_str = std::make_shared<std::string>();
     auto name_str = std::make_shared<std::string>();
@@ -28,7 +28,7 @@ void setup_new_command(CLI::App &app) {
     new_cmd->add_option("path", *path_str, "Destination path for the new project")->required();
     new_cmd->add_option("-n,--name", *name_str, "Project name (default: derived from path)");
     new_cmd->add_option("-v,--version", *version_str, "Initial semantic version (default: 0.1.0)");
-    new_cmd->add_option("-T,--type", *type_str, "Project type ('app' or 'library', default: 'app')");
+    new_cmd->add_option("-T,--type", *type_str, "Project type ('app', 'library', or 'plugin', default: 'app')");
     new_cmd->add_option("-a,--author", *author_str, "Author name or email");
     new_cmd->add_option("-d,--description", *description_str, "Project description");
     new_cmd->add_option("-l,--license", *license_str, "License identifier (e.g. MIT, Apache-2.0)");
@@ -44,8 +44,8 @@ void setup_new_command(CLI::App &app) {
 
         std::string proj_type = *type_str;
         std::transform(proj_type.begin(), proj_type.end(), proj_type.begin(), [](unsigned char c) { return std::tolower(c); });
-        if (proj_type != "app" && proj_type != "library" && proj_type != "lib") {
-            std::cerr << "Error: Invalid project type '" << *type_str << "'. Must be 'app' or 'library'." << std::endl;
+        if (proj_type != "app" && proj_type != "library" && proj_type != "lib" && proj_type != "plugin") {
+            std::cerr << "Error: Invalid project type '" << *type_str << "'. Must be 'app', 'library', or 'plugin'." << std::endl;
             cli_exit(1);
         }
         if (proj_type == "lib") proj_type = "library";
@@ -130,10 +130,24 @@ void setup_new_command(CLI::App &app) {
                         cli_exit(1);
                     }
                     slx_out << "package " << project_name << ";\n\n";
-                    slx_out << "class Lib {\n";
+                    slx_out << "public class Lib {\n";
                     slx_out << "    public Lib() {}\n\n";
-                    slx_out << "    public string hello() {\n";
+                    slx_out << "    public String hello() {\n";
                     slx_out << "        return \"Hello from " << project_name << "!\";\n";
+                    slx_out << "    }\n";
+                    slx_out << "}\n";
+                    slx_out.close();
+                } else if (proj_type == "plugin") {
+                    std::filesystem::path plugin_file = target_dir / "src" / "plugin.slx";
+                    std::ofstream slx_out(plugin_file);
+                    if (!slx_out) {
+                        std::cerr << "Error: Could not create file " << plugin_file.string() << std::endl;
+                        cli_exit(1);
+                    }
+                    slx_out << "package " << project_name << ";\n\n";
+                    slx_out << "public class Plugin {\n";
+                    slx_out << "    public static int32 init() {\n";
+                    slx_out << "        return 0;\n";
                     slx_out << "    }\n";
                     slx_out << "}\n";
                     slx_out.close();
@@ -170,7 +184,7 @@ void setup_new_command(CLI::App &app) {
                     }
                 });
 
-                std::string entry_point_val = (proj_type == "library") ? "" : *entry_str;
+                std::string entry_point_val = (proj_type == "library" || proj_type == "plugin") ? "" : *entry_str;
 
                 auto make_profile = [&](const std::string& profile_name, const std::string& log_level,
                                         const std::string& flush_level, const std::string& log_file,
@@ -228,6 +242,14 @@ void setup_new_command(CLI::App &app) {
         std::cout << "  solix build\n";
         std::cout << "  solix run build/debug/out.slxbin\n";
     });
+}
+
+void setup_create_command(CLI::App &app) {
+    register_create_command(app, "create", "Create a new Solix project");
+}
+
+void setup_new_command(CLI::App &app) {
+    register_create_command(app, "new", "Create a new Solix project (alias for 'create')");
 }
 
 } // namespace solix::cli

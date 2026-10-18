@@ -12,6 +12,7 @@ struct InstalledProject {
     std::string id;
     std::string name;
     std::string version;
+    std::string type;
     std::filesystem::path path;
     std::filesystem::path original_path;
     std::string installed_at;
@@ -36,7 +37,8 @@ public:
                          bool force,
                          bool as_is,
                          const std::filesystem::path& custom_output_dir,
-                         std::string& out_id);
+                         std::string& out_id,
+                         const std::string& alias_name = "");
     bool install_project(const std::filesystem::path& project_path, bool force, std::string& out_id);
     bool uninstall_project(const std::string& name, const std::string& version);
     std::vector<InstalledProject> list_installed_projects();
@@ -45,6 +47,7 @@ public:
 
     // Load full solix.json manifest of an installed project
     static std::optional<nlohmann::json> load_installed_manifest(const InstalledProject& proj);
+    static std::optional<nlohmann::json> load_manifest_from_bundle(const std::filesystem::path& pac_path);
     static uintmax_t calculate_directory_size(const std::filesystem::path& dir);
     void reload_registry();
 
