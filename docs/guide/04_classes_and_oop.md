@@ -17,6 +17,7 @@ Solix is a fully object-oriented language. Everything beyond primitive values is
 9. [Interfaces (`implements`)](#interfaces-implements)
 10. [Operator Overloading](#operator-overloading)
 11. [The `super` Keyword](#the-super-keyword)
+12. [Destructors and Deterministic RAII (`~ClassName()`)](#destructors-and-deterministic-raii-classname)
 
 ---
 
@@ -409,3 +410,50 @@ public class Dog extends Animal {
 
 > [!NOTE]
 > `super` cannot be used in static methods or outside the direct subclass — it always refers to the immediate parent's scope.
+
+---
+
+## Destructors and Deterministic RAII (`~ClassName()`)
+
+Solix provides C++/C#-style destructors to enable deterministic Resource Acquisition Is Initialization (RAII). A destructor is declared using the tilde prefix `~` followed by the class name:
+
+```solix
+public class FileStream {
+    private int32 handle;
+
+    public FileStream(String path) {
+        // Acquire resource
+        this.handle = 1;
+    }
+
+    public ~FileStream() {
+        // Deterministically release resource when ref_count reaches 0
+        if (this.handle != 0) {
+            this.handle = 0;
+        }
+    }
+}
+```
+
+### Core Invariants & Rules
+1. **Zero Parameters & No Return Value**: A destructor cannot declare parameters or a return type, and cannot return a value.
+2. **No Modifiers**: Destructors cannot be marked `static`, `virtual`, `override`, `abstract`, or with access modifiers.
+3. **Cardinality**: A class may declare at most one destructor. Interfaces cannot declare destructors.
+4. **Automatic Reverse-Inheritance Chaining**: When a derived class instance is destroyed, its destructor runs first, followed automatically by the parent class destructor. You do **not** call `super` manually:
+   ```solix
+   public class BaseResource {
+       public ~BaseResource() {
+           Console.println("Base cleaned up");
+       }
+   }
+
+   public class DerivedResource extends BaseResource {
+       public ~DerivedResource() {
+           Console.println("Derived cleaned up");
+       }
+   }
+
+   // Destruction order: Derived cleaned up -> Base cleaned up
+   ```
+5. **Deterministic Exception Stack Unwinding**: When an exception is thrown, the runtime unwinds active call frames and block scopes. All active local objects in those frames are decremented and destroyed in reverse declaration order (LIFO) **before** control transfers to matching `catch` blocks or outer handlers.
+
