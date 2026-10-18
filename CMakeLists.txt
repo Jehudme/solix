@@ -86,6 +86,7 @@ add_subdirectory(core)
 add_subdirectory(lsp)
 add_subdirectory(cli)
 add_subdirectory(libs/solixlib/native)
+add_subdirectory(libs/raylib/native)
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     add_subdirectory(tests)
 endif()
@@ -112,6 +113,14 @@ install(
     RUNTIME DESTINATION share/solix/solixlib/lib
     ARCHIVE DESTINATION share/solix/solixlib/lib
     COMPONENT solixlib
+)
+
+install(
+    TARGETS solix_raylib
+    LIBRARY DESTINATION share/solix/raylib/lib
+    RUNTIME DESTINATION share/solix/raylib/lib
+    ARCHIVE DESTINATION share/solix/raylib/lib
+    COMPONENT raylib
 )
 
 # Install official raylib companion library into share/solix/raylib
