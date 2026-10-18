@@ -31,6 +31,12 @@ public:
     static std::string compute_project_id(const std::string& name, const std::string& version);
 
     // Lifecycle operations
+    bool install_project(const std::filesystem::path& project_path,
+                         const std::string& profile_name,
+                         bool force,
+                         bool as_is,
+                         const std::filesystem::path& custom_output_dir,
+                         std::string& out_id);
     bool install_project(const std::filesystem::path& project_path, bool force, std::string& out_id);
     bool uninstall_project(const std::string& name, const std::string& version);
     std::vector<InstalledProject> list_installed_projects();

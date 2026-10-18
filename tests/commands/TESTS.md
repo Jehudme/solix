@@ -1220,6 +1220,58 @@ This document is the master test specification for the Solix CLI command suite (
 - **Setup**: `CPackConfig.cmake` and `cmake_install.cmake` in build directory.
 - **Expected**: `CPACK_PACKAGE_VERSION` matches `"1.2.1"`; `libs/solixlib` and `libs/raylib` resources stage to `share/solix/solixlib` and `share/solix/raylib`.
 
+---
+
+## Part XXVIII: Project Types, Clean Installation Staging, Archive Command & Recursive Source Discovery
+
+*Command*: `solix new`, `solix build`, `solix install`, `solix archive`, `solix run`
+*Specification Reference*: [Solix CLI Specification](../../docs/spec/cli/README.md), [Package Management Guide](../../docs/guide/package_manager.md)
+
+### Positive Test Scenarios
+
+#### Case 28.1: Scaffolding Library vs Application Projects [IMPLEMENTED]
+- **Command**: `solix new my_lib -T library` and `solix new my_app -T app`
+- **Setup**: Isolated temporary sandbox directory.
+- **Expected**: Exits 0; `my_lib` manifest contains `"type": "library"`, generates `src/lib.slx`, and profile compilation does not enforce `main` entry point; `my_app` manifest contains `"type": "app"`, generates `src/main.slx` with `main()`.
+
+#### Case 28.2: Automatic Recursive .slx Source Discovery [IMPLEMENTED]
+- **Command**: `solix build my_project`
+- **Setup**: Project with multiple nested source files under `src/core/utils.slx`, `src/math/vector.slx` without individual entries in `manifest.json`.
+- **Expected**: Exits 0; compiler automatically finds and compiles all nested `.slx` files without requiring individual source listings in manifest.
+
+#### Case 28.3: Clean Library Installation and Reduced Manifest [IMPLEMENTED]
+- **Command**: `solix install my_lib -p release`
+- **Setup**: Library project with native shared libraries, resources, and dependencies.
+- **Expected**: Exits 0; installed location contains clean `src/` (excluding `main.slx`), native libraries in `lib/`, resources in `resources/`; `manifest.json` is reduced with `"installed": true`, retaining only package dependencies without build profiles, commands, or bytecode.
+
+#### Case 28.4: Clean Application Installation and Direct Execution [IMPLEMENTED]
+- **Command**: `solix install my_app -p release && solix run my_app@0.1.0`
+- **Setup**: Application project with `main.slx`.
+- **Expected**: Exits 0; installed location contains `bytecode.slxbin`, `lib/`, `resources/`, and NO `src/`; `solix run` executes the installed application directly from `bytecode.slxbin` without recompiling.
+
+#### Case 28.5: Standalone Staging Export via solix archive and solix install -o [IMPLEMENTED]
+- **Command**: `solix archive my_lib -o dist/my_lib` and `solix install my_app -o dist/my_app`
+- **Setup**: Valid library and application projects.
+- **Expected**: Exits 0; exports prepared, self-contained project directories to specified output paths without registering them in the user registry.
+
+#### Case 28.6: Fast Zero-Rebuild Installation via --as-is [IMPLEMENTED]
+- **Command**: `solix install dist/my_lib --as-is`
+- **Setup**: A pre-staged distribution directory with `"installed": true` in manifest.
+- **Expected**: Exits 0; registers project into global registry instantly without invoking the compiler or build scripts.
+
+### Negative Test Scenarios
+
+#### Case 28.7: Reject App Project as a Dependency [IMPLEMENTED]
+- **Command**: `solix build consumer_proj`
+- **Setup**: `consumer_proj` depends on an application project configured with `"type": "app"`.
+- **Expected**: Exits with non-zero code; produces error diagnostic: `Cannot include project '<name>' as a dependency because it is an 'app' (only 'library' projects can be included).`
+
+#### Case 28.8: Invalid Project Type Rejection in solix new [IMPLEMENTED]
+- **Command**: `solix new bad_proj -T invalid_type`
+- **Setup**: Empty sandbox directory.
+- **Expected**: Exits non-zero; outputs `Error: Invalid project type 'invalid_type'. Must be 'app' or 'library'.`
+
+
 
 
 

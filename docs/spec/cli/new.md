@@ -30,6 +30,7 @@ solix new <path> [options]
 | `--description` | `-d` | String | `""` | Human-readable project description. |
 | `--license` | `-l` | String | `""` | License identifier (e.g. `MIT`, `Apache-2.0`). |
 | `--tag` | `-t` | String | `[]` | Project tag/keyword (can be specified multiple times). |
+| `--type` | `-T` | String | `app` | Project type: `app` (executable application) or `library` (reusable library). |
 | `--entry` | `-e` | String | `main` | Default entry point method name in starter source. |
 | `--template` | | Path | `""` | Path to a custom template folder to copy from disk. |
 | `--force` | `-f` | Flag | `false` | Proceed and overwrite if target directory exists and is not empty. |
@@ -40,23 +41,22 @@ solix new <path> [options]
 
 ### 1. In-Memory Self-Contained Scaffolding (Default)
 
-When `--template` is omitted, the CLI scaffolds an isolated, self-contained project:
+When `--template` is omitted, the CLI scaffolds an isolated, self-contained project according to `--type`:
 
+#### Application (`-T app`, default)
 ```
 <project_root>/
-├── manifest.json          # Manifest with debug, release, test profiles & solixlib dependency
+├── manifest.json          # Manifest with "type": "app", profiles & dependencies
 └── src/
-    └── main.slx           # Starter source printing Hello, World!
+    └── main.slx           # Starter source printing Hello, World! with main()
 ```
 
-The generated `src/main.slx`:
-```solix
-import solix.system.Console;
-
-int32 main() {
-    Console.println("Hello, World!");
-    return 0;
-}
+#### Library (`-T library`)
+```
+<project_root>/
+├── manifest.json          # Manifest with "type": "library", profiles & dependencies
+└── src/
+    └── lib.slx            # Starter library module
 ```
 
 ### 2. Custom Template Directory Mode

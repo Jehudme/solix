@@ -1,6 +1,7 @@
 {
   "project": "unknown",
   "version": "0.1.0",
+  "type": "app",
   "description": null,
   "tags": [],
   "author": null,

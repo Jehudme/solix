@@ -23,20 +23,55 @@ void setup_package_commands(CLI::App &app) {
     // 1. install
     auto *install_cmd = app.add_subcommand("install", "Install a Solix project locally");
     auto install_path = std::make_shared<std::string>(".");
+    auto profile_str = std::make_shared<std::string>("release");
     auto force_flag = std::make_shared<bool>(false);
+    auto as_is_flag = std::make_shared<bool>(false);
+    auto output_str = std::make_shared<std::string>();
 
     install_cmd->add_option("path", *install_path, "Path to the project directory (default: current directory)");
+    install_cmd->add_option("-p,--profile", *profile_str, "Build profile to use (default: release)");
     install_cmd->add_flag("-f,--force", *force_flag, "Reinstall / overwrite if already installed");
+    install_cmd->add_flag("--as-is", *as_is_flag, "Install an already-prepared package directory without rebuilding");
+    install_cmd->add_option("-o,--output", *output_str, "Output destination directory (stages without registering in registry)");
 
-    install_cmd->callback([install_path, force_flag]() {
+    install_cmd->callback([install_path, profile_str, force_flag, as_is_flag, output_str]() {
         PackageManager pm;
         std::string id;
-        if (!pm.install_project(std::filesystem::path(*install_path), *force_flag, id)) {
+        std::filesystem::path out_dir = output_str->empty() ? std::filesystem::path() : std::filesystem::path(*output_str);
+        if (!pm.install_project(std::filesystem::path(*install_path), *profile_str, *force_flag, *as_is_flag, out_dir, id)) {
             cli_exit(1);
         }
-        auto installed_dir = PackageManager::get_installed_dir() / id;
-        std::cout << "Successfully installed project (ID: " << id << ")" << std::endl;
-        std::cout << "  Location: " << installed_dir.string() << std::endl;
+        if (out_dir.empty()) {
+            auto installed_dir = PackageManager::get_installed_dir() / id;
+            std::cout << "Successfully installed project (ID: " << id << ")" << std::endl;
+            std::cout << "  Location: " << installed_dir.string() << std::endl;
+        } else {
+            std::cout << "Successfully prepared and staged project (ID: " << id << ")" << std::endl;
+            std::cout << "  Location: " << std::filesystem::absolute(out_dir).lexically_normal().string() << std::endl;
+        }
+    });
+
+    // 1b. archive (alias for install -o)
+    auto *archive_cmd = app.add_subcommand("archive", "Build and export a clean, prepared project distribution directory");
+    auto archive_path = std::make_shared<std::string>(".");
+    auto archive_profile = std::make_shared<std::string>("release");
+    auto archive_output = std::make_shared<std::string>();
+    auto archive_force = std::make_shared<bool>(false);
+
+    archive_cmd->add_option("path", *archive_path, "Path to the project directory (default: current directory)");
+    archive_cmd->add_option("-p,--profile", *archive_profile, "Build profile to use (default: release)");
+    archive_cmd->add_option("-o,--output", *archive_output, "Output destination directory")->required();
+    archive_cmd->add_flag("-f,--force", *archive_force, "Overwrite output destination if it exists");
+
+    archive_cmd->callback([archive_path, archive_profile, archive_output, archive_force]() {
+        PackageManager pm;
+        std::string id;
+        std::filesystem::path out_dir(*archive_output);
+        if (!pm.install_project(std::filesystem::path(*archive_path), *archive_profile, *archive_force, false, out_dir, id)) {
+            cli_exit(1);
+        }
+        std::cout << "Successfully archived project (ID: " << id << ")" << std::endl;
+        std::cout << "  Location: " << std::filesystem::absolute(out_dir).lexically_normal().string() << std::endl;
     });
 
     // 2. uninstall

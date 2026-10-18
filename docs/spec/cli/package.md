@@ -42,7 +42,7 @@ This ensures:
 
 ## `solix install`
 
-Installs a local Solix project directory into the `$SOLIX_HOME` repository.
+Installs a local Solix project directory into the `$SOLIX_HOME` repository or an export destination.
 
 ### Synopsis
 ```bash
@@ -52,15 +52,48 @@ solix install [path] [options]
 ### Arguments & Options
 | Argument / Option | Type | Default | Description |
 |---|---|---|---|
-| `[path]` | Path | `.` (Current directory) | Path to project folder containing `solix.json`. |
+| `[path]` | Path | `.` (Current directory) | Path to project folder containing `solix.json` or `manifest.json`. |
+| `-p`, `--profile` | String | `release` | Compilation profile to use during build before installation. |
+| `-o`, `--output` | Path | `""` | Optional export directory path. If specified, stages the prepared distribution directory to this path without registering into the global registry. |
+| `--as-is` | Flag | `false` | Installs an already prepared distribution directory directly without invoking the compiler or build scripts. |
 | `--force`, `-f` | Flag | `false` | Reinstall and overwrite if already installed. |
 
-### Behavior & Validations
-1. Validates that `solix.json` exists in the target directory and contains valid `project` and `version` fields.
-2. Computes the 16-hex hash ID.
-3. If already present in `installed.json` and `--force` is not set, halts with an error.
-4. Copies the project directory into `$SOLIX_HOME/installed/<id>/`.
-5. Updates `$SOLIX_HOME/installed.json` with installation timestamp and metadata.
+### Behavior & Clean Staging
+1. Validates that `manifest.json` (or `solix.json`) exists in the target directory and contains valid `project` and `version` fields.
+2. If `--as-is` is set:
+   - Copies the distribution directory directly to `$SOLIX_HOME/installed/<id>/` without running builds or pre-compile hooks.
+3. Otherwise:
+   - Pre-installs any local path dependencies (with collision warnings if already present in the registry).
+   - Builds the project using the requested profile (default: `release`).
+   - If project is a **Library** (`"type": "library"`):
+     - Copies its own `src/` directory (excluding any local testing `main.slx`).
+     - Stages native shared libraries in `lib/` and merged assets in `resources/`.
+     - Emits a clean, reduced `manifest.json` with `"installed": true`, stripping build profiles, commands, and bytecode, while retaining normalized external package dependencies.
+   - If project is an **Application** (`"type": "app"`):
+     - Stages compiled `bytecode.slxbin` at the root.
+     - Stages native shared libraries in `lib/` and merged assets in `resources/`.
+     - Strips source code (`src/`), build profiles, and commands.
+     - Emits a clean, reduced `manifest.json` with `"installed": true` and `"entry": "bytecode.slxbin"`.
+4. If `-o, --output` is specified, writes to the given directory without registering in `$SOLIX_HOME/installed.json`. Otherwise, installs to `$SOLIX_HOME/installed/<id>/` and updates the registry.
+
+---
+
+## `solix archive`
+
+Builds the project and exports a clean, simplified distribution directory containing only the essentials (without registering into `$SOLIX_HOME`).
+
+### Synopsis
+```bash
+solix archive [path] [options]
+```
+
+### Arguments & Options
+| Argument / Option | Type | Default | Description |
+|---|---|---|---|
+| `[path]` | Path | `.` | Target project path. |
+| `-p`, `--profile` | String | `release` | Build profile to use. |
+| `-o`, `--output` | Path | (Required) | Destination directory for the exported distribution. |
+| `-f`, `--force` | Flag | `false` | Overwrite destination directory if it already exists. |
 
 ---
 

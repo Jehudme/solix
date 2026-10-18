@@ -49,6 +49,7 @@ solix <subcommand> --help
 | [`pack`](pack.md) | Packages project into a single distribution archive (`.slxpac`) | [pack.md](pack.md) |
 | [`new`](new.md) | Scaffolds a new Solix project with standard structure and manifest | [new.md](new.md) |
 | [`install`](package.md#solix-install) | Installs a local Solix project into the user's package repository | [package.md#solix-install](package.md#solix-install) |
+| [`archive`](package.md#solix-archive) | Builds and exports a clean, simplified distribution directory | [package.md#solix-archive](package.md#solix-archive) |
 | [`uninstall`](package.md#solix-uninstall) | Removes an installed project by name and version | [package.md#solix-uninstall](package.md#solix-uninstall) |
 | [`list`](package.md#solix-list) | Lists all currently installed projects in tabular format | [package.md#solix-list](package.md#solix-list) |
 | [`details`](package.md#solix-details) | Displays comprehensive metadata, profiles, and dependencies | [package.md#solix-details](package.md#solix-details) |

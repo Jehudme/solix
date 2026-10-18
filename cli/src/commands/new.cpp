@@ -21,12 +21,14 @@ void setup_new_command(CLI::App &app) {
     auto license_str = std::make_shared<std::string>();
     auto tags = std::make_shared<std::vector<std::string>>();
     auto entry_str = std::make_shared<std::string>("main");
+    auto type_str = std::make_shared<std::string>("app");
     auto template_str = std::make_shared<std::string>();
     auto force_flag = std::make_shared<bool>(false);
 
     new_cmd->add_option("path", *path_str, "Destination path for the new project")->required();
     new_cmd->add_option("-n,--name", *name_str, "Project name (default: derived from path)");
     new_cmd->add_option("-v,--version", *version_str, "Initial semantic version (default: 0.1.0)");
+    new_cmd->add_option("-T,--type", *type_str, "Project type ('app' or 'library', default: 'app')");
     new_cmd->add_option("-a,--author", *author_str, "Author name or email");
     new_cmd->add_option("-d,--description", *description_str, "Project description");
     new_cmd->add_option("-l,--license", *license_str, "License identifier (e.g. MIT, Apache-2.0)");
@@ -35,10 +37,18 @@ void setup_new_command(CLI::App &app) {
     new_cmd->add_option("--template", *template_str, "Path to a custom template folder on disk");
     new_cmd->add_flag("-f,--force", *force_flag, "Overwrite destination if directory is not empty");
 
-    new_cmd->callback([path_str, name_str, version_str, author_str, description_str,
+    new_cmd->callback([path_str, name_str, version_str, type_str, author_str, description_str,
                        license_str, tags, entry_str, template_str, force_flag]() {
         std::filesystem::path target_dir(*path_str);
         target_dir = std::filesystem::absolute(target_dir).lexically_normal();
+
+        std::string proj_type = *type_str;
+        std::transform(proj_type.begin(), proj_type.end(), proj_type.begin(), [](unsigned char c) { return std::tolower(c); });
+        if (proj_type != "app" && proj_type != "library" && proj_type != "lib") {
+            std::cerr << "Error: Invalid project type '" << *type_str << "'. Must be 'app' or 'library'." << std::endl;
+            cli_exit(1);
+        }
+        if (proj_type == "lib") proj_type = "library";
 
         // 1. Collision & existence check
         if (std::filesystem::exists(target_dir)) {
@@ -112,24 +122,41 @@ void setup_new_command(CLI::App &app) {
             try {
                 std::filesystem::create_directories(target_dir / "src");
 
-                // Generate src/main.slx
-                std::filesystem::path main_file = target_dir / "src" / "main.slx";
-                std::ofstream slx_out(main_file);
-                if (!slx_out) {
-                    std::cerr << "Error: Could not create file " << main_file.string() << std::endl;
-                    cli_exit(1);
+                if (proj_type == "library") {
+                    std::filesystem::path lib_file = target_dir / "src" / "lib.slx";
+                    std::ofstream slx_out(lib_file);
+                    if (!slx_out) {
+                        std::cerr << "Error: Could not create file " << lib_file.string() << std::endl;
+                        cli_exit(1);
+                    }
+                    slx_out << "package " << project_name << ";\n\n";
+                    slx_out << "class Lib {\n";
+                    slx_out << "    public Lib() {}\n\n";
+                    slx_out << "    public string hello() {\n";
+                    slx_out << "        return \"Hello from " << project_name << "!\";\n";
+                    slx_out << "    }\n";
+                    slx_out << "}\n";
+                    slx_out.close();
+                } else {
+                    std::filesystem::path main_file = target_dir / "src" / "main.slx";
+                    std::ofstream slx_out(main_file);
+                    if (!slx_out) {
+                        std::cerr << "Error: Could not create file " << main_file.string() << std::endl;
+                        cli_exit(1);
+                    }
+                    slx_out << "import solix.system.Console;\n\n";
+                    slx_out << "int32 " << *entry_str << "() {\n";
+                    slx_out << "    Console.println(\"Hello, World!\");\n";
+                    slx_out << "    return 0;\n";
+                    slx_out << "}\n";
+                    slx_out.close();
                 }
-                slx_out << "import solix.system.Console;\n\n";
-                slx_out << "int32 " << *entry_str << "() {\n";
-                slx_out << "    Console.println(\"Hello, World!\");\n";
-                slx_out << "    return 0;\n";
-                slx_out << "}\n";
-                slx_out.close();
 
                 // Generate manifest.json
                 nlohmann::json manifest;
                 manifest["project"] = project_name;
                 manifest["version"] = *version_str;
+                manifest["type"] = proj_type;
                 manifest["description"] = description_str->empty() ? nullptr : nlohmann::json(*description_str);
                 manifest["tags"] = *tags;
                 manifest["author"] = author_str->empty() ? nullptr : nlohmann::json(*author_str);
@@ -140,12 +167,10 @@ void setup_new_command(CLI::App &app) {
                         {"type", "library"},
                         {"name", "solixlib"},
                         {"version", "1.2.1"}
-                    },
-                    {
-                        {"type", "source"},
-                        {"path", "src/main.slx"}
                     }
                 });
+
+                std::string entry_point_val = (proj_type == "library") ? "" : *entry_str;
 
                 auto make_profile = [&](const std::string& profile_name, const std::string& log_level,
                                         const std::string& flush_level, const std::string& log_file,
@@ -157,7 +182,7 @@ void setup_new_command(CLI::App &app) {
                     p["asm_filename"] = "out.slxasm";
 
                     p["compilation"] = {
-                        {"entry_point", *entry_str},
+                        {"entry_point", entry_point_val},
                         {"multithreaded", multithreaded},
                         {"additional_dependencies", nlohmann::json::array()},
                         {"logs", {
