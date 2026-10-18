@@ -1145,8 +1145,13 @@ This document is the master test specification for the Solix CLI command suite (
 
 #### Case 24.3: Bundled Discovery Fallback to Canonical solixlib/ [IMPLEMENTED]
 - **Command**: `PackageManager::discover_bundled_solixlib()`
-- **Setup**: Solix repository tree with canonical layout directly in `solixlib/`.
-- **Expected**: Discovers valid path returning `solixlib/` containing `manifest.json` and `src/solix/`.
+- **Setup**: Solix repository tree with canonical layout directly in `libs/solixlib/`.
+- **Expected**: Discovers valid path returning `libs/solixlib/` containing `manifest.json` and `src/solix/`.
+
+#### Case 24.4: Bundled Discovery and Auto-Installation of raylib from libs/raylib/ [IMPLEMENTED]
+- **Command**: `PackageManager::discover_bundled_library("raylib")` & `PackageManager::try_auto_install_all_bundled_libraries()`
+- **Setup**: Bundled repository layout containing `libs/solixlib` and `libs/raylib`.
+- **Expected**: Discovers valid paths for both libraries; auto-installs both `solixlib` and `raylib` into local package registry; `list_installed_projects()` verifies presence of both libraries.
 
 ---
 

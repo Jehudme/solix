@@ -38,7 +38,8 @@ TEST_CASE("Suite 17: CPack Multi-OS Packaging & Installer Staging", "[packaging]
     }
 
     SECTION("Case 17.2: Standard Library Bundling Integrity in Package Tree") {
-        std::filesystem::path solixlib_src = project_root / "solixlib";
+        std::filesystem::path solixlib_src = project_root / "libs" / "solixlib";
+        if (!std::filesystem::exists(solixlib_src)) solixlib_src = project_root / "solixlib";
         REQUIRE((std::filesystem::exists(solixlib_src / "manifest.json") || std::filesystem::exists(solixlib_src / "solix.json")));
         REQUIRE(std::filesystem::exists(solixlib_src / "src"));
         REQUIRE(std::filesystem::exists(solixlib_src / "src" / "solix" / "system" / "Console.slx"));
@@ -53,6 +54,7 @@ TEST_CASE("Suite 17: CPack Multi-OS Packaging & Installer Staging", "[packaging]
         std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
 
         REQUIRE(content.find("share/solix/solixlib") != std::string::npos);
+        REQUIRE(content.find("share/solix/raylib") != std::string::npos);
     }
 
     SECTION("Case 17.3: Portable Archive File Structure and Permissions") {

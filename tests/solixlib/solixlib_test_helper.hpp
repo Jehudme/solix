@@ -11,11 +11,17 @@
 
 namespace solix::test {
 
+inline std::filesystem::path get_solixlib_root() {
+    auto p = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libs" / "solixlib";
+    if (std::filesystem::exists(p)) return p;
+    return std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
+}
+
 /**
  * @brief Returns the path to the compiled solixlib_native shared library.
  */
 inline std::filesystem::path get_solixlib_native_path() {
-    return std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "lib" /
+    return get_solixlib_root() / "lib" /
 #ifdef _WIN32
         "solixlib_native.dll";
 #elif __APPLE__
@@ -41,7 +47,7 @@ inline void init_solixlib_natives() {
  */
 inline std::unordered_map<std::string, std::string> load_solixlib_sources() {
     std::unordered_map<std::string, std::string> sources;
-    std::filesystem::path lib_dir = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "src";
+    std::filesystem::path lib_dir = get_solixlib_root() / "src";
     if (std::filesystem::exists(lib_dir)) {
         for (const auto& entry : std::filesystem::recursive_directory_iterator(lib_dir)) {
             if (entry.is_regular_file() && entry.path().extension() == ".slx") {

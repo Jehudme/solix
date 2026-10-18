@@ -85,14 +85,14 @@ endif()
 add_subdirectory(core)
 add_subdirectory(lsp)
 add_subdirectory(cli)
-add_subdirectory(solixlib/native)
+add_subdirectory(libs/solixlib/native)
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     add_subdirectory(tests)
 endif()
 
 # Install standard library into share/solix/solixlib
 install(
-    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/solixlib/"
+    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/solixlib/"
     DESTINATION share/solix/solixlib
     COMPONENT solixlib
     FILES_MATCHING
@@ -112,6 +112,22 @@ install(
     RUNTIME DESTINATION share/solix/solixlib/lib
     ARCHIVE DESTINATION share/solix/solixlib/lib
     COMPONENT solixlib
+)
+
+# Install official raylib companion library into share/solix/raylib
+install(
+    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/raylib/"
+    DESTINATION share/solix/raylib
+    COMPONENT raylib
+    FILES_MATCHING
+    PATTERN "*.slx"
+    PATTERN "manifest.json"
+    PATTERN "lib/*"
+    PATTERN "resources/*"
+    PATTERN "native" EXCLUDE
+    PATTERN "build" EXCLUDE
+    PATTERN "scripts" EXCLUDE
+    PATTERN "examples" EXCLUDE
 )
 
 # Install VS Code extension bundle if present

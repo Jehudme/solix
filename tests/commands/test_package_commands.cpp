@@ -40,6 +40,12 @@ static std::filesystem::path create_test_project(TempDir& sandbox,
     return proj_dir;
 }
 
+static std::filesystem::path get_test_solixlib_path() {
+    auto p = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libs" / "solixlib";
+    if (std::filesystem::exists(p)) return p;
+    return std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
+}
+
 TEST_CASE("CLI Command - package management (install, uninstall, list, details)", "[command][package]") {
     TempDir solix_home;
     TempDir proj_workspace;
@@ -113,7 +119,7 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
     }
 
     SECTION("Positive - Case 5.7 & 5.8: Install Solix Standard Library Project (solixlib) with Native Companion") {
-        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
+        std::filesystem::path solixlib_path = get_test_solixlib_path();
         REQUIRE((std::filesystem::exists(solixlib_path / "manifest.json") || std::filesystem::exists(solixlib_path / "solix.json")));
 
         nlohmann::json solixlib_manifest;
@@ -142,7 +148,7 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
     }
 
     SECTION("Positive - Case 5.9: Consumer Project Builds and Runs with Installed Standard Library (solixlib)") {
-        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
+        std::filesystem::path solixlib_path = get_test_solixlib_path();
         REQUIRE((std::filesystem::exists(solixlib_path / "manifest.json") || std::filesystem::exists(solixlib_path / "solix.json")));
 
         nlohmann::json solixlib_manifest;
@@ -190,7 +196,7 @@ TEST_CASE("CLI Command - package management (install, uninstall, list, details)"
 
 
     SECTION("Negative - Case 5.10: Reinstall solixlib Without Force Flag Fails") {
-        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
+        std::filesystem::path solixlib_path = get_test_solixlib_path();
         REQUIRE((std::filesystem::exists(solixlib_path / "manifest.json") || std::filesystem::exists(solixlib_path / "solix.json")));
 
         auto res1 = run_cli({"install", solixlib_path.string()}, solix_home.path());
@@ -335,7 +341,7 @@ TEST_CASE("Package Manager - Canonical Solixlib Project Layout (Part XXIV)", "[p
     TempDir solix_home;
 
     SECTION("Case 24.1: Direct Installation of Canonical Standard Library from solixlib/") {
-        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
+        std::filesystem::path solixlib_path = get_test_solixlib_path();
         REQUIRE(std::filesystem::exists(solixlib_path / "manifest.json"));
         REQUIRE(std::filesystem::exists(solixlib_path / "src"));
         REQUIRE(std::filesystem::exists(solixlib_path / "lib"));
@@ -360,7 +366,7 @@ TEST_CASE("Package Manager - Canonical Solixlib Project Layout (Part XXIV)", "[p
     }
 
     SECTION("Case 24.2: Consumer Dependency Resolution of Canonical solixlib") {
-        std::filesystem::path solixlib_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
+        std::filesystem::path solixlib_path = get_test_solixlib_path();
         auto inst_res = run_cli({"install", solixlib_path.string()}, solix_home.path());
         REQUIRE(inst_res.exit_code == 0);
 
@@ -406,6 +412,26 @@ TEST_CASE("Package Manager - Canonical Solixlib Project Layout (Part XXIV)", "[p
         REQUIRE(discovered.has_value());
         CHECK(std::filesystem::exists(*discovered / "manifest.json"));
         CHECK(std::filesystem::exists(*discovered / "src" / "solix"));
+    }
+
+    SECTION("Case 24.4: Bundled Discovery and Auto-Installation of raylib from libs/raylib/") {
+        auto discovered_raylib = PackageManager::discover_bundled_library("raylib");
+        REQUIRE(discovered_raylib.has_value());
+        CHECK(std::filesystem::exists(*discovered_raylib / "manifest.json"));
+        CHECK(std::filesystem::exists(*discovered_raylib / "src" / "raylib"));
+
+        PackageManager pm;
+        CHECK(pm.try_auto_install_all_bundled_libraries());
+
+        auto installed_list = pm.list_installed_projects();
+        bool found_solixlib = false;
+        bool found_raylib = false;
+        for (const auto& p : installed_list) {
+            if (p.name == "solixlib") found_solixlib = true;
+            if (p.name == "solix-raylib" || p.name == "raylib") found_raylib = true;
+        }
+        CHECK(found_solixlib);
+        CHECK(found_raylib);
     }
 }
 

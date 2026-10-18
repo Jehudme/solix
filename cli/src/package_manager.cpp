@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <set>
 
 namespace solix::cli {
 
@@ -290,19 +291,22 @@ uintmax_t PackageManager::calculate_directory_size(const std::filesystem::path& 
     return total;
 }
 
-std::optional<std::filesystem::path> PackageManager::discover_bundled_solixlib() {
+std::optional<std::filesystem::path> PackageManager::discover_bundled_library(const std::string& name) {
     std::filesystem::path exe_dir = solix::get_executable_dir();
 
-    // Candidate 1: Installed package layout: <prefix>/bin/solix -> <prefix>/share/solix/solixlib
+    // 1. Installed package layout: <prefix>/share/solix/<name>
     std::vector<std::filesystem::path> candidates = {
-        exe_dir.parent_path() / "share" / "solix" / "solixlib",
-        exe_dir / ".." / "share" / "solix" / "solixlib",
-        exe_dir / "share" / "solix" / "solixlib",
-        // Candidate 2: In-tree development layout: <repo>/build/cli/solix -> <repo>/solixlib
-        exe_dir.parent_path().parent_path() / "solixlib",
-        exe_dir.parent_path() / "solixlib",
-        exe_dir.parent_path().parent_path() / "solixlib" / "project",
-        exe_dir.parent_path() / "solixlib" / "project"
+        exe_dir.parent_path() / "share" / "solix" / name,
+        exe_dir / ".." / "share" / "solix" / name,
+        exe_dir / "share" / "solix" / name,
+        exe_dir.parent_path() / "share" / "solix" / "libs" / name,
+        // 2. In-tree development layout: <repo>/libs/<name> or <repo>/<name>
+        exe_dir.parent_path().parent_path() / "libs" / name,
+        exe_dir.parent_path() / "libs" / name,
+        exe_dir.parent_path().parent_path() / name,
+        exe_dir.parent_path() / name,
+        exe_dir.parent_path().parent_path() / name / "project",
+        exe_dir.parent_path() / name / "project"
     };
 
     for (const auto& cand : candidates) {
@@ -315,13 +319,76 @@ std::optional<std::filesystem::path> PackageManager::discover_bundled_solixlib()
     return std::nullopt;
 }
 
-bool PackageManager::try_auto_install_bundled_solixlib() {
-    auto bundled_opt = discover_bundled_solixlib();
+std::optional<std::filesystem::path> PackageManager::discover_bundled_solixlib() {
+    return discover_bundled_library("solixlib");
+}
+
+std::vector<std::filesystem::path> PackageManager::discover_all_bundled_libraries() {
+    std::vector<std::filesystem::path> results;
+    std::set<std::string> seen;
+
+    auto check_and_add = [&](const std::filesystem::path& p) {
+        std::filesystem::path norm = p.lexically_normal();
+        std::filesystem::path mf = solix::find_project_manifest(norm);
+        if (std::filesystem::exists(mf) && std::filesystem::exists(norm / "src")) {
+            if (seen.insert(norm.string()).second) {
+                results.push_back(norm);
+            }
+        }
+    };
+
+    std::filesystem::path exe_dir = solix::get_executable_dir();
+    std::vector<std::filesystem::path> search_roots = {
+        exe_dir.parent_path() / "share" / "solix",
+        exe_dir / ".." / "share" / "solix",
+        exe_dir / "share" / "solix",
+        exe_dir.parent_path().parent_path() / "libs",
+        exe_dir.parent_path() / "libs"
+    };
+
+    for (const auto& root : search_roots) {
+        std::error_code ec;
+        if (std::filesystem::exists(root, ec) && std::filesystem::is_directory(root, ec)) {
+            for (const auto& entry : std::filesystem::directory_iterator(root, ec)) {
+                if (entry.is_directory(ec)) {
+                    check_and_add(entry.path());
+                }
+            }
+        }
+    }
+
+    // Explicitly check standard library and raylib
+    auto s = discover_bundled_library("solixlib");
+    if (s) check_and_add(s.value());
+    auto r = discover_bundled_library("raylib");
+    if (r) check_and_add(r.value());
+
+    return results;
+}
+
+bool PackageManager::try_auto_install_bundled_library(const std::string& name) {
+    auto bundled_opt = discover_bundled_library(name);
     if (!bundled_opt) {
         return false;
     }
     std::string out_id;
     return install_project(bundled_opt.value(), true, out_id);
+}
+
+bool PackageManager::try_auto_install_all_bundled_libraries() {
+    auto all = discover_all_bundled_libraries();
+    bool any_success = false;
+    for (const auto& lib_path : all) {
+        std::string out_id;
+        if (install_project(lib_path, true, out_id)) {
+            any_success = true;
+        }
+    }
+    return any_success;
+}
+
+bool PackageManager::try_auto_install_bundled_solixlib() {
+    return try_auto_install_bundled_library("solixlib");
 }
 
 } // namespace solix::cli
