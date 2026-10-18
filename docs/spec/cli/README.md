@@ -43,18 +43,16 @@ solix <subcommand> --help
 
 | Subcommand | Description | Specification Link |
 |---|---|---|
-| [`compile`](compile.md) | Compiles one or more `.slx` source files into bytecode (`.slxb`) | [compile.md](compile.md) |
-| [`run`](run.md) | Executes compiled bytecode (`.slxb`) on the Solix VM | [run.md](run.md) |
+| [`compile`](compile.md) | Compiles one or more `.slx` source files into bytecode (`.slxbin`) or executes | [compile.md](compile.md) |
+| [`run`](run.md) | Executes compiled bytecode (`.slxbin`), Solix project, or package bundle (`.slxpac`) | [run.md](run.md) |
 | [`build`](build.md) | Builds project artifacts from `solix.json` profiles and dependencies | [build.md](build.md) |
-| [`pack`](pack.md) | Packages project into a single distribution archive (`.slxpac`) | [pack.md](pack.md) |
-| [`new`](new.md) | Scaffolds a new Solix project with standard structure and manifest | [new.md](new.md) |
-| [`install`](package.md#solix-install) | Installs a local Solix project into the user's package repository | [package.md#solix-install](package.md#solix-install) |
-| [`archive`](package.md#solix-archive) | Builds and exports a clean, simplified distribution directory | [package.md#solix-archive](package.md#solix-archive) |
+| [`pack`](pack.md) | Packages project or installed application into an archive (`.slxpac`) | [pack.md](pack.md) |
+| [`create`](new.md) / [`new`](new.md) | Scaffolds a new Solix project (`app`, `library`, `plugin`) with standard structure | [new.md](new.md) |
+| [`install`](package.md#solix-install) | Installs a local Solix project or package bundle into the package repository | [package.md#solix-install](package.md#solix-install) |
+| [`archive`](package.md#solix-archive) | Builds and exports a clean, prepared project distribution directory | [package.md#solix-archive](package.md#solix-archive) |
 | [`uninstall`](package.md#solix-uninstall) | Removes an installed project by name and version | [package.md#solix-uninstall](package.md#solix-uninstall) |
-| [`list`](package.md#solix-list) | Lists all currently installed projects in tabular format | [package.md#solix-list](package.md#solix-list) |
-| [`details`](package.md#solix-details) | Displays comprehensive metadata, profiles, and dependencies | [package.md#solix-details](package.md#solix-details) |
-| [`ide`](ide.md) | Manages IDE integrations and automated extension installation | [ide.md](ide.md) |
-| [`activate`](ide.md#solix-activate-modern-activation-alias) | Activates Solix tooling for VS Code, Cursor, or Codium | [ide.md#solix-activate-modern-activation-alias](ide.md#solix-activate-modern-activation-alias) |
+| [`list`](package.md#solix-list) | Lists installed projects with TYPE column, filtering, and sorting | [package.md#solix-list](package.md#solix-list) |
+| [`details`](package.md#solix-details) | Displays project metadata, scripting query tags, or inspects `.slxpac` bundles | [package.md#solix-details](package.md#solix-details) |
 | `version` | Displays toolchain version string (also via `-v` / `--version`) | [README.md](#global-invocation-syntax) |
 
 ---

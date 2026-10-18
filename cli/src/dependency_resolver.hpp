@@ -146,7 +146,7 @@ public:
                 if (dep.is_object()) {
                     std::string type = dep.value("type", "");
                     if (type == "project" || type == "library") {
-                        if (!discover_single_project_dependency(dep, root_project_root, active_profile_name, visited_manifests, discovered_projects, discovery_order)) {
+                        if (!discover_single_project_dependency(dep, root_project_root, active_profile_name, visited_manifests, discovered_projects, discovery_order, true)) {
                             return false;
                         }
                     }
@@ -205,14 +205,11 @@ public:
                           << "). Selecting highest version " << highest.version.raw << "." << std::endl;
             }
 
-            // If highest candidate didn't have explicit profile, adopt explicit profile from any candidate if available
-            if (!highest.explicit_profile) {
-                for (const auto& c : candidates) {
-                    if (c.explicit_profile) {
-                        highest.selected_profile = c.selected_profile;
-                        highest.explicit_profile = true;
-                        break;
-                    }
+            // If any candidate had an explicit profile (e.g. overridden by active profile), adopt it
+            for (const auto& c : candidates) {
+                if (c.explicit_profile) {
+                    highest.selected_profile = c.selected_profile;
+                    highest.explicit_profile = true;
                 }
             }
 
@@ -388,7 +385,8 @@ private:
                                            const std::string& parent_active_profile,
                                            std::set<std::string>& visited_manifests,
                                            std::vector<ProjectCandidate>& discovered_projects,
-                                           std::vector<std::string>& discovery_order) {
+                                           std::vector<std::string>& discovery_order,
+                                           bool is_profile_override = false) {
         std::filesystem::path target_manifest;
 
         std::string raw_pkg;
@@ -493,11 +491,11 @@ private:
 
         // Circular & Diamond Dependency Guard:
         if (visited_manifests.count(target_manifest.string())) {
-            // If current reference has an explicit profile and previous didn't, adopt it
+            // If current reference has an explicit profile and previous didn't (or this is a profile override), adopt it
             if (dep_node.contains("profile") && dep_node["profile"].is_string() && !dep_node["profile"].get<std::string>().empty()) {
                 std::string req = dep_node["profile"].get<std::string>();
                 for (auto& cand : discovered_projects) {
-                    if (cand.manifest_path == target_manifest && !cand.explicit_profile) {
+                    if (cand.manifest_path == target_manifest && (is_profile_override || !cand.explicit_profile)) {
                         cand.selected_profile = req;
                         cand.explicit_profile = true;
                     }

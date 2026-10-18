@@ -1,12 +1,13 @@
-# `solix new` — Project Scaffolding
+# `solix create` (alias: `solix new`) — Project Scaffolding
 
-The `new` subcommand creates and initializes a new Solix project structure with pre-configured build profiles (`debug`, `release`, `test`), a starter source file, standard library dependency, and a complete `manifest.json` manifest.
+The `create` subcommand (also available via backward-compatible alias `new`) creates and initializes a new Solix project structure with pre-configured build profiles (`debug`, `release`, `test`), a starter source file, standard library dependency, and a complete `manifest.json` manifest.
 
 ---
 
 ## Synopsis
 
 ```bash
+solix create <path> [options]
 solix new <path> [options]
 ```
 
@@ -30,7 +31,7 @@ solix new <path> [options]
 | `--description` | `-d` | String | `""` | Human-readable project description. |
 | `--license` | `-l` | String | `""` | License identifier (e.g. `MIT`, `Apache-2.0`). |
 | `--tag` | `-t` | String | `[]` | Project tag/keyword (can be specified multiple times). |
-| `--type` | `-T` | String | `app` | Project type: `app` (executable application) or `library` (reusable library). |
+| `--type` | `-T` | String | `app` | Project type: `app` (executable application), `library` (reusable library), or `plugin` (native extension module). |
 | `--entry` | `-e` | String | `main` | Default entry point method name in starter source. |
 | `--template` | | Path | `""` | Path to a custom template folder to copy from disk. |
 | `--force` | `-f` | Flag | `false` | Proceed and overwrite if target directory exists and is not empty. |
@@ -57,6 +58,14 @@ When `--template` is omitted, the CLI scaffolds an isolated, self-contained proj
 ├── manifest.json          # Manifest with "type": "library", profiles & dependencies
 └── src/
     └── lib.slx            # Starter library module
+```
+
+#### Plugin (`-T plugin`)
+```
+<project_root>/
+├── manifest.json          # Manifest with "type": "plugin", profiles & dependencies
+└── src/
+    └── plugin.slx         # Starter plugin module
 ```
 
 ### 2. Custom Template Directory Mode

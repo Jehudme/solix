@@ -1,6 +1,6 @@
 # `solix compile` — Source Code Compilation
 
-The `compile` subcommand drives the Solix front-end pipeline (Lexer, Parser, Binder, and Assembler) to translate one or more `.slx` source files into executable bytecode binaries (`.slxb`) or text assembly listings.
+The `compile` subcommand drives the Solix front-end pipeline (Lexer, Parser, Binder, and Assembler) to translate one or more `.slx` source files into executable bytecode binaries (`.slxbin`) or text assembly listings. With execution flags or when paired with the runtime, it can also directly execute compiled bytecode or dispatch `.slxpac` package bundles.
 
 ---
 

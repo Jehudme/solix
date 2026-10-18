@@ -88,6 +88,23 @@ jobs:
           CXX: clang++
         run: cmake --build build --config Release --parallel
 
+      - name: Create Companion Library Archives & Bundles (Linux & macOS)
+        if: runner.os != 'Windows'
+        run: |
+          ./build/cli/solix archive libs/solixlib -o build/staged_archives/solixlib -f
+          ./build/cli/solix archive libs/raylib -o build/staged_archives/raylib -f
+          ./build/cli/solix pack libs/solixlib -o build/solixlib.slxpac
+          ./build/cli/solix pack libs/raylib -o build/raylib.slxpac
+
+      - name: Create Companion Library Archives & Bundles (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          .\build\cli\solix.exe archive libs\solixlib -o build\staged_archives\solixlib -f
+          .\build\cli\solix.exe archive libs\raylib -o build\staged_archives\raylib -f
+          .\build\cli\solix.exe pack libs\solixlib -o build\solixlib.slxpac
+          .\build\cli\solix.exe pack libs\raylib -o build\raylib.slxpac
+
       - name: Package with CPack (Linux & macOS)
         if: runner.os != 'Windows'
         run: |
@@ -118,6 +135,7 @@ jobs:
             build/*.pkg
             build/*.exe
             build/*.zip
+            build/*.slxpac
           if-no-files-found: warn
 
       - name: Build VS Code extension

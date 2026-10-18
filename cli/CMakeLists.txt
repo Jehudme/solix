@@ -23,7 +23,6 @@ add_library(solix_cli_core STATIC
     src/commands/package.cpp
     src/commands/version.cpp
     src/commands/lsp.cpp
-    src/commands/ide.cpp
     src/commands/pack.cpp
 )
 

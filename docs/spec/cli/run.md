@@ -100,12 +100,27 @@ flowchart TD
 
 ---
 
+## Execution Guards & Diagnostics
+
+1. **Library & Plugin Execution Rejection**:
+   - Libraries (`"type": "library"`) and plugins (`"type": "plugin"`) do not possess an executable `main()` entry point. Attempting to run an installed library, project folder, or `.slxpac` bundle of type library will cleanly terminate with exit code `1`:
+     ```
+     Cannot run '<name>' because it is a library (libraries do not contain an executable entry point).
+     ```
+2. **Pre-Built Profile Warning**:
+   - If `-P` or `--profile` is specified when executing a pre-built package, installed application, or standalone `.slxbin` / `.slxpac`, the option is ignored with a diagnostic warning:
+     ```
+     Warning: Option --profile is ignored when running a pre-built package or binary.
+     ```
+
+---
+
 ## Exit Codes & Fault Handling
 
 | Exit Code | Condition |
 |---|---|
 | `0` | Bytecode executed successfully and the entry method returned 0. |
-| `1` | Missing file/project, manifest error, invalid profile, compilation failure, unhandled runtime exception, or memory exhaustion. |
+| `1` | Missing file/project, manifest error, invalid profile, attempting to run a library, compilation failure, unhandled runtime exception, or memory exhaustion. |
 | `N` (`N > 0`) | The entry method returned non-zero integer `N`, which is propagated directly to the host shell. |
 
 ---

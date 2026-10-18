@@ -29,6 +29,8 @@ This document tracks all planned, in-progress, and completed engineering phases 
 | [Phase 17](#phase-17-universal-project-native-template--documentation) | Universal Project Native Template & Documentation | P2 Polish | - [x] Completed & Merged |
 | [Phase 18](#phase-18-release-v120-packaging-hardening--automated-publishing) | Release v1.2.0 Packaging, Hardening & Automated Publishing | P0 Blocker | - [x] Completed & Merged |
 | [Phase 19](#phase-19-release-v121-companion-library-reorganization--bundled-auto-installation) | Release v1.2.1 Companion Library Reorganization & Bundled Auto-Installation | P0 Blocker | - [x] Completed & Merged |
+| [Phase 20](#phase-20-project-types-app-vs-library-clean-installation-staging-solix-archive-fast---as-is--recursive-source-discovery) | Project Types (`app` vs `library`), Clean Installation Staging, `solix archive`, Fast `--as-is` & Recursive Source Discovery | P1 High | - [x] Completed & Merged |
+| [Phase 21](#phase-21-cli-modernization-list-refinements-pack-ingestion-guards-and-release-v300) | CLI Modernization, List Refinements, Pack Ingestion, Guards and Release v3.0.0 | P0 Blocker | - [x] Completed & Merged |
 
 ---
 
@@ -506,6 +508,40 @@ Introduce formal distinction between applications (`"type": "app"`) and librarie
 - [x] Implement Catch2 test cases in `tests/commands/test_project_types_and_installation.cpp`.
 - [x] Synchronize documentation in `docs/spec/cli/README.md`, `docs/spec/cli/package.md`, and `docs/spec/cli/new.md`.
 - [x] Verify 100% test pass rate across all test suites.
+
+---
+
+## Phase 21: CLI Modernization, List Refinements, Pack Ingestion, Guards and Release v3.0.0
+
+- **Priority**: `P0 Blocker`
+- **Affected Modules**: `cli/`, `CMakeLists.txt`, `.github/workflows/release.yml`, `libs/raylib/manifest.json`, `editors/vscode/package.json`, `docs/`
+- **Status**: - [x] Completed & Merged (2026-10-18)
+
+### Objective
+Complete toolchain modernization, quality-of-life enhancements, command aliasing, and safety guards:
+1. Command Refinement: Remove deprecated `solix ide` command; register `solix create` with `new` as transparent alias; add `-T plugin` scaffolding support.
+2. Package Management: Add `TYPE` column to `solix list` with `-t` filtering, `-s` sorting, and `--json` support; add scripting query flags to `solix details` (`-v`, `-n`, `-t`, `-d`, `-a`, `-l`, `--id`, `--path`, `--entry`, `--json`) and support `<name>@<version>` and `.slxpac` package bundle inspection; replace `--as-is` with `--archive`; add `--alias` to `install` and `archive`.
+3. Packaging & Ingestion: Allow direct installation of `.slxpac` bundles via `solix install`; support packaging installed applications via `solix pack <name>@<version> -o <out.slxpac>`; preserve reduced `manifest.json` in `.slxpac` bundles; simplify `solix pack` by reusing the clean staging distribution architecture.
+4. Active Profile Overrides: Active profile `compilation.additional_dependencies` cleanly overrides root dependency profile configurations in `dependency_resolver`.
+5. Edge-Case Guards: Reject `solix run` on library projects and library `.slxpac` bundles; warn when `-P/--profile` is specified on pre-built targets; disambiguate target path arguments; auto-install path dependencies safely without overwriting.
+6. CPack & Release v3.0.0: Update CPack configuration with automatic companion library installation scripts; configure release pipeline to create `solixlib` and `raylib` archives and `.slxpac` bundles; bump raylib to `1.0.0` and toolchain version to `3.0.0`.
+
+### Action Items
+- [x] Remove `solix ide` subcommand and deprecated tests.
+- [x] Register `solix create` with `new` alias and `-T plugin` scaffolding.
+- [x] Add `TYPE` column, filtering (`-t`, `-f`), sorting (`-s`, `--reverse`), and `--json` to `solix list`.
+- [x] Add scripting query flags and `.slxpac` inspection to `solix details`.
+- [x] Support installing `.slxpac` package bundles directly in `solix install`.
+- [x] Modernize `solix install --as-is` to `solix install --archive` with `--alias` support.
+- [x] Support packaging installed applications in `solix pack` and simplify packaging staging.
+- [x] Implement active profile additional dependency overriding in `dependency_resolver`.
+- [x] Guard `solix run` to reject library targets and warn on pre-built profile usage.
+- [x] Implement Catch2 test specifications in `tests/commands/test_cli_modernization.cpp` (Part XXIX: Cases 29.1 to 29.11).
+- [x] Update root `CMakeLists.txt`, `version.cpp`, `test_version_command.cpp`, `test_cpack_packaging.cpp`, `editors/vscode/package.json` to version `3.0.0`.
+- [x] Update `libs/raylib/manifest.json` to version `1.0.0`.
+- [x] Update `.github/workflows/release.yml` with companion library archiving and packaging.
+- [x] Update documentation across `docs/spec/cli/`.
+- [x] Run full test regression suite across all 84 test suites (100% passed).
 
 
 

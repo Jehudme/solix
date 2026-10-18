@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(solix VERSION 1.2.1 LANGUAGES CXX)
+project(solix VERSION 3.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -177,6 +177,10 @@ if(WIN32)
     set(CPACK_NSIS_PACKAGE_NAME "Solix")
     set(CPACK_NSIS_HELP_LINK "${CPACK_PACKAGE_HOMEPAGE_URL}")
     set(CPACK_NSIS_URL_INFO_ABOUT "${CPACK_PACKAGE_HOMEPAGE_URL}")
+    set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+        ExecWait '\\\"$INSTDIR\\\\bin\\\\solix.exe\\\" install --archive \\\"$INSTDIR\\\\share\\\\solix\\\\solixlib\\\"'
+        ExecWait '\\\"$INSTDIR\\\\bin\\\\solix.exe\\\" install --archive \\\"$INSTDIR\\\\share\\\\solix\\\\raylib\\\"'
+    ")
 elseif(APPLE)
     set(CPACK_GENERATOR "TGZ;productbuild")
     set(CPACK_PACKAGE_FILE_NAME "solix-${PROJECT_VERSION}-Darwin")
@@ -188,10 +192,29 @@ else()
     set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
     set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "${CPACK_PACKAGE_HOMEPAGE_URL}")
     set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
+    # Generate Debian postinst script to auto-install companion libraries via solix install --archive
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/cpack_debian_postinst"
+"#!/bin/sh
+set -e
+if command -v solix >/dev/null 2>&1; then
+    solix install --archive /usr/share/solix/solixlib || true
+    solix install --archive /usr/share/solix/raylib || true
+fi
+exit 0
+")
+    set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_BINARY_DIR}/cpack_debian_postinst")
+
     # RPM package settings
     set(CPACK_RPM_PACKAGE_LICENSE "MIT")
     set(CPACK_RPM_PACKAGE_GROUP "Development/Languages")
     set(CPACK_RPM_PACKAGE_URL "${CPACK_PACKAGE_HOMEPAGE_URL}")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/cpack_rpm_postinst"
+"if command -v solix >/dev/null 2>&1; then
+    solix install --archive /usr/share/solix/solixlib || true
+    solix install --archive /usr/share/solix/raylib || true
+fi
+")
+    set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/cpack_rpm_postinst")
 endif()
 
 include(CPack)
