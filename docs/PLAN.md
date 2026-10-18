@@ -480,4 +480,32 @@ Migrate the standard library `solixlib` into `libs/` alongside companion graphic
 - [x] Push `master` to `origin/master` and push tag `v1.2.1`.
 - [x] Install updated Solix v1.2.1 toolchain to host environment (`~/.local`).
 
+---
+
+## Phase 20: Project Types (`app` vs `library`), Clean Installation Staging, `solix archive`, Fast `--as-is` & Recursive Source Discovery
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `cli/templates/project/solix.json`, `cli/src/commands/new.cpp`, `cli/src/commands/new.hpp`, `cli/src/commands/package.cpp`, `cli/src/commands/execute.cpp`, `cli/src/package_manager.hpp`, `cli/src/package_manager.cpp`, `cli/src/dependency_resolver.hpp`, `libs/solixlib/`, `libs/raylib/`, `tests/commands/TESTS.md`, `tests/commands/test_project_types_and_installation.cpp`, `docs/spec/cli/package.md`, `docs/spec/cli/new.md`, `docs/spec/cli/README.md`
+- **Status**: - [x] Completed & Merged (2026-10-18)
+
+### Objective
+Introduce formal distinction between applications (`"type": "app"`) and libraries (`"type": "library"`) across the Solix toolchain. Enforce that applications cannot be consumed as dependencies by other projects. Provide clean, minimal distribution packaging on `solix install` and `solix archive` by stripping build profiles, commands, bytecode (for libraries), and raw sources (for apps). Support customizable build profiles (`-p, --profile`) and directory staging (`-o, --output`) during install, direct execution of pre-built applications in `solix run`, zero-rebuild installation (`--as-is`), recursive auto-discovery of `.slx` source files under `src/`, and dependency pre-installation with collision warnings for path dependencies.
+
+### Action Items
+- [x] Extend `solix new` with `-T, --type` flag accepting `app` (default) and `library`, generating appropriate starter files (`src/main.slx` vs `src/lib.slx`).
+- [x] Update project template and companion library manifests (`libs/solixlib`, `libs/raylib`) with `"type": "library"`.
+- [x] Implement recursive auto-discovery of `*.slx` source files in `src/` inside `dependency_resolver`, removing the requirement to list every individual source file in `manifest.json`.
+- [x] In `dependency_resolver`, enforce dependency guard rejecting `"type": "app"` projects as dependencies with an explicit diagnostic error.
+- [x] Refactor `PackageManager::install_project` to build with requested profile (`-p, --profile`, default `release`) and produce clean reduced distribution manifests:
+  - For libraries: retain own `src/` (excluding local `main.slx`), native libraries, merged resources; strip profiles/commands/bytecode; retain normalized package dependencies only.
+  - For applications: retain compiled `bytecode.slxbin`, native libraries, merged resources; strip `src/`, profiles, commands, dependencies; mark with `"entry": "bytecode.slxbin"`.
+- [x] Add `solix archive [path] -o <dir> [-p <profile>]` command to build and export self-contained clean project distributions without registering into the global registry.
+- [x] Support `solix install [path] -o <dir>` export staging and `--as-is` instant installation for pre-packaged distributions.
+- [x] Enhance `solix run` to directly execute installed or pre-built applications (`bytecode.slxbin`) without invoking the compiler.
+- [x] Document test specifications in `tests/commands/TESTS.md` (Part XXVIII: Cases 28.1 to 28.8).
+- [x] Implement Catch2 test cases in `tests/commands/test_project_types_and_installation.cpp`.
+- [x] Synchronize documentation in `docs/spec/cli/README.md`, `docs/spec/cli/package.md`, and `docs/spec/cli/new.md`.
+- [x] Verify 100% test pass rate across all test suites.
+
+
 

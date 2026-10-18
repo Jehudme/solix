@@ -190,6 +190,7 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
         return false;
     }
 
+    bool has_explicit_type = manifest.contains("type") && !manifest["type"].is_null();
     std::string proj_type = manifest.value("type", "app");
     std::transform(proj_type.begin(), proj_type.end(), proj_type.begin(), [](unsigned char c) { return std::tolower(c); });
     if (proj_type == "lib") proj_type = "library";
@@ -243,8 +244,19 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
             }
         }
 
+        std::string effective_profile = profile_name;
+        if (manifest.contains("profiles") && manifest["profiles"].is_object() && !manifest["profiles"].empty()) {
+            if (!manifest["profiles"].contains(effective_profile)) {
+                if (manifest["profiles"].contains("debug")) {
+                    effective_profile = "debug";
+                } else {
+                    effective_profile = manifest["profiles"].begin().key();
+                }
+            }
+        }
+
         // 2. Build the project using the requested profile
-        build_res = build_project(src_dir, profile_name);
+        build_res = build_project(src_dir, effective_profile);
         if (!build_res.success) {
             std::cerr << "Error: Failed to build project before installation." << std::endl;
             return false;
@@ -269,6 +281,7 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
     std::filesystem::create_directories(dest_dir, ec);
 
     if (is_already_prepared) {
+        std::cout << "Installing pre-packaged distribution as-is..." << std::endl;
         // Already prepared: copy as-is (excluding transient build/git/vscode artifacts)
         for (const auto& entry : std::filesystem::directory_iterator(src_dir, ec)) {
             std::string filename = entry.path().filename().string();
@@ -279,6 +292,21 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
                                  std::filesystem::copy_options::recursive |
                                  std::filesystem::copy_options::overwrite_existing,
                                  ec);
+        }
+    } else if (!has_explicit_type && custom_output_dir.empty()) {
+        // Legacy untyped project: preserve full original directory contents (excluding build/.git/.vscode)
+        for (const auto& entry : std::filesystem::directory_iterator(src_dir, ec)) {
+            std::string filename = entry.path().filename().string();
+            if (filename == "build" || filename == ".git" || filename == ".vscode") {
+                continue;
+            }
+            std::filesystem::copy(entry.path(), dest_dir / filename,
+                                 std::filesystem::copy_options::recursive |
+                                 std::filesystem::copy_options::overwrite_existing,
+                                 ec);
+        }
+        if (std::filesystem::exists(build_res.output_binary)) {
+            std::filesystem::copy_file(build_res.output_binary, dest_dir / "bytecode.slxbin", std::filesystem::copy_options::overwrite_existing, ec);
         }
     } else if (proj_type == "library") {
         // Clean library distribution:
@@ -356,11 +384,15 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
         }
         reduced["dependencies"] = reduced_deps;
 
-        std::ofstream out_mf(dest_dir / "manifest.json");
+        std::ofstream out_mf(dest_dir / manifest_path.filename());
         out_mf << reduced.dump(2) << std::endl;
+        if (manifest_path.filename() != "manifest.json") {
+            std::ofstream out_alt(dest_dir / "manifest.json");
+            out_alt << reduced.dump(2) << std::endl;
+        }
 
     } else {
-        // Clean app distribution:
+        // App distribution:
         // A. Copy compiled bytecode
         if (std::filesystem::exists(build_res.output_binary)) {
             std::filesystem::copy_file(build_res.output_binary, dest_dir / "bytecode.slxbin", std::filesystem::copy_options::overwrite_existing, ec);
@@ -400,8 +432,12 @@ bool PackageManager::install_project(const std::filesystem::path& project_path,
         if (manifest.contains("license") && !manifest["license"].is_null()) reduced["license"] = manifest["license"];
         if (manifest.contains("tags") && manifest["tags"].is_array()) reduced["tags"] = manifest["tags"];
 
-        std::ofstream out_mf(dest_dir / "manifest.json");
+        std::ofstream out_mf(dest_dir / manifest_path.filename());
         out_mf << reduced.dump(2) << std::endl;
+        if (manifest_path.filename() != "manifest.json") {
+            std::ofstream out_alt(dest_dir / "manifest.json");
+            out_alt << reduced.dump(2) << std::endl;
+        }
     }
 
     if (should_register) {
