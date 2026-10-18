@@ -69,22 +69,17 @@ def build_target(native_dir, build_dir, target_key, output_path, release=True, u
         ])
 
     print(f"[build_native] Configuring {target_key} (use_zig={use_zig})...")
-    res = subprocess.run(cmd, capture_output=True, text=True)
+    res = subprocess.run(cmd)
     if res.returncode != 0:
-        print(f"[build_native] CMake configuration failed for {target_key}:", file=sys.stderr)
-        if res.stderr:
-            print(res.stderr, file=sys.stderr)
+        print(f"[build_native] CMake configuration failed for {target_key}", file=sys.stderr)
         return False
 
     print(f"[build_native] Compiling {target_key}...")
-    res_build = subprocess.run(["cmake", "--build", str(build_dir), "-j8"], capture_output=True, text=True)
+    res_build = subprocess.run(["cmake", "--build", str(build_dir), "-j8"])
     if res_build.returncode != 0:
-        print(f"[build_native] Compilation failed for {target_key}:", file=sys.stderr)
-        if res_build.stderr:
-            print(res_build.stderr, file=sys.stderr)
+        print(f"[build_native] Compilation failed for {target_key}", file=sys.stderr)
         return False
 
-    # Check if target output was placed in libs/raylib/lib
     compiled_lib = output_path.parent / target_info["output_filename"]
     if compiled_lib.exists():
         print(f"[build_native] Successfully produced {compiled_lib.name}")
@@ -103,6 +98,7 @@ def main():
         help="Comma-separated list of targets ('linux', 'windows', 'macos', or 'all')",
     )
     parser.add_argument("--debug", action="store_true", help="Compile with debug symbols")
+    parser.add_argument("--force", "-f", action="store_true", help="Force rebuild even if output already exists")
     args = parser.parse_args()
 
     script_dir = Path(__file__).resolve().parent
@@ -133,6 +129,11 @@ def main():
         dest_file = output_dir / target_info["output_filename"]
         target_build_dir = build_root / target_key
 
+        if dest_file.exists() and not args.force:
+            print(f"[build_native] {dest_file.name} is already built. Use --force to rebuild.")
+            success_count += 1
+            continue
+
         is_host = (target_key == host_target)
         if is_host:
             ok = build_target(native_dir, target_build_dir, target_key, dest_file, release=release, use_zig=False)
@@ -156,7 +157,7 @@ def main():
             except OSError:
                 pass
 
-    print(f"[build_native] Successfully compiled {success_count}/{len(target_keys)} native target(s)")
+    print(f"[build_native] Done: {success_count}/{len(target_keys)} native target(s) ready")
     if success_count == 0:
         sys.exit(1)
 

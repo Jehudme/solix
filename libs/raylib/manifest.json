@@ -123,9 +123,6 @@
   "license": null,
   "profiles": {
     "debug": {
-      "pre_compile": [
-        "python3 scripts/build_native.py"
-      ],
       "asm_filename": "out.slxasm",
       "compilation": {
         "additional_dependencies": [],
