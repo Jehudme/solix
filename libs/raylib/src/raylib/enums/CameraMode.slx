@@ -1,0 +1,9 @@
+package raylib.enums;
+
+public class CameraMode {
+    public static int32 CAMERA_CUSTOM = 0;
+    public static int32 CAMERA_FREE = 1;
+    public static int32 CAMERA_ORBITAL = 2;
+    public static int32 CAMERA_FIRST_PERSON = 3;
+    public static int32 CAMERA_THIRD_PERSON = 4;
+}

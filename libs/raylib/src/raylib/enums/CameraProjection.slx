@@ -1,0 +1,6 @@
+package raylib.enums;
+
+public class CameraProjection {
+    public static int32 CAMERA_PERSPECTIVE = 0;
+    public static int32 CAMERA_ORTHOGRAPHIC = 1;
+}

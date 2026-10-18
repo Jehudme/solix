@@ -1,0 +1,16 @@
+package raylib.types;
+
+public class Vector2 {
+    public float32 x;
+    public float32 y;
+
+    public Vector2() {
+        this.x = 0.0;
+        this.y = 0.0;
+    }
+
+    public Vector2(float32 x, float32 y) {
+        this.x = x;
+        this.y = y;
+    }
+}

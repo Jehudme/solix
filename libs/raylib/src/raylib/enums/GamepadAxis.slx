@@ -1,0 +1,10 @@
+package raylib.enums;
+
+public class GamepadAxis {
+    public static int32 GAMEPAD_AXIS_LEFT_X = 0;
+    public static int32 GAMEPAD_AXIS_LEFT_Y = 1;
+    public static int32 GAMEPAD_AXIS_RIGHT_X = 2;
+    public static int32 GAMEPAD_AXIS_RIGHT_Y = 3;
+    public static int32 GAMEPAD_AXIS_LEFT_TRIGGER = 4;
+    public static int32 GAMEPAD_AXIS_RIGHT_TRIGGER = 5;
+}

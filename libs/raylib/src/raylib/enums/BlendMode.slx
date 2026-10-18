@@ -1,0 +1,12 @@
+package raylib.enums;
+
+public class BlendMode {
+    public static int32 BLEND_ALPHA = 0;
+    public static int32 BLEND_ADDITIVE = 1;
+    public static int32 BLEND_MULTIPLIED = 2;
+    public static int32 BLEND_ADD_COLORS = 3;
+    public static int32 BLEND_SUBTRACT_COLORS = 4;
+    public static int32 BLEND_ALPHA_PREMULTIPLY = 5;
+    public static int32 BLEND_CUSTOM = 6;
+    public static int32 BLEND_CUSTOM_SEPARATE = 7;
+}

@@ -1,0 +1,9 @@
+package raylib.enums;
+
+public class CubemapLayout {
+    public static int32 CUBEMAP_LAYOUT_AUTO_DETECT = 0;
+    public static int32 CUBEMAP_LAYOUT_LINE_VERTICAL = 1;
+    public static int32 CUBEMAP_LAYOUT_LINE_HORIZONTAL = 2;
+    public static int32 CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR = 3;
+    public static int32 CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE = 4;
+}

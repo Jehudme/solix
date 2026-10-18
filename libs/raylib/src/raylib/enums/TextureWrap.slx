@@ -1,0 +1,8 @@
+package raylib.enums;
+
+public class TextureWrap {
+    public static int32 TEXTURE_WRAP_REPEAT = 0;
+    public static int32 TEXTURE_WRAP_CLAMP = 1;
+    public static int32 TEXTURE_WRAP_MIRROR_REPEAT = 2;
+    public static int32 TEXTURE_WRAP_MIRROR_CLAMP = 3;
+}

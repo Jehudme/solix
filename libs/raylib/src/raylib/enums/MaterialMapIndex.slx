@@ -1,0 +1,15 @@
+package raylib.enums;
+
+public class MaterialMapIndex {
+    public static int32 MATERIAL_MAP_ALBEDO = 0;
+    public static int32 MATERIAL_MAP_METALNESS = 1;
+    public static int32 MATERIAL_MAP_NORMAL = 2;
+    public static int32 MATERIAL_MAP_ROUGHNESS = 3;
+    public static int32 MATERIAL_MAP_OCCLUSION = 4;
+    public static int32 MATERIAL_MAP_EMISSION = 5;
+    public static int32 MATERIAL_MAP_HEIGHT = 6;
+    public static int32 MATERIAL_MAP_CUBEMAP = 7;
+    public static int32 MATERIAL_MAP_IRRADIANCE = 8;
+    public static int32 MATERIAL_MAP_PREFILTER = 9;
+    public static int32 MATERIAL_MAP_BRDF = 10;
+}
