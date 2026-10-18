@@ -1,0 +1,31 @@
+package raylib.types;
+
+import raylib.types.Rectangle;
+
+public class NPatchInfo {
+    public Rectangle source;
+    public int32 left;
+    public int32 top;
+    public int32 right;
+    public int32 bottom;
+    public int32 layout;
+
+    public NPatchInfo() {
+        this.source = new Rectangle();
+        this.left = 0;
+        this.top = 0;
+        this.right = 0;
+        this.bottom = 0;
+        this.layout = 0;
+    }
+
+    public NPatchInfo(Rectangle source, int32 left, int32 top, int32 right, int32 bottom, int32 layout) {
+        this.source = source;
+        this.left = left;
+        this.top = top;
+        this.right = right;
+        this.bottom = bottom;
+        this.layout = layout;
+    }
+
+}

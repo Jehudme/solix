@@ -1,0 +1,25 @@
+package raylib.types;
+
+import raylib.types.Vector2;
+
+public class Camera2D {
+    public Vector2 offset;
+    public Vector2 target;
+    public float32 rotation;
+    public float32 zoom;
+
+    public Camera2D() {
+        this.offset = new Vector2();
+        this.target = new Vector2();
+        this.rotation = 0.0;
+        this.zoom = 0.0;
+    }
+
+    public Camera2D(Vector2 offset, Vector2 target, float32 rotation, float32 zoom) {
+        this.offset = offset;
+        this.target = target;
+        this.rotation = rotation;
+        this.zoom = zoom;
+    }
+
+}

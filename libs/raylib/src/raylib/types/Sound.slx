@@ -1,0 +1,19 @@
+package raylib.types;
+
+import raylib.types.AudioStream;
+
+public class Sound {
+    public AudioStream stream;
+    public uint32 frameCount;
+
+    public Sound() {
+        this.stream = new AudioStream();
+        this.frameCount = 0;
+    }
+
+    public Sound(AudioStream stream, uint32 frameCount) {
+        this.stream = stream;
+        this.frameCount = frameCount;
+    }
+
+}

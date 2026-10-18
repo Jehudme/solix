@@ -1,0 +1,31 @@
+package raylib.types;
+
+import raylib.types.Shader;
+
+public class Material {
+    public Shader shader;
+    public uint64 maps;
+    public float32 params_0;
+    public float32 params_1;
+    public float32 params_2;
+    public float32 params_3;
+
+    public Material() {
+        this.shader = new Shader();
+        this.maps = 0;
+        this.params_0 = 0.0;
+        this.params_1 = 0.0;
+        this.params_2 = 0.0;
+        this.params_3 = 0.0;
+    }
+
+    public Material(Shader shader, uint64 maps, float32 params_0, float32 params_1, float32 params_2, float32 params_3) {
+        this.shader = shader;
+        this.maps = maps;
+        this.params_0 = params_0;
+        this.params_1 = params_1;
+        this.params_2 = params_2;
+        this.params_3 = params_3;
+    }
+
+}

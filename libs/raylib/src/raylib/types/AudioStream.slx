@@ -1,0 +1,26 @@
+package raylib.types;
+
+public class AudioStream {
+    public uint64 buffer;
+    public uint64 processor;
+    public uint32 sampleRate;
+    public uint32 sampleSize;
+    public uint32 channels;
+
+    public AudioStream() {
+        this.buffer = 0;
+        this.processor = 0;
+        this.sampleRate = 0;
+        this.sampleSize = 0;
+        this.channels = 0;
+    }
+
+    public AudioStream(uint64 buffer, uint64 processor, uint32 sampleRate, uint32 sampleSize, uint32 channels) {
+        this.buffer = buffer;
+        this.processor = processor;
+        this.sampleRate = sampleRate;
+        this.sampleSize = sampleSize;
+        this.channels = channels;
+    }
+
+}

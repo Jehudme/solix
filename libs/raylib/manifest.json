@@ -96,11 +96,135 @@
     },
     {
       "type": "source",
+      "path": "src/raylib/types/AudioStream.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/AutomationEvent.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/AutomationEventList.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/BoneInfo.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/BoundingBox.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Camera.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Camera2D.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Camera3D.slx"
+    },
+    {
+      "type": "source",
       "path": "src/raylib/types/Color.slx"
     },
     {
       "type": "source",
+      "path": "src/raylib/types/FilePathList.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Font.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/GlyphInfo.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Image.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Material.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/MaterialMap.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Matrix.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Mesh.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Model.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/ModelAnimation.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/ModelSkeleton.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Music.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/NPatchInfo.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Quaternion.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Ray.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/RayCollision.slx"
+    },
+    {
+      "type": "source",
       "path": "src/raylib/types/Rectangle.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/RenderTexture.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/RenderTexture2D.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Shader.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Sound.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Texture.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Texture2D.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Transform.slx"
     },
     {
       "type": "source",
@@ -113,6 +237,18 @@
     {
       "type": "source",
       "path": "src/raylib/types/Vector4.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/VrDeviceInfo.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/VrStereoConfig.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Wave.slx"
     }
   ],
   "description": null,

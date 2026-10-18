@@ -1,0 +1,59 @@
+package raylib.types;
+
+public class Matrix {
+    public float32 m0;
+    public float32 m4;
+    public float32 m8;
+    public float32 m12;
+    public float32 m1;
+    public float32 m5;
+    public float32 m9;
+    public float32 m13;
+    public float32 m2;
+    public float32 m6;
+    public float32 m10;
+    public float32 m14;
+    public float32 m3;
+    public float32 m7;
+    public float32 m11;
+    public float32 m15;
+
+    public Matrix() {
+        this.m0 = 0.0;
+        this.m4 = 0.0;
+        this.m8 = 0.0;
+        this.m12 = 0.0;
+        this.m1 = 0.0;
+        this.m5 = 0.0;
+        this.m9 = 0.0;
+        this.m13 = 0.0;
+        this.m2 = 0.0;
+        this.m6 = 0.0;
+        this.m10 = 0.0;
+        this.m14 = 0.0;
+        this.m3 = 0.0;
+        this.m7 = 0.0;
+        this.m11 = 0.0;
+        this.m15 = 0.0;
+    }
+
+    public Matrix(float32 m0, float32 m4, float32 m8, float32 m12, float32 m1, float32 m5, float32 m9, float32 m13, float32 m2, float32 m6, float32 m10, float32 m14, float32 m3, float32 m7, float32 m11, float32 m15) {
+        this.m0 = m0;
+        this.m4 = m4;
+        this.m8 = m8;
+        this.m12 = m12;
+        this.m1 = m1;
+        this.m5 = m5;
+        this.m9 = m9;
+        this.m13 = m13;
+        this.m2 = m2;
+        this.m6 = m6;
+        this.m10 = m10;
+        this.m14 = m14;
+        this.m3 = m3;
+        this.m7 = m7;
+        this.m11 = m11;
+        this.m15 = m15;
+    }
+
+}

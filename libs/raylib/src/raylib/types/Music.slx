@@ -1,0 +1,28 @@
+package raylib.types;
+
+import raylib.types.AudioStream;
+
+public class Music {
+    public AudioStream stream;
+    public uint32 frameCount;
+    public bool looping;
+    public int32 ctxType;
+    public uint64 ctxData;
+
+    public Music() {
+        this.stream = new AudioStream();
+        this.frameCount = 0;
+        this.looping = false;
+        this.ctxType = 0;
+        this.ctxData = 0;
+    }
+
+    public Music(AudioStream stream, uint32 frameCount, bool looping, int32 ctxType, uint64 ctxData) {
+        this.stream = stream;
+        this.frameCount = frameCount;
+        this.looping = looping;
+        this.ctxType = ctxType;
+        this.ctxData = ctxData;
+    }
+
+}

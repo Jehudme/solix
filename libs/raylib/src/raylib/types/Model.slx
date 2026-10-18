@@ -1,0 +1,41 @@
+package raylib.types;
+
+import raylib.types.Matrix;
+import raylib.types.ModelSkeleton;
+
+public class Model {
+    public Matrix transform;
+    public int32 meshCount;
+    public int32 materialCount;
+    public uint64 meshes;
+    public uint64 materials;
+    public uint64 meshMaterial;
+    public ModelSkeleton skeleton;
+    public uint64 currentPose;
+    public uint64 boneMatrices;
+
+    public Model() {
+        this.transform = new Matrix();
+        this.meshCount = 0;
+        this.materialCount = 0;
+        this.meshes = 0;
+        this.materials = 0;
+        this.meshMaterial = 0;
+        this.skeleton = new ModelSkeleton();
+        this.currentPose = 0;
+        this.boneMatrices = 0;
+    }
+
+    public Model(Matrix transform, int32 meshCount, int32 materialCount, uint64 meshes, uint64 materials, uint64 meshMaterial, ModelSkeleton skeleton, uint64 currentPose, uint64 boneMatrices) {
+        this.transform = transform;
+        this.meshCount = meshCount;
+        this.materialCount = materialCount;
+        this.meshes = meshes;
+        this.materials = materials;
+        this.meshMaterial = meshMaterial;
+        this.skeleton = skeleton;
+        this.currentPose = currentPose;
+        this.boneMatrices = boneMatrices;
+    }
+
+}

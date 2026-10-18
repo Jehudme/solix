@@ -19,4 +19,5 @@ public class Vector4 {
         this.z = z;
         this.w = w;
     }
+
 }

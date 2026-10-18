@@ -1,0 +1,20 @@
+package raylib.types;
+
+public class AutomationEventList {
+    public uint32 capacity;
+    public uint32 count;
+    public uint64 events;
+
+    public AutomationEventList() {
+        this.capacity = 0;
+        this.count = 0;
+        this.events = 0;
+    }
+
+    public AutomationEventList(uint32 capacity, uint32 count, uint64 events) {
+        this.capacity = capacity;
+        this.count = count;
+        this.events = events;
+    }
+
+}

@@ -1,0 +1,5 @@
+package raylib.types;
+
+public class Camera : Camera3D {
+    public Camera() : super() {}
+}

@@ -1,0 +1,28 @@
+package raylib.types;
+
+import raylib.types.Vector3;
+
+public class Camera3D {
+    public Vector3 position;
+    public Vector3 target;
+    public Vector3 up;
+    public float32 fovy;
+    public int32 projection;
+
+    public Camera3D() {
+        this.position = new Vector3();
+        this.target = new Vector3();
+        this.up = new Vector3();
+        this.fovy = 0.0;
+        this.projection = 0;
+    }
+
+    public Camera3D(Vector3 position, Vector3 target, Vector3 up, float32 fovy, int32 projection) {
+        this.position = position;
+        this.target = target;
+        this.up = up;
+        this.fovy = fovy;
+        this.projection = projection;
+    }
+
+}

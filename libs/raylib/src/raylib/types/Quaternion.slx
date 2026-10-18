@@ -1,0 +1,5 @@
+package raylib.types;
+
+public class Quaternion : Vector4 {
+    public Quaternion() : super() {}
+}

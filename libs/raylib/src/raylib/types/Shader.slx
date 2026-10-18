@@ -1,0 +1,17 @@
+package raylib.types;
+
+public class Shader {
+    public uint32 id;
+    public uint64 locs;
+
+    public Shader() {
+        this.id = 0;
+        this.locs = 0;
+    }
+
+    public Shader(uint32 id, uint64 locs) {
+        this.id = id;
+        this.locs = locs;
+    }
+
+}

@@ -1,10 +1,46 @@
 package raylib;
 
+import solix.core.String;
+
 import raylib.types.Vector2;
 import raylib.types.Vector3;
 import raylib.types.Vector4;
+import raylib.types.Matrix;
 import raylib.types.Color;
 import raylib.types.Rectangle;
+import raylib.types.Image;
+import raylib.types.Texture2D;
+import raylib.types.RenderTexture2D;
+import raylib.types.NPatchInfo;
+import raylib.types.GlyphInfo;
+import raylib.types.Font;
+import raylib.types.Camera3D;
+import raylib.types.Camera2D;
+import raylib.types.Mesh;
+import raylib.types.Shader;
+import raylib.types.MaterialMap;
+import raylib.types.Material;
+import raylib.types.Transform;
+import raylib.types.BoneInfo;
+import raylib.types.ModelSkeleton;
+import raylib.types.Model;
+import raylib.types.ModelAnimation;
+import raylib.types.Ray;
+import raylib.types.RayCollision;
+import raylib.types.BoundingBox;
+import raylib.types.Wave;
+import raylib.types.AudioStream;
+import raylib.types.Sound;
+import raylib.types.Music;
+import raylib.types.VrDeviceInfo;
+import raylib.types.VrStereoConfig;
+import raylib.types.FilePathList;
+import raylib.types.AutomationEvent;
+import raylib.types.AutomationEventList;
+import raylib.types.Camera;
+import raylib.types.Texture;
+import raylib.types.RenderTexture;
+import raylib.types.Quaternion;
 
 public class Raylib {
     public static void init_window(int32 width, int32 height, String title) {
@@ -79,6 +115,14 @@ public class Raylib {
         native_restore_window();
     }
 
+    public static void set_window_icon(Image image) {
+        native_set_window_icon(image);
+    }
+
+    public static void set_window_icons(Image[] images, int32 count) {
+        native_set_window_icons(images, count);
+    }
+
     public static void set_window_title(String title) {
         native_set_window_title(title);
     }
@@ -109,6 +153,10 @@ public class Raylib {
 
     public static void set_window_focused() {
         native_set_window_focused();
+    }
+
+    public static uint64 get_window_handle() {
+        return native_get_window_handle();
     }
 
     public static int32 get_screen_width() {
@@ -174,7 +222,9 @@ public class Raylib {
     }
 
     public static String get_monitor_name(int32 monitor) {
-        return native_get_monitor_name(monitor);
+        char[] __chars = native_get_monitor_name(monitor);
+        if (__chars == null) return null;
+        return new String(__chars);
     }
 
     public static void set_clipboard_text(String text) {
@@ -182,7 +232,15 @@ public class Raylib {
     }
 
     public static String get_clipboard_text() {
-        return native_get_clipboard_text();
+        char[] __chars = native_get_clipboard_text();
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static Image get_clipboard_image() {
+        Image __res = new Image();
+        native_get_clipboard_image(__res);
+        return __res;
     }
 
     public static void enable_event_waiting() {
@@ -229,16 +287,32 @@ public class Raylib {
         native_end_drawing();
     }
 
+    public static void begin_mode2d(Camera2D camera) {
+        native_begin_mode2d(camera);
+    }
+
     public static void end_mode2d() {
         native_end_mode2d();
+    }
+
+    public static void begin_mode3d(Camera3D camera) {
+        native_begin_mode3d(camera);
     }
 
     public static void end_mode3d() {
         native_end_mode3d();
     }
 
+    public static void begin_texture_mode(RenderTexture2D target) {
+        native_begin_texture_mode(target);
+    }
+
     public static void end_texture_mode() {
         native_end_texture_mode();
+    }
+
+    public static void begin_shader_mode(Shader shader) {
+        native_begin_shader_mode(shader);
     }
 
     public static void end_shader_mode() {
@@ -261,8 +335,114 @@ public class Raylib {
         native_end_scissor_mode();
     }
 
+    public static void begin_vr_stereo_mode(VrStereoConfig config) {
+        native_begin_vr_stereo_mode(config);
+    }
+
     public static void end_vr_stereo_mode() {
         native_end_vr_stereo_mode();
+    }
+
+    public static VrStereoConfig load_vr_stereo_config(VrDeviceInfo device) {
+        VrStereoConfig __res = new VrStereoConfig();
+        native_load_vr_stereo_config(device, __res);
+        return __res;
+    }
+
+    public static void unload_vr_stereo_config(VrStereoConfig config) {
+        native_unload_vr_stereo_config(config);
+    }
+
+    public static Shader load_shader(String vsFileName, String fsFileName) {
+        Shader __res = new Shader();
+        native_load_shader(vsFileName, fsFileName, __res);
+        return __res;
+    }
+
+    public static Shader load_shader_from_memory(String vsCode, String fsCode) {
+        Shader __res = new Shader();
+        native_load_shader_from_memory(vsCode, fsCode, __res);
+        return __res;
+    }
+
+    public static bool is_shader_valid(Shader shader) {
+        return native_is_shader_valid(shader);
+    }
+
+    public static int32 get_shader_location(Shader shader, String uniformName) {
+        return native_get_shader_location(shader, uniformName);
+    }
+
+    public static int32 get_shader_location_attrib(Shader shader, String attribName) {
+        return native_get_shader_location_attrib(shader, attribName);
+    }
+
+    public static void set_shader_value(Shader shader, int32 locIndex, uint64 value, int32 uniformType) {
+        native_set_shader_value(shader, locIndex, value, uniformType);
+    }
+
+    public static void set_shader_value_v(Shader shader, int32 locIndex, uint64 value, int32 uniformType, int32 count) {
+        native_set_shader_value_v(shader, locIndex, value, uniformType, count);
+    }
+
+    public static void set_shader_value_matrix(Shader shader, int32 locIndex, Matrix mat) {
+        native_set_shader_value_matrix(shader, locIndex, mat);
+    }
+
+    public static void set_shader_value_texture(Shader shader, int32 locIndex, Texture2D texture) {
+        native_set_shader_value_texture(shader, locIndex, texture);
+    }
+
+    public static void unload_shader(Shader shader) {
+        native_unload_shader(shader);
+    }
+
+    public static Ray get_screen_to_world_ray(Vector2 position, Camera3D camera) {
+        Ray __res = new Ray();
+        native_get_screen_to_world_ray(position, camera, __res);
+        return __res;
+    }
+
+    public static Ray get_screen_to_world_ray_ex(Vector2 position, Camera3D camera, int32 width, int32 height) {
+        Ray __res = new Ray();
+        native_get_screen_to_world_ray_ex(position, camera, width, height, __res);
+        return __res;
+    }
+
+    public static Vector2 get_world_to_screen(Vector3 position, Camera3D camera) {
+        Vector2 __res = new Vector2();
+        native_get_world_to_screen(position, camera, __res);
+        return __res;
+    }
+
+    public static Vector2 get_world_to_screen_ex(Vector3 position, Camera3D camera, int32 width, int32 height) {
+        Vector2 __res = new Vector2();
+        native_get_world_to_screen_ex(position, camera, width, height, __res);
+        return __res;
+    }
+
+    public static Vector2 get_world_to_screen2d(Vector2 position, Camera2D camera) {
+        Vector2 __res = new Vector2();
+        native_get_world_to_screen2d(position, camera, __res);
+        return __res;
+    }
+
+    public static Vector2 get_screen_to_world2d(Vector2 position, Camera2D camera) {
+        Vector2 __res = new Vector2();
+        native_get_screen_to_world2d(position, camera, __res);
+        return __res;
+    }
+
+    public static Matrix get_camera_matrix(Camera3D camera) {
+        Matrix __res = new Matrix();
+        native_get_camera_matrix(camera, __res);
+        return __res;
+    }
+
+    public static Matrix get_camera_matrix2d(Camera2D camera) {
+        Matrix __res = new Matrix();
+        native_get_camera_matrix2d(camera, __res);
+        return __res;
     }
 
     public static void set_target_fps(int32 fps) {
@@ -301,6 +481,14 @@ public class Raylib {
         return native_get_random_value(min, max);
     }
 
+    public static int32[] load_random_sequence(uint32 count, int32 min, int32 max) {
+        return native_load_random_sequence(count, min, max);
+    }
+
+    public static void unload_random_sequence(int32[] sequence) {
+        native_unload_random_sequence(sequence);
+    }
+
     public static void take_screenshot(String fileName) {
         native_take_screenshot(fileName);
     }
@@ -315,6 +503,44 @@ public class Raylib {
 
     public static void set_trace_log_level(int32 logLevel) {
         native_set_trace_log_level(logLevel);
+    }
+
+    public static uint64 mem_alloc(uint32 size) {
+        return native_mem_alloc(size);
+    }
+
+    public static uint64 mem_realloc(uint64 ptr, uint32 size) {
+        return native_mem_realloc(ptr, size);
+    }
+
+    public static void mem_free(uint64 ptr) {
+        native_mem_free(ptr);
+    }
+
+    public static uint8[] load_file_data(String fileName, int32[] dataSize) {
+        return native_load_file_data(fileName, dataSize);
+    }
+
+    public static void unload_file_data(uint8[] data) {
+        native_unload_file_data(data);
+    }
+
+    public static bool save_file_data(String fileName, uint64 data, int32 dataSize) {
+        return native_save_file_data(fileName, data, dataSize);
+    }
+
+    public static bool export_data_as_code(uint8[] data, int32 dataSize, String fileName) {
+        return native_export_data_as_code(data, dataSize, fileName);
+    }
+
+    public static String load_file_text(String fileName) {
+        char[] __chars = native_load_file_text(fileName);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static void unload_file_text(String text) {
+        native_unload_file_text(text);
     }
 
     public static bool save_file_text(String fileName, String text) {
@@ -365,32 +591,50 @@ public class Raylib {
         return native_get_file_length(fileName);
     }
 
+    public static int64 get_file_mod_time(String fileName) {
+        return native_get_file_mod_time(fileName);
+    }
+
     public static String get_file_extension(String fileName) {
-        return native_get_file_extension(fileName);
+        char[] __chars = native_get_file_extension(fileName);
+        if (__chars == null) return null;
+        return new String(__chars);
     }
 
     public static String get_file_name(String filePath) {
-        return native_get_file_name(filePath);
+        char[] __chars = native_get_file_name(filePath);
+        if (__chars == null) return null;
+        return new String(__chars);
     }
 
     public static String get_file_name_without_ext(String filePath) {
-        return native_get_file_name_without_ext(filePath);
+        char[] __chars = native_get_file_name_without_ext(filePath);
+        if (__chars == null) return null;
+        return new String(__chars);
     }
 
     public static String get_directory_path(String filePath) {
-        return native_get_directory_path(filePath);
+        char[] __chars = native_get_directory_path(filePath);
+        if (__chars == null) return null;
+        return new String(__chars);
     }
 
     public static String get_prev_directory_path(String dirPath) {
-        return native_get_prev_directory_path(dirPath);
+        char[] __chars = native_get_prev_directory_path(dirPath);
+        if (__chars == null) return null;
+        return new String(__chars);
     }
 
     public static String get_working_directory() {
-        return native_get_working_directory();
+        char[] __chars = native_get_working_directory();
+        if (__chars == null) return null;
+        return new String(__chars);
     }
 
     public static String get_application_directory() {
-        return native_get_application_directory();
+        char[] __chars = native_get_application_directory();
+        if (__chars == null) return null;
+        return new String(__chars);
     }
 
     public static int32 make_directory(String dirPath) {
@@ -417,8 +661,34 @@ public class Raylib {
         return native_is_file_name_valid(fileName);
     }
 
+    public static FilePathList load_directory_files(String dirPath) {
+        FilePathList __res = new FilePathList();
+        native_load_directory_files(dirPath, __res);
+        return __res;
+    }
+
+    public static FilePathList load_directory_files_ex(String basePath, String filter, bool scanSubdirs) {
+        FilePathList __res = new FilePathList();
+        native_load_directory_files_ex(basePath, filter, scanSubdirs, __res);
+        return __res;
+    }
+
+    public static void unload_directory_files(FilePathList files) {
+        native_unload_directory_files(files);
+    }
+
     public static bool is_file_dropped() {
         return native_is_file_dropped();
+    }
+
+    public static FilePathList load_dropped_files() {
+        FilePathList __res = new FilePathList();
+        native_load_dropped_files(__res);
+        return __res;
+    }
+
+    public static void unload_dropped_files(FilePathList files) {
+        native_unload_dropped_files(files);
     }
 
     public static uint32 get_directory_file_count(String dirPath) {
@@ -427,6 +697,58 @@ public class Raylib {
 
     public static uint32 get_directory_file_count_ex(String basePath, String filter, bool scanSubdirs) {
         return native_get_directory_file_count_ex(basePath, filter, scanSubdirs);
+    }
+
+    public static uint8[] compress_data(uint8[] data, int32 dataSize, int32[] compDataSize) {
+        return native_compress_data(data, dataSize, compDataSize);
+    }
+
+    public static uint8[] decompress_data(uint8[] compData, int32 compDataSize, int32[] dataSize) {
+        return native_decompress_data(compData, compDataSize, dataSize);
+    }
+
+    public static String encode_data_base64(uint8[] data, int32 dataSize, int32[] outputSize) {
+        char[] __chars = native_encode_data_base64(data, dataSize, outputSize);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static uint8[] decode_data_base64(String text, int32[] outputSize) {
+        return native_decode_data_base64(text, outputSize);
+    }
+
+    public static uint32 compute_crc32(uint8[] data, int32 dataSize) {
+        return native_compute_crc32(data, dataSize);
+    }
+
+    public static uint32[] compute_md5(uint8[] data, int32 dataSize) {
+        return native_compute_md5(data, dataSize);
+    }
+
+    public static uint32[] compute_sha1(uint8[] data, int32 dataSize) {
+        return native_compute_sha1(data, dataSize);
+    }
+
+    public static uint32[] compute_sha256(uint8[] data, int32 dataSize) {
+        return native_compute_sha256(data, dataSize);
+    }
+
+    public static AutomationEventList load_automation_event_list(String fileName) {
+        AutomationEventList __res = new AutomationEventList();
+        native_load_automation_event_list(fileName, __res);
+        return __res;
+    }
+
+    public static void unload_automation_event_list(AutomationEventList list) {
+        native_unload_automation_event_list(list);
+    }
+
+    public static bool export_automation_event_list(AutomationEventList list, String fileName) {
+        return native_export_automation_event_list(list, fileName);
+    }
+
+    public static void set_automation_event_list(AutomationEventList[] list) {
+        native_set_automation_event_list(list);
     }
 
     public static void set_automation_event_base_frame(int32 frame) {
@@ -439,6 +761,10 @@ public class Raylib {
 
     public static void stop_automation_event_recording() {
         native_stop_automation_event_recording();
+    }
+
+    public static void play_automation_event(AutomationEvent event) {
+        native_play_automation_event(event);
     }
 
     public static bool is_key_pressed(int32 key) {
@@ -470,7 +796,9 @@ public class Raylib {
     }
 
     public static String get_key_name(int32 key) {
-        return native_get_key_name(key);
+        char[] __chars = native_get_key_name(key);
+        if (__chars == null) return null;
+        return new String(__chars);
     }
 
     public static void set_exit_key(int32 key) {
@@ -482,7 +810,9 @@ public class Raylib {
     }
 
     public static String get_gamepad_name(int32 gamepad) {
-        return native_get_gamepad_name(gamepad);
+        char[] __chars = native_get_gamepad_name(gamepad);
+        if (__chars == null) return null;
+        return new String(__chars);
     }
 
     public static bool is_gamepad_button_pressed(int32 gamepad, int32 button) {
@@ -641,6 +971,24 @@ public class Raylib {
         return native_get_gesture_pinch_angle();
     }
 
+    public static void update_camera(Camera3D[] camera, int32 mode) {
+        native_update_camera(camera, mode);
+    }
+
+    public static void update_camera_pro(Camera3D[] camera, Vector3 movement, Vector3 rotation, float32 zoom) {
+        native_update_camera_pro(camera, movement, rotation, zoom);
+    }
+
+    public static void set_shapes_texture(Texture2D texture, Rectangle rec) {
+        native_set_shapes_texture(texture, rec);
+    }
+
+    public static Texture2D get_shapes_texture() {
+        Texture2D __res = new Texture2D();
+        native_get_shapes_texture(__res);
+        return __res;
+    }
+
     public static Rectangle get_shapes_texture_rectangle() {
         Rectangle __res = new Rectangle();
         native_get_shapes_texture_rectangle(__res);
@@ -667,6 +1015,10 @@ public class Raylib {
         native_draw_line_ex(startPos, endPos, thick, color);
     }
 
+    public static void draw_line_strip(Vector2[] points, int32 pointCount, Color color) {
+        native_draw_line_strip(points, pointCount, color);
+    }
+
     public static void draw_line_bezier(Vector2 startPos, Vector2 endPos, float32 thick, Color color) {
         native_draw_line_bezier(startPos, endPos, thick, color);
     }
@@ -689,6 +1041,14 @@ public class Raylib {
 
     public static void draw_triangle_lines_ex(Vector2 v1, Vector2 v2, Vector2 v3, float32 thick, Color color) {
         native_draw_triangle_lines_ex(v1, v2, v3, thick, color);
+    }
+
+    public static void draw_triangle_fan(Vector2[] points, int32 pointCount, Color color) {
+        native_draw_triangle_fan(points, pointCount, color);
+    }
+
+    public static void draw_triangle_strip(Vector2[] points, int32 pointCount, Color color) {
+        native_draw_triangle_strip(points, pointCount, color);
     }
 
     public static void draw_rectangle(int32 posX, int32 posY, int32 width, int32 height, Color color) {
@@ -819,6 +1179,26 @@ public class Raylib {
         native_draw_ring_lines_ex(center, innerRadius, outerRadius, startAngle, endAngle, segments, thick, color);
     }
 
+    public static void draw_spline_linear(Vector2[] points, int32 pointCount, float32 thick, Color color) {
+        native_draw_spline_linear(points, pointCount, thick, color);
+    }
+
+    public static void draw_spline_basis(Vector2[] points, int32 pointCount, float32 thick, Color color) {
+        native_draw_spline_basis(points, pointCount, thick, color);
+    }
+
+    public static void draw_spline_catmull_rom(Vector2[] points, int32 pointCount, float32 thick, Color color) {
+        native_draw_spline_catmull_rom(points, pointCount, thick, color);
+    }
+
+    public static void draw_spline_bezier_quadratic(Vector2[] points, int32 pointCount, float32 thick, Color color) {
+        native_draw_spline_bezier_quadratic(points, pointCount, thick, color);
+    }
+
+    public static void draw_spline_bezier_cubic(Vector2[] points, int32 pointCount, float32 thick, Color color) {
+        native_draw_spline_bezier_cubic(points, pointCount, thick, color);
+    }
+
     public static void draw_spline_segment_linear(Vector2 p1, Vector2 p2, float32 thick, Color color) {
         native_draw_spline_segment_linear(p1, p2, thick, color);
     }
@@ -901,10 +1281,506 @@ public class Raylib {
         return native_check_collision_point_line(point, p1, p2, threshold);
     }
 
+    public static bool check_collision_point_poly(Vector2 point, Vector2[] points, int32 pointCount) {
+        return native_check_collision_point_poly(point, points, pointCount);
+    }
+
+    public static bool check_collision_lines(Vector2 startPos1, Vector2 endPos1, Vector2 startPos2, Vector2 endPos2, Vector2[] collisionPoint) {
+        return native_check_collision_lines(startPos1, endPos1, startPos2, endPos2, collisionPoint);
+    }
+
     public static Rectangle get_collision_rec(Rectangle rec1, Rectangle rec2) {
         Rectangle __res = new Rectangle();
         native_get_collision_rec(rec1, rec2, __res);
         return __res;
+    }
+
+    public static Image load_image(String fileName) {
+        Image __res = new Image();
+        native_load_image(fileName, __res);
+        return __res;
+    }
+
+    public static Image load_image_raw(String fileName, int32 width, int32 height, int32 format, int32 headerSize) {
+        Image __res = new Image();
+        native_load_image_raw(fileName, width, height, format, headerSize, __res);
+        return __res;
+    }
+
+    public static Image load_image_anim(String fileName, int32[] frames) {
+        Image __res = new Image();
+        native_load_image_anim(fileName, frames, __res);
+        return __res;
+    }
+
+    public static Image load_image_anim_from_memory(String fileType, uint8[] fileData, int32 dataSize, int32[] frames) {
+        Image __res = new Image();
+        native_load_image_anim_from_memory(fileType, fileData, dataSize, frames, __res);
+        return __res;
+    }
+
+    public static Image load_image_from_memory(String fileType, uint8[] fileData, int32 dataSize) {
+        Image __res = new Image();
+        native_load_image_from_memory(fileType, fileData, dataSize, __res);
+        return __res;
+    }
+
+    public static Image load_image_from_texture(Texture2D texture) {
+        Image __res = new Image();
+        native_load_image_from_texture(texture, __res);
+        return __res;
+    }
+
+    public static Image load_image_from_screen() {
+        Image __res = new Image();
+        native_load_image_from_screen(__res);
+        return __res;
+    }
+
+    public static bool is_image_valid(Image image) {
+        return native_is_image_valid(image);
+    }
+
+    public static void unload_image(Image image) {
+        native_unload_image(image);
+    }
+
+    public static bool export_image(Image image, String fileName) {
+        return native_export_image(image, fileName);
+    }
+
+    public static uint8[] export_image_to_memory(Image image, String fileType, int32[] fileSize) {
+        return native_export_image_to_memory(image, fileType, fileSize);
+    }
+
+    public static bool export_image_as_code(Image image, String fileName) {
+        return native_export_image_as_code(image, fileName);
+    }
+
+    public static Image gen_image_color(int32 width, int32 height, Color color) {
+        Image __res = new Image();
+        native_gen_image_color(width, height, color, __res);
+        return __res;
+    }
+
+    public static Image gen_image_gradient_linear(int32 width, int32 height, int32 direction, Color start, Color end) {
+        Image __res = new Image();
+        native_gen_image_gradient_linear(width, height, direction, start, end, __res);
+        return __res;
+    }
+
+    public static Image gen_image_gradient_radial(int32 width, int32 height, float32 density, Color inner, Color outer) {
+        Image __res = new Image();
+        native_gen_image_gradient_radial(width, height, density, inner, outer, __res);
+        return __res;
+    }
+
+    public static Image gen_image_gradient_square(int32 width, int32 height, float32 density, Color inner, Color outer) {
+        Image __res = new Image();
+        native_gen_image_gradient_square(width, height, density, inner, outer, __res);
+        return __res;
+    }
+
+    public static Image gen_image_checked(int32 width, int32 height, int32 checksX, int32 checksY, Color col1, Color col2) {
+        Image __res = new Image();
+        native_gen_image_checked(width, height, checksX, checksY, col1, col2, __res);
+        return __res;
+    }
+
+    public static Image gen_image_white_noise(int32 width, int32 height, float32 factor) {
+        Image __res = new Image();
+        native_gen_image_white_noise(width, height, factor, __res);
+        return __res;
+    }
+
+    public static Image gen_image_perlin_noise(int32 width, int32 height, int32 offsetX, int32 offsetY, float32 scale) {
+        Image __res = new Image();
+        native_gen_image_perlin_noise(width, height, offsetX, offsetY, scale, __res);
+        return __res;
+    }
+
+    public static Image gen_image_cellular(int32 width, int32 height, int32 tileSize) {
+        Image __res = new Image();
+        native_gen_image_cellular(width, height, tileSize, __res);
+        return __res;
+    }
+
+    public static Image gen_image_text(int32 width, int32 height, String text) {
+        Image __res = new Image();
+        native_gen_image_text(width, height, text, __res);
+        return __res;
+    }
+
+    public static Image image_copy(Image image) {
+        Image __res = new Image();
+        native_image_copy(image, __res);
+        return __res;
+    }
+
+    public static Image image_from_image(Image image, Rectangle rec) {
+        Image __res = new Image();
+        native_image_from_image(image, rec, __res);
+        return __res;
+    }
+
+    public static Image image_from_channel(Image image, int32 selectedChannel) {
+        Image __res = new Image();
+        native_image_from_channel(image, selectedChannel, __res);
+        return __res;
+    }
+
+    public static Image image_text(String text, int32 fontSize, Color color) {
+        Image __res = new Image();
+        native_image_text(text, fontSize, color, __res);
+        return __res;
+    }
+
+    public static Image image_text_ex(Font font, String text, float32 fontSize, float32 spacing, Color tint) {
+        Image __res = new Image();
+        native_image_text_ex(font, text, fontSize, spacing, tint, __res);
+        return __res;
+    }
+
+    public static void image_format(Image[] image, int32 newFormat) {
+        native_image_format(image, newFormat);
+    }
+
+    public static void image_to_pot(Image[] image, Color fill) {
+        native_image_to_pot(image, fill);
+    }
+
+    public static void image_crop(Image[] image, Rectangle crop) {
+        native_image_crop(image, crop);
+    }
+
+    public static void image_alpha_crop(Image[] image, float32 threshold) {
+        native_image_alpha_crop(image, threshold);
+    }
+
+    public static void image_alpha_clear(Image[] image, Color color, float32 threshold) {
+        native_image_alpha_clear(image, color, threshold);
+    }
+
+    public static void image_alpha_mask(Image[] image, Image alphaMask) {
+        native_image_alpha_mask(image, alphaMask);
+    }
+
+    public static void image_alpha_premultiply(Image[] image) {
+        native_image_alpha_premultiply(image);
+    }
+
+    public static void image_blur_gaussian(Image[] image, int32 blurSize) {
+        native_image_blur_gaussian(image, blurSize);
+    }
+
+    public static void image_kernel_convolution(Image[] image, float32[] kernel, int32 kernelSize) {
+        native_image_kernel_convolution(image, kernel, kernelSize);
+    }
+
+    public static void image_resize(Image[] image, int32 newWidth, int32 newHeight) {
+        native_image_resize(image, newWidth, newHeight);
+    }
+
+    public static void image_resize_nn(Image[] image, int32 newWidth, int32 newHeight) {
+        native_image_resize_nn(image, newWidth, newHeight);
+    }
+
+    public static void image_resize_canvas(Image[] image, int32 newWidth, int32 newHeight, int32 offsetX, int32 offsetY, Color fill) {
+        native_image_resize_canvas(image, newWidth, newHeight, offsetX, offsetY, fill);
+    }
+
+    public static void image_mipmaps(Image[] image) {
+        native_image_mipmaps(image);
+    }
+
+    public static void image_dither(Image[] image, int32 rBpp, int32 gBpp, int32 bBpp, int32 aBpp) {
+        native_image_dither(image, rBpp, gBpp, bBpp, aBpp);
+    }
+
+    public static void image_flip_vertical(Image[] image) {
+        native_image_flip_vertical(image);
+    }
+
+    public static void image_flip_horizontal(Image[] image) {
+        native_image_flip_horizontal(image);
+    }
+
+    public static void image_rotate(Image[] image, int32 degrees) {
+        native_image_rotate(image, degrees);
+    }
+
+    public static void image_rotate_cw(Image[] image) {
+        native_image_rotate_cw(image);
+    }
+
+    public static void image_rotate_ccw(Image[] image) {
+        native_image_rotate_ccw(image);
+    }
+
+    public static void image_color_tint(Image[] image, Color color) {
+        native_image_color_tint(image, color);
+    }
+
+    public static void image_color_invert(Image[] image) {
+        native_image_color_invert(image);
+    }
+
+    public static void image_color_grayscale(Image[] image) {
+        native_image_color_grayscale(image);
+    }
+
+    public static void image_color_contrast(Image[] image, int32 contrast) {
+        native_image_color_contrast(image, contrast);
+    }
+
+    public static void image_color_brightness(Image[] image, int32 brightness) {
+        native_image_color_brightness(image, brightness);
+    }
+
+    public static void image_color_replace(Image[] image, Color color, Color replace) {
+        native_image_color_replace(image, color, replace);
+    }
+
+    public static Color[] load_image_colors(Image image) {
+        return native_load_image_colors(image);
+    }
+
+    public static Color[] load_image_palette(Image image, int32 maxPaletteSize, int32[] colorCount) {
+        return native_load_image_palette(image, maxPaletteSize, colorCount);
+    }
+
+    public static void unload_image_colors(Color[] colors) {
+        native_unload_image_colors(colors);
+    }
+
+    public static void unload_image_palette(Color[] colors) {
+        native_unload_image_palette(colors);
+    }
+
+    public static Rectangle get_image_alpha_border(Image image, float32 threshold) {
+        Rectangle __res = new Rectangle();
+        native_get_image_alpha_border(image, threshold, __res);
+        return __res;
+    }
+
+    public static Color get_image_color(Image image, int32 x, int32 y) {
+        Color __res = new Color();
+        native_get_image_color(image, x, y, __res);
+        return __res;
+    }
+
+    public static void image_clear_background(Image[] dst, Color color) {
+        native_image_clear_background(dst, color);
+    }
+
+    public static void image_draw_pixel(Image[] dst, int32 posX, int32 posY, Color color) {
+        native_image_draw_pixel(dst, posX, posY, color);
+    }
+
+    public static void image_draw_pixel_v(Image[] dst, Vector2 position, Color color) {
+        native_image_draw_pixel_v(dst, position, color);
+    }
+
+    public static void image_draw_line(Image[] dst, int32 startPosX, int32 startPosY, int32 endPosX, int32 endPosY, Color color) {
+        native_image_draw_line(dst, startPosX, startPosY, endPosX, endPosY, color);
+    }
+
+    public static void image_draw_line_v(Image[] dst, Vector2 start, Vector2 end, Color color) {
+        native_image_draw_line_v(dst, start, end, color);
+    }
+
+    public static void image_draw_line_ex(Image[] dst, Vector2 start, Vector2 end, int32 thick, Color color) {
+        native_image_draw_line_ex(dst, start, end, thick, color);
+    }
+
+    public static void image_draw_line_strip(Image[] dst, Vector2[] points, int32 pointCount, Color color) {
+        native_image_draw_line_strip(dst, points, pointCount, color);
+    }
+
+    public static void image_draw_triangle(Image[] dst, Vector2 v1, Vector2 v2, Vector2 v3, Color color) {
+        native_image_draw_triangle(dst, v1, v2, v3, color);
+    }
+
+    public static void image_draw_triangle_gradient(Image[] dst, Vector2 v1, Vector2 v2, Vector2 v3, Color c1, Color c2, Color c3) {
+        native_image_draw_triangle_gradient(dst, v1, v2, v3, c1, c2, c3);
+    }
+
+    public static void image_draw_triangle_lines(Image[] dst, Vector2 v1, Vector2 v2, Vector2 v3, Color color) {
+        native_image_draw_triangle_lines(dst, v1, v2, v3, color);
+    }
+
+    public static void image_draw_triangle_fan(Image[] dst, Vector2[] points, int32 pointCount, Color color) {
+        native_image_draw_triangle_fan(dst, points, pointCount, color);
+    }
+
+    public static void image_draw_triangle_strip(Image[] dst, Vector2[] points, int32 pointCount, Color color) {
+        native_image_draw_triangle_strip(dst, points, pointCount, color);
+    }
+
+    public static void image_draw_rectangle(Image[] dst, int32 posX, int32 posY, int32 width, int32 height, Color color) {
+        native_image_draw_rectangle(dst, posX, posY, width, height, color);
+    }
+
+    public static void image_draw_rectangle_v(Image[] dst, Vector2 position, Vector2 size, Color color) {
+        native_image_draw_rectangle_v(dst, position, size, color);
+    }
+
+    public static void image_draw_rectangle_rec(Image[] dst, Rectangle rec, Color color) {
+        native_image_draw_rectangle_rec(dst, rec, color);
+    }
+
+    public static void image_draw_rectangle_pro(Image[] dst, Rectangle rec, Vector2 origin, float32 rotation, Color color) {
+        native_image_draw_rectangle_pro(dst, rec, origin, rotation, color);
+    }
+
+    public static void image_draw_rectangle_lines(Image[] dst, int32 posX, int32 posY, int32 width, int32 height, Color color) {
+        native_image_draw_rectangle_lines(dst, posX, posY, width, height, color);
+    }
+
+    public static void image_draw_rectangle_lines_ex(Image[] dst, Rectangle rec, int32 thick, Color color) {
+        native_image_draw_rectangle_lines_ex(dst, rec, thick, color);
+    }
+
+    public static void image_draw_rectangle_gradient_ex(Image[] dst, Rectangle rec, Color col1, Color col2, Color col3, Color col4) {
+        native_image_draw_rectangle_gradient_ex(dst, rec, col1, col2, col3, col4);
+    }
+
+    public static void image_draw_circle(Image[] dst, int32 centerX, int32 centerY, int32 radius, Color color) {
+        native_image_draw_circle(dst, centerX, centerY, radius, color);
+    }
+
+    public static void image_draw_circle_v(Image[] dst, Vector2 center, int32 radius, Color color) {
+        native_image_draw_circle_v(dst, center, radius, color);
+    }
+
+    public static void image_draw_circle_lines(Image[] dst, int32 centerX, int32 centerY, int32 radius, Color color) {
+        native_image_draw_circle_lines(dst, centerX, centerY, radius, color);
+    }
+
+    public static void image_draw_circle_lines_v(Image[] dst, Vector2 center, int32 radius, Color color) {
+        native_image_draw_circle_lines_v(dst, center, radius, color);
+    }
+
+    public static void image_draw_circle_gradient(Image[] dst, Vector2 center, float32 radius, Color inner, Color outer) {
+        native_image_draw_circle_gradient(dst, center, radius, inner, outer);
+    }
+
+    public static void image_draw_image(Image[] dst, Image src, int32 posX, int32 posY, Color tint) {
+        native_image_draw_image(dst, src, posX, posY, tint);
+    }
+
+    public static void image_draw_image_ex(Image[] dst, Image src, Vector2 position, float32 rotation, float32 scale, Color tint) {
+        native_image_draw_image_ex(dst, src, position, rotation, scale, tint);
+    }
+
+    public static void image_draw_image_rec(Image[] dst, Image src, Rectangle srcRec, Vector2 position, Color tint) {
+        native_image_draw_image_rec(dst, src, srcRec, position, tint);
+    }
+
+    public static void image_draw_image_pro(Image[] dst, Image src, Rectangle srcRec, Rectangle dstRec, Vector2 origin, float32 rotation, Color tint) {
+        native_image_draw_image_pro(dst, src, srcRec, dstRec, origin, rotation, tint);
+    }
+
+    public static void image_draw_text(Image[] dst, String text, int32 posX, int32 posY, int32 fontSize, Color color) {
+        native_image_draw_text(dst, text, posX, posY, fontSize, color);
+    }
+
+    public static void image_draw_text_ex(Image[] dst, Font font, String text, Vector2 position, float32 fontSize, float32 spacing, Color tint) {
+        native_image_draw_text_ex(dst, font, text, position, fontSize, spacing, tint);
+    }
+
+    public static void image_draw_text_pro(Image[] dst, Font font, String text, Vector2 position, Vector2 origin, float32 rotation, float32 fontSize, float32 spacing, Color tint) {
+        native_image_draw_text_pro(dst, font, text, position, origin, rotation, fontSize, spacing, tint);
+    }
+
+    public static Texture2D load_texture(String fileName) {
+        Texture2D __res = new Texture2D();
+        native_load_texture(fileName, __res);
+        return __res;
+    }
+
+    public static Texture2D load_texture_from_image(Image image) {
+        Texture2D __res = new Texture2D();
+        native_load_texture_from_image(image, __res);
+        return __res;
+    }
+
+    public static Texture2D load_texture_cubemap(Image image, int32 layout) {
+        Texture2D __res = new Texture2D();
+        native_load_texture_cubemap(image, layout, __res);
+        return __res;
+    }
+
+    public static RenderTexture2D load_render_texture(int32 width, int32 height) {
+        RenderTexture2D __res = new RenderTexture2D();
+        native_load_render_texture(width, height, __res);
+        return __res;
+    }
+
+    public static RenderTexture2D load_render_texture_ex(int32 width, int32 height, int32 format) {
+        RenderTexture2D __res = new RenderTexture2D();
+        native_load_render_texture_ex(width, height, format, __res);
+        return __res;
+    }
+
+    public static bool is_texture_valid(Texture2D texture) {
+        return native_is_texture_valid(texture);
+    }
+
+    public static void unload_texture(Texture2D texture) {
+        native_unload_texture(texture);
+    }
+
+    public static bool is_render_texture_valid(RenderTexture2D target) {
+        return native_is_render_texture_valid(target);
+    }
+
+    public static void unload_render_texture(RenderTexture2D target) {
+        native_unload_render_texture(target);
+    }
+
+    public static void update_texture(Texture2D texture, uint64 pixels) {
+        native_update_texture(texture, pixels);
+    }
+
+    public static void update_texture_rec(Texture2D texture, Rectangle rec, uint64 pixels) {
+        native_update_texture_rec(texture, rec, pixels);
+    }
+
+    public static void gen_texture_mipmaps(Texture2D[] texture) {
+        native_gen_texture_mipmaps(texture);
+    }
+
+    public static void set_texture_filter(Texture2D texture, int32 filter) {
+        native_set_texture_filter(texture, filter);
+    }
+
+    public static void set_texture_wrap(Texture2D texture, int32 wrap) {
+        native_set_texture_wrap(texture, wrap);
+    }
+
+    public static void draw_texture(Texture2D texture, int32 posX, int32 posY, Color tint) {
+        native_draw_texture(texture, posX, posY, tint);
+    }
+
+    public static void draw_texture_v(Texture2D texture, Vector2 position, Color tint) {
+        native_draw_texture_v(texture, position, tint);
+    }
+
+    public static void draw_texture_ex(Texture2D texture, Vector2 position, float32 rotation, float32 scale, Color tint) {
+        native_draw_texture_ex(texture, position, rotation, scale, tint);
+    }
+
+    public static void draw_texture_rec(Texture2D texture, Rectangle rec, Vector2 position, Color tint) {
+        native_draw_texture_rec(texture, rec, position, tint);
+    }
+
+    public static void draw_texture_pro(Texture2D texture, Rectangle srcrec, Rectangle dstrec, Vector2 origin, float32 rotation, Color tint) {
+        native_draw_texture_pro(texture, srcrec, dstrec, origin, rotation, tint);
+    }
+
+    public static void draw_texture_n_patch(Texture2D texture, NPatchInfo nPatchInfo, Rectangle dstrec, Vector2 origin, float32 rotation, Color tint) {
+        native_draw_texture_n_patch(texture, nPatchInfo, dstrec, origin, rotation, tint);
     }
 
     public static bool color_is_equal(Color col1, Color col2) {
@@ -987,8 +1863,68 @@ public class Raylib {
         return __res;
     }
 
+    public static Color get_pixel_color(uint64 srcPtr, int32 format) {
+        Color __res = new Color();
+        native_get_pixel_color(srcPtr, format, __res);
+        return __res;
+    }
+
+    public static void set_pixel_color(uint64 dstPtr, Color color, int32 format) {
+        native_set_pixel_color(dstPtr, color, format);
+    }
+
     public static int32 get_pixel_data_size(int32 width, int32 height, int32 format) {
         return native_get_pixel_data_size(width, height, format);
+    }
+
+    public static Font get_font_default() {
+        Font __res = new Font();
+        native_get_font_default(__res);
+        return __res;
+    }
+
+    public static Font load_font(String fileName) {
+        Font __res = new Font();
+        native_load_font(fileName, __res);
+        return __res;
+    }
+
+    public static Font load_font_ex(String fileName, int32 fontSize, int32[] codepoints, int32 codepointCount) {
+        Font __res = new Font();
+        native_load_font_ex(fileName, fontSize, codepoints, codepointCount, __res);
+        return __res;
+    }
+
+    public static Font load_font_from_image(Image image, Color key, int32 firstChar) {
+        Font __res = new Font();
+        native_load_font_from_image(image, key, firstChar, __res);
+        return __res;
+    }
+
+    public static Font load_font_from_memory(String fileType, uint8[] fileData, int32 dataSize, int32 fontSize, int32[] codepoints, int32 codepointCount) {
+        Font __res = new Font();
+        native_load_font_from_memory(fileType, fileData, dataSize, fontSize, codepoints, codepointCount, __res);
+        return __res;
+    }
+
+    public static bool is_font_valid(Font font) {
+        return native_is_font_valid(font);
+    }
+
+    public static GlyphInfo[] load_font_data(uint8[] fileData, int32 dataSize, int32 fontSize, int32[] codepoints, int32 codepointCount, int32 type, int32[] glyphCount) {
+        return native_load_font_data(fileData, dataSize, fontSize, codepoints, codepointCount, type, glyphCount);
+    }
+
+    public static void unload_font_data(GlyphInfo[] glyphs, int32 glyphCount) {
+        native_unload_font_data(glyphs, glyphCount);
+    }
+
+    public static void unload_font(Font font) {
+        native_unload_font(font);
+    }
+
+    public static bool export_font_as_code(Font font, String fileName) {
+        return native_export_font_as_code(font, fileName);
     }
 
     public static void draw_fps(int32 posX, int32 posY) {
@@ -999,6 +1935,22 @@ public class Raylib {
         native_draw_text(text, posX, posY, fontSize, color);
     }
 
+    public static void draw_text_ex(Font font, String text, Vector2 position, float32 fontSize, float32 spacing, Color tint) {
+        native_draw_text_ex(font, text, position, fontSize, spacing, tint);
+    }
+
+    public static void draw_text_pro(Font font, String text, Vector2 position, Vector2 origin, float32 rotation, float32 fontSize, float32 spacing, Color tint) {
+        native_draw_text_pro(font, text, position, origin, rotation, fontSize, spacing, tint);
+    }
+
+    public static void draw_text_codepoint(Font font, int32 codepoint, Vector2 position, float32 fontSize, Color tint) {
+        native_draw_text_codepoint(font, codepoint, position, fontSize, tint);
+    }
+
+    public static void draw_text_codepoints(Font font, int32[] codepoints, int32 codepointCount, Vector2 position, float32 fontSize, float32 spacing, Color tint) {
+        native_draw_text_codepoints(font, codepoints, codepointCount, position, fontSize, spacing, tint);
+    }
+
     public static void set_text_line_spacing(int32 spacing) {
         native_set_text_line_spacing(spacing);
     }
@@ -1007,8 +1959,84 @@ public class Raylib {
         return native_measure_text(text, fontSize);
     }
 
+    public static Vector2 measure_text_ex(Font font, String text, float32 fontSize, float32 spacing) {
+        Vector2 __res = new Vector2();
+        native_measure_text_ex(font, text, fontSize, spacing, __res);
+        return __res;
+    }
+
+    public static Vector2 measure_text_codepoints(Font font, int32[] codepoints, int32 length, float32 fontSize, float32 spacing) {
+        Vector2 __res = new Vector2();
+        native_measure_text_codepoints(font, codepoints, length, fontSize, spacing, __res);
+        return __res;
+    }
+
+    public static int32 get_glyph_index(Font font, int32 codepoint) {
+        return native_get_glyph_index(font, codepoint);
+    }
+
+    public static GlyphInfo get_glyph_info(Font font, int32 codepoint) {
+        GlyphInfo __res = new GlyphInfo();
+        native_get_glyph_info(font, codepoint, __res);
+        return __res;
+    }
+
+    public static Rectangle get_glyph_atlas_rec(Font font, int32 codepoint) {
+        Rectangle __res = new Rectangle();
+        native_get_glyph_atlas_rec(font, codepoint, __res);
+        return __res;
+    }
+
+    public static String load_utf8(int32[] codepoints, int32 length) {
+        char[] __chars = native_load_utf8(codepoints, length);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static void unload_utf8(String text) {
+        native_unload_utf8(text);
+    }
+
+    public static int32[] load_codepoints(String text, int32[] count) {
+        return native_load_codepoints(text, count);
+    }
+
+    public static void unload_codepoints(int32[] codepoints) {
+        native_unload_codepoints(codepoints);
+    }
+
     public static int32 get_codepoint_count(String text) {
         return native_get_codepoint_count(text);
+    }
+
+    public static int32 get_codepoint(String text, int32[] codepointSize) {
+        return native_get_codepoint(text, codepointSize);
+    }
+
+    public static int32 get_codepoint_next(String text, int32[] codepointSize) {
+        return native_get_codepoint_next(text, codepointSize);
+    }
+
+    public static int32 get_codepoint_previous(String text, int32[] codepointSize) {
+        return native_get_codepoint_previous(text, codepointSize);
+    }
+
+    public static String codepoint_to_utf8(int32 codepoint, int32[] utf8Size) {
+        char[] __chars = native_codepoint_to_utf8(codepoint, utf8Size);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static String[] load_text_lines(String text, int32[] count) {
+        return native_load_text_lines(text, count);
+    }
+
+    public static void unload_text_lines(String[] text, int32 lineCount) {
+        native_unload_text_lines(text, lineCount);
+    }
+
+    public static int32 text_copy(String dst, String src) {
+        return native_text_copy(dst, src);
     }
 
     public static bool text_is_equal(String text1, String text2) {
@@ -1020,15 +2048,105 @@ public class Raylib {
     }
 
     public static String text_subtext(String text, int32 position, int32 length) {
-        return native_text_subtext(text, position, length);
+        char[] __chars = native_text_subtext(text, position, length);
+        if (__chars == null) return null;
+        return new String(__chars);
     }
 
     public static String text_remove_spaces(String text) {
-        return native_text_remove_spaces(text);
+        char[] __chars = native_text_remove_spaces(text);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static String get_text_between(String text, String begin, String end) {
+        char[] __chars = native_get_text_between(text, begin, end);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static String text_replace(String text, String search, String replacement) {
+        char[] __chars = native_text_replace(text, search, replacement);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static String text_replace_alloc(String text, String search, String replacement) {
+        char[] __chars = native_text_replace_alloc(text, search, replacement);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static String text_replace_between(String text, String begin, String end, String replacement) {
+        char[] __chars = native_text_replace_between(text, begin, end, replacement);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static String text_replace_between_alloc(String text, String begin, String end, String replacement) {
+        char[] __chars = native_text_replace_between_alloc(text, begin, end, replacement);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static String text_insert(String text, String insert, int32 position) {
+        char[] __chars = native_text_insert(text, insert, position);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static String text_insert_alloc(String text, String insert, int32 position) {
+        char[] __chars = native_text_insert_alloc(text, insert, position);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static String text_join(String[] textList, int32 count, String delimiter) {
+        char[] __chars = native_text_join(textList, count, delimiter);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static String[] text_split(String text, char delimiter, int32[] count) {
+        return native_text_split(text, delimiter, count);
+    }
+
+    public static void text_append(String text, String append, int32[] position) {
+        native_text_append(text, append, position);
     }
 
     public static int32 text_find_index(String text, String search) {
         return native_text_find_index(text, search);
+    }
+
+    public static String text_to_upper(String text) {
+        char[] __chars = native_text_to_upper(text);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static String text_to_lower(String text) {
+        char[] __chars = native_text_to_lower(text);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static String text_to_pascal(String text) {
+        char[] __chars = native_text_to_pascal(text);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static String text_to_snake(String text) {
+        char[] __chars = native_text_to_snake(text);
+        if (__chars == null) return null;
+        return new String(__chars);
+    }
+
+    public static String text_to_camel(String text) {
+        char[] __chars = native_text_to_camel(text);
+        if (__chars == null) return null;
+        return new String(__chars);
     }
 
     public static int32 text_to_integer(String text) {
@@ -1053,6 +2171,10 @@ public class Raylib {
 
     public static void draw_triangle3d(Vector3 v1, Vector3 v2, Vector3 v3, Color color) {
         native_draw_triangle3d(v1, v2, v3, color);
+    }
+
+    public static void draw_triangle_strip3d(Vector3[] points, int32 pointCount, Color color) {
+        native_draw_triangle_strip3d(points, pointCount, color);
     }
 
     public static void draw_cube(Vector3 position, float32 width, float32 height, float32 length, Color color) {
@@ -1111,12 +2233,262 @@ public class Raylib {
         native_draw_plane(centerPos, size, color);
     }
 
+    public static void draw_ray(Ray ray, Color color) {
+        native_draw_ray(ray, color);
+    }
+
     public static void draw_grid(int32 slices, float32 spacing) {
         native_draw_grid(slices, spacing);
     }
 
+    public static Model load_model(String fileName) {
+        Model __res = new Model();
+        native_load_model(fileName, __res);
+        return __res;
+    }
+
+    public static Model load_model_from_mesh(Mesh mesh) {
+        Model __res = new Model();
+        native_load_model_from_mesh(mesh, __res);
+        return __res;
+    }
+
+    public static bool is_model_valid(Model model) {
+        return native_is_model_valid(model);
+    }
+
+    public static void unload_model(Model model) {
+        native_unload_model(model);
+    }
+
+    public static BoundingBox get_model_bounding_box(Model model) {
+        BoundingBox __res = new BoundingBox();
+        native_get_model_bounding_box(model, __res);
+        return __res;
+    }
+
+    public static void draw_model(Model model, Vector3 position, float32 scale, Color tint) {
+        native_draw_model(model, position, scale, tint);
+    }
+
+    public static void draw_model_ex(Model model, Vector3 position, Vector3 rotationAxis, float32 rotationAngle, Vector3 scale, Color tint) {
+        native_draw_model_ex(model, position, rotationAxis, rotationAngle, scale, tint);
+    }
+
+    public static void draw_model_wires(Model model, Vector3 position, float32 scale, Color tint) {
+        native_draw_model_wires(model, position, scale, tint);
+    }
+
+    public static void draw_model_wires_ex(Model model, Vector3 position, Vector3 rotationAxis, float32 rotationAngle, Vector3 scale, Color tint) {
+        native_draw_model_wires_ex(model, position, rotationAxis, rotationAngle, scale, tint);
+    }
+
+    public static void draw_bounding_box(BoundingBox box, Color color) {
+        native_draw_bounding_box(box, color);
+    }
+
+    public static void draw_billboard(Camera3D camera, Texture2D texture, Vector3 position, float32 scale, Color tint) {
+        native_draw_billboard(camera, texture, position, scale, tint);
+    }
+
+    public static void draw_billboard_rec(Camera3D camera, Texture2D texture, Rectangle rec, Vector3 position, Vector2 size, Color tint) {
+        native_draw_billboard_rec(camera, texture, rec, position, size, tint);
+    }
+
+    public static void draw_billboard_pro(Camera3D camera, Texture2D texture, Rectangle rec, Vector3 position, Vector3 up, Vector2 size, Vector2 origin, float32 rotation, Color tint) {
+        native_draw_billboard_pro(camera, texture, rec, position, up, size, origin, rotation, tint);
+    }
+
+    public static void upload_mesh(Mesh[] mesh, bool dynamic) {
+        native_upload_mesh(mesh, dynamic);
+    }
+
+    public static void update_mesh_buffer(Mesh mesh, int32 index, uint64 data, int32 dataSize, int32 offset) {
+        native_update_mesh_buffer(mesh, index, data, dataSize, offset);
+    }
+
+    public static void unload_mesh(Mesh mesh) {
+        native_unload_mesh(mesh);
+    }
+
+    public static void draw_mesh(Mesh mesh, Material material, Matrix transform) {
+        native_draw_mesh(mesh, material, transform);
+    }
+
+    public static void draw_mesh_instanced(Mesh mesh, Material material, Matrix[] transforms, int32 instances) {
+        native_draw_mesh_instanced(mesh, material, transforms, instances);
+    }
+
+    public static BoundingBox get_mesh_bounding_box(Mesh mesh) {
+        BoundingBox __res = new BoundingBox();
+        native_get_mesh_bounding_box(mesh, __res);
+        return __res;
+    }
+
+    public static void gen_mesh_tangents(Mesh[] mesh) {
+        native_gen_mesh_tangents(mesh);
+    }
+
+    public static bool export_mesh(Mesh mesh, String fileName) {
+        return native_export_mesh(mesh, fileName);
+    }
+
+    public static bool export_mesh_as_code(Mesh mesh, String fileName) {
+        return native_export_mesh_as_code(mesh, fileName);
+    }
+
+    public static Mesh gen_mesh_poly(int32 sides, float32 radius) {
+        Mesh __res = new Mesh();
+        native_gen_mesh_poly(sides, radius, __res);
+        return __res;
+    }
+
+    public static Mesh gen_mesh_plane(float32 width, float32 length, int32 resX, int32 resZ) {
+        Mesh __res = new Mesh();
+        native_gen_mesh_plane(width, length, resX, resZ, __res);
+        return __res;
+    }
+
+    public static Mesh gen_mesh_cube(float32 width, float32 height, float32 length) {
+        Mesh __res = new Mesh();
+        native_gen_mesh_cube(width, height, length, __res);
+        return __res;
+    }
+
+    public static Mesh gen_mesh_sphere(float32 radius, int32 rings, int32 slices) {
+        Mesh __res = new Mesh();
+        native_gen_mesh_sphere(radius, rings, slices, __res);
+        return __res;
+    }
+
+    public static Mesh gen_mesh_hemi_sphere(float32 radius, int32 rings, int32 slices) {
+        Mesh __res = new Mesh();
+        native_gen_mesh_hemi_sphere(radius, rings, slices, __res);
+        return __res;
+    }
+
+    public static Mesh gen_mesh_cylinder(float32 radius, float32 height, int32 slices) {
+        Mesh __res = new Mesh();
+        native_gen_mesh_cylinder(radius, height, slices, __res);
+        return __res;
+    }
+
+    public static Mesh gen_mesh_cone(float32 radius, float32 height, int32 slices) {
+        Mesh __res = new Mesh();
+        native_gen_mesh_cone(radius, height, slices, __res);
+        return __res;
+    }
+
+    public static Mesh gen_mesh_torus(float32 radius, float32 size, int32 radSeg, int32 sides) {
+        Mesh __res = new Mesh();
+        native_gen_mesh_torus(radius, size, radSeg, sides, __res);
+        return __res;
+    }
+
+    public static Mesh gen_mesh_knot(float32 radius, float32 size, int32 radSeg, int32 sides) {
+        Mesh __res = new Mesh();
+        native_gen_mesh_knot(radius, size, radSeg, sides, __res);
+        return __res;
+    }
+
+    public static Mesh gen_mesh_heightmap(Image heightmap, Vector3 size) {
+        Mesh __res = new Mesh();
+        native_gen_mesh_heightmap(heightmap, size, __res);
+        return __res;
+    }
+
+    public static Mesh gen_mesh_cubicmap(Image cubicmap, Vector3 cubeSize) {
+        Mesh __res = new Mesh();
+        native_gen_mesh_cubicmap(cubicmap, cubeSize, __res);
+        return __res;
+    }
+
+    public static Material[] load_materials(String fileName, int32[] materialCount) {
+        return native_load_materials(fileName, materialCount);
+    }
+
+    public static Material load_material_default() {
+        Material __res = new Material();
+        native_load_material_default(__res);
+        return __res;
+    }
+
+    public static bool is_material_valid(Material material) {
+        return native_is_material_valid(material);
+    }
+
+    public static void unload_material(Material material) {
+        native_unload_material(material);
+    }
+
+    public static void set_material_texture(Material[] material, int32 mapType, Texture2D texture) {
+        native_set_material_texture(material, mapType, texture);
+    }
+
+    public static void set_model_mesh_material(Model[] model, int32 meshId, int32 materialId) {
+        native_set_model_mesh_material(model, meshId, materialId);
+    }
+
+    public static ModelAnimation[] load_model_animations(String fileName, int32[] animCount) {
+        return native_load_model_animations(fileName, animCount);
+    }
+
+    public static void update_model_animation(Model model, ModelAnimation anim, float32 frame) {
+        native_update_model_animation(model, anim, frame);
+    }
+
+    public static void update_model_animation_ex(Model model, ModelAnimation animA, float32 frameA, ModelAnimation animB, float32 frameB, float32 blend) {
+        native_update_model_animation_ex(model, animA, frameA, animB, frameB, blend);
+    }
+
+    public static void unload_model_animations(ModelAnimation[] animations, int32 animCount) {
+        native_unload_model_animations(animations, animCount);
+    }
+
+    public static bool is_model_animation_valid(Model model, ModelAnimation anim) {
+        return native_is_model_animation_valid(model, anim);
+    }
+
     public static bool check_collision_spheres(Vector3 center1, float32 radius1, Vector3 center2, float32 radius2) {
         return native_check_collision_spheres(center1, radius1, center2, radius2);
+    }
+
+    public static bool check_collision_boxes(BoundingBox box1, BoundingBox box2) {
+        return native_check_collision_boxes(box1, box2);
+    }
+
+    public static bool check_collision_box_sphere(BoundingBox box, Vector3 center, float32 radius) {
+        return native_check_collision_box_sphere(box, center, radius);
+    }
+
+    public static RayCollision get_ray_collision_sphere(Ray ray, Vector3 center, float32 radius) {
+        RayCollision __res = new RayCollision();
+        native_get_ray_collision_sphere(ray, center, radius, __res);
+        return __res;
+    }
+
+    public static RayCollision get_ray_collision_box(Ray ray, BoundingBox box) {
+        RayCollision __res = new RayCollision();
+        native_get_ray_collision_box(ray, box, __res);
+        return __res;
+    }
+
+    public static RayCollision get_ray_collision_mesh(Ray ray, Mesh mesh, Matrix transform) {
+        RayCollision __res = new RayCollision();
+        native_get_ray_collision_mesh(ray, mesh, transform, __res);
+        return __res;
+    }
+
+    public static RayCollision get_ray_collision_triangle(Ray ray, Vector3 p1, Vector3 p2, Vector3 p3) {
+        RayCollision __res = new RayCollision();
+        native_get_ray_collision_triangle(ray, p1, p2, p3, __res);
+        return __res;
+    }
+
+    public static RayCollision get_ray_collision_quad(Ray ray, Vector3 p1, Vector3 p2, Vector3 p3, Vector3 p4) {
+        RayCollision __res = new RayCollision();
+        native_get_ray_collision_quad(ray, p1, p2, p3, p4, __res);
+        return __res;
     }
 
     public static void init_audio_device() {
@@ -1137,6 +2509,244 @@ public class Raylib {
 
     public static float32 get_master_volume() {
         return native_get_master_volume();
+    }
+
+    public static Wave load_wave(String fileName) {
+        Wave __res = new Wave();
+        native_load_wave(fileName, __res);
+        return __res;
+    }
+
+    public static Wave load_wave_from_memory(String fileType, uint8[] fileData, int32 dataSize) {
+        Wave __res = new Wave();
+        native_load_wave_from_memory(fileType, fileData, dataSize, __res);
+        return __res;
+    }
+
+    public static bool is_wave_valid(Wave wave) {
+        return native_is_wave_valid(wave);
+    }
+
+    public static Sound load_sound(String fileName) {
+        Sound __res = new Sound();
+        native_load_sound(fileName, __res);
+        return __res;
+    }
+
+    public static Sound load_sound_from_wave(Wave wave) {
+        Sound __res = new Sound();
+        native_load_sound_from_wave(wave, __res);
+        return __res;
+    }
+
+    public static Sound load_sound_alias(Sound source) {
+        Sound __res = new Sound();
+        native_load_sound_alias(source, __res);
+        return __res;
+    }
+
+    public static bool is_sound_valid(Sound sound) {
+        return native_is_sound_valid(sound);
+    }
+
+    public static void update_sound(Sound sound, uint64 data, int32 frameCount) {
+        native_update_sound(sound, data, frameCount);
+    }
+
+    public static void unload_wave(Wave wave) {
+        native_unload_wave(wave);
+    }
+
+    public static void unload_sound(Sound sound) {
+        native_unload_sound(sound);
+    }
+
+    public static void unload_sound_alias(Sound _alias) {
+        native_unload_sound_alias(_alias);
+    }
+
+    public static bool export_wave(Wave wave, String fileName) {
+        return native_export_wave(wave, fileName);
+    }
+
+    public static bool export_wave_as_code(Wave wave, String fileName) {
+        return native_export_wave_as_code(wave, fileName);
+    }
+
+    public static void play_sound(Sound sound) {
+        native_play_sound(sound);
+    }
+
+    public static void stop_sound(Sound sound) {
+        native_stop_sound(sound);
+    }
+
+    public static void pause_sound(Sound sound) {
+        native_pause_sound(sound);
+    }
+
+    public static void resume_sound(Sound sound) {
+        native_resume_sound(sound);
+    }
+
+    public static bool is_sound_playing(Sound sound) {
+        return native_is_sound_playing(sound);
+    }
+
+    public static void set_sound_volume(Sound sound, float32 volume) {
+        native_set_sound_volume(sound, volume);
+    }
+
+    public static void set_sound_pitch(Sound sound, float32 pitch) {
+        native_set_sound_pitch(sound, pitch);
+    }
+
+    public static void set_sound_pan(Sound sound, float32 pan) {
+        native_set_sound_pan(sound, pan);
+    }
+
+    public static Wave wave_copy(Wave wave) {
+        Wave __res = new Wave();
+        native_wave_copy(wave, __res);
+        return __res;
+    }
+
+    public static void wave_crop(Wave[] wave, int32 initFrame, int32 finalFrame) {
+        native_wave_crop(wave, initFrame, finalFrame);
+    }
+
+    public static void wave_format(Wave[] wave, int32 sampleRate, int32 sampleSize, int32 channels) {
+        native_wave_format(wave, sampleRate, sampleSize, channels);
+    }
+
+    public static float32[] load_wave_samples(Wave wave) {
+        return native_load_wave_samples(wave);
+    }
+
+    public static void unload_wave_samples(float32[] samples) {
+        native_unload_wave_samples(samples);
+    }
+
+    public static Music load_music_stream(String fileName) {
+        Music __res = new Music();
+        native_load_music_stream(fileName, __res);
+        return __res;
+    }
+
+    public static Music load_music_stream_from_memory(String fileType, uint8[] data, int32 dataSize) {
+        Music __res = new Music();
+        native_load_music_stream_from_memory(fileType, data, dataSize, __res);
+        return __res;
+    }
+
+    public static bool is_music_valid(Music music) {
+        return native_is_music_valid(music);
+    }
+
+    public static void unload_music_stream(Music music) {
+        native_unload_music_stream(music);
+    }
+
+    public static void play_music_stream(Music music) {
+        native_play_music_stream(music);
+    }
+
+    public static bool is_music_stream_playing(Music music) {
+        return native_is_music_stream_playing(music);
+    }
+
+    public static void update_music_stream(Music music) {
+        native_update_music_stream(music);
+    }
+
+    public static void stop_music_stream(Music music) {
+        native_stop_music_stream(music);
+    }
+
+    public static void pause_music_stream(Music music) {
+        native_pause_music_stream(music);
+    }
+
+    public static void resume_music_stream(Music music) {
+        native_resume_music_stream(music);
+    }
+
+    public static void seek_music_stream(Music music, float32 position) {
+        native_seek_music_stream(music, position);
+    }
+
+    public static void set_music_volume(Music music, float32 volume) {
+        native_set_music_volume(music, volume);
+    }
+
+    public static void set_music_pitch(Music music, float32 pitch) {
+        native_set_music_pitch(music, pitch);
+    }
+
+    public static void set_music_pan(Music music, float32 pan) {
+        native_set_music_pan(music, pan);
+    }
+
+    public static float32 get_music_time_length(Music music) {
+        return native_get_music_time_length(music);
+    }
+
+    public static float32 get_music_time_played(Music music) {
+        return native_get_music_time_played(music);
+    }
+
+    public static AudioStream load_audio_stream(uint32 sampleRate, uint32 sampleSize, uint32 channels) {
+        AudioStream __res = new AudioStream();
+        native_load_audio_stream(sampleRate, sampleSize, channels, __res);
+        return __res;
+    }
+
+    public static bool is_audio_stream_valid(AudioStream stream) {
+        return native_is_audio_stream_valid(stream);
+    }
+
+    public static void unload_audio_stream(AudioStream stream) {
+        native_unload_audio_stream(stream);
+    }
+
+    public static void update_audio_stream(AudioStream stream, uint64 data, int32 frameCount) {
+        native_update_audio_stream(stream, data, frameCount);
+    }
+
+    public static bool is_audio_stream_processed(AudioStream stream) {
+        return native_is_audio_stream_processed(stream);
+    }
+
+    public static void play_audio_stream(AudioStream stream) {
+        native_play_audio_stream(stream);
+    }
+
+    public static void pause_audio_stream(AudioStream stream) {
+        native_pause_audio_stream(stream);
+    }
+
+    public static void resume_audio_stream(AudioStream stream) {
+        native_resume_audio_stream(stream);
+    }
+
+    public static bool is_audio_stream_playing(AudioStream stream) {
+        return native_is_audio_stream_playing(stream);
+    }
+
+    public static void stop_audio_stream(AudioStream stream) {
+        native_stop_audio_stream(stream);
+    }
+
+    public static void set_audio_stream_volume(AudioStream stream, float32 volume) {
+        native_set_audio_stream_volume(stream, volume);
+    }
+
+    public static void set_audio_stream_pitch(AudioStream stream, float32 pitch) {
+        native_set_audio_stream_pitch(stream, pitch);
+    }
+
+    public static void set_audio_stream_pan(AudioStream stream, float32 pan) {
+        native_set_audio_stream_pan(stream, pan);
     }
 
     public static void set_audio_stream_buffer_size_default(int32 size) {
@@ -1164,6 +2774,8 @@ public class Raylib {
     private static native void native_maximize_window();
     private static native void native_minimize_window();
     private static native void native_restore_window();
+    private static native void native_set_window_icon(Image image);
+    private static native void native_set_window_icons(Image[] images, int32 count);
     private static native void native_set_window_title(String title);
     private static native void native_set_window_position(int32 x, int32 y);
     private static native void native_set_window_monitor(int32 monitor);
@@ -1172,6 +2784,7 @@ public class Raylib {
     private static native void native_set_window_size(int32 width, int32 height);
     private static native void native_set_window_opacity(float32 opacity);
     private static native void native_set_window_focused();
+    private static native uint64 native_get_window_handle();
     private static native int32 native_get_screen_width();
     private static native int32 native_get_screen_height();
     private static native int32 native_get_render_width();
@@ -1186,9 +2799,10 @@ public class Raylib {
     private static native int32 native_get_monitor_refresh_rate(int32 monitor);
     private static native void native_get_window_position(Vector2 __out);
     private static native void native_get_window_scale_dpi(Vector2 __out);
-    private static native String native_get_monitor_name(int32 monitor);
+    private static native char[] native_get_monitor_name(int32 monitor);
     private static native void native_set_clipboard_text(String text);
-    private static native String native_get_clipboard_text();
+    private static native char[] native_get_clipboard_text();
+    private static native void native_get_clipboard_image(Image __out);
     private static native void native_enable_event_waiting();
     private static native void native_disable_event_waiting();
     private static native void native_show_cursor();
@@ -1200,15 +2814,40 @@ public class Raylib {
     private static native void native_clear_background(Color color);
     private static native void native_begin_drawing();
     private static native void native_end_drawing();
+    private static native void native_begin_mode2d(Camera2D camera);
     private static native void native_end_mode2d();
+    private static native void native_begin_mode3d(Camera3D camera);
     private static native void native_end_mode3d();
+    private static native void native_begin_texture_mode(RenderTexture2D target);
     private static native void native_end_texture_mode();
+    private static native void native_begin_shader_mode(Shader shader);
     private static native void native_end_shader_mode();
     private static native void native_begin_blend_mode(int32 mode);
     private static native void native_end_blend_mode();
     private static native void native_begin_scissor_mode(int32 x, int32 y, int32 width, int32 height);
     private static native void native_end_scissor_mode();
+    private static native void native_begin_vr_stereo_mode(VrStereoConfig config);
     private static native void native_end_vr_stereo_mode();
+    private static native void native_load_vr_stereo_config(VrDeviceInfo device, VrStereoConfig __out);
+    private static native void native_unload_vr_stereo_config(VrStereoConfig config);
+    private static native void native_load_shader(String vsFileName, String fsFileName, Shader __out);
+    private static native void native_load_shader_from_memory(String vsCode, String fsCode, Shader __out);
+    private static native bool native_is_shader_valid(Shader shader);
+    private static native int32 native_get_shader_location(Shader shader, String uniformName);
+    private static native int32 native_get_shader_location_attrib(Shader shader, String attribName);
+    private static native void native_set_shader_value(Shader shader, int32 locIndex, uint64 value, int32 uniformType);
+    private static native void native_set_shader_value_v(Shader shader, int32 locIndex, uint64 value, int32 uniformType, int32 count);
+    private static native void native_set_shader_value_matrix(Shader shader, int32 locIndex, Matrix mat);
+    private static native void native_set_shader_value_texture(Shader shader, int32 locIndex, Texture2D texture);
+    private static native void native_unload_shader(Shader shader);
+    private static native void native_get_screen_to_world_ray(Vector2 position, Camera3D camera, Ray __out);
+    private static native void native_get_screen_to_world_ray_ex(Vector2 position, Camera3D camera, int32 width, int32 height, Ray __out);
+    private static native void native_get_world_to_screen(Vector3 position, Camera3D camera, Vector2 __out);
+    private static native void native_get_world_to_screen_ex(Vector3 position, Camera3D camera, int32 width, int32 height, Vector2 __out);
+    private static native void native_get_world_to_screen2d(Vector2 position, Camera2D camera, Vector2 __out);
+    private static native void native_get_screen_to_world2d(Vector2 position, Camera2D camera, Vector2 __out);
+    private static native void native_get_camera_matrix(Camera3D camera, Matrix __out);
+    private static native void native_get_camera_matrix2d(Camera2D camera, Matrix __out);
     private static native void native_set_target_fps(int32 fps);
     private static native float32 native_get_frame_time();
     private static native float64 native_get_time();
@@ -1218,10 +2857,21 @@ public class Raylib {
     private static native void native_wait_time(float64 seconds);
     private static native void native_set_random_seed(uint32 seed);
     private static native int32 native_get_random_value(int32 min, int32 max);
+    private static native int32[] native_load_random_sequence(uint32 count, int32 min, int32 max);
+    private static native void native_unload_random_sequence(int32[] sequence);
     private static native void native_take_screenshot(String fileName);
     private static native void native_set_config_flags(uint32 flags);
     private static native void native_open_url(String url);
     private static native void native_set_trace_log_level(int32 logLevel);
+    private static native uint64 native_mem_alloc(uint32 size);
+    private static native uint64 native_mem_realloc(uint64 ptr, uint32 size);
+    private static native void native_mem_free(uint64 ptr);
+    private static native uint8[] native_load_file_data(String fileName, int32[] dataSize);
+    private static native void native_unload_file_data(uint8[] data);
+    private static native bool native_save_file_data(String fileName, uint64 data, int32 dataSize);
+    private static native bool native_export_data_as_code(uint8[] data, int32 dataSize, String fileName);
+    private static native char[] native_load_file_text(String fileName);
+    private static native void native_unload_file_text(String text);
     private static native bool native_save_file_text(String fileName, String text);
     private static native int32 native_file_rename(String fileName, String fileRename);
     private static native int32 native_file_remove(String fileName);
@@ -1234,25 +2884,44 @@ public class Raylib {
     private static native bool native_is_file_extension(String fileName, String ext);
     private static native bool native_is_file_hidden(String filePath);
     private static native int32 native_get_file_length(String fileName);
-    private static native String native_get_file_extension(String fileName);
-    private static native String native_get_file_name(String filePath);
-    private static native String native_get_file_name_without_ext(String filePath);
-    private static native String native_get_directory_path(String filePath);
-    private static native String native_get_prev_directory_path(String dirPath);
-    private static native String native_get_working_directory();
-    private static native String native_get_application_directory();
+    private static native int64 native_get_file_mod_time(String fileName);
+    private static native char[] native_get_file_extension(String fileName);
+    private static native char[] native_get_file_name(String filePath);
+    private static native char[] native_get_file_name_without_ext(String filePath);
+    private static native char[] native_get_directory_path(String filePath);
+    private static native char[] native_get_prev_directory_path(String dirPath);
+    private static native char[] native_get_working_directory();
+    private static native char[] native_get_application_directory();
     private static native int32 native_make_directory(String dirPath);
     private static native int32 native_change_directory(String dirPath);
     private static native bool native_is_path_file(String path);
     private static native bool native_is_path_directory(String path);
     private static native bool native_is_path_absolute(String path);
     private static native bool native_is_file_name_valid(String fileName);
+    private static native void native_load_directory_files(String dirPath, FilePathList __out);
+    private static native void native_load_directory_files_ex(String basePath, String filter, bool scanSubdirs, FilePathList __out);
+    private static native void native_unload_directory_files(FilePathList files);
     private static native bool native_is_file_dropped();
+    private static native void native_load_dropped_files(FilePathList __out);
+    private static native void native_unload_dropped_files(FilePathList files);
     private static native uint32 native_get_directory_file_count(String dirPath);
     private static native uint32 native_get_directory_file_count_ex(String basePath, String filter, bool scanSubdirs);
+    private static native uint8[] native_compress_data(uint8[] data, int32 dataSize, int32[] compDataSize);
+    private static native uint8[] native_decompress_data(uint8[] compData, int32 compDataSize, int32[] dataSize);
+    private static native char[] native_encode_data_base64(uint8[] data, int32 dataSize, int32[] outputSize);
+    private static native uint8[] native_decode_data_base64(String text, int32[] outputSize);
+    private static native uint32 native_compute_crc32(uint8[] data, int32 dataSize);
+    private static native uint32[] native_compute_md5(uint8[] data, int32 dataSize);
+    private static native uint32[] native_compute_sha1(uint8[] data, int32 dataSize);
+    private static native uint32[] native_compute_sha256(uint8[] data, int32 dataSize);
+    private static native void native_load_automation_event_list(String fileName, AutomationEventList __out);
+    private static native void native_unload_automation_event_list(AutomationEventList list);
+    private static native bool native_export_automation_event_list(AutomationEventList list, String fileName);
+    private static native void native_set_automation_event_list(AutomationEventList[] list);
     private static native void native_set_automation_event_base_frame(int32 frame);
     private static native void native_start_automation_event_recording();
     private static native void native_stop_automation_event_recording();
+    private static native void native_play_automation_event(AutomationEvent event);
     private static native bool native_is_key_pressed(int32 key);
     private static native bool native_is_key_pressed_repeat(int32 key);
     private static native bool native_is_key_down(int32 key);
@@ -1260,10 +2929,10 @@ public class Raylib {
     private static native bool native_is_key_up(int32 key);
     private static native int32 native_get_key_pressed();
     private static native int32 native_get_char_pressed();
-    private static native String native_get_key_name(int32 key);
+    private static native char[] native_get_key_name(int32 key);
     private static native void native_set_exit_key(int32 key);
     private static native bool native_is_gamepad_available(int32 gamepad);
-    private static native String native_get_gamepad_name(int32 gamepad);
+    private static native char[] native_get_gamepad_name(int32 gamepad);
     private static native bool native_is_gamepad_button_pressed(int32 gamepad, int32 button);
     private static native bool native_is_gamepad_button_down(int32 gamepad, int32 button);
     private static native bool native_is_gamepad_button_released(int32 gamepad, int32 button);
@@ -1300,18 +2969,25 @@ public class Raylib {
     private static native float32 native_get_gesture_drag_angle();
     private static native void native_get_gesture_pinch_vector(Vector2 __out);
     private static native float32 native_get_gesture_pinch_angle();
+    private static native void native_update_camera(Camera3D[] camera, int32 mode);
+    private static native void native_update_camera_pro(Camera3D[] camera, Vector3 movement, Vector3 rotation, float32 zoom);
+    private static native void native_set_shapes_texture(Texture2D texture, Rectangle rec);
+    private static native void native_get_shapes_texture(Texture2D __out);
     private static native void native_get_shapes_texture_rectangle(Rectangle __out);
     private static native void native_draw_pixel(int32 posX, int32 posY, Color color);
     private static native void native_draw_pixel_v(Vector2 position, Color color);
     private static native void native_draw_line(int32 startPosX, int32 startPosY, int32 endPosX, int32 endPosY, Color color);
     private static native void native_draw_line_v(Vector2 startPos, Vector2 endPos, Color color);
     private static native void native_draw_line_ex(Vector2 startPos, Vector2 endPos, float32 thick, Color color);
+    private static native void native_draw_line_strip(Vector2[] points, int32 pointCount, Color color);
     private static native void native_draw_line_bezier(Vector2 startPos, Vector2 endPos, float32 thick, Color color);
     private static native void native_draw_line_dashed(Vector2 startPos, Vector2 endPos, int32 dashSize, int32 spaceSize, Color color);
     private static native void native_draw_triangle(Vector2 v1, Vector2 v2, Vector2 v3, Color color);
     private static native void native_draw_triangle_gradient(Vector2 v1, Vector2 v2, Vector2 v3, Color c1, Color c2, Color c3);
     private static native void native_draw_triangle_lines(Vector2 v1, Vector2 v2, Vector2 v3, Color color);
     private static native void native_draw_triangle_lines_ex(Vector2 v1, Vector2 v2, Vector2 v3, float32 thick, Color color);
+    private static native void native_draw_triangle_fan(Vector2[] points, int32 pointCount, Color color);
+    private static native void native_draw_triangle_strip(Vector2[] points, int32 pointCount, Color color);
     private static native void native_draw_rectangle(int32 posX, int32 posY, int32 width, int32 height, Color color);
     private static native void native_draw_rectangle_v(Vector2 position, Vector2 size, Color color);
     private static native void native_draw_rectangle_rec(Rectangle rec, Color color);
@@ -1344,6 +3020,11 @@ public class Raylib {
     private static native void native_draw_ring(Vector2 center, float32 innerRadius, float32 outerRadius, float32 startAngle, float32 endAngle, int32 segments, Color color);
     private static native void native_draw_ring_lines(Vector2 center, float32 innerRadius, float32 outerRadius, float32 startAngle, float32 endAngle, int32 segments, Color color);
     private static native void native_draw_ring_lines_ex(Vector2 center, float32 innerRadius, float32 outerRadius, float32 startAngle, float32 endAngle, int32 segments, float32 thick, Color color);
+    private static native void native_draw_spline_linear(Vector2[] points, int32 pointCount, float32 thick, Color color);
+    private static native void native_draw_spline_basis(Vector2[] points, int32 pointCount, float32 thick, Color color);
+    private static native void native_draw_spline_catmull_rom(Vector2[] points, int32 pointCount, float32 thick, Color color);
+    private static native void native_draw_spline_bezier_quadratic(Vector2[] points, int32 pointCount, float32 thick, Color color);
+    private static native void native_draw_spline_bezier_cubic(Vector2[] points, int32 pointCount, float32 thick, Color color);
     private static native void native_draw_spline_segment_linear(Vector2 p1, Vector2 p2, float32 thick, Color color);
     private static native void native_draw_spline_segment_basis(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, float32 thick, Color color);
     private static native void native_draw_spline_segment_catmull_rom(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, float32 thick, Color color);
@@ -1362,7 +3043,117 @@ public class Raylib {
     private static native bool native_check_collision_point_circle(Vector2 point, Vector2 center, float32 radius);
     private static native bool native_check_collision_point_triangle(Vector2 point, Vector2 p1, Vector2 p2, Vector2 p3);
     private static native bool native_check_collision_point_line(Vector2 point, Vector2 p1, Vector2 p2, int32 threshold);
+    private static native bool native_check_collision_point_poly(Vector2 point, Vector2[] points, int32 pointCount);
+    private static native bool native_check_collision_lines(Vector2 startPos1, Vector2 endPos1, Vector2 startPos2, Vector2 endPos2, Vector2[] collisionPoint);
     private static native void native_get_collision_rec(Rectangle rec1, Rectangle rec2, Rectangle __out);
+    private static native void native_load_image(String fileName, Image __out);
+    private static native void native_load_image_raw(String fileName, int32 width, int32 height, int32 format, int32 headerSize, Image __out);
+    private static native void native_load_image_anim(String fileName, int32[] frames, Image __out);
+    private static native void native_load_image_anim_from_memory(String fileType, uint8[] fileData, int32 dataSize, int32[] frames, Image __out);
+    private static native void native_load_image_from_memory(String fileType, uint8[] fileData, int32 dataSize, Image __out);
+    private static native void native_load_image_from_texture(Texture2D texture, Image __out);
+    private static native void native_load_image_from_screen(Image __out);
+    private static native bool native_is_image_valid(Image image);
+    private static native void native_unload_image(Image image);
+    private static native bool native_export_image(Image image, String fileName);
+    private static native uint8[] native_export_image_to_memory(Image image, String fileType, int32[] fileSize);
+    private static native bool native_export_image_as_code(Image image, String fileName);
+    private static native void native_gen_image_color(int32 width, int32 height, Color color, Image __out);
+    private static native void native_gen_image_gradient_linear(int32 width, int32 height, int32 direction, Color start, Color end, Image __out);
+    private static native void native_gen_image_gradient_radial(int32 width, int32 height, float32 density, Color inner, Color outer, Image __out);
+    private static native void native_gen_image_gradient_square(int32 width, int32 height, float32 density, Color inner, Color outer, Image __out);
+    private static native void native_gen_image_checked(int32 width, int32 height, int32 checksX, int32 checksY, Color col1, Color col2, Image __out);
+    private static native void native_gen_image_white_noise(int32 width, int32 height, float32 factor, Image __out);
+    private static native void native_gen_image_perlin_noise(int32 width, int32 height, int32 offsetX, int32 offsetY, float32 scale, Image __out);
+    private static native void native_gen_image_cellular(int32 width, int32 height, int32 tileSize, Image __out);
+    private static native void native_gen_image_text(int32 width, int32 height, String text, Image __out);
+    private static native void native_image_copy(Image image, Image __out);
+    private static native void native_image_from_image(Image image, Rectangle rec, Image __out);
+    private static native void native_image_from_channel(Image image, int32 selectedChannel, Image __out);
+    private static native void native_image_text(String text, int32 fontSize, Color color, Image __out);
+    private static native void native_image_text_ex(Font font, String text, float32 fontSize, float32 spacing, Color tint, Image __out);
+    private static native void native_image_format(Image[] image, int32 newFormat);
+    private static native void native_image_to_pot(Image[] image, Color fill);
+    private static native void native_image_crop(Image[] image, Rectangle crop);
+    private static native void native_image_alpha_crop(Image[] image, float32 threshold);
+    private static native void native_image_alpha_clear(Image[] image, Color color, float32 threshold);
+    private static native void native_image_alpha_mask(Image[] image, Image alphaMask);
+    private static native void native_image_alpha_premultiply(Image[] image);
+    private static native void native_image_blur_gaussian(Image[] image, int32 blurSize);
+    private static native void native_image_kernel_convolution(Image[] image, float32[] kernel, int32 kernelSize);
+    private static native void native_image_resize(Image[] image, int32 newWidth, int32 newHeight);
+    private static native void native_image_resize_nn(Image[] image, int32 newWidth, int32 newHeight);
+    private static native void native_image_resize_canvas(Image[] image, int32 newWidth, int32 newHeight, int32 offsetX, int32 offsetY, Color fill);
+    private static native void native_image_mipmaps(Image[] image);
+    private static native void native_image_dither(Image[] image, int32 rBpp, int32 gBpp, int32 bBpp, int32 aBpp);
+    private static native void native_image_flip_vertical(Image[] image);
+    private static native void native_image_flip_horizontal(Image[] image);
+    private static native void native_image_rotate(Image[] image, int32 degrees);
+    private static native void native_image_rotate_cw(Image[] image);
+    private static native void native_image_rotate_ccw(Image[] image);
+    private static native void native_image_color_tint(Image[] image, Color color);
+    private static native void native_image_color_invert(Image[] image);
+    private static native void native_image_color_grayscale(Image[] image);
+    private static native void native_image_color_contrast(Image[] image, int32 contrast);
+    private static native void native_image_color_brightness(Image[] image, int32 brightness);
+    private static native void native_image_color_replace(Image[] image, Color color, Color replace);
+    private static native Color[] native_load_image_colors(Image image);
+    private static native Color[] native_load_image_palette(Image image, int32 maxPaletteSize, int32[] colorCount);
+    private static native void native_unload_image_colors(Color[] colors);
+    private static native void native_unload_image_palette(Color[] colors);
+    private static native void native_get_image_alpha_border(Image image, float32 threshold, Rectangle __out);
+    private static native void native_get_image_color(Image image, int32 x, int32 y, Color __out);
+    private static native void native_image_clear_background(Image[] dst, Color color);
+    private static native void native_image_draw_pixel(Image[] dst, int32 posX, int32 posY, Color color);
+    private static native void native_image_draw_pixel_v(Image[] dst, Vector2 position, Color color);
+    private static native void native_image_draw_line(Image[] dst, int32 startPosX, int32 startPosY, int32 endPosX, int32 endPosY, Color color);
+    private static native void native_image_draw_line_v(Image[] dst, Vector2 start, Vector2 end, Color color);
+    private static native void native_image_draw_line_ex(Image[] dst, Vector2 start, Vector2 end, int32 thick, Color color);
+    private static native void native_image_draw_line_strip(Image[] dst, Vector2[] points, int32 pointCount, Color color);
+    private static native void native_image_draw_triangle(Image[] dst, Vector2 v1, Vector2 v2, Vector2 v3, Color color);
+    private static native void native_image_draw_triangle_gradient(Image[] dst, Vector2 v1, Vector2 v2, Vector2 v3, Color c1, Color c2, Color c3);
+    private static native void native_image_draw_triangle_lines(Image[] dst, Vector2 v1, Vector2 v2, Vector2 v3, Color color);
+    private static native void native_image_draw_triangle_fan(Image[] dst, Vector2[] points, int32 pointCount, Color color);
+    private static native void native_image_draw_triangle_strip(Image[] dst, Vector2[] points, int32 pointCount, Color color);
+    private static native void native_image_draw_rectangle(Image[] dst, int32 posX, int32 posY, int32 width, int32 height, Color color);
+    private static native void native_image_draw_rectangle_v(Image[] dst, Vector2 position, Vector2 size, Color color);
+    private static native void native_image_draw_rectangle_rec(Image[] dst, Rectangle rec, Color color);
+    private static native void native_image_draw_rectangle_pro(Image[] dst, Rectangle rec, Vector2 origin, float32 rotation, Color color);
+    private static native void native_image_draw_rectangle_lines(Image[] dst, int32 posX, int32 posY, int32 width, int32 height, Color color);
+    private static native void native_image_draw_rectangle_lines_ex(Image[] dst, Rectangle rec, int32 thick, Color color);
+    private static native void native_image_draw_rectangle_gradient_ex(Image[] dst, Rectangle rec, Color col1, Color col2, Color col3, Color col4);
+    private static native void native_image_draw_circle(Image[] dst, int32 centerX, int32 centerY, int32 radius, Color color);
+    private static native void native_image_draw_circle_v(Image[] dst, Vector2 center, int32 radius, Color color);
+    private static native void native_image_draw_circle_lines(Image[] dst, int32 centerX, int32 centerY, int32 radius, Color color);
+    private static native void native_image_draw_circle_lines_v(Image[] dst, Vector2 center, int32 radius, Color color);
+    private static native void native_image_draw_circle_gradient(Image[] dst, Vector2 center, float32 radius, Color inner, Color outer);
+    private static native void native_image_draw_image(Image[] dst, Image src, int32 posX, int32 posY, Color tint);
+    private static native void native_image_draw_image_ex(Image[] dst, Image src, Vector2 position, float32 rotation, float32 scale, Color tint);
+    private static native void native_image_draw_image_rec(Image[] dst, Image src, Rectangle srcRec, Vector2 position, Color tint);
+    private static native void native_image_draw_image_pro(Image[] dst, Image src, Rectangle srcRec, Rectangle dstRec, Vector2 origin, float32 rotation, Color tint);
+    private static native void native_image_draw_text(Image[] dst, String text, int32 posX, int32 posY, int32 fontSize, Color color);
+    private static native void native_image_draw_text_ex(Image[] dst, Font font, String text, Vector2 position, float32 fontSize, float32 spacing, Color tint);
+    private static native void native_image_draw_text_pro(Image[] dst, Font font, String text, Vector2 position, Vector2 origin, float32 rotation, float32 fontSize, float32 spacing, Color tint);
+    private static native void native_load_texture(String fileName, Texture2D __out);
+    private static native void native_load_texture_from_image(Image image, Texture2D __out);
+    private static native void native_load_texture_cubemap(Image image, int32 layout, Texture2D __out);
+    private static native void native_load_render_texture(int32 width, int32 height, RenderTexture2D __out);
+    private static native void native_load_render_texture_ex(int32 width, int32 height, int32 format, RenderTexture2D __out);
+    private static native bool native_is_texture_valid(Texture2D texture);
+    private static native void native_unload_texture(Texture2D texture);
+    private static native bool native_is_render_texture_valid(RenderTexture2D target);
+    private static native void native_unload_render_texture(RenderTexture2D target);
+    private static native void native_update_texture(Texture2D texture, uint64 pixels);
+    private static native void native_update_texture_rec(Texture2D texture, Rectangle rec, uint64 pixels);
+    private static native void native_gen_texture_mipmaps(Texture2D[] texture);
+    private static native void native_set_texture_filter(Texture2D texture, int32 filter);
+    private static native void native_set_texture_wrap(Texture2D texture, int32 wrap);
+    private static native void native_draw_texture(Texture2D texture, int32 posX, int32 posY, Color tint);
+    private static native void native_draw_texture_v(Texture2D texture, Vector2 position, Color tint);
+    private static native void native_draw_texture_ex(Texture2D texture, Vector2 position, float32 rotation, float32 scale, Color tint);
+    private static native void native_draw_texture_rec(Texture2D texture, Rectangle rec, Vector2 position, Color tint);
+    private static native void native_draw_texture_pro(Texture2D texture, Rectangle srcrec, Rectangle dstrec, Vector2 origin, float32 rotation, Color tint);
+    private static native void native_draw_texture_n_patch(Texture2D texture, NPatchInfo nPatchInfo, Rectangle dstrec, Vector2 origin, float32 rotation, Color tint);
     private static native bool native_color_is_equal(Color col1, Color col2);
     private static native void native_fade(Color color, float32 alpha, Color __out);
     private static native int32 native_color_to_int(Color color);
@@ -1377,23 +3168,71 @@ public class Raylib {
     private static native void native_color_alpha_blend(Color dst, Color src, Color tint, Color __out);
     private static native void native_color_lerp(Color color1, Color color2, float32 factor, Color __out);
     private static native void native_get_color(uint32 hexValue, Color __out);
+    private static native void native_get_pixel_color(uint64 srcPtr, int32 format, Color __out);
+    private static native void native_set_pixel_color(uint64 dstPtr, Color color, int32 format);
     private static native int32 native_get_pixel_data_size(int32 width, int32 height, int32 format);
+    private static native void native_get_font_default(Font __out);
+    private static native void native_load_font(String fileName, Font __out);
+    private static native void native_load_font_ex(String fileName, int32 fontSize, int32[] codepoints, int32 codepointCount, Font __out);
+    private static native void native_load_font_from_image(Image image, Color key, int32 firstChar, Font __out);
+    private static native void native_load_font_from_memory(String fileType, uint8[] fileData, int32 dataSize, int32 fontSize, int32[] codepoints, int32 codepointCount, Font __out);
+    private static native bool native_is_font_valid(Font font);
+    private static native GlyphInfo[] native_load_font_data(uint8[] fileData, int32 dataSize, int32 fontSize, int32[] codepoints, int32 codepointCount, int32 type, int32[] glyphCount);
+    private static native void native_unload_font_data(GlyphInfo[] glyphs, int32 glyphCount);
+    private static native void native_unload_font(Font font);
+    private static native bool native_export_font_as_code(Font font, String fileName);
     private static native void native_draw_fps(int32 posX, int32 posY);
     private static native void native_draw_text(String text, int32 posX, int32 posY, int32 fontSize, Color color);
+    private static native void native_draw_text_ex(Font font, String text, Vector2 position, float32 fontSize, float32 spacing, Color tint);
+    private static native void native_draw_text_pro(Font font, String text, Vector2 position, Vector2 origin, float32 rotation, float32 fontSize, float32 spacing, Color tint);
+    private static native void native_draw_text_codepoint(Font font, int32 codepoint, Vector2 position, float32 fontSize, Color tint);
+    private static native void native_draw_text_codepoints(Font font, int32[] codepoints, int32 codepointCount, Vector2 position, float32 fontSize, float32 spacing, Color tint);
     private static native void native_set_text_line_spacing(int32 spacing);
     private static native int32 native_measure_text(String text, int32 fontSize);
+    private static native void native_measure_text_ex(Font font, String text, float32 fontSize, float32 spacing, Vector2 __out);
+    private static native void native_measure_text_codepoints(Font font, int32[] codepoints, int32 length, float32 fontSize, float32 spacing, Vector2 __out);
+    private static native int32 native_get_glyph_index(Font font, int32 codepoint);
+    private static native void native_get_glyph_info(Font font, int32 codepoint, GlyphInfo __out);
+    private static native void native_get_glyph_atlas_rec(Font font, int32 codepoint, Rectangle __out);
+    private static native char[] native_load_utf8(int32[] codepoints, int32 length);
+    private static native void native_unload_utf8(String text);
+    private static native int32[] native_load_codepoints(String text, int32[] count);
+    private static native void native_unload_codepoints(int32[] codepoints);
     private static native int32 native_get_codepoint_count(String text);
+    private static native int32 native_get_codepoint(String text, int32[] codepointSize);
+    private static native int32 native_get_codepoint_next(String text, int32[] codepointSize);
+    private static native int32 native_get_codepoint_previous(String text, int32[] codepointSize);
+    private static native char[] native_codepoint_to_utf8(int32 codepoint, int32[] utf8Size);
+    private static native String[] native_load_text_lines(String text, int32[] count);
+    private static native void native_unload_text_lines(String[] text, int32 lineCount);
+    private static native int32 native_text_copy(String dst, String src);
     private static native bool native_text_is_equal(String text1, String text2);
     private static native uint32 native_text_length(String text);
-    private static native String native_text_subtext(String text, int32 position, int32 length);
-    private static native String native_text_remove_spaces(String text);
+    private static native char[] native_text_subtext(String text, int32 position, int32 length);
+    private static native char[] native_text_remove_spaces(String text);
+    private static native char[] native_get_text_between(String text, String begin, String end);
+    private static native char[] native_text_replace(String text, String search, String replacement);
+    private static native char[] native_text_replace_alloc(String text, String search, String replacement);
+    private static native char[] native_text_replace_between(String text, String begin, String end, String replacement);
+    private static native char[] native_text_replace_between_alloc(String text, String begin, String end, String replacement);
+    private static native char[] native_text_insert(String text, String insert, int32 position);
+    private static native char[] native_text_insert_alloc(String text, String insert, int32 position);
+    private static native char[] native_text_join(String[] textList, int32 count, String delimiter);
+    private static native String[] native_text_split(String text, char delimiter, int32[] count);
+    private static native void native_text_append(String text, String append, int32[] position);
     private static native int32 native_text_find_index(String text, String search);
+    private static native char[] native_text_to_upper(String text);
+    private static native char[] native_text_to_lower(String text);
+    private static native char[] native_text_to_pascal(String text);
+    private static native char[] native_text_to_snake(String text);
+    private static native char[] native_text_to_camel(String text);
     private static native int32 native_text_to_integer(String text);
     private static native float32 native_text_to_float(String text);
     private static native void native_draw_line3d(Vector3 startPos, Vector3 endPos, Color color);
     private static native void native_draw_point3d(Vector3 position, Color color);
     private static native void native_draw_circle3d(Vector3 center, float32 radius, Vector3 rotationAxis, float32 rotationAngle, Color color);
     private static native void native_draw_triangle3d(Vector3 v1, Vector3 v2, Vector3 v3, Color color);
+    private static native void native_draw_triangle_strip3d(Vector3[] points, int32 pointCount, Color color);
     private static native void native_draw_cube(Vector3 position, float32 width, float32 height, float32 length, Color color);
     private static native void native_draw_cube_v(Vector3 position, Vector3 size, Color color);
     private static native void native_draw_cube_wires(Vector3 position, float32 width, float32 height, float32 length, Color color);
@@ -1408,12 +3247,119 @@ public class Raylib {
     private static native void native_draw_capsule(Vector3 startPos, Vector3 endPos, float32 radius, int32 rings, int32 slices, Color color);
     private static native void native_draw_capsule_wires(Vector3 startPos, Vector3 endPos, float32 radius, int32 rings, int32 slices, Color color);
     private static native void native_draw_plane(Vector3 centerPos, Vector2 size, Color color);
+    private static native void native_draw_ray(Ray ray, Color color);
     private static native void native_draw_grid(int32 slices, float32 spacing);
+    private static native void native_load_model(String fileName, Model __out);
+    private static native void native_load_model_from_mesh(Mesh mesh, Model __out);
+    private static native bool native_is_model_valid(Model model);
+    private static native void native_unload_model(Model model);
+    private static native void native_get_model_bounding_box(Model model, BoundingBox __out);
+    private static native void native_draw_model(Model model, Vector3 position, float32 scale, Color tint);
+    private static native void native_draw_model_ex(Model model, Vector3 position, Vector3 rotationAxis, float32 rotationAngle, Vector3 scale, Color tint);
+    private static native void native_draw_model_wires(Model model, Vector3 position, float32 scale, Color tint);
+    private static native void native_draw_model_wires_ex(Model model, Vector3 position, Vector3 rotationAxis, float32 rotationAngle, Vector3 scale, Color tint);
+    private static native void native_draw_bounding_box(BoundingBox box, Color color);
+    private static native void native_draw_billboard(Camera3D camera, Texture2D texture, Vector3 position, float32 scale, Color tint);
+    private static native void native_draw_billboard_rec(Camera3D camera, Texture2D texture, Rectangle rec, Vector3 position, Vector2 size, Color tint);
+    private static native void native_draw_billboard_pro(Camera3D camera, Texture2D texture, Rectangle rec, Vector3 position, Vector3 up, Vector2 size, Vector2 origin, float32 rotation, Color tint);
+    private static native void native_upload_mesh(Mesh[] mesh, bool dynamic);
+    private static native void native_update_mesh_buffer(Mesh mesh, int32 index, uint64 data, int32 dataSize, int32 offset);
+    private static native void native_unload_mesh(Mesh mesh);
+    private static native void native_draw_mesh(Mesh mesh, Material material, Matrix transform);
+    private static native void native_draw_mesh_instanced(Mesh mesh, Material material, Matrix[] transforms, int32 instances);
+    private static native void native_get_mesh_bounding_box(Mesh mesh, BoundingBox __out);
+    private static native void native_gen_mesh_tangents(Mesh[] mesh);
+    private static native bool native_export_mesh(Mesh mesh, String fileName);
+    private static native bool native_export_mesh_as_code(Mesh mesh, String fileName);
+    private static native void native_gen_mesh_poly(int32 sides, float32 radius, Mesh __out);
+    private static native void native_gen_mesh_plane(float32 width, float32 length, int32 resX, int32 resZ, Mesh __out);
+    private static native void native_gen_mesh_cube(float32 width, float32 height, float32 length, Mesh __out);
+    private static native void native_gen_mesh_sphere(float32 radius, int32 rings, int32 slices, Mesh __out);
+    private static native void native_gen_mesh_hemi_sphere(float32 radius, int32 rings, int32 slices, Mesh __out);
+    private static native void native_gen_mesh_cylinder(float32 radius, float32 height, int32 slices, Mesh __out);
+    private static native void native_gen_mesh_cone(float32 radius, float32 height, int32 slices, Mesh __out);
+    private static native void native_gen_mesh_torus(float32 radius, float32 size, int32 radSeg, int32 sides, Mesh __out);
+    private static native void native_gen_mesh_knot(float32 radius, float32 size, int32 radSeg, int32 sides, Mesh __out);
+    private static native void native_gen_mesh_heightmap(Image heightmap, Vector3 size, Mesh __out);
+    private static native void native_gen_mesh_cubicmap(Image cubicmap, Vector3 cubeSize, Mesh __out);
+    private static native Material[] native_load_materials(String fileName, int32[] materialCount);
+    private static native void native_load_material_default(Material __out);
+    private static native bool native_is_material_valid(Material material);
+    private static native void native_unload_material(Material material);
+    private static native void native_set_material_texture(Material[] material, int32 mapType, Texture2D texture);
+    private static native void native_set_model_mesh_material(Model[] model, int32 meshId, int32 materialId);
+    private static native ModelAnimation[] native_load_model_animations(String fileName, int32[] animCount);
+    private static native void native_update_model_animation(Model model, ModelAnimation anim, float32 frame);
+    private static native void native_update_model_animation_ex(Model model, ModelAnimation animA, float32 frameA, ModelAnimation animB, float32 frameB, float32 blend);
+    private static native void native_unload_model_animations(ModelAnimation[] animations, int32 animCount);
+    private static native bool native_is_model_animation_valid(Model model, ModelAnimation anim);
     private static native bool native_check_collision_spheres(Vector3 center1, float32 radius1, Vector3 center2, float32 radius2);
+    private static native bool native_check_collision_boxes(BoundingBox box1, BoundingBox box2);
+    private static native bool native_check_collision_box_sphere(BoundingBox box, Vector3 center, float32 radius);
+    private static native void native_get_ray_collision_sphere(Ray ray, Vector3 center, float32 radius, RayCollision __out);
+    private static native void native_get_ray_collision_box(Ray ray, BoundingBox box, RayCollision __out);
+    private static native void native_get_ray_collision_mesh(Ray ray, Mesh mesh, Matrix transform, RayCollision __out);
+    private static native void native_get_ray_collision_triangle(Ray ray, Vector3 p1, Vector3 p2, Vector3 p3, RayCollision __out);
+    private static native void native_get_ray_collision_quad(Ray ray, Vector3 p1, Vector3 p2, Vector3 p3, Vector3 p4, RayCollision __out);
     private static native void native_init_audio_device();
     private static native void native_close_audio_device();
     private static native bool native_is_audio_device_ready();
     private static native void native_set_master_volume(float32 volume);
     private static native float32 native_get_master_volume();
+    private static native void native_load_wave(String fileName, Wave __out);
+    private static native void native_load_wave_from_memory(String fileType, uint8[] fileData, int32 dataSize, Wave __out);
+    private static native bool native_is_wave_valid(Wave wave);
+    private static native void native_load_sound(String fileName, Sound __out);
+    private static native void native_load_sound_from_wave(Wave wave, Sound __out);
+    private static native void native_load_sound_alias(Sound source, Sound __out);
+    private static native bool native_is_sound_valid(Sound sound);
+    private static native void native_update_sound(Sound sound, uint64 data, int32 frameCount);
+    private static native void native_unload_wave(Wave wave);
+    private static native void native_unload_sound(Sound sound);
+    private static native void native_unload_sound_alias(Sound _alias);
+    private static native bool native_export_wave(Wave wave, String fileName);
+    private static native bool native_export_wave_as_code(Wave wave, String fileName);
+    private static native void native_play_sound(Sound sound);
+    private static native void native_stop_sound(Sound sound);
+    private static native void native_pause_sound(Sound sound);
+    private static native void native_resume_sound(Sound sound);
+    private static native bool native_is_sound_playing(Sound sound);
+    private static native void native_set_sound_volume(Sound sound, float32 volume);
+    private static native void native_set_sound_pitch(Sound sound, float32 pitch);
+    private static native void native_set_sound_pan(Sound sound, float32 pan);
+    private static native void native_wave_copy(Wave wave, Wave __out);
+    private static native void native_wave_crop(Wave[] wave, int32 initFrame, int32 finalFrame);
+    private static native void native_wave_format(Wave[] wave, int32 sampleRate, int32 sampleSize, int32 channels);
+    private static native float32[] native_load_wave_samples(Wave wave);
+    private static native void native_unload_wave_samples(float32[] samples);
+    private static native void native_load_music_stream(String fileName, Music __out);
+    private static native void native_load_music_stream_from_memory(String fileType, uint8[] data, int32 dataSize, Music __out);
+    private static native bool native_is_music_valid(Music music);
+    private static native void native_unload_music_stream(Music music);
+    private static native void native_play_music_stream(Music music);
+    private static native bool native_is_music_stream_playing(Music music);
+    private static native void native_update_music_stream(Music music);
+    private static native void native_stop_music_stream(Music music);
+    private static native void native_pause_music_stream(Music music);
+    private static native void native_resume_music_stream(Music music);
+    private static native void native_seek_music_stream(Music music, float32 position);
+    private static native void native_set_music_volume(Music music, float32 volume);
+    private static native void native_set_music_pitch(Music music, float32 pitch);
+    private static native void native_set_music_pan(Music music, float32 pan);
+    private static native float32 native_get_music_time_length(Music music);
+    private static native float32 native_get_music_time_played(Music music);
+    private static native void native_load_audio_stream(uint32 sampleRate, uint32 sampleSize, uint32 channels, AudioStream __out);
+    private static native bool native_is_audio_stream_valid(AudioStream stream);
+    private static native void native_unload_audio_stream(AudioStream stream);
+    private static native void native_update_audio_stream(AudioStream stream, uint64 data, int32 frameCount);
+    private static native bool native_is_audio_stream_processed(AudioStream stream);
+    private static native void native_play_audio_stream(AudioStream stream);
+    private static native void native_pause_audio_stream(AudioStream stream);
+    private static native void native_resume_audio_stream(AudioStream stream);
+    private static native bool native_is_audio_stream_playing(AudioStream stream);
+    private static native void native_stop_audio_stream(AudioStream stream);
+    private static native void native_set_audio_stream_volume(AudioStream stream, float32 volume);
+    private static native void native_set_audio_stream_pitch(AudioStream stream, float32 pitch);
+    private static native void native_set_audio_stream_pan(AudioStream stream, float32 pan);
     private static native void native_set_audio_stream_buffer_size_default(int32 size);
 }

@@ -1,0 +1,44 @@
+package raylib.types;
+
+import raylib.types.Matrix;
+import raylib.types.Vector2;
+
+public class VrStereoConfig {
+    public Matrix projection_0;
+    public Matrix projection_1;
+    public Matrix viewOffset_0;
+    public Matrix viewOffset_1;
+    public Vector2 leftLensCenter;
+    public Vector2 rightLensCenter;
+    public Vector2 leftScreenCenter;
+    public Vector2 rightScreenCenter;
+    public Vector2 scale;
+    public Vector2 scaleIn;
+
+    public VrStereoConfig() {
+        this.projection_0 = new Matrix();
+        this.projection_1 = new Matrix();
+        this.viewOffset_0 = new Matrix();
+        this.viewOffset_1 = new Matrix();
+        this.leftLensCenter = new Vector2();
+        this.rightLensCenter = new Vector2();
+        this.leftScreenCenter = new Vector2();
+        this.rightScreenCenter = new Vector2();
+        this.scale = new Vector2();
+        this.scaleIn = new Vector2();
+    }
+
+    public VrStereoConfig(Matrix projection_0, Matrix projection_1, Matrix viewOffset_0, Matrix viewOffset_1, Vector2 leftLensCenter, Vector2 rightLensCenter, Vector2 leftScreenCenter, Vector2 rightScreenCenter, Vector2 scale, Vector2 scaleIn) {
+        this.projection_0 = projection_0;
+        this.projection_1 = projection_1;
+        this.viewOffset_0 = viewOffset_0;
+        this.viewOffset_1 = viewOffset_1;
+        this.leftLensCenter = leftLensCenter;
+        this.rightLensCenter = rightLensCenter;
+        this.leftScreenCenter = leftScreenCenter;
+        this.rightScreenCenter = rightScreenCenter;
+        this.scale = scale;
+        this.scaleIn = scaleIn;
+    }
+
+}

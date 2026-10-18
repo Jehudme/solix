@@ -1,0 +1,31 @@
+package raylib.types;
+
+import raylib.types.Texture2D;
+
+public class Font {
+    public int32 baseSize;
+    public int32 glyphCount;
+    public int32 glyphPadding;
+    public Texture2D texture;
+    public uint64 recs;
+    public uint64 glyphs;
+
+    public Font() {
+        this.baseSize = 0;
+        this.glyphCount = 0;
+        this.glyphPadding = 0;
+        this.texture = new Texture2D();
+        this.recs = 0;
+        this.glyphs = 0;
+    }
+
+    public Font(int32 baseSize, int32 glyphCount, int32 glyphPadding, Texture2D texture, uint64 recs, uint64 glyphs) {
+        this.baseSize = baseSize;
+        this.glyphCount = glyphCount;
+        this.glyphPadding = glyphPadding;
+        this.texture = texture;
+        this.recs = recs;
+        this.glyphs = glyphs;
+    }
+
+}

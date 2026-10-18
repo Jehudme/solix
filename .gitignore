@@ -36,6 +36,8 @@ CMakeFiles/
 *.py
 !solixlib/scripts/*.py
 !libs/raylib/scripts/*.py
+__pycache__/
+*.pyc
 
 # Solix bytecode & packages
 *.slxbin

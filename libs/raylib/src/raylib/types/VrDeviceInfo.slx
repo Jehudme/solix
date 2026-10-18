@@ -1,0 +1,56 @@
+package raylib.types;
+
+public class VrDeviceInfo {
+    public int32 hResolution;
+    public int32 vResolution;
+    public float32 hScreenSize;
+    public float32 vScreenSize;
+    public float32 eyeToScreenDistance;
+    public float32 lensSeparationDistance;
+    public float32 interpupillaryDistance;
+    public float32 lensDistortionValues_0;
+    public float32 lensDistortionValues_1;
+    public float32 lensDistortionValues_2;
+    public float32 lensDistortionValues_3;
+    public float32 chromaAbCorrection_0;
+    public float32 chromaAbCorrection_1;
+    public float32 chromaAbCorrection_2;
+    public float32 chromaAbCorrection_3;
+
+    public VrDeviceInfo() {
+        this.hResolution = 0;
+        this.vResolution = 0;
+        this.hScreenSize = 0.0;
+        this.vScreenSize = 0.0;
+        this.eyeToScreenDistance = 0.0;
+        this.lensSeparationDistance = 0.0;
+        this.interpupillaryDistance = 0.0;
+        this.lensDistortionValues_0 = 0.0;
+        this.lensDistortionValues_1 = 0.0;
+        this.lensDistortionValues_2 = 0.0;
+        this.lensDistortionValues_3 = 0.0;
+        this.chromaAbCorrection_0 = 0.0;
+        this.chromaAbCorrection_1 = 0.0;
+        this.chromaAbCorrection_2 = 0.0;
+        this.chromaAbCorrection_3 = 0.0;
+    }
+
+    public VrDeviceInfo(int32 hResolution, int32 vResolution, float32 hScreenSize, float32 vScreenSize, float32 eyeToScreenDistance, float32 lensSeparationDistance, float32 interpupillaryDistance, float32 lensDistortionValues_0, float32 lensDistortionValues_1, float32 lensDistortionValues_2, float32 lensDistortionValues_3, float32 chromaAbCorrection_0, float32 chromaAbCorrection_1, float32 chromaAbCorrection_2, float32 chromaAbCorrection_3) {
+        this.hResolution = hResolution;
+        this.vResolution = vResolution;
+        this.hScreenSize = hScreenSize;
+        this.vScreenSize = vScreenSize;
+        this.eyeToScreenDistance = eyeToScreenDistance;
+        this.lensSeparationDistance = lensSeparationDistance;
+        this.interpupillaryDistance = interpupillaryDistance;
+        this.lensDistortionValues_0 = lensDistortionValues_0;
+        this.lensDistortionValues_1 = lensDistortionValues_1;
+        this.lensDistortionValues_2 = lensDistortionValues_2;
+        this.lensDistortionValues_3 = lensDistortionValues_3;
+        this.chromaAbCorrection_0 = chromaAbCorrection_0;
+        this.chromaAbCorrection_1 = chromaAbCorrection_1;
+        this.chromaAbCorrection_2 = chromaAbCorrection_2;
+        this.chromaAbCorrection_3 = chromaAbCorrection_3;
+    }
+
+}

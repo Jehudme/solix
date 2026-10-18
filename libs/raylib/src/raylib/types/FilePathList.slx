@@ -1,0 +1,17 @@
+package raylib.types;
+
+public class FilePathList {
+    public uint32 count;
+    public uint64 paths;
+
+    public FilePathList() {
+        this.count = 0;
+        this.paths = 0;
+    }
+
+    public FilePathList(uint32 count, uint64 paths) {
+        this.count = count;
+        this.paths = paths;
+    }
+
+}

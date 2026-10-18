@@ -1,0 +1,29 @@
+package raylib.types;
+
+public class AutomationEvent {
+    public uint32 frame;
+    public uint32 type;
+    public int32 params_0;
+    public int32 params_1;
+    public int32 params_2;
+    public int32 params_3;
+
+    public AutomationEvent() {
+        this.frame = 0;
+        this.type = 0;
+        this.params_0 = 0;
+        this.params_1 = 0;
+        this.params_2 = 0;
+        this.params_3 = 0;
+    }
+
+    public AutomationEvent(uint32 frame, uint32 type, int32 params_0, int32 params_1, int32 params_2, int32 params_3) {
+        this.frame = frame;
+        this.type = type;
+        this.params_0 = params_0;
+        this.params_1 = params_1;
+        this.params_2 = params_2;
+        this.params_3 = params_3;
+    }
+
+}

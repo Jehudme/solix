@@ -1,0 +1,26 @@
+package raylib.types;
+
+public class Texture2D {
+    public uint32 id;
+    public int32 width;
+    public int32 height;
+    public int32 mipmaps;
+    public int32 format;
+
+    public Texture2D() {
+        this.id = 0;
+        this.width = 0;
+        this.height = 0;
+        this.mipmaps = 0;
+        this.format = 0;
+    }
+
+    public Texture2D(uint32 id, int32 width, int32 height, int32 mipmaps, int32 format) {
+        this.id = id;
+        this.width = width;
+        this.height = height;
+        this.mipmaps = mipmaps;
+        this.format = format;
+    }
+
+}

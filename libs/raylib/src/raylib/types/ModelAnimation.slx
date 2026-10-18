@@ -1,0 +1,25 @@
+package raylib.types;
+
+import solix.core.String;
+
+public class ModelAnimation {
+    public String name;
+    public uint32 boneCount;
+    public int32 keyframeCount;
+    public uint64 keyframePoses;
+
+    public ModelAnimation() {
+        this.name = "";
+        this.boneCount = 0;
+        this.keyframeCount = 0;
+        this.keyframePoses = 0;
+    }
+
+    public ModelAnimation(String name, uint32 boneCount, int32 keyframeCount, uint64 keyframePoses) {
+        this.name = name;
+        this.boneCount = boneCount;
+        this.keyframeCount = keyframeCount;
+        this.keyframePoses = keyframePoses;
+    }
+
+}

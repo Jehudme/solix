@@ -1,0 +1,26 @@
+package raylib.types;
+
+public class Wave {
+    public uint32 frameCount;
+    public uint32 sampleRate;
+    public uint32 sampleSize;
+    public uint32 channels;
+    public uint64 data;
+
+    public Wave() {
+        this.frameCount = 0;
+        this.sampleRate = 0;
+        this.sampleSize = 0;
+        this.channels = 0;
+        this.data = 0;
+    }
+
+    public Wave(uint32 frameCount, uint32 sampleRate, uint32 sampleSize, uint32 channels, uint64 data) {
+        this.frameCount = frameCount;
+        this.sampleRate = sampleRate;
+        this.sampleSize = sampleSize;
+        this.channels = channels;
+        this.data = data;
+    }
+
+}

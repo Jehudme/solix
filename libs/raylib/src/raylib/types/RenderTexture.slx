@@ -1,0 +1,5 @@
+package raylib.types;
+
+public class RenderTexture : RenderTexture2D {
+    public RenderTexture() : super() {}
+}

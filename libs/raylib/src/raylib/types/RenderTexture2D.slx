@@ -1,0 +1,22 @@
+package raylib.types;
+
+import raylib.types.Texture2D;
+
+public class RenderTexture2D {
+    public uint32 id;
+    public Texture2D texture;
+    public Texture2D depth;
+
+    public RenderTexture2D() {
+        this.id = 0;
+        this.texture = new Texture2D();
+        this.depth = new Texture2D();
+    }
+
+    public RenderTexture2D(uint32 id, Texture2D texture, Texture2D depth) {
+        this.id = id;
+        this.texture = texture;
+        this.depth = depth;
+    }
+
+}

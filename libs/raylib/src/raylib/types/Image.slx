@@ -1,0 +1,26 @@
+package raylib.types;
+
+public class Image {
+    public uint64 data;
+    public int32 width;
+    public int32 height;
+    public int32 mipmaps;
+    public int32 format;
+
+    public Image() {
+        this.data = 0;
+        this.width = 0;
+        this.height = 0;
+        this.mipmaps = 0;
+        this.format = 0;
+    }
+
+    public Image(uint64 data, int32 width, int32 height, int32 mipmaps, int32 format) {
+        this.data = data;
+        this.width = width;
+        this.height = height;
+        this.mipmaps = mipmaps;
+        this.format = format;
+    }
+
+}

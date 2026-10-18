@@ -1,0 +1,25 @@
+package raylib.types;
+
+import raylib.types.Vector3;
+
+public class RayCollision {
+    public bool hit;
+    public float32 distance;
+    public Vector3 point;
+    public Vector3 normal;
+
+    public RayCollision() {
+        this.hit = false;
+        this.distance = 0.0;
+        this.point = new Vector3();
+        this.normal = new Vector3();
+    }
+
+    public RayCollision(bool hit, float32 distance, Vector3 point, Vector3 normal) {
+        this.hit = hit;
+        this.distance = distance;
+        this.point = point;
+        this.normal = normal;
+    }
+
+}

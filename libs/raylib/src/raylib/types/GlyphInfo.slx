@@ -1,0 +1,28 @@
+package raylib.types;
+
+import raylib.types.Image;
+
+public class GlyphInfo {
+    public int32 value;
+    public int32 offsetX;
+    public int32 offsetY;
+    public int32 advanceX;
+    public Image image;
+
+    public GlyphInfo() {
+        this.value = 0;
+        this.offsetX = 0;
+        this.offsetY = 0;
+        this.advanceX = 0;
+        this.image = new Image();
+    }
+
+    public GlyphInfo(int32 value, int32 offsetX, int32 offsetY, int32 advanceX, Image image) {
+        this.value = value;
+        this.offsetX = offsetX;
+        this.offsetY = offsetY;
+        this.advanceX = advanceX;
+        this.image = image;
+    }
+
+}

@@ -1,0 +1,19 @@
+package raylib.types;
+
+import raylib.types.Vector3;
+
+public class Ray {
+    public Vector3 position;
+    public Vector3 direction;
+
+    public Ray() {
+        this.position = new Vector3();
+        this.direction = new Vector3();
+    }
+
+    public Ray(Vector3 position, Vector3 direction) {
+        this.position = position;
+        this.direction = direction;
+    }
+
+}

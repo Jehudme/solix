@@ -1,0 +1,20 @@
+package raylib.types;
+
+public class ModelSkeleton {
+    public uint32 boneCount;
+    public uint64 bones;
+    public uint64 bindPose;
+
+    public ModelSkeleton() {
+        this.boneCount = 0;
+        this.bones = 0;
+        this.bindPose = 0;
+    }
+
+    public ModelSkeleton(uint32 boneCount, uint64 bones, uint64 bindPose) {
+        this.boneCount = boneCount;
+        this.bones = bones;
+        this.bindPose = bindPose;
+    }
+
+}

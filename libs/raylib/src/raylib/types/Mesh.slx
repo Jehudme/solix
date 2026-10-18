@@ -1,0 +1,59 @@
+package raylib.types;
+
+public class Mesh {
+    public int32 vertexCount;
+    public int32 triangleCount;
+    public uint64 vertices;
+    public uint64 texcoords;
+    public uint64 texcoords2;
+    public uint64 normals;
+    public uint64 tangents;
+    public uint64 colors;
+    public uint64 indices;
+    public int32 boneCount;
+    public uint64 boneIndices;
+    public uint64 boneWeights;
+    public uint64 animVertices;
+    public uint64 animNormals;
+    public uint32 vaoId;
+    public uint64 vboId;
+
+    public Mesh() {
+        this.vertexCount = 0;
+        this.triangleCount = 0;
+        this.vertices = 0;
+        this.texcoords = 0;
+        this.texcoords2 = 0;
+        this.normals = 0;
+        this.tangents = 0;
+        this.colors = 0;
+        this.indices = 0;
+        this.boneCount = 0;
+        this.boneIndices = 0;
+        this.boneWeights = 0;
+        this.animVertices = 0;
+        this.animNormals = 0;
+        this.vaoId = 0;
+        this.vboId = 0;
+    }
+
+    public Mesh(int32 vertexCount, int32 triangleCount, uint64 vertices, uint64 texcoords, uint64 texcoords2, uint64 normals, uint64 tangents, uint64 colors, uint64 indices, int32 boneCount, uint64 boneIndices, uint64 boneWeights, uint64 animVertices, uint64 animNormals, uint32 vaoId, uint64 vboId) {
+        this.vertexCount = vertexCount;
+        this.triangleCount = triangleCount;
+        this.vertices = vertices;
+        this.texcoords = texcoords;
+        this.texcoords2 = texcoords2;
+        this.normals = normals;
+        this.tangents = tangents;
+        this.colors = colors;
+        this.indices = indices;
+        this.boneCount = boneCount;
+        this.boneIndices = boneIndices;
+        this.boneWeights = boneWeights;
+        this.animVertices = animVertices;
+        this.animNormals = animNormals;
+        this.vaoId = vaoId;
+        this.vboId = vboId;
+    }
+
+}
