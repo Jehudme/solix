@@ -5,6 +5,7 @@
 #include <cstring>
 #include <string>
 #include <cstdint>
+#include <cmath>
 
 namespace {
 
@@ -18,6 +19,21 @@ template <typename T> inline T bit_cast_from_u64(uint64_t value) {
     T result;
     std::memcpy(&result, &value, sizeof(T));
     return result;
+}
+
+inline float unpack_f32_arg(uint64_t arg) {
+    double d = bit_cast_from_u64<double>(arg);
+    if (arg != 0 && (std::isnan(d) || std::abs(d) < 1e-35 || std::abs(d) > 1e35)) {
+        uint32_t raw = static_cast<uint32_t>(arg & 0xFFFFFFFF);
+        float f;
+        std::memcpy(&f, &raw, 4);
+        return f;
+    }
+    return static_cast<float>(d);
+}
+
+inline uint64_t pack_f32_ret(float res) {
+    return bit_cast_to_u64<double>(static_cast<double>(res));
 }
 
 static std::string read_solix_chars(solix::RuntimeContext &vm, uint64_t addr) {
@@ -307,8 +323,7 @@ static uint64_t wrap_set_window_size(solix::RuntimeContext &vm, uint64_t self, u
 
 static uint64_t wrap_set_window_opacity(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
-    uint32_t raw_a0 = static_cast<uint32_t>(args[0] & 0xFFFFFFFF);
-    float a0; std::memcpy(&a0, &raw_a0, 4);
+    float a0 = unpack_f32_arg(args[0]);
     ::SetWindowOpacity(a0);
     return 0;
 }
@@ -556,8 +571,7 @@ static uint64_t wrap_set_target_fps(solix::RuntimeContext &vm, uint64_t self, ui
 static uint64_t wrap_get_frame_time(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     float res = ::GetFrameTime();
-    uint32_t bits = 0; std::memcpy(&bits, &res, 4);
-    return static_cast<uint64_t>(bits);
+    return pack_f32_ret(res);
 }
 
 static uint64_t wrap_get_time(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
@@ -980,8 +994,7 @@ static uint64_t wrap_get_gamepad_axis_movement(solix::RuntimeContext &vm, uint64
     int a0 = static_cast<int>(args[0]);
     int a1 = static_cast<int>(args[1]);
     float res = ::GetGamepadAxisMovement(a0, a1);
-    uint32_t bits = 0; std::memcpy(&bits, &res, 4);
-    return static_cast<uint64_t>(bits);
+    return pack_f32_ret(res);
 }
 
 static uint64_t wrap_set_gamepad_mappings(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
@@ -994,12 +1007,9 @@ static uint64_t wrap_set_gamepad_mappings(solix::RuntimeContext &vm, uint64_t se
 static uint64_t wrap_set_gamepad_vibration(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     int a0 = static_cast<int>(args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     ::SetGamepadVibration(a0, a1, a2, a3);
     return 0;
 }
@@ -1070,10 +1080,8 @@ static uint64_t wrap_set_mouse_offset(solix::RuntimeContext &vm, uint64_t self, 
 
 static uint64_t wrap_set_mouse_scale(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
-    uint32_t raw_a0 = static_cast<uint32_t>(args[0] & 0xFFFFFFFF);
-    float a0; std::memcpy(&a0, &raw_a0, 4);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a0 = unpack_f32_arg(args[0]);
+    float a1 = unpack_f32_arg(args[1]);
     ::SetMouseScale(a0, a1);
     return 0;
 }
@@ -1081,8 +1089,7 @@ static uint64_t wrap_set_mouse_scale(solix::RuntimeContext &vm, uint64_t self, u
 static uint64_t wrap_get_mouse_wheel_move(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     float res = ::GetMouseWheelMove();
-    uint32_t bits = 0; std::memcpy(&bits, &res, 4);
-    return static_cast<uint64_t>(bits);
+    return pack_f32_ret(res);
 }
 
 static uint64_t wrap_get_mouse_wheel_move_v(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
@@ -1149,8 +1156,7 @@ static uint64_t wrap_get_gesture_detected(solix::RuntimeContext &vm, uint64_t se
 static uint64_t wrap_get_gesture_hold_duration(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     float res = ::GetGestureHoldDuration();
-    uint32_t bits = 0; std::memcpy(&bits, &res, 4);
-    return static_cast<uint64_t>(bits);
+    return pack_f32_ret(res);
 }
 
 static uint64_t wrap_get_gesture_drag_vector(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
@@ -1163,8 +1169,7 @@ static uint64_t wrap_get_gesture_drag_vector(solix::RuntimeContext &vm, uint64_t
 static uint64_t wrap_get_gesture_drag_angle(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     float res = ::GetGestureDragAngle();
-    uint32_t bits = 0; std::memcpy(&bits, &res, 4);
-    return static_cast<uint64_t>(bits);
+    return pack_f32_ret(res);
 }
 
 static uint64_t wrap_get_gesture_pinch_vector(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
@@ -1177,8 +1182,7 @@ static uint64_t wrap_get_gesture_pinch_vector(solix::RuntimeContext &vm, uint64_
 static uint64_t wrap_get_gesture_pinch_angle(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     float res = ::GetGesturePinchAngle();
-    uint32_t bits = 0; std::memcpy(&bits, &res, 4);
-    return static_cast<uint64_t>(bits);
+    return pack_f32_ret(res);
 }
 
 static uint64_t wrap_get_shapes_texture_rectangle(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
@@ -1229,8 +1233,7 @@ static uint64_t wrap_draw_line_ex(solix::RuntimeContext &vm, uint64_t self, uint
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a2 = unpack_f32_arg(args[2]);
     ::Color a3 = unpack_color(vm, args[3]);
     ::DrawLineEx(a0, a1, a2, a3);
     return 0;
@@ -1240,8 +1243,7 @@ static uint64_t wrap_draw_line_bezier(solix::RuntimeContext &vm, uint64_t self, 
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a2 = unpack_f32_arg(args[2]);
     ::Color a3 = unpack_color(vm, args[3]);
     ::DrawLineBezier(a0, a1, a2, a3);
     return 0;
@@ -1295,8 +1297,7 @@ static uint64_t wrap_draw_triangle_lines_ex(solix::RuntimeContext &vm, uint64_t 
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
     ::Vector2 a2 = unpack_vector2(vm, args[2]);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a3 = unpack_f32_arg(args[3]);
     ::Color a4 = unpack_color(vm, args[4]);
     ::DrawTriangleLinesEx(a0, a1, a2, a3, a4);
     return 0;
@@ -1334,8 +1335,7 @@ static uint64_t wrap_draw_rectangle_pro(solix::RuntimeContext &vm, uint64_t self
     (void)self; (void)argc;
     ::Rectangle a0 = unpack_rectangle(vm, args[0]);
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a2 = unpack_f32_arg(args[2]);
     ::Color a3 = unpack_color(vm, args[3]);
     ::DrawRectanglePro(a0, a1, a2, a3);
     return 0;
@@ -1390,8 +1390,7 @@ static uint64_t wrap_draw_rectangle_lines(solix::RuntimeContext &vm, uint64_t se
 static uint64_t wrap_draw_rectangle_lines_ex(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Rectangle a0 = unpack_rectangle(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     ::Color a2 = unpack_color(vm, args[2]);
     ::DrawRectangleLinesEx(a0, a1, a2);
     return 0;
@@ -1400,8 +1399,7 @@ static uint64_t wrap_draw_rectangle_lines_ex(solix::RuntimeContext &vm, uint64_t
 static uint64_t wrap_draw_rectangle_rounded(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Rectangle a0 = unpack_rectangle(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     int a2 = static_cast<int>(args[2]);
     ::Color a3 = unpack_color(vm, args[3]);
     ::DrawRectangleRounded(a0, a1, a2, a3);
@@ -1411,8 +1409,7 @@ static uint64_t wrap_draw_rectangle_rounded(solix::RuntimeContext &vm, uint64_t 
 static uint64_t wrap_draw_rectangle_rounded_lines(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Rectangle a0 = unpack_rectangle(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     int a2 = static_cast<int>(args[2]);
     ::Color a3 = unpack_color(vm, args[3]);
     ::DrawRectangleRoundedLines(a0, a1, a2, a3);
@@ -1422,11 +1419,9 @@ static uint64_t wrap_draw_rectangle_rounded_lines(solix::RuntimeContext &vm, uin
 static uint64_t wrap_draw_rectangle_rounded_lines_ex(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Rectangle a0 = unpack_rectangle(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     int a2 = static_cast<int>(args[2]);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a3 = unpack_f32_arg(args[3]);
     ::Color a4 = unpack_color(vm, args[4]);
     ::DrawRectangleRoundedLinesEx(a0, a1, a2, a3, a4);
     return 0;
@@ -1436,10 +1431,8 @@ static uint64_t wrap_draw_poly(solix::RuntimeContext &vm, uint64_t self, uint64_
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
     int a1 = static_cast<int>(args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     ::Color a4 = unpack_color(vm, args[4]);
     ::DrawPoly(a0, a1, a2, a3, a4);
     return 0;
@@ -1449,10 +1442,8 @@ static uint64_t wrap_draw_poly_lines(solix::RuntimeContext &vm, uint64_t self, u
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
     int a1 = static_cast<int>(args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     ::Color a4 = unpack_color(vm, args[4]);
     ::DrawPolyLines(a0, a1, a2, a3, a4);
     return 0;
@@ -1462,12 +1453,9 @@ static uint64_t wrap_draw_poly_lines_ex(solix::RuntimeContext &vm, uint64_t self
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
     int a1 = static_cast<int>(args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
-    uint32_t raw_a4 = static_cast<uint32_t>(args[4] & 0xFFFFFFFF);
-    float a4; std::memcpy(&a4, &raw_a4, 4);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
+    float a4 = unpack_f32_arg(args[4]);
     ::Color a5 = unpack_color(vm, args[5]);
     ::DrawPolyLinesEx(a0, a1, a2, a3, a4, a5);
     return 0;
@@ -1477,8 +1465,7 @@ static uint64_t wrap_draw_circle(solix::RuntimeContext &vm, uint64_t self, uint6
     (void)self; (void)argc;
     int a0 = static_cast<int>(args[0]);
     int a1 = static_cast<int>(args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a2 = unpack_f32_arg(args[2]);
     ::Color a3 = unpack_color(vm, args[3]);
     ::DrawCircle(a0, a1, a2, a3);
     return 0;
@@ -1487,8 +1474,7 @@ static uint64_t wrap_draw_circle(solix::RuntimeContext &vm, uint64_t self, uint6
 static uint64_t wrap_draw_circle_v(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     ::Color a2 = unpack_color(vm, args[2]);
     ::DrawCircleV(a0, a1, a2);
     return 0;
@@ -1497,8 +1483,7 @@ static uint64_t wrap_draw_circle_v(solix::RuntimeContext &vm, uint64_t self, uin
 static uint64_t wrap_draw_circle_gradient(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     ::Color a2 = unpack_color(vm, args[2]);
     ::Color a3 = unpack_color(vm, args[3]);
     ::DrawCircleGradient(a0, a1, a2, a3);
@@ -1508,12 +1493,9 @@ static uint64_t wrap_draw_circle_gradient(solix::RuntimeContext &vm, uint64_t se
 static uint64_t wrap_draw_circle_sector(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     int a4 = static_cast<int>(args[4]);
     ::Color a5 = unpack_color(vm, args[5]);
     ::DrawCircleSector(a0, a1, a2, a3, a4, a5);
@@ -1523,12 +1505,9 @@ static uint64_t wrap_draw_circle_sector(solix::RuntimeContext &vm, uint64_t self
 static uint64_t wrap_draw_circle_sector_lines(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     int a4 = static_cast<int>(args[4]);
     ::Color a5 = unpack_color(vm, args[5]);
     ::DrawCircleSectorLines(a0, a1, a2, a3, a4, a5);
@@ -1538,15 +1517,11 @@ static uint64_t wrap_draw_circle_sector_lines(solix::RuntimeContext &vm, uint64_
 static uint64_t wrap_draw_circle_sector_lines_ex(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     int a4 = static_cast<int>(args[4]);
-    uint32_t raw_a5 = static_cast<uint32_t>(args[5] & 0xFFFFFFFF);
-    float a5; std::memcpy(&a5, &raw_a5, 4);
+    float a5 = unpack_f32_arg(args[5]);
     ::Color a6 = unpack_color(vm, args[6]);
     ::DrawCircleSectorLinesEx(a0, a1, a2, a3, a4, a5, a6);
     return 0;
@@ -1556,8 +1531,7 @@ static uint64_t wrap_draw_circle_lines(solix::RuntimeContext &vm, uint64_t self,
     (void)self; (void)argc;
     int a0 = static_cast<int>(args[0]);
     int a1 = static_cast<int>(args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a2 = unpack_f32_arg(args[2]);
     ::Color a3 = unpack_color(vm, args[3]);
     ::DrawCircleLines(a0, a1, a2, a3);
     return 0;
@@ -1566,8 +1540,7 @@ static uint64_t wrap_draw_circle_lines(solix::RuntimeContext &vm, uint64_t self,
 static uint64_t wrap_draw_circle_lines_v(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     ::Color a2 = unpack_color(vm, args[2]);
     ::DrawCircleLinesV(a0, a1, a2);
     return 0;
@@ -1576,10 +1549,8 @@ static uint64_t wrap_draw_circle_lines_v(solix::RuntimeContext &vm, uint64_t sel
 static uint64_t wrap_draw_circle_lines_ex(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
     ::Color a3 = unpack_color(vm, args[3]);
     ::DrawCircleLinesEx(a0, a1, a2, a3);
     return 0;
@@ -1589,10 +1560,8 @@ static uint64_t wrap_draw_ellipse(solix::RuntimeContext &vm, uint64_t self, uint
     (void)self; (void)argc;
     int a0 = static_cast<int>(args[0]);
     int a1 = static_cast<int>(args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     ::Color a4 = unpack_color(vm, args[4]);
     ::DrawEllipse(a0, a1, a2, a3, a4);
     return 0;
@@ -1601,10 +1570,8 @@ static uint64_t wrap_draw_ellipse(solix::RuntimeContext &vm, uint64_t self, uint
 static uint64_t wrap_draw_ellipse_v(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
     ::Color a3 = unpack_color(vm, args[3]);
     ::DrawEllipseV(a0, a1, a2, a3);
     return 0;
@@ -1614,10 +1581,8 @@ static uint64_t wrap_draw_ellipse_lines(solix::RuntimeContext &vm, uint64_t self
     (void)self; (void)argc;
     int a0 = static_cast<int>(args[0]);
     int a1 = static_cast<int>(args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     ::Color a4 = unpack_color(vm, args[4]);
     ::DrawEllipseLines(a0, a1, a2, a3, a4);
     return 0;
@@ -1626,10 +1591,8 @@ static uint64_t wrap_draw_ellipse_lines(solix::RuntimeContext &vm, uint64_t self
 static uint64_t wrap_draw_ellipse_lines_v(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
     ::Color a3 = unpack_color(vm, args[3]);
     ::DrawEllipseLinesV(a0, a1, a2, a3);
     return 0;
@@ -1638,12 +1601,9 @@ static uint64_t wrap_draw_ellipse_lines_v(solix::RuntimeContext &vm, uint64_t se
 static uint64_t wrap_draw_ellipse_lines_ex(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     ::Color a4 = unpack_color(vm, args[4]);
     ::DrawEllipseLinesEx(a0, a1, a2, a3, a4);
     return 0;
@@ -1652,14 +1612,10 @@ static uint64_t wrap_draw_ellipse_lines_ex(solix::RuntimeContext &vm, uint64_t s
 static uint64_t wrap_draw_ring(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
-    uint32_t raw_a4 = static_cast<uint32_t>(args[4] & 0xFFFFFFFF);
-    float a4; std::memcpy(&a4, &raw_a4, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
+    float a4 = unpack_f32_arg(args[4]);
     int a5 = static_cast<int>(args[5]);
     ::Color a6 = unpack_color(vm, args[6]);
     ::DrawRing(a0, a1, a2, a3, a4, a5, a6);
@@ -1669,14 +1625,10 @@ static uint64_t wrap_draw_ring(solix::RuntimeContext &vm, uint64_t self, uint64_
 static uint64_t wrap_draw_ring_lines(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
-    uint32_t raw_a4 = static_cast<uint32_t>(args[4] & 0xFFFFFFFF);
-    float a4; std::memcpy(&a4, &raw_a4, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
+    float a4 = unpack_f32_arg(args[4]);
     int a5 = static_cast<int>(args[5]);
     ::Color a6 = unpack_color(vm, args[6]);
     ::DrawRingLines(a0, a1, a2, a3, a4, a5, a6);
@@ -1686,17 +1638,12 @@ static uint64_t wrap_draw_ring_lines(solix::RuntimeContext &vm, uint64_t self, u
 static uint64_t wrap_draw_ring_lines_ex(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
-    uint32_t raw_a4 = static_cast<uint32_t>(args[4] & 0xFFFFFFFF);
-    float a4; std::memcpy(&a4, &raw_a4, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
+    float a4 = unpack_f32_arg(args[4]);
     int a5 = static_cast<int>(args[5]);
-    uint32_t raw_a6 = static_cast<uint32_t>(args[6] & 0xFFFFFFFF);
-    float a6; std::memcpy(&a6, &raw_a6, 4);
+    float a6 = unpack_f32_arg(args[6]);
     ::Color a7 = unpack_color(vm, args[7]);
     ::DrawRingLinesEx(a0, a1, a2, a3, a4, a5, a6, a7);
     return 0;
@@ -1706,8 +1653,7 @@ static uint64_t wrap_draw_spline_segment_linear(solix::RuntimeContext &vm, uint6
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a2 = unpack_f32_arg(args[2]);
     ::Color a3 = unpack_color(vm, args[3]);
     ::DrawSplineSegmentLinear(a0, a1, a2, a3);
     return 0;
@@ -1719,8 +1665,7 @@ static uint64_t wrap_draw_spline_segment_basis(solix::RuntimeContext &vm, uint64
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
     ::Vector2 a2 = unpack_vector2(vm, args[2]);
     ::Vector2 a3 = unpack_vector2(vm, args[3]);
-    uint32_t raw_a4 = static_cast<uint32_t>(args[4] & 0xFFFFFFFF);
-    float a4; std::memcpy(&a4, &raw_a4, 4);
+    float a4 = unpack_f32_arg(args[4]);
     ::Color a5 = unpack_color(vm, args[5]);
     ::DrawSplineSegmentBasis(a0, a1, a2, a3, a4, a5);
     return 0;
@@ -1732,8 +1677,7 @@ static uint64_t wrap_draw_spline_segment_catmull_rom(solix::RuntimeContext &vm, 
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
     ::Vector2 a2 = unpack_vector2(vm, args[2]);
     ::Vector2 a3 = unpack_vector2(vm, args[3]);
-    uint32_t raw_a4 = static_cast<uint32_t>(args[4] & 0xFFFFFFFF);
-    float a4; std::memcpy(&a4, &raw_a4, 4);
+    float a4 = unpack_f32_arg(args[4]);
     ::Color a5 = unpack_color(vm, args[5]);
     ::DrawSplineSegmentCatmullRom(a0, a1, a2, a3, a4, a5);
     return 0;
@@ -1744,8 +1688,7 @@ static uint64_t wrap_draw_spline_segment_bezier_quadratic(solix::RuntimeContext 
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
     ::Vector2 a2 = unpack_vector2(vm, args[2]);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a3 = unpack_f32_arg(args[3]);
     ::Color a4 = unpack_color(vm, args[4]);
     ::DrawSplineSegmentBezierQuadratic(a0, a1, a2, a3, a4);
     return 0;
@@ -1757,8 +1700,7 @@ static uint64_t wrap_draw_spline_segment_bezier_cubic(solix::RuntimeContext &vm,
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
     ::Vector2 a2 = unpack_vector2(vm, args[2]);
     ::Vector2 a3 = unpack_vector2(vm, args[3]);
-    uint32_t raw_a4 = static_cast<uint32_t>(args[4] & 0xFFFFFFFF);
-    float a4; std::memcpy(&a4, &raw_a4, 4);
+    float a4 = unpack_f32_arg(args[4]);
     ::Color a5 = unpack_color(vm, args[5]);
     ::DrawSplineSegmentBezierCubic(a0, a1, a2, a3, a4, a5);
     return 0;
@@ -1768,8 +1710,7 @@ static uint64_t wrap_get_spline_point_linear(solix::RuntimeContext &vm, uint64_t
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a2 = unpack_f32_arg(args[2]);
     auto res = ::GetSplinePointLinear(a0, a1, a2);
     pack_vector2(vm, args[3], res);
     return 0;
@@ -1781,8 +1722,7 @@ static uint64_t wrap_get_spline_point_basis(solix::RuntimeContext &vm, uint64_t 
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
     ::Vector2 a2 = unpack_vector2(vm, args[2]);
     ::Vector2 a3 = unpack_vector2(vm, args[3]);
-    uint32_t raw_a4 = static_cast<uint32_t>(args[4] & 0xFFFFFFFF);
-    float a4; std::memcpy(&a4, &raw_a4, 4);
+    float a4 = unpack_f32_arg(args[4]);
     auto res = ::GetSplinePointBasis(a0, a1, a2, a3, a4);
     pack_vector2(vm, args[5], res);
     return 0;
@@ -1794,8 +1734,7 @@ static uint64_t wrap_get_spline_point_catmull_rom(solix::RuntimeContext &vm, uin
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
     ::Vector2 a2 = unpack_vector2(vm, args[2]);
     ::Vector2 a3 = unpack_vector2(vm, args[3]);
-    uint32_t raw_a4 = static_cast<uint32_t>(args[4] & 0xFFFFFFFF);
-    float a4; std::memcpy(&a4, &raw_a4, 4);
+    float a4 = unpack_f32_arg(args[4]);
     auto res = ::GetSplinePointCatmullRom(a0, a1, a2, a3, a4);
     pack_vector2(vm, args[5], res);
     return 0;
@@ -1806,8 +1745,7 @@ static uint64_t wrap_get_spline_point_bezier_quadratic(solix::RuntimeContext &vm
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
     ::Vector2 a2 = unpack_vector2(vm, args[2]);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a3 = unpack_f32_arg(args[3]);
     auto res = ::GetSplinePointBezierQuadratic(a0, a1, a2, a3);
     pack_vector2(vm, args[4], res);
     return 0;
@@ -1819,8 +1757,7 @@ static uint64_t wrap_get_spline_point_bezier_cubic(solix::RuntimeContext &vm, ui
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
     ::Vector2 a2 = unpack_vector2(vm, args[2]);
     ::Vector2 a3 = unpack_vector2(vm, args[3]);
-    uint32_t raw_a4 = static_cast<uint32_t>(args[4] & 0xFFFFFFFF);
-    float a4; std::memcpy(&a4, &raw_a4, 4);
+    float a4 = unpack_f32_arg(args[4]);
     auto res = ::GetSplinePointBezierCubic(a0, a1, a2, a3, a4);
     pack_vector2(vm, args[5], res);
     return 0;
@@ -1836,19 +1773,16 @@ static uint64_t wrap_check_collision_recs(solix::RuntimeContext &vm, uint64_t se
 static uint64_t wrap_check_collision_circles(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     ::Vector2 a2 = unpack_vector2(vm, args[2]);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a3 = unpack_f32_arg(args[3]);
     return ::CheckCollisionCircles(a0, a1, a2, a3) ? 1 : 0;
 }
 
 static uint64_t wrap_check_collision_circle_rec(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     ::Rectangle a2 = unpack_rectangle(vm, args[2]);
     return ::CheckCollisionCircleRec(a0, a1, a2) ? 1 : 0;
 }
@@ -1856,8 +1790,7 @@ static uint64_t wrap_check_collision_circle_rec(solix::RuntimeContext &vm, uint6
 static uint64_t wrap_check_collision_circle_line(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     ::Vector2 a2 = unpack_vector2(vm, args[2]);
     ::Vector2 a3 = unpack_vector2(vm, args[3]);
     return ::CheckCollisionCircleLine(a0, a1, a2, a3) ? 1 : 0;
@@ -1874,8 +1807,7 @@ static uint64_t wrap_check_collision_point_circle(solix::RuntimeContext &vm, uin
     (void)self; (void)argc;
     ::Vector2 a0 = unpack_vector2(vm, args[0]);
     ::Vector2 a1 = unpack_vector2(vm, args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a2 = unpack_f32_arg(args[2]);
     return ::CheckCollisionPointCircle(a0, a1, a2) ? 1 : 0;
 }
 
@@ -1916,8 +1848,7 @@ static uint64_t wrap_color_is_equal(solix::RuntimeContext &vm, uint64_t self, ui
 static uint64_t wrap_fade(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Color a0 = unpack_color(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     auto res = ::Fade(a0, a1);
     pack_color(vm, args[2], res);
     return 0;
@@ -1955,12 +1886,9 @@ static uint64_t wrap_color_to_hsv(solix::RuntimeContext &vm, uint64_t self, uint
 
 static uint64_t wrap_color_from_hsv(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
-    uint32_t raw_a0 = static_cast<uint32_t>(args[0] & 0xFFFFFFFF);
-    float a0; std::memcpy(&a0, &raw_a0, 4);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a0 = unpack_f32_arg(args[0]);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
     auto res = ::ColorFromHSV(a0, a1, a2);
     pack_color(vm, args[3], res);
     return 0;
@@ -1978,8 +1906,7 @@ static uint64_t wrap_color_tint(solix::RuntimeContext &vm, uint64_t self, uint64
 static uint64_t wrap_color_brightness(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Color a0 = unpack_color(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     auto res = ::ColorBrightness(a0, a1);
     pack_color(vm, args[2], res);
     return 0;
@@ -1988,8 +1915,7 @@ static uint64_t wrap_color_brightness(solix::RuntimeContext &vm, uint64_t self, 
 static uint64_t wrap_color_contrast(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Color a0 = unpack_color(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     auto res = ::ColorContrast(a0, a1);
     pack_color(vm, args[2], res);
     return 0;
@@ -1998,8 +1924,7 @@ static uint64_t wrap_color_contrast(solix::RuntimeContext &vm, uint64_t self, ui
 static uint64_t wrap_color_alpha(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Color a0 = unpack_color(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     auto res = ::ColorAlpha(a0, a1);
     pack_color(vm, args[2], res);
     return 0;
@@ -2019,8 +1944,7 @@ static uint64_t wrap_color_lerp(solix::RuntimeContext &vm, uint64_t self, uint64
     (void)self; (void)argc;
     ::Color a0 = unpack_color(vm, args[0]);
     ::Color a1 = unpack_color(vm, args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a2 = unpack_f32_arg(args[2]);
     auto res = ::ColorLerp(a0, a1, a2);
     pack_color(vm, args[3], res);
     return 0;
@@ -2139,8 +2063,7 @@ static uint64_t wrap_text_to_float(solix::RuntimeContext &vm, uint64_t self, uin
     std::string s_a0 = read_solix_chars(vm, args[0]);
     const char *a0 = s_a0.c_str();
     float res = ::TextToFloat(a0);
-    uint32_t bits = 0; std::memcpy(&bits, &res, 4);
-    return static_cast<uint64_t>(bits);
+    return pack_f32_ret(res);
 }
 
 static uint64_t wrap_draw_line3d(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
@@ -2163,11 +2086,9 @@ static uint64_t wrap_draw_point3d(solix::RuntimeContext &vm, uint64_t self, uint
 static uint64_t wrap_draw_circle3d(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector3 a0 = unpack_vector3(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     ::Vector3 a2 = unpack_vector3(vm, args[2]);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a3 = unpack_f32_arg(args[3]);
     ::Color a4 = unpack_color(vm, args[4]);
     ::DrawCircle3D(a0, a1, a2, a3, a4);
     return 0;
@@ -2186,12 +2107,9 @@ static uint64_t wrap_draw_triangle3d(solix::RuntimeContext &vm, uint64_t self, u
 static uint64_t wrap_draw_cube(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector3 a0 = unpack_vector3(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     ::Color a4 = unpack_color(vm, args[4]);
     ::DrawCube(a0, a1, a2, a3, a4);
     return 0;
@@ -2209,12 +2127,9 @@ static uint64_t wrap_draw_cube_v(solix::RuntimeContext &vm, uint64_t self, uint6
 static uint64_t wrap_draw_cube_wires(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector3 a0 = unpack_vector3(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     ::Color a4 = unpack_color(vm, args[4]);
     ::DrawCubeWires(a0, a1, a2, a3, a4);
     return 0;
@@ -2232,8 +2147,7 @@ static uint64_t wrap_draw_cube_wires_v(solix::RuntimeContext &vm, uint64_t self,
 static uint64_t wrap_draw_sphere(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector3 a0 = unpack_vector3(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     ::Color a2 = unpack_color(vm, args[2]);
     ::DrawSphere(a0, a1, a2);
     return 0;
@@ -2242,8 +2156,7 @@ static uint64_t wrap_draw_sphere(solix::RuntimeContext &vm, uint64_t self, uint6
 static uint64_t wrap_draw_sphere_ex(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector3 a0 = unpack_vector3(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     int a2 = static_cast<int>(args[2]);
     int a3 = static_cast<int>(args[3]);
     ::Color a4 = unpack_color(vm, args[4]);
@@ -2254,8 +2167,7 @@ static uint64_t wrap_draw_sphere_ex(solix::RuntimeContext &vm, uint64_t self, ui
 static uint64_t wrap_draw_sphere_wires(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector3 a0 = unpack_vector3(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     int a2 = static_cast<int>(args[2]);
     int a3 = static_cast<int>(args[3]);
     ::Color a4 = unpack_color(vm, args[4]);
@@ -2266,12 +2178,9 @@ static uint64_t wrap_draw_sphere_wires(solix::RuntimeContext &vm, uint64_t self,
 static uint64_t wrap_draw_cylinder(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector3 a0 = unpack_vector3(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     int a4 = static_cast<int>(args[4]);
     ::Color a5 = unpack_color(vm, args[5]);
     ::DrawCylinder(a0, a1, a2, a3, a4, a5);
@@ -2282,10 +2191,8 @@ static uint64_t wrap_draw_cylinder_ex(solix::RuntimeContext &vm, uint64_t self, 
     (void)self; (void)argc;
     ::Vector3 a0 = unpack_vector3(vm, args[0]);
     ::Vector3 a1 = unpack_vector3(vm, args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     int a4 = static_cast<int>(args[4]);
     ::Color a5 = unpack_color(vm, args[5]);
     ::DrawCylinderEx(a0, a1, a2, a3, a4, a5);
@@ -2295,12 +2202,9 @@ static uint64_t wrap_draw_cylinder_ex(solix::RuntimeContext &vm, uint64_t self, 
 static uint64_t wrap_draw_cylinder_wires(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector3 a0 = unpack_vector3(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a1 = unpack_f32_arg(args[1]);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     int a4 = static_cast<int>(args[4]);
     ::Color a5 = unpack_color(vm, args[5]);
     ::DrawCylinderWires(a0, a1, a2, a3, a4, a5);
@@ -2311,10 +2215,8 @@ static uint64_t wrap_draw_cylinder_wires_ex(solix::RuntimeContext &vm, uint64_t 
     (void)self; (void)argc;
     ::Vector3 a0 = unpack_vector3(vm, args[0]);
     ::Vector3 a1 = unpack_vector3(vm, args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a2 = unpack_f32_arg(args[2]);
+    float a3 = unpack_f32_arg(args[3]);
     int a4 = static_cast<int>(args[4]);
     ::Color a5 = unpack_color(vm, args[5]);
     ::DrawCylinderWiresEx(a0, a1, a2, a3, a4, a5);
@@ -2325,8 +2227,7 @@ static uint64_t wrap_draw_capsule(solix::RuntimeContext &vm, uint64_t self, uint
     (void)self; (void)argc;
     ::Vector3 a0 = unpack_vector3(vm, args[0]);
     ::Vector3 a1 = unpack_vector3(vm, args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a2 = unpack_f32_arg(args[2]);
     int a3 = static_cast<int>(args[3]);
     int a4 = static_cast<int>(args[4]);
     ::Color a5 = unpack_color(vm, args[5]);
@@ -2338,8 +2239,7 @@ static uint64_t wrap_draw_capsule_wires(solix::RuntimeContext &vm, uint64_t self
     (void)self; (void)argc;
     ::Vector3 a0 = unpack_vector3(vm, args[0]);
     ::Vector3 a1 = unpack_vector3(vm, args[1]);
-    uint32_t raw_a2 = static_cast<uint32_t>(args[2] & 0xFFFFFFFF);
-    float a2; std::memcpy(&a2, &raw_a2, 4);
+    float a2 = unpack_f32_arg(args[2]);
     int a3 = static_cast<int>(args[3]);
     int a4 = static_cast<int>(args[4]);
     ::Color a5 = unpack_color(vm, args[5]);
@@ -2359,8 +2259,7 @@ static uint64_t wrap_draw_plane(solix::RuntimeContext &vm, uint64_t self, uint64
 static uint64_t wrap_draw_grid(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     int a0 = static_cast<int>(args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     ::DrawGrid(a0, a1);
     return 0;
 }
@@ -2368,11 +2267,9 @@ static uint64_t wrap_draw_grid(solix::RuntimeContext &vm, uint64_t self, uint64_
 static uint64_t wrap_check_collision_spheres(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     ::Vector3 a0 = unpack_vector3(vm, args[0]);
-    uint32_t raw_a1 = static_cast<uint32_t>(args[1] & 0xFFFFFFFF);
-    float a1; std::memcpy(&a1, &raw_a1, 4);
+    float a1 = unpack_f32_arg(args[1]);
     ::Vector3 a2 = unpack_vector3(vm, args[2]);
-    uint32_t raw_a3 = static_cast<uint32_t>(args[3] & 0xFFFFFFFF);
-    float a3; std::memcpy(&a3, &raw_a3, 4);
+    float a3 = unpack_f32_arg(args[3]);
     return ::CheckCollisionSpheres(a0, a1, a2, a3) ? 1 : 0;
 }
 
@@ -2395,8 +2292,7 @@ static uint64_t wrap_is_audio_device_ready(solix::RuntimeContext &vm, uint64_t s
 
 static uint64_t wrap_set_master_volume(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
-    uint32_t raw_a0 = static_cast<uint32_t>(args[0] & 0xFFFFFFFF);
-    float a0; std::memcpy(&a0, &raw_a0, 4);
+    float a0 = unpack_f32_arg(args[0]);
     ::SetMasterVolume(a0);
     return 0;
 }
@@ -2404,8 +2300,7 @@ static uint64_t wrap_set_master_volume(solix::RuntimeContext &vm, uint64_t self,
 static uint64_t wrap_get_master_volume(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {
     (void)self; (void)argc;
     float res = ::GetMasterVolume();
-    uint32_t bits = 0; std::memcpy(&bits, &res, 4);
-    return static_cast<uint64_t>(bits);
+    return pack_f32_ret(res);
 }
 
 static uint64_t wrap_set_audio_stream_buffer_size_default(solix::RuntimeContext &vm, uint64_t self, uint64_t *args, size_t argc) {

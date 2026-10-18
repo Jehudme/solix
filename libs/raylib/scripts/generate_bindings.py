@@ -316,6 +316,7 @@ def generate_cpp_bridge(api, out_cpp_path):
         '#include <cstring>',
         '#include <string>',
         '#include <cstdint>',
+        '#include <cmath>',
         '',
         'namespace {',
         '',
@@ -329,6 +330,21 @@ def generate_cpp_bridge(api, out_cpp_path):
         '    T result;',
         '    std::memcpy(&result, &value, sizeof(T));',
         '    return result;',
+        '}',
+        '',
+        'inline float unpack_f32_arg(uint64_t arg) {',
+        '    double d = bit_cast_from_u64<double>(arg);',
+        '    if (arg != 0 && (std::isnan(d) || std::abs(d) < 1e-35 || std::abs(d) > 1e35)) {',
+        '        uint32_t raw = static_cast<uint32_t>(arg & 0xFFFFFFFF);',
+        '        float f;',
+        '        std::memcpy(&f, &raw, 4);',
+        '        return f;',
+        '    }',
+        '    return static_cast<float>(d);',
+        '}',
+        '',
+        'inline uint64_t pack_f32_ret(float res) {',
+        '    return bit_cast_to_u64<double>(static_cast<double>(res));',
         '}',
         '',
         'static std::string read_solix_chars(solix::RuntimeContext &vm, uint64_t addr) {',
@@ -486,8 +502,7 @@ def generate_cpp_bridge(api, out_cpp_path):
                 cpp_lines.append(f"    unsigned int {arg_var} = static_cast<unsigned int>(args[{i}]);")
                 c_args.append(arg_var)
             elif ptype == 'float':
-                cpp_lines.append(f"    uint32_t raw_{arg_var} = static_cast<uint32_t>(args[{i}] & 0xFFFFFFFF);")
-                cpp_lines.append(f"    float {arg_var}; std::memcpy(&{arg_var}, &raw_{arg_var}, 4);")
+                cpp_lines.append(f"    float {arg_var} = unpack_f32_arg(args[{i}]);")
                 c_args.append(arg_var)
             elif ptype == 'double':
                 cpp_lines.append(f"    double {arg_var} = bit_cast_from_u64<double>(args[{i}]);")
@@ -532,8 +547,7 @@ def generate_cpp_bridge(api, out_cpp_path):
             cpp_lines.append(f"    return static_cast<uint64_t>({c_call});")
         elif ret_c == 'float':
             cpp_lines.append(f"    float res = {c_call};")
-            cpp_lines.append("    uint32_t bits = 0; std::memcpy(&bits, &res, 4);")
-            cpp_lines.append("    return static_cast<uint64_t>(bits);")
+            cpp_lines.append("    return pack_f32_ret(res);")
         elif ret_c == 'double':
             cpp_lines.append(f"    double res = {c_call};")
             cpp_lines.append("    return bit_cast_to_u64<double>(res);")
@@ -563,7 +577,7 @@ def update_manifest(root):
     with open(manifest_path) as f:
         mf = json.load(f)
 
-    src_files = sorted(list(root.glob("src/**/*.slx")))
+    src_files = sorted([s for s in root.glob("src/**/*.slx") if s.name != "main.slx"])
     deps = [d for d in mf.get("dependencies", []) if d.get("type") != "source"]
     for s in src_files:
         rel = str(s.relative_to(root))

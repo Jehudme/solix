@@ -153,7 +153,7 @@ class BreakoutGame {
         this.bricks_left = 50;
 
         this.paddle = new Paddle(350.0, 540.0, 100.0, 16.0, 8.0);
-        this.ball = new Ball(7.0);
+        this.ball = new Ball(8.0);
         this.bricks = new Brick[50];
         this.init_bricks();
     }
