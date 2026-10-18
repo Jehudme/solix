@@ -147,7 +147,9 @@ void Memory::decrease_reference(Address address) {
       } else if (object_destructor) {
         object_destructor(*this, address);
       }
-      deallocate(address);
+      if (get_block_ref_count(address) == 0) {
+        deallocate(address);
+      }
     }
   }
 }
@@ -192,6 +194,27 @@ RuntimeContext::RuntimeContext(const RuntimeOptions &opts)
     BlockTag tag = mem.get_block_tag(address);
     if (tag == BlockTag::OBJECT) {
       uint32_t vtable_id = mem.read_u32(address, 0);
+      auto dtor_it = vtable_destructors.find(vtable_id);
+      if (dtor_it != vtable_destructors.end() && dtor_it->second != 0) {
+        if (active_destructors.insert(address).second) {
+          Address header_addr = address - 8;
+          uint32_t tag_and_ref = mem.read_u32(header_addr, 4);
+          mem.write_u32(header_addr, 4, (tag_and_ref & 0xF0000000) | 1U);
+
+          invoke_destructor(address, dtor_it->second);
+
+          active_destructors.erase(address);
+
+          tag_and_ref = mem.read_u32(header_addr, 4);
+          uint32_t cur_ref = tag_and_ref & 0x0FFFFFFF;
+          if (cur_ref > 1) {
+            mem.write_u32(header_addr, 4, (tag_and_ref & 0xF0000000) | (cur_ref - 1));
+            return;
+          } else {
+            mem.write_u32(header_addr, 4, (tag_and_ref & 0xF0000000) | 0U);
+          }
+        }
+      }
       if (vtable_ref_fields.count(vtable_id)) {
         const auto &fields = vtable_ref_fields[vtable_id];
         for (uint32_t offset : fields) {
@@ -330,6 +353,26 @@ size_t get_live_object_count() {
   return g_last_live_object_count;
 }
 
+void RuntimeContext::invoke_destructor(Address obj_addr, uint32_t dtor_ip) {
+  if (dtor_ip == 0 || obj_addr == 0) return;
+
+  Address saved_pc = program_counter;
+  Address saved_closure_env = active_closure_env;
+  size_t saved_call_depth = call_depth;
+
+  push(obj_addr);
+
+  uint32_t new_frame_pointer = memory.stack_pointer - 1;
+  call_stack[call_depth++] = Frame(0, new_frame_pointer, 1, 0);
+  program_counter = dtor_ip;
+  active_closure_env = 0;
+
+  run_bytecode(saved_call_depth);
+
+  program_counter = saved_pc;
+  active_closure_env = saved_closure_env;
+}
+
 void RuntimeContext::execute() {
   struct MemoryScopeGuard {
     Memory &mem;
@@ -342,23 +385,6 @@ void RuntimeContext::execute() {
     }
   };
   MemoryScopeGuard scope_guard(memory);
-
-  const uint8_t *code = bytecode.data();
-  uint64_t *stack = memory.stack.data();
-
-  uint64_t *sp = stack + memory.stack_pointer;
-
-#define PUSH(val) do { \
-  if (sp >= stack + memory.stack.size()) { \
-    SYNC_SP(); \
-    throw std::runtime_error("StackOverflowException: operand stack overflow"); \
-  } \
-  *sp++ = (val); \
-} while (0)
-#define POP() (sp <= stack ? (SYNC_SP(), throw std::runtime_error("StackUnderflowException: operand stack underflow"), 0ULL) : *--sp)
-#define PEEK() (sp <= stack ? (SYNC_SP(), throw std::runtime_error("StackUnderflowException: operand stack underflow on PEEK"), 0ULL) : *(sp - 1))
-#define SYNC_SP() (memory.stack_pointer = static_cast<uint32_t>(sp - stack))
-#define RESTORE_SP() (sp = stack + memory.stack_pointer)
 
   // Add an initial frame so we don't underflow
   call_depth = 0;
@@ -375,7 +401,28 @@ void RuntimeContext::execute() {
     }
     memory.write_u64(args_array, static_cast<uint32_t>(i * 8), str_addr);
   }
-  PUSH(args_array);
+  push(args_array);
+
+  run_bytecode(0);
+}
+
+void RuntimeContext::run_bytecode(size_t stop_call_depth) {
+  const uint8_t *code = bytecode.data();
+  uint64_t *stack = memory.stack.data();
+
+  uint64_t *sp = stack + memory.stack_pointer;
+
+#define PUSH(val) do { \
+  if (sp >= stack + memory.stack.size()) { \
+    SYNC_SP(); \
+    throw std::runtime_error("StackOverflowException: operand stack overflow"); \
+  } \
+  *sp++ = (val); \
+} while (0)
+#define POP() (sp <= stack ? (SYNC_SP(), throw std::runtime_error("StackUnderflowException: operand stack underflow"), 0ULL) : *--sp)
+#define PEEK() (sp <= stack ? (SYNC_SP(), throw std::runtime_error("StackUnderflowException: operand stack underflow on PEEK"), 0ULL) : *(sp - 1))
+#define SYNC_SP() (memory.stack_pointer = static_cast<uint32_t>(sp - stack))
+#define RESTORE_SP() (sp = stack + memory.stack_pointer)
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #define DISPATCH() goto vm_dispatch
@@ -489,6 +536,7 @@ vm_dispatch:
     case 98: goto op_DEC_REF_SLOT;
     case 99: goto op_ASSERT;
     case 100: goto op_EXIT;
+    case 101: goto op_DEFINE_DESTRUCTOR;
     default: goto op_HALT;
   }
 #else
@@ -593,7 +641,8 @@ vm_dispatch:
       &&op_DEFINE_ITABLE,
       &&op_DEC_REF_SLOT,
       &&op_ASSERT,
-      &&op_EXIT
+      &&op_EXIT,
+      &&op_DEFINE_DESTRUCTOR
   };
 
 #define DISPATCH() do { \
@@ -1087,7 +1136,9 @@ op_SET_ARRAY:
           Address old_child = static_cast<Address>(memory.read_u64(array_addr, index * 8));
           memory.write_u64(array_addr, index * 8, val);
           if (old_child != 0) {
+            SYNC_SP();
             memory.decrease_reference(old_child);
+            RESTORE_SP();
           }
         }
         break;
@@ -1119,7 +1170,9 @@ op_INC_REF:
 op_DEC_REF:
   {
     Address addr = static_cast<Address>(POP());
+    SYNC_SP();
     memory.decrease_reference(addr);
+    RESTORE_SP();
     DISPATCH();
   }
 
@@ -1481,6 +1534,14 @@ op_RETURN:
     --call_depth;
     sp = stack + frame.frame_pointer;
 
+    if (call_depth == stop_call_depth) {
+      SYNC_SP();
+      if (stop_call_depth == 0) {
+        exit_code = static_cast<int32_t>(ret_val);
+      }
+      return;
+    }
+
     if (call_depth > 0) {
       PUSH(ret_val);
       program_counter = frame.return_ip;
@@ -1522,7 +1583,9 @@ op_JMP_TO_OUTER_CLEANUP:
           }
           err += ".";
           if (active_exception != 0) {
+              SYNC_SP();
               memory.decrease_reference(active_exception);
+              RESTORE_SP();
               active_exception = 0;
           }
           throw std::runtime_error(err);
@@ -1599,7 +1662,9 @@ op_GET_EXCEPTION:
 op_CLEAR_EXCEPTION:
   {
       if (active_exception != 0) {
+          SYNC_SP();
           memory.decrease_reference(active_exception);
+          RESTORE_SP();
           active_exception = 0;
       }
       DISPATCH();
@@ -1647,7 +1712,11 @@ op_DEC_REF_CALLABLE:
   {
       uint64_t val = POP();
       Address env = static_cast<Address>(val >> 32);
-      if (env != 0) memory.decrease_reference_callable(env);
+      if (env != 0) {
+        SYNC_SP();
+        memory.decrease_reference_callable(env);
+        RESTORE_SP();
+      }
       DISPATCH();
   }
 op_UNPACK_CAPTURES:
@@ -1684,7 +1753,9 @@ op_DEC_REF_SLOT:
         if (fp + index < memory.stack.size()) {
           uint64_t val = stack[fp + index];
           if (val != 0) {
+            SYNC_SP();
             memory.decrease_reference(static_cast<Address>(val));
+            RESTORE_SP();
           }
         }
       }
@@ -1747,6 +1818,13 @@ op_DEC_REF_SLOT:
       }
       exit_code = static_cast<int32_t>(code_val);
       return;
+  }
+  op_DEFINE_DESTRUCTOR:
+  {
+      uint32_t vtid = read_u32(bytecode, program_counter);
+      uint32_t dtor_ip = read_u32(bytecode, program_counter);
+      vtable_destructors[vtid] = dtor_ip;
+      DISPATCH();
   }
 #undef PUSH
 #undef POP

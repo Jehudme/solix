@@ -213,6 +213,10 @@ public:
         for (const auto& ch : n.children) collect(ch.get());
     }
 
+    void visit(DestructorDeclaration& n) override {
+        for (const auto& ch : n.children) collect(ch.get());
+    }
+
     void visit(MethodDeclaration& n) override {
         for (const auto& p : n.parameters) collect(p.get());
         for (const auto& ch : n.children) collect(ch.get());

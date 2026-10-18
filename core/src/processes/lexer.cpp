@@ -313,6 +313,7 @@ public:
                     case '.': add_token(TokenType::PUNCTUATION_DOT); break;
                     case ':': add_token(match(':') ? TokenType::PUNCTUATION_DOUBLE_COLON : TokenType::PUNCTUATION_COLON); break;
                     case '?': add_token(TokenType::OPERATOR_QUESTION); break;
+                    case '~': add_token(TokenType::OPERATOR_BITWISE_NOT); break;
                     
                     case '=': add_token(match('=') ? TokenType::OPERATOR_EQUAL : (match('>') ? TokenType::OPERATOR_FAT_ARROW : TokenType::OPERATOR_ASSIGN)); break;
                     case '!': add_token(match('=') ? TokenType::OPERATOR_NOT_EQUAL : TokenType::OPERATOR_LOGICAL_NOT); break;

@@ -20,6 +20,7 @@ Each document focuses strictly on the architecture and mechanics of the construc
 - [`enum_declaration.md`](declarations/enum_declaration.md) — Strongly typed discrete enumerations
 - [`field_declaration.md`](declarations/field_declaration.md) — Static, instance, and `weak` cycle-breaking fields
 - [`constructor_declaration.md`](declarations/constructor_declaration.md) — Initializer lists, `super()` chaining, and heap allocation
+- [`destructors.md`](declarations/destructors.md) — Deterministic RAII cleanup, subclass-to-base inheritance chaining, and exception stack unwinding
 - [`method_declaration.md`](declarations/method_declaration.md) — Static, virtual, and abstract member functions
 - [`operator_declaration.md`](declarations/operator_declaration.md) — Operator overloading for `+`, `-`, `*`, `/`, `=`
 - [`generic_declaration.md`](declarations/generic_declaration.md) — Template metaprogramming, classes, methods, and monomorphization

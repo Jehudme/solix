@@ -45,6 +45,7 @@ struct EnumDeclaration;
 struct ClassDeclaration;
 struct FieldDeclaration;
 struct ConstructorDeclaration;
+struct DestructorDeclaration;
 struct MethodDeclaration;
 
 struct NodeVisitor {
@@ -93,6 +94,7 @@ struct NodeVisitor {
     virtual void visit(ClassDeclaration& node) = 0;
     virtual void visit(FieldDeclaration& node) = 0;
     virtual void visit(ConstructorDeclaration& node) = 0;
+    virtual void visit(DestructorDeclaration& node) = 0;
     virtual void visit(MethodDeclaration& node) = 0;
 };
 

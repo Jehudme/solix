@@ -401,6 +401,12 @@ std::unique_ptr<Node> ClassDeclaration::clone() const {
     cloned->interface_types = interface_types;
     cloned->reference_field_offsets = reference_field_offsets;
     copy_children(this, cloned.get());
+    for (const auto& child : cloned->children) {
+        if (child && child->node_type == NodeType::DESTRUCTOR_DECL) {
+            cloned->destructor = static_cast<DestructorDeclaration*>(child.get());
+            break;
+        }
+    }
     return cloned;
 }
 
@@ -434,6 +440,15 @@ std::unique_ptr<Node> ConstructorDeclaration::clone() const {
             cloned->parameters.push_back(nullptr);
         }
     }
+    copy_children(this, cloned.get());
+    return cloned;
+}
+
+std::unique_ptr<Node> DestructorDeclaration::clone() const {
+    auto cloned = std::make_unique<DestructorDeclaration>(make_dummy_token(this), class_name);
+    cloned->access_modifier = access_modifier;
+    cloned->super_destructor = super_destructor;
+    cloned->frame_size = frame_size;
     copy_children(this, cloned.get());
     return cloned;
 }

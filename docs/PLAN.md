@@ -31,6 +31,7 @@ This document tracks all planned, in-progress, and completed engineering phases 
 | [Phase 19](#phase-19-release-v121-companion-library-reorganization--bundled-auto-installation) | Release v1.2.1 Companion Library Reorganization & Bundled Auto-Installation | P0 Blocker | - [x] Completed & Merged |
 | [Phase 20](#phase-20-project-types-app-vs-library-clean-installation-staging-solix-archive-fast---as-is--recursive-source-discovery) | Project Types (`app` vs `library`), Clean Installation Staging, `solix archive`, Fast `--as-is` & Recursive Source Discovery | P1 High | - [x] Completed & Merged |
 | [Phase 21](#phase-21-cli-modernization-list-refinements-pack-ingestion-guards-and-release-v300) | CLI Modernization, List Refinements, Pack Ingestion, Guards and Release v3.0.0 | P0 Blocker | - [x] Completed & Merged |
+| [Phase 22](#phase-22-class-destructors-classname-and-deterministic-stack-unwinding-raii) | Class Destructors (`~ClassName()`) and Deterministic Stack Unwinding RAII | P1 High | - [x] Completed & Merged |
 
 ---
 
@@ -542,6 +543,49 @@ Complete toolchain modernization, quality-of-life enhancements, command aliasing
 - [x] Update `.github/workflows/release.yml` with companion library archiving and packaging.
 - [x] Update documentation across `docs/spec/cli/`.
 - [x] Run full test regression suite across all 84 test suites (100% passed).
+
+---
+
+## Phase 22: Class Destructors (`~ClassName()`) and Deterministic Stack Unwinding RAII
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `core/`, `lsp/`, `editors/vscode/`, `docs/`, `tests/statements/`
+- **Status**: - [x] Completed & Merged (2026-10-18)
+
+### Objective
+Implement C++/C#-style deterministic class destructors (`~ClassName()`) with Automatic Reference Counting (ARC) lifecycle management, automatic subclass-to-base destructor chaining, and exception stack unwinding RAII.
+
+### Key Architectural Invariants
+1. **Destructor Syntax & Rules**:
+   - Declared as `~ClassName()`.
+   - Takes 0 parameters, void return, at most 1 destructor per concrete or abstract class.
+   - Disallowed in interfaces.
+   - Disallowed modifiers (`static`, `virtual`, `override`, `abstract`, `weak`, `const`, `native`, `inline`).
+2. **Deterministic ARC Lifecycle**:
+   - Executes immediately when reference count drops to 0 (explicit dereference, scope exit, variable/field reassignment, array element replacement).
+   - Re-entrancy protection and temporary refcount shielding prevent resurrection hazards.
+3. **Subclass-to-Base Inheritance Chaining**:
+   - Derived class `~Child()` executes first, followed automatically by immediate superclass `~Parent()`.
+   - If a derived class does not declare a destructor, it automatically inherits the ancestor destructor.
+4. **Exception Rewinding RAII**:
+   - When unwinding call frames during an unhandled exception or try-catch trampolining, all active local objects in each unwound frame have references decremented and destructors executed in strict reverse declaration order (LIFO) before entering matching `catch` blocks.
+5. **Tooling & IDE Synchronization**:
+   - VS Code TextMate grammar updated for `~ClassName()`.
+   - LSP AST collector and template substitution visitors updated.
+
+### Action Items
+- [x] Extend lexer and token definitions with `TokenType::OPERATOR_BITWISE_NOT` (`~`).
+- [x] Update AST with `NodeType::DESTRUCTOR_DECL`, `DestructorDeclaration`, and `ClassDeclaration::destructor`.
+- [x] Implement parser validation for class destructors (zero parameters, name match, no duplicates, modifier rejection, interface prohibition).
+- [x] Implement semantic binding in `binder.cpp` with local slot 0 as `this`, return validation, circular-inheritance-safe super-destructor chaining, and base destructor inheritance.
+- [x] Implement code generation in `assembler.cpp` (`DEFINE_DESTRUCTOR`, super destructor chaining, cleanup emission).
+- [x] Implement runtime destructor invocation and execution in `runtime.cpp` (`invoke_destructor`, stack pointer synchronization `SYNC_SP()` / `RESTORE_SP()`, re-entrancy protection, exception frame unwinding).
+- [x] Update VS Code syntax highlighting grammar and LSP AST visitor.
+- [x] Define test specifications in `tests/statements/TESTS.md` (Part II: DestructorDeclaration, Cases 3.1 to 3.11, Cases 4.1 to 4.6).
+- [x] Implement Catch2 test suite `tests/statements/declarations/test_destructor_declaration.cpp` (all 28 assertions passing 100%).
+- [x] Author formal specification `docs/spec/statements/declarations/destructors.md`, update index `docs/spec/statements/README.md`, and update developer guide `docs/guide/04_classes_and_oop.md`.
+- [x] Verify 100% test pass rate across all 85 test suites.
+
 
 
 

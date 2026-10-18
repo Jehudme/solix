@@ -1763,6 +1763,33 @@ void Binder::bind_tree(Node *root) {
               ctor->class_name, ctor->frame_size);
     exit_scope();
     return;
+  } else if (root->node_type == NodeType::DESTRUCTOR_DECL) {
+    auto *dtor = static_cast<DestructorDeclaration *>(root);
+    local_variable_index = 0;
+    log_trace("Binding destructor for class '{}'", dtor->class_name);
+
+    SymbolTable destructor_scope;
+    enter_scope(&destructor_scope);
+
+    if (current_class) {
+      auto *this_decl = new VariableDeclaration(
+          Token{}, "this", TypeInfo{current_class->mangled_name, 0});
+      this_decl->memory_index = local_variable_index++;
+      this_decl->is_reference_type = true;
+      declare_local("this", this_decl);
+    }
+
+    current_destructor = dtor;
+    for (const auto &child : dtor->children) {
+      bind_node(child.get());
+    }
+    current_destructor = nullptr;
+
+    dtor->frame_size = local_variable_index;
+    log_trace("Destructor for '{}' frame size resolved to {} words",
+              dtor->class_name, dtor->frame_size);
+    exit_scope();
+    return;
   } else if (root->node_type == NodeType::FIELD_DECL) {
     bind_node(root);
     return;
@@ -3848,6 +3875,12 @@ void Binder::visit(ExpressionStatement &n) {
 
 void Binder::visit(ReturnStatement &n) {
   if (current_pass == BinderPass::BIND_EXECUTION) {
+    if (current_destructor) {
+      if (n.value) {
+        record_error(&n, "Cannot return a value from a destructor");
+      }
+      return;
+    }
     if (n.value) {
       TypeInfo return_type = evaluate_expression(n.value.get());
       if (current_method && current_method->return_type.name.empty()) {
@@ -4031,8 +4064,45 @@ void Binder::visit(ClassDeclaration &n) {
       if (child) child->parent = &n;
       register_members(child.get(), my_prefix);
     }
+    if (n.base_class_type) {
+      ClassDeclaration *base_cls = nullptr;
+      std::string curr_base = n.base_class_type->name;
+      std::unordered_set<ClassDeclaration *> visited{&n};
+      while (!curr_base.empty()) {
+        Node *resolved = global_scope.resolve(curr_base);
+        if (!resolved && !n.package_context.empty()) {
+          resolved = global_scope.resolve(n.package_context + curr_base);
+        }
+        if (resolved && resolved->node_type == NodeType::CLASS_DECL) {
+          base_cls = static_cast<ClassDeclaration *>(resolved);
+          if (visited.count(base_cls)) {
+            break;
+          }
+          visited.insert(base_cls);
+          if (base_cls->destructor) {
+            if (n.destructor) {
+              n.destructor->super_destructor = base_cls->destructor;
+            } else {
+              n.destructor = base_cls->destructor;
+            }
+            break;
+          }
+          if (base_cls->base_class_type) {
+            curr_base = base_cls->base_class_type->name;
+          } else {
+            break;
+          }
+        } else {
+          break;
+        }
+      }
+    }
     current_class = nullptr;
   }
+}
+
+void Binder::visit(DestructorDeclaration &) {
+  // Destructors do not register global symbol table entry
 }
 
 void Binder::visit(FieldDeclaration &n) {
