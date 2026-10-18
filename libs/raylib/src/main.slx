@@ -1,0 +1,35 @@
+import solix.system.Console;
+import raylib.Raylib;
+import raylib.types.Color;
+import raylib.types.Vector2;
+
+int32 main() {
+    Console.println("Initializing Solix Raylib engine...");
+    
+    Raylib.init_window(800, 450, "Solix + Raylib - 60 FPS Window");
+    Raylib.set_target_fps(60);
+
+    Console.println("Raylib window initialized successfully!");
+    
+    // Run for 120 frames (approx 2 seconds at 60 FPS) to verify window & render loop
+    int32 frame = 0;
+    while (!Raylib.window_should_close() && frame < 120) {
+        Raylib.begin_drawing();
+        Raylib.clear_background(Color.RAYWHITE);
+        
+        Raylib.draw_text("Congrats! Solix + Raylib is running seamlessly!", 150, 180, 20, Color.DARKBLUE);
+        Raylib.draw_text("Rendering 60 FPS hardware accelerated graphics in Solix", 140, 220, 18, Color.GRAY);
+        Raylib.draw_rectangle(150, 260, 500, 40, Color.LIGHTGRAY);
+        Raylib.draw_rectangle(155, 265, frame * 4, 30, Color.GREEN);
+        
+        Raylib.draw_fps(20, 20);
+        Raylib.end_drawing();
+        
+        frame = frame + 1;
+    }
+
+    Console.println("Closing Raylib window after 120 frames rendered.");
+    Raylib.close_window();
+    Console.println("Solix Raylib demo completed cleanly!");
+    return 0;
+}

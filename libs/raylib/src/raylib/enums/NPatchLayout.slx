@@ -1,0 +1,7 @@
+package raylib.enums;
+
+public class NPatchLayout {
+    public static int32 NPATCH_NINE_PATCH = 0;
+    public static int32 NPATCH_THREE_PATCH_VERTICAL = 1;
+    public static int32 NPATCH_THREE_PATCH_HORIZONTAL = 2;
+}

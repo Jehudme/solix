@@ -1,0 +1,15 @@
+package raylib.enums;
+
+public class Gesture {
+    public static int32 GESTURE_NONE = 0;
+    public static int32 GESTURE_TAP = 1;
+    public static int32 GESTURE_DOUBLETAP = 2;
+    public static int32 GESTURE_HOLD = 4;
+    public static int32 GESTURE_DRAG = 8;
+    public static int32 GESTURE_SWIPE_RIGHT = 16;
+    public static int32 GESTURE_SWIPE_LEFT = 32;
+    public static int32 GESTURE_SWIPE_UP = 64;
+    public static int32 GESTURE_SWIPE_DOWN = 128;
+    public static int32 GESTURE_PINCH_IN = 256;
+    public static int32 GESTURE_PINCH_OUT = 512;
+}

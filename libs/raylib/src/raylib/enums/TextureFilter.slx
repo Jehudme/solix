@@ -1,0 +1,10 @@
+package raylib.enums;
+
+public class TextureFilter {
+    public static int32 TEXTURE_FILTER_POINT = 0;
+    public static int32 TEXTURE_FILTER_BILINEAR = 1;
+    public static int32 TEXTURE_FILTER_TRILINEAR = 2;
+    public static int32 TEXTURE_FILTER_ANISOTROPIC_4X = 3;
+    public static int32 TEXTURE_FILTER_ANISOTROPIC_8X = 4;
+    public static int32 TEXTURE_FILTER_ANISOTROPIC_16X = 5;
+}

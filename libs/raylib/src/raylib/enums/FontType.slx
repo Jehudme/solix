@@ -1,0 +1,7 @@
+package raylib.enums;
+
+public class FontType {
+    public static int32 FONT_DEFAULT = 0;
+    public static int32 FONT_BITMAP = 1;
+    public static int32 FONT_SDF = 2;
+}

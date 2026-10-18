@@ -1,0 +1,22 @@
+package raylib.types;
+
+public class Rectangle {
+    public float32 x;
+    public float32 y;
+    public float32 width;
+    public float32 height;
+
+    public Rectangle() {
+        this.x = 0.0;
+        this.y = 0.0;
+        this.width = 0.0;
+        this.height = 0.0;
+    }
+
+    public Rectangle(float32 x, float32 y, float32 width, float32 height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+}

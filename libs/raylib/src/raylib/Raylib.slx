@@ -1,0 +1,1419 @@
+package raylib;
+
+import raylib.types.Vector2;
+import raylib.types.Vector3;
+import raylib.types.Vector4;
+import raylib.types.Color;
+import raylib.types.Rectangle;
+
+public class Raylib {
+    public static void init_window(int32 width, int32 height, String title) {
+        native_init_window(width, height, title);
+    }
+
+    public static void close_window() {
+        native_close_window();
+    }
+
+    public static bool window_should_close() {
+        return native_window_should_close();
+    }
+
+    public static bool is_window_ready() {
+        return native_is_window_ready();
+    }
+
+    public static bool is_window_fullscreen() {
+        return native_is_window_fullscreen();
+    }
+
+    public static bool is_window_hidden() {
+        return native_is_window_hidden();
+    }
+
+    public static bool is_window_minimized() {
+        return native_is_window_minimized();
+    }
+
+    public static bool is_window_maximized() {
+        return native_is_window_maximized();
+    }
+
+    public static bool is_window_focused() {
+        return native_is_window_focused();
+    }
+
+    public static bool is_window_resized() {
+        return native_is_window_resized();
+    }
+
+    public static bool is_window_state(uint32 flag) {
+        return native_is_window_state(flag);
+    }
+
+    public static void set_window_state(uint32 flags) {
+        native_set_window_state(flags);
+    }
+
+    public static void clear_window_state(uint32 flags) {
+        native_clear_window_state(flags);
+    }
+
+    public static void toggle_fullscreen() {
+        native_toggle_fullscreen();
+    }
+
+    public static void toggle_borderless_windowed() {
+        native_toggle_borderless_windowed();
+    }
+
+    public static void maximize_window() {
+        native_maximize_window();
+    }
+
+    public static void minimize_window() {
+        native_minimize_window();
+    }
+
+    public static void restore_window() {
+        native_restore_window();
+    }
+
+    public static void set_window_title(String title) {
+        native_set_window_title(title);
+    }
+
+    public static void set_window_position(int32 x, int32 y) {
+        native_set_window_position(x, y);
+    }
+
+    public static void set_window_monitor(int32 monitor) {
+        native_set_window_monitor(monitor);
+    }
+
+    public static void set_window_min_size(int32 width, int32 height) {
+        native_set_window_min_size(width, height);
+    }
+
+    public static void set_window_max_size(int32 width, int32 height) {
+        native_set_window_max_size(width, height);
+    }
+
+    public static void set_window_size(int32 width, int32 height) {
+        native_set_window_size(width, height);
+    }
+
+    public static void set_window_opacity(float32 opacity) {
+        native_set_window_opacity(opacity);
+    }
+
+    public static void set_window_focused() {
+        native_set_window_focused();
+    }
+
+    public static int32 get_screen_width() {
+        return native_get_screen_width();
+    }
+
+    public static int32 get_screen_height() {
+        return native_get_screen_height();
+    }
+
+    public static int32 get_render_width() {
+        return native_get_render_width();
+    }
+
+    public static int32 get_render_height() {
+        return native_get_render_height();
+    }
+
+    public static int32 get_monitor_count() {
+        return native_get_monitor_count();
+    }
+
+    public static int32 get_current_monitor() {
+        return native_get_current_monitor();
+    }
+
+    public static Vector2 get_monitor_position(int32 monitor) {
+        Vector2 __res = new Vector2();
+        native_get_monitor_position(monitor, __res);
+        return __res;
+    }
+
+    public static int32 get_monitor_width(int32 monitor) {
+        return native_get_monitor_width(monitor);
+    }
+
+    public static int32 get_monitor_height(int32 monitor) {
+        return native_get_monitor_height(monitor);
+    }
+
+    public static int32 get_monitor_physical_width(int32 monitor) {
+        return native_get_monitor_physical_width(monitor);
+    }
+
+    public static int32 get_monitor_physical_height(int32 monitor) {
+        return native_get_monitor_physical_height(monitor);
+    }
+
+    public static int32 get_monitor_refresh_rate(int32 monitor) {
+        return native_get_monitor_refresh_rate(monitor);
+    }
+
+    public static Vector2 get_window_position() {
+        Vector2 __res = new Vector2();
+        native_get_window_position(__res);
+        return __res;
+    }
+
+    public static Vector2 get_window_scale_dpi() {
+        Vector2 __res = new Vector2();
+        native_get_window_scale_dpi(__res);
+        return __res;
+    }
+
+    public static String get_monitor_name(int32 monitor) {
+        return native_get_monitor_name(monitor);
+    }
+
+    public static void set_clipboard_text(String text) {
+        native_set_clipboard_text(text);
+    }
+
+    public static String get_clipboard_text() {
+        return native_get_clipboard_text();
+    }
+
+    public static void enable_event_waiting() {
+        native_enable_event_waiting();
+    }
+
+    public static void disable_event_waiting() {
+        native_disable_event_waiting();
+    }
+
+    public static void show_cursor() {
+        native_show_cursor();
+    }
+
+    public static void hide_cursor() {
+        native_hide_cursor();
+    }
+
+    public static bool is_cursor_hidden() {
+        return native_is_cursor_hidden();
+    }
+
+    public static void enable_cursor() {
+        native_enable_cursor();
+    }
+
+    public static void disable_cursor() {
+        native_disable_cursor();
+    }
+
+    public static bool is_cursor_on_screen() {
+        return native_is_cursor_on_screen();
+    }
+
+    public static void clear_background(Color color) {
+        native_clear_background(color);
+    }
+
+    public static void begin_drawing() {
+        native_begin_drawing();
+    }
+
+    public static void end_drawing() {
+        native_end_drawing();
+    }
+
+    public static void end_mode2d() {
+        native_end_mode2d();
+    }
+
+    public static void end_mode3d() {
+        native_end_mode3d();
+    }
+
+    public static void end_texture_mode() {
+        native_end_texture_mode();
+    }
+
+    public static void end_shader_mode() {
+        native_end_shader_mode();
+    }
+
+    public static void begin_blend_mode(int32 mode) {
+        native_begin_blend_mode(mode);
+    }
+
+    public static void end_blend_mode() {
+        native_end_blend_mode();
+    }
+
+    public static void begin_scissor_mode(int32 x, int32 y, int32 width, int32 height) {
+        native_begin_scissor_mode(x, y, width, height);
+    }
+
+    public static void end_scissor_mode() {
+        native_end_scissor_mode();
+    }
+
+    public static void end_vr_stereo_mode() {
+        native_end_vr_stereo_mode();
+    }
+
+    public static void set_target_fps(int32 fps) {
+        native_set_target_fps(fps);
+    }
+
+    public static float32 get_frame_time() {
+        return native_get_frame_time();
+    }
+
+    public static float64 get_time() {
+        return native_get_time();
+    }
+
+    public static int32 get_fps() {
+        return native_get_fps();
+    }
+
+    public static void swap_screen_buffer() {
+        native_swap_screen_buffer();
+    }
+
+    public static void poll_input_events() {
+        native_poll_input_events();
+    }
+
+    public static void wait_time(float64 seconds) {
+        native_wait_time(seconds);
+    }
+
+    public static void set_random_seed(uint32 seed) {
+        native_set_random_seed(seed);
+    }
+
+    public static int32 get_random_value(int32 min, int32 max) {
+        return native_get_random_value(min, max);
+    }
+
+    public static void take_screenshot(String fileName) {
+        native_take_screenshot(fileName);
+    }
+
+    public static void set_config_flags(uint32 flags) {
+        native_set_config_flags(flags);
+    }
+
+    public static void open_url(String url) {
+        native_open_url(url);
+    }
+
+    public static void set_trace_log_level(int32 logLevel) {
+        native_set_trace_log_level(logLevel);
+    }
+
+    public static bool save_file_text(String fileName, String text) {
+        return native_save_file_text(fileName, text);
+    }
+
+    public static int32 file_rename(String fileName, String fileRename) {
+        return native_file_rename(fileName, fileRename);
+    }
+
+    public static int32 file_remove(String fileName) {
+        return native_file_remove(fileName);
+    }
+
+    public static int32 file_copy(String srcPath, String dstPath) {
+        return native_file_copy(srcPath, dstPath);
+    }
+
+    public static int32 file_move(String srcPath, String dstPath) {
+        return native_file_move(srcPath, dstPath);
+    }
+
+    public static int32 file_text_replace(String fileName, String search, String replacement) {
+        return native_file_text_replace(fileName, search, replacement);
+    }
+
+    public static int32 file_text_find_index(String fileName, String search) {
+        return native_file_text_find_index(fileName, search);
+    }
+
+    public static bool file_exists(String fileName) {
+        return native_file_exists(fileName);
+    }
+
+    public static bool directory_exists(String dirPath) {
+        return native_directory_exists(dirPath);
+    }
+
+    public static bool is_file_extension(String fileName, String ext) {
+        return native_is_file_extension(fileName, ext);
+    }
+
+    public static bool is_file_hidden(String filePath) {
+        return native_is_file_hidden(filePath);
+    }
+
+    public static int32 get_file_length(String fileName) {
+        return native_get_file_length(fileName);
+    }
+
+    public static String get_file_extension(String fileName) {
+        return native_get_file_extension(fileName);
+    }
+
+    public static String get_file_name(String filePath) {
+        return native_get_file_name(filePath);
+    }
+
+    public static String get_file_name_without_ext(String filePath) {
+        return native_get_file_name_without_ext(filePath);
+    }
+
+    public static String get_directory_path(String filePath) {
+        return native_get_directory_path(filePath);
+    }
+
+    public static String get_prev_directory_path(String dirPath) {
+        return native_get_prev_directory_path(dirPath);
+    }
+
+    public static String get_working_directory() {
+        return native_get_working_directory();
+    }
+
+    public static String get_application_directory() {
+        return native_get_application_directory();
+    }
+
+    public static int32 make_directory(String dirPath) {
+        return native_make_directory(dirPath);
+    }
+
+    public static int32 change_directory(String dirPath) {
+        return native_change_directory(dirPath);
+    }
+
+    public static bool is_path_file(String path) {
+        return native_is_path_file(path);
+    }
+
+    public static bool is_path_directory(String path) {
+        return native_is_path_directory(path);
+    }
+
+    public static bool is_path_absolute(String path) {
+        return native_is_path_absolute(path);
+    }
+
+    public static bool is_file_name_valid(String fileName) {
+        return native_is_file_name_valid(fileName);
+    }
+
+    public static bool is_file_dropped() {
+        return native_is_file_dropped();
+    }
+
+    public static uint32 get_directory_file_count(String dirPath) {
+        return native_get_directory_file_count(dirPath);
+    }
+
+    public static uint32 get_directory_file_count_ex(String basePath, String filter, bool scanSubdirs) {
+        return native_get_directory_file_count_ex(basePath, filter, scanSubdirs);
+    }
+
+    public static void set_automation_event_base_frame(int32 frame) {
+        native_set_automation_event_base_frame(frame);
+    }
+
+    public static void start_automation_event_recording() {
+        native_start_automation_event_recording();
+    }
+
+    public static void stop_automation_event_recording() {
+        native_stop_automation_event_recording();
+    }
+
+    public static bool is_key_pressed(int32 key) {
+        return native_is_key_pressed(key);
+    }
+
+    public static bool is_key_pressed_repeat(int32 key) {
+        return native_is_key_pressed_repeat(key);
+    }
+
+    public static bool is_key_down(int32 key) {
+        return native_is_key_down(key);
+    }
+
+    public static bool is_key_released(int32 key) {
+        return native_is_key_released(key);
+    }
+
+    public static bool is_key_up(int32 key) {
+        return native_is_key_up(key);
+    }
+
+    public static int32 get_key_pressed() {
+        return native_get_key_pressed();
+    }
+
+    public static int32 get_char_pressed() {
+        return native_get_char_pressed();
+    }
+
+    public static String get_key_name(int32 key) {
+        return native_get_key_name(key);
+    }
+
+    public static void set_exit_key(int32 key) {
+        native_set_exit_key(key);
+    }
+
+    public static bool is_gamepad_available(int32 gamepad) {
+        return native_is_gamepad_available(gamepad);
+    }
+
+    public static String get_gamepad_name(int32 gamepad) {
+        return native_get_gamepad_name(gamepad);
+    }
+
+    public static bool is_gamepad_button_pressed(int32 gamepad, int32 button) {
+        return native_is_gamepad_button_pressed(gamepad, button);
+    }
+
+    public static bool is_gamepad_button_down(int32 gamepad, int32 button) {
+        return native_is_gamepad_button_down(gamepad, button);
+    }
+
+    public static bool is_gamepad_button_released(int32 gamepad, int32 button) {
+        return native_is_gamepad_button_released(gamepad, button);
+    }
+
+    public static bool is_gamepad_button_up(int32 gamepad, int32 button) {
+        return native_is_gamepad_button_up(gamepad, button);
+    }
+
+    public static int32 get_gamepad_button_pressed() {
+        return native_get_gamepad_button_pressed();
+    }
+
+    public static int32 get_gamepad_axis_count(int32 gamepad) {
+        return native_get_gamepad_axis_count(gamepad);
+    }
+
+    public static float32 get_gamepad_axis_movement(int32 gamepad, int32 axis) {
+        return native_get_gamepad_axis_movement(gamepad, axis);
+    }
+
+    public static int32 set_gamepad_mappings(String mappings) {
+        return native_set_gamepad_mappings(mappings);
+    }
+
+    public static void set_gamepad_vibration(int32 gamepad, float32 leftMotor, float32 rightMotor, float32 duration) {
+        native_set_gamepad_vibration(gamepad, leftMotor, rightMotor, duration);
+    }
+
+    public static bool is_mouse_button_pressed(int32 button) {
+        return native_is_mouse_button_pressed(button);
+    }
+
+    public static bool is_mouse_button_down(int32 button) {
+        return native_is_mouse_button_down(button);
+    }
+
+    public static bool is_mouse_button_released(int32 button) {
+        return native_is_mouse_button_released(button);
+    }
+
+    public static bool is_mouse_button_up(int32 button) {
+        return native_is_mouse_button_up(button);
+    }
+
+    public static int32 get_mouse_x() {
+        return native_get_mouse_x();
+    }
+
+    public static int32 get_mouse_y() {
+        return native_get_mouse_y();
+    }
+
+    public static Vector2 get_mouse_position() {
+        Vector2 __res = new Vector2();
+        native_get_mouse_position(__res);
+        return __res;
+    }
+
+    public static Vector2 get_mouse_delta() {
+        Vector2 __res = new Vector2();
+        native_get_mouse_delta(__res);
+        return __res;
+    }
+
+    public static void set_mouse_position(int32 x, int32 y) {
+        native_set_mouse_position(x, y);
+    }
+
+    public static void set_mouse_offset(int32 offsetX, int32 offsetY) {
+        native_set_mouse_offset(offsetX, offsetY);
+    }
+
+    public static void set_mouse_scale(float32 scaleX, float32 scaleY) {
+        native_set_mouse_scale(scaleX, scaleY);
+    }
+
+    public static float32 get_mouse_wheel_move() {
+        return native_get_mouse_wheel_move();
+    }
+
+    public static Vector2 get_mouse_wheel_move_v() {
+        Vector2 __res = new Vector2();
+        native_get_mouse_wheel_move_v(__res);
+        return __res;
+    }
+
+    public static void set_mouse_cursor(int32 cursor) {
+        native_set_mouse_cursor(cursor);
+    }
+
+    public static int32 get_touch_x() {
+        return native_get_touch_x();
+    }
+
+    public static int32 get_touch_y() {
+        return native_get_touch_y();
+    }
+
+    public static Vector2 get_touch_position(int32 index) {
+        Vector2 __res = new Vector2();
+        native_get_touch_position(index, __res);
+        return __res;
+    }
+
+    public static int32 get_touch_point_id(int32 index) {
+        return native_get_touch_point_id(index);
+    }
+
+    public static int32 get_touch_point_count() {
+        return native_get_touch_point_count();
+    }
+
+    public static void set_gestures_enabled(uint32 flags) {
+        native_set_gestures_enabled(flags);
+    }
+
+    public static bool is_gesture_detected(uint32 gesture) {
+        return native_is_gesture_detected(gesture);
+    }
+
+    public static int32 get_gesture_detected() {
+        return native_get_gesture_detected();
+    }
+
+    public static float32 get_gesture_hold_duration() {
+        return native_get_gesture_hold_duration();
+    }
+
+    public static Vector2 get_gesture_drag_vector() {
+        Vector2 __res = new Vector2();
+        native_get_gesture_drag_vector(__res);
+        return __res;
+    }
+
+    public static float32 get_gesture_drag_angle() {
+        return native_get_gesture_drag_angle();
+    }
+
+    public static Vector2 get_gesture_pinch_vector() {
+        Vector2 __res = new Vector2();
+        native_get_gesture_pinch_vector(__res);
+        return __res;
+    }
+
+    public static float32 get_gesture_pinch_angle() {
+        return native_get_gesture_pinch_angle();
+    }
+
+    public static Rectangle get_shapes_texture_rectangle() {
+        Rectangle __res = new Rectangle();
+        native_get_shapes_texture_rectangle(__res);
+        return __res;
+    }
+
+    public static void draw_pixel(int32 posX, int32 posY, Color color) {
+        native_draw_pixel(posX, posY, color);
+    }
+
+    public static void draw_pixel_v(Vector2 position, Color color) {
+        native_draw_pixel_v(position, color);
+    }
+
+    public static void draw_line(int32 startPosX, int32 startPosY, int32 endPosX, int32 endPosY, Color color) {
+        native_draw_line(startPosX, startPosY, endPosX, endPosY, color);
+    }
+
+    public static void draw_line_v(Vector2 startPos, Vector2 endPos, Color color) {
+        native_draw_line_v(startPos, endPos, color);
+    }
+
+    public static void draw_line_ex(Vector2 startPos, Vector2 endPos, float32 thick, Color color) {
+        native_draw_line_ex(startPos, endPos, thick, color);
+    }
+
+    public static void draw_line_bezier(Vector2 startPos, Vector2 endPos, float32 thick, Color color) {
+        native_draw_line_bezier(startPos, endPos, thick, color);
+    }
+
+    public static void draw_line_dashed(Vector2 startPos, Vector2 endPos, int32 dashSize, int32 spaceSize, Color color) {
+        native_draw_line_dashed(startPos, endPos, dashSize, spaceSize, color);
+    }
+
+    public static void draw_triangle(Vector2 v1, Vector2 v2, Vector2 v3, Color color) {
+        native_draw_triangle(v1, v2, v3, color);
+    }
+
+    public static void draw_triangle_gradient(Vector2 v1, Vector2 v2, Vector2 v3, Color c1, Color c2, Color c3) {
+        native_draw_triangle_gradient(v1, v2, v3, c1, c2, c3);
+    }
+
+    public static void draw_triangle_lines(Vector2 v1, Vector2 v2, Vector2 v3, Color color) {
+        native_draw_triangle_lines(v1, v2, v3, color);
+    }
+
+    public static void draw_triangle_lines_ex(Vector2 v1, Vector2 v2, Vector2 v3, float32 thick, Color color) {
+        native_draw_triangle_lines_ex(v1, v2, v3, thick, color);
+    }
+
+    public static void draw_rectangle(int32 posX, int32 posY, int32 width, int32 height, Color color) {
+        native_draw_rectangle(posX, posY, width, height, color);
+    }
+
+    public static void draw_rectangle_v(Vector2 position, Vector2 size, Color color) {
+        native_draw_rectangle_v(position, size, color);
+    }
+
+    public static void draw_rectangle_rec(Rectangle rec, Color color) {
+        native_draw_rectangle_rec(rec, color);
+    }
+
+    public static void draw_rectangle_pro(Rectangle rec, Vector2 origin, float32 rotation, Color color) {
+        native_draw_rectangle_pro(rec, origin, rotation, color);
+    }
+
+    public static void draw_rectangle_gradient_v(int32 posX, int32 posY, int32 width, int32 height, Color top, Color bottom) {
+        native_draw_rectangle_gradient_v(posX, posY, width, height, top, bottom);
+    }
+
+    public static void draw_rectangle_gradient_h(int32 posX, int32 posY, int32 width, int32 height, Color left, Color right) {
+        native_draw_rectangle_gradient_h(posX, posY, width, height, left, right);
+    }
+
+    public static void draw_rectangle_gradient_ex(Rectangle rec, Color col1, Color col2, Color col3, Color col4) {
+        native_draw_rectangle_gradient_ex(rec, col1, col2, col3, col4);
+    }
+
+    public static void draw_rectangle_lines(int32 posX, int32 posY, int32 width, int32 height, Color color) {
+        native_draw_rectangle_lines(posX, posY, width, height, color);
+    }
+
+    public static void draw_rectangle_lines_ex(Rectangle rec, float32 thick, Color color) {
+        native_draw_rectangle_lines_ex(rec, thick, color);
+    }
+
+    public static void draw_rectangle_rounded(Rectangle rec, float32 roundness, int32 segments, Color color) {
+        native_draw_rectangle_rounded(rec, roundness, segments, color);
+    }
+
+    public static void draw_rectangle_rounded_lines(Rectangle rec, float32 roundness, int32 segments, Color color) {
+        native_draw_rectangle_rounded_lines(rec, roundness, segments, color);
+    }
+
+    public static void draw_rectangle_rounded_lines_ex(Rectangle rec, float32 roundness, int32 segments, float32 thick, Color color) {
+        native_draw_rectangle_rounded_lines_ex(rec, roundness, segments, thick, color);
+    }
+
+    public static void draw_poly(Vector2 center, int32 sides, float32 radius, float32 rotation, Color color) {
+        native_draw_poly(center, sides, radius, rotation, color);
+    }
+
+    public static void draw_poly_lines(Vector2 center, int32 sides, float32 radius, float32 rotation, Color color) {
+        native_draw_poly_lines(center, sides, radius, rotation, color);
+    }
+
+    public static void draw_poly_lines_ex(Vector2 center, int32 sides, float32 radius, float32 rotation, float32 thick, Color color) {
+        native_draw_poly_lines_ex(center, sides, radius, rotation, thick, color);
+    }
+
+    public static void draw_circle(int32 centerX, int32 centerY, float32 radius, Color color) {
+        native_draw_circle(centerX, centerY, radius, color);
+    }
+
+    public static void draw_circle_v(Vector2 center, float32 radius, Color color) {
+        native_draw_circle_v(center, radius, color);
+    }
+
+    public static void draw_circle_gradient(Vector2 center, float32 radius, Color inner, Color outer) {
+        native_draw_circle_gradient(center, radius, inner, outer);
+    }
+
+    public static void draw_circle_sector(Vector2 center, float32 radius, float32 startAngle, float32 endAngle, int32 segments, Color color) {
+        native_draw_circle_sector(center, radius, startAngle, endAngle, segments, color);
+    }
+
+    public static void draw_circle_sector_lines(Vector2 center, float32 radius, float32 startAngle, float32 endAngle, int32 segments, Color color) {
+        native_draw_circle_sector_lines(center, radius, startAngle, endAngle, segments, color);
+    }
+
+    public static void draw_circle_sector_lines_ex(Vector2 center, float32 radius, float32 startAngle, float32 endAngle, int32 segments, float32 thick, Color color) {
+        native_draw_circle_sector_lines_ex(center, radius, startAngle, endAngle, segments, thick, color);
+    }
+
+    public static void draw_circle_lines(int32 centerX, int32 centerY, float32 radius, Color color) {
+        native_draw_circle_lines(centerX, centerY, radius, color);
+    }
+
+    public static void draw_circle_lines_v(Vector2 center, float32 radius, Color color) {
+        native_draw_circle_lines_v(center, radius, color);
+    }
+
+    public static void draw_circle_lines_ex(Vector2 center, float32 radius, float32 thick, Color color) {
+        native_draw_circle_lines_ex(center, radius, thick, color);
+    }
+
+    public static void draw_ellipse(int32 centerX, int32 centerY, float32 radiusH, float32 radiusV, Color color) {
+        native_draw_ellipse(centerX, centerY, radiusH, radiusV, color);
+    }
+
+    public static void draw_ellipse_v(Vector2 center, float32 radiusH, float32 radiusV, Color color) {
+        native_draw_ellipse_v(center, radiusH, radiusV, color);
+    }
+
+    public static void draw_ellipse_lines(int32 centerX, int32 centerY, float32 radiusH, float32 radiusV, Color color) {
+        native_draw_ellipse_lines(centerX, centerY, radiusH, radiusV, color);
+    }
+
+    public static void draw_ellipse_lines_v(Vector2 center, float32 radiusH, float32 radiusV, Color color) {
+        native_draw_ellipse_lines_v(center, radiusH, radiusV, color);
+    }
+
+    public static void draw_ellipse_lines_ex(Vector2 center, float32 radiusH, float32 radiusV, float32 thick, Color color) {
+        native_draw_ellipse_lines_ex(center, radiusH, radiusV, thick, color);
+    }
+
+    public static void draw_ring(Vector2 center, float32 innerRadius, float32 outerRadius, float32 startAngle, float32 endAngle, int32 segments, Color color) {
+        native_draw_ring(center, innerRadius, outerRadius, startAngle, endAngle, segments, color);
+    }
+
+    public static void draw_ring_lines(Vector2 center, float32 innerRadius, float32 outerRadius, float32 startAngle, float32 endAngle, int32 segments, Color color) {
+        native_draw_ring_lines(center, innerRadius, outerRadius, startAngle, endAngle, segments, color);
+    }
+
+    public static void draw_ring_lines_ex(Vector2 center, float32 innerRadius, float32 outerRadius, float32 startAngle, float32 endAngle, int32 segments, float32 thick, Color color) {
+        native_draw_ring_lines_ex(center, innerRadius, outerRadius, startAngle, endAngle, segments, thick, color);
+    }
+
+    public static void draw_spline_segment_linear(Vector2 p1, Vector2 p2, float32 thick, Color color) {
+        native_draw_spline_segment_linear(p1, p2, thick, color);
+    }
+
+    public static void draw_spline_segment_basis(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, float32 thick, Color color) {
+        native_draw_spline_segment_basis(p1, p2, p3, p4, thick, color);
+    }
+
+    public static void draw_spline_segment_catmull_rom(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, float32 thick, Color color) {
+        native_draw_spline_segment_catmull_rom(p1, p2, p3, p4, thick, color);
+    }
+
+    public static void draw_spline_segment_bezier_quadratic(Vector2 p1, Vector2 c2, Vector2 p3, float32 thick, Color color) {
+        native_draw_spline_segment_bezier_quadratic(p1, c2, p3, thick, color);
+    }
+
+    public static void draw_spline_segment_bezier_cubic(Vector2 p1, Vector2 c2, Vector2 c3, Vector2 p4, float32 thick, Color color) {
+        native_draw_spline_segment_bezier_cubic(p1, c2, c3, p4, thick, color);
+    }
+
+    public static Vector2 get_spline_point_linear(Vector2 startPos, Vector2 endPos, float32 t) {
+        Vector2 __res = new Vector2();
+        native_get_spline_point_linear(startPos, endPos, t, __res);
+        return __res;
+    }
+
+    public static Vector2 get_spline_point_basis(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, float32 t) {
+        Vector2 __res = new Vector2();
+        native_get_spline_point_basis(p1, p2, p3, p4, t, __res);
+        return __res;
+    }
+
+    public static Vector2 get_spline_point_catmull_rom(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, float32 t) {
+        Vector2 __res = new Vector2();
+        native_get_spline_point_catmull_rom(p1, p2, p3, p4, t, __res);
+        return __res;
+    }
+
+    public static Vector2 get_spline_point_bezier_quadratic(Vector2 p1, Vector2 c2, Vector2 p3, float32 t) {
+        Vector2 __res = new Vector2();
+        native_get_spline_point_bezier_quadratic(p1, c2, p3, t, __res);
+        return __res;
+    }
+
+    public static Vector2 get_spline_point_bezier_cubic(Vector2 p1, Vector2 c2, Vector2 c3, Vector2 p4, float32 t) {
+        Vector2 __res = new Vector2();
+        native_get_spline_point_bezier_cubic(p1, c2, c3, p4, t, __res);
+        return __res;
+    }
+
+    public static bool check_collision_recs(Rectangle rec1, Rectangle rec2) {
+        return native_check_collision_recs(rec1, rec2);
+    }
+
+    public static bool check_collision_circles(Vector2 center1, float32 radius1, Vector2 center2, float32 radius2) {
+        return native_check_collision_circles(center1, radius1, center2, radius2);
+    }
+
+    public static bool check_collision_circle_rec(Vector2 center, float32 radius, Rectangle rec) {
+        return native_check_collision_circle_rec(center, radius, rec);
+    }
+
+    public static bool check_collision_circle_line(Vector2 center, float32 radius, Vector2 p1, Vector2 p2) {
+        return native_check_collision_circle_line(center, radius, p1, p2);
+    }
+
+    public static bool check_collision_point_rec(Vector2 point, Rectangle rec) {
+        return native_check_collision_point_rec(point, rec);
+    }
+
+    public static bool check_collision_point_circle(Vector2 point, Vector2 center, float32 radius) {
+        return native_check_collision_point_circle(point, center, radius);
+    }
+
+    public static bool check_collision_point_triangle(Vector2 point, Vector2 p1, Vector2 p2, Vector2 p3) {
+        return native_check_collision_point_triangle(point, p1, p2, p3);
+    }
+
+    public static bool check_collision_point_line(Vector2 point, Vector2 p1, Vector2 p2, int32 threshold) {
+        return native_check_collision_point_line(point, p1, p2, threshold);
+    }
+
+    public static Rectangle get_collision_rec(Rectangle rec1, Rectangle rec2) {
+        Rectangle __res = new Rectangle();
+        native_get_collision_rec(rec1, rec2, __res);
+        return __res;
+    }
+
+    public static bool color_is_equal(Color col1, Color col2) {
+        return native_color_is_equal(col1, col2);
+    }
+
+    public static Color fade(Color color, float32 alpha) {
+        Color __res = new Color();
+        native_fade(color, alpha, __res);
+        return __res;
+    }
+
+    public static int32 color_to_int(Color color) {
+        return native_color_to_int(color);
+    }
+
+    public static Vector4 color_normalize(Color color) {
+        Vector4 __res = new Vector4();
+        native_color_normalize(color, __res);
+        return __res;
+    }
+
+    public static Color color_from_normalized(Vector4 normalized) {
+        Color __res = new Color();
+        native_color_from_normalized(normalized, __res);
+        return __res;
+    }
+
+    public static Vector3 color_to_hsv(Color color) {
+        Vector3 __res = new Vector3();
+        native_color_to_hsv(color, __res);
+        return __res;
+    }
+
+    public static Color color_from_hsv(float32 hue, float32 saturation, float32 value) {
+        Color __res = new Color();
+        native_color_from_hsv(hue, saturation, value, __res);
+        return __res;
+    }
+
+    public static Color color_tint(Color color, Color tint) {
+        Color __res = new Color();
+        native_color_tint(color, tint, __res);
+        return __res;
+    }
+
+    public static Color color_brightness(Color color, float32 factor) {
+        Color __res = new Color();
+        native_color_brightness(color, factor, __res);
+        return __res;
+    }
+
+    public static Color color_contrast(Color color, float32 contrast) {
+        Color __res = new Color();
+        native_color_contrast(color, contrast, __res);
+        return __res;
+    }
+
+    public static Color color_alpha(Color color, float32 alpha) {
+        Color __res = new Color();
+        native_color_alpha(color, alpha, __res);
+        return __res;
+    }
+
+    public static Color color_alpha_blend(Color dst, Color src, Color tint) {
+        Color __res = new Color();
+        native_color_alpha_blend(dst, src, tint, __res);
+        return __res;
+    }
+
+    public static Color color_lerp(Color color1, Color color2, float32 factor) {
+        Color __res = new Color();
+        native_color_lerp(color1, color2, factor, __res);
+        return __res;
+    }
+
+    public static Color get_color(uint32 hexValue) {
+        Color __res = new Color();
+        native_get_color(hexValue, __res);
+        return __res;
+    }
+
+    public static int32 get_pixel_data_size(int32 width, int32 height, int32 format) {
+        return native_get_pixel_data_size(width, height, format);
+    }
+
+    public static void draw_fps(int32 posX, int32 posY) {
+        native_draw_fps(posX, posY);
+    }
+
+    public static void draw_text(String text, int32 posX, int32 posY, int32 fontSize, Color color) {
+        native_draw_text(text, posX, posY, fontSize, color);
+    }
+
+    public static void set_text_line_spacing(int32 spacing) {
+        native_set_text_line_spacing(spacing);
+    }
+
+    public static int32 measure_text(String text, int32 fontSize) {
+        return native_measure_text(text, fontSize);
+    }
+
+    public static int32 get_codepoint_count(String text) {
+        return native_get_codepoint_count(text);
+    }
+
+    public static bool text_is_equal(String text1, String text2) {
+        return native_text_is_equal(text1, text2);
+    }
+
+    public static uint32 text_length(String text) {
+        return native_text_length(text);
+    }
+
+    public static String text_subtext(String text, int32 position, int32 length) {
+        return native_text_subtext(text, position, length);
+    }
+
+    public static String text_remove_spaces(String text) {
+        return native_text_remove_spaces(text);
+    }
+
+    public static int32 text_find_index(String text, String search) {
+        return native_text_find_index(text, search);
+    }
+
+    public static int32 text_to_integer(String text) {
+        return native_text_to_integer(text);
+    }
+
+    public static float32 text_to_float(String text) {
+        return native_text_to_float(text);
+    }
+
+    public static void draw_line3d(Vector3 startPos, Vector3 endPos, Color color) {
+        native_draw_line3d(startPos, endPos, color);
+    }
+
+    public static void draw_point3d(Vector3 position, Color color) {
+        native_draw_point3d(position, color);
+    }
+
+    public static void draw_circle3d(Vector3 center, float32 radius, Vector3 rotationAxis, float32 rotationAngle, Color color) {
+        native_draw_circle3d(center, radius, rotationAxis, rotationAngle, color);
+    }
+
+    public static void draw_triangle3d(Vector3 v1, Vector3 v2, Vector3 v3, Color color) {
+        native_draw_triangle3d(v1, v2, v3, color);
+    }
+
+    public static void draw_cube(Vector3 position, float32 width, float32 height, float32 length, Color color) {
+        native_draw_cube(position, width, height, length, color);
+    }
+
+    public static void draw_cube_v(Vector3 position, Vector3 size, Color color) {
+        native_draw_cube_v(position, size, color);
+    }
+
+    public static void draw_cube_wires(Vector3 position, float32 width, float32 height, float32 length, Color color) {
+        native_draw_cube_wires(position, width, height, length, color);
+    }
+
+    public static void draw_cube_wires_v(Vector3 position, Vector3 size, Color color) {
+        native_draw_cube_wires_v(position, size, color);
+    }
+
+    public static void draw_sphere(Vector3 centerPos, float32 radius, Color color) {
+        native_draw_sphere(centerPos, radius, color);
+    }
+
+    public static void draw_sphere_ex(Vector3 centerPos, float32 radius, int32 rings, int32 slices, Color color) {
+        native_draw_sphere_ex(centerPos, radius, rings, slices, color);
+    }
+
+    public static void draw_sphere_wires(Vector3 centerPos, float32 radius, int32 rings, int32 slices, Color color) {
+        native_draw_sphere_wires(centerPos, radius, rings, slices, color);
+    }
+
+    public static void draw_cylinder(Vector3 position, float32 radiusTop, float32 radiusBottom, float32 height, int32 sides, Color color) {
+        native_draw_cylinder(position, radiusTop, radiusBottom, height, sides, color);
+    }
+
+    public static void draw_cylinder_ex(Vector3 startPos, Vector3 endPos, float32 startRadius, float32 endRadius, int32 sides, Color color) {
+        native_draw_cylinder_ex(startPos, endPos, startRadius, endRadius, sides, color);
+    }
+
+    public static void draw_cylinder_wires(Vector3 position, float32 radiusTop, float32 radiusBottom, float32 height, int32 sides, Color color) {
+        native_draw_cylinder_wires(position, radiusTop, radiusBottom, height, sides, color);
+    }
+
+    public static void draw_cylinder_wires_ex(Vector3 startPos, Vector3 endPos, float32 startRadius, float32 endRadius, int32 sides, Color color) {
+        native_draw_cylinder_wires_ex(startPos, endPos, startRadius, endRadius, sides, color);
+    }
+
+    public static void draw_capsule(Vector3 startPos, Vector3 endPos, float32 radius, int32 rings, int32 slices, Color color) {
+        native_draw_capsule(startPos, endPos, radius, rings, slices, color);
+    }
+
+    public static void draw_capsule_wires(Vector3 startPos, Vector3 endPos, float32 radius, int32 rings, int32 slices, Color color) {
+        native_draw_capsule_wires(startPos, endPos, radius, rings, slices, color);
+    }
+
+    public static void draw_plane(Vector3 centerPos, Vector2 size, Color color) {
+        native_draw_plane(centerPos, size, color);
+    }
+
+    public static void draw_grid(int32 slices, float32 spacing) {
+        native_draw_grid(slices, spacing);
+    }
+
+    public static bool check_collision_spheres(Vector3 center1, float32 radius1, Vector3 center2, float32 radius2) {
+        return native_check_collision_spheres(center1, radius1, center2, radius2);
+    }
+
+    public static void init_audio_device() {
+        native_init_audio_device();
+    }
+
+    public static void close_audio_device() {
+        native_close_audio_device();
+    }
+
+    public static bool is_audio_device_ready() {
+        return native_is_audio_device_ready();
+    }
+
+    public static void set_master_volume(float32 volume) {
+        native_set_master_volume(volume);
+    }
+
+    public static float32 get_master_volume() {
+        return native_get_master_volume();
+    }
+
+    public static void set_audio_stream_buffer_size_default(int32 size) {
+        native_set_audio_stream_buffer_size_default(size);
+    }
+
+    // -------------------------------------------------------------------------
+    // Native Declarations
+    // -------------------------------------------------------------------------
+    private static native void native_init_window(int32 width, int32 height, String title);
+    private static native void native_close_window();
+    private static native bool native_window_should_close();
+    private static native bool native_is_window_ready();
+    private static native bool native_is_window_fullscreen();
+    private static native bool native_is_window_hidden();
+    private static native bool native_is_window_minimized();
+    private static native bool native_is_window_maximized();
+    private static native bool native_is_window_focused();
+    private static native bool native_is_window_resized();
+    private static native bool native_is_window_state(uint32 flag);
+    private static native void native_set_window_state(uint32 flags);
+    private static native void native_clear_window_state(uint32 flags);
+    private static native void native_toggle_fullscreen();
+    private static native void native_toggle_borderless_windowed();
+    private static native void native_maximize_window();
+    private static native void native_minimize_window();
+    private static native void native_restore_window();
+    private static native void native_set_window_title(String title);
+    private static native void native_set_window_position(int32 x, int32 y);
+    private static native void native_set_window_monitor(int32 monitor);
+    private static native void native_set_window_min_size(int32 width, int32 height);
+    private static native void native_set_window_max_size(int32 width, int32 height);
+    private static native void native_set_window_size(int32 width, int32 height);
+    private static native void native_set_window_opacity(float32 opacity);
+    private static native void native_set_window_focused();
+    private static native int32 native_get_screen_width();
+    private static native int32 native_get_screen_height();
+    private static native int32 native_get_render_width();
+    private static native int32 native_get_render_height();
+    private static native int32 native_get_monitor_count();
+    private static native int32 native_get_current_monitor();
+    private static native void native_get_monitor_position(int32 monitor, Vector2 __out);
+    private static native int32 native_get_monitor_width(int32 monitor);
+    private static native int32 native_get_monitor_height(int32 monitor);
+    private static native int32 native_get_monitor_physical_width(int32 monitor);
+    private static native int32 native_get_monitor_physical_height(int32 monitor);
+    private static native int32 native_get_monitor_refresh_rate(int32 monitor);
+    private static native void native_get_window_position(Vector2 __out);
+    private static native void native_get_window_scale_dpi(Vector2 __out);
+    private static native String native_get_monitor_name(int32 monitor);
+    private static native void native_set_clipboard_text(String text);
+    private static native String native_get_clipboard_text();
+    private static native void native_enable_event_waiting();
+    private static native void native_disable_event_waiting();
+    private static native void native_show_cursor();
+    private static native void native_hide_cursor();
+    private static native bool native_is_cursor_hidden();
+    private static native void native_enable_cursor();
+    private static native void native_disable_cursor();
+    private static native bool native_is_cursor_on_screen();
+    private static native void native_clear_background(Color color);
+    private static native void native_begin_drawing();
+    private static native void native_end_drawing();
+    private static native void native_end_mode2d();
+    private static native void native_end_mode3d();
+    private static native void native_end_texture_mode();
+    private static native void native_end_shader_mode();
+    private static native void native_begin_blend_mode(int32 mode);
+    private static native void native_end_blend_mode();
+    private static native void native_begin_scissor_mode(int32 x, int32 y, int32 width, int32 height);
+    private static native void native_end_scissor_mode();
+    private static native void native_end_vr_stereo_mode();
+    private static native void native_set_target_fps(int32 fps);
+    private static native float32 native_get_frame_time();
+    private static native float64 native_get_time();
+    private static native int32 native_get_fps();
+    private static native void native_swap_screen_buffer();
+    private static native void native_poll_input_events();
+    private static native void native_wait_time(float64 seconds);
+    private static native void native_set_random_seed(uint32 seed);
+    private static native int32 native_get_random_value(int32 min, int32 max);
+    private static native void native_take_screenshot(String fileName);
+    private static native void native_set_config_flags(uint32 flags);
+    private static native void native_open_url(String url);
+    private static native void native_set_trace_log_level(int32 logLevel);
+    private static native bool native_save_file_text(String fileName, String text);
+    private static native int32 native_file_rename(String fileName, String fileRename);
+    private static native int32 native_file_remove(String fileName);
+    private static native int32 native_file_copy(String srcPath, String dstPath);
+    private static native int32 native_file_move(String srcPath, String dstPath);
+    private static native int32 native_file_text_replace(String fileName, String search, String replacement);
+    private static native int32 native_file_text_find_index(String fileName, String search);
+    private static native bool native_file_exists(String fileName);
+    private static native bool native_directory_exists(String dirPath);
+    private static native bool native_is_file_extension(String fileName, String ext);
+    private static native bool native_is_file_hidden(String filePath);
+    private static native int32 native_get_file_length(String fileName);
+    private static native String native_get_file_extension(String fileName);
+    private static native String native_get_file_name(String filePath);
+    private static native String native_get_file_name_without_ext(String filePath);
+    private static native String native_get_directory_path(String filePath);
+    private static native String native_get_prev_directory_path(String dirPath);
+    private static native String native_get_working_directory();
+    private static native String native_get_application_directory();
+    private static native int32 native_make_directory(String dirPath);
+    private static native int32 native_change_directory(String dirPath);
+    private static native bool native_is_path_file(String path);
+    private static native bool native_is_path_directory(String path);
+    private static native bool native_is_path_absolute(String path);
+    private static native bool native_is_file_name_valid(String fileName);
+    private static native bool native_is_file_dropped();
+    private static native uint32 native_get_directory_file_count(String dirPath);
+    private static native uint32 native_get_directory_file_count_ex(String basePath, String filter, bool scanSubdirs);
+    private static native void native_set_automation_event_base_frame(int32 frame);
+    private static native void native_start_automation_event_recording();
+    private static native void native_stop_automation_event_recording();
+    private static native bool native_is_key_pressed(int32 key);
+    private static native bool native_is_key_pressed_repeat(int32 key);
+    private static native bool native_is_key_down(int32 key);
+    private static native bool native_is_key_released(int32 key);
+    private static native bool native_is_key_up(int32 key);
+    private static native int32 native_get_key_pressed();
+    private static native int32 native_get_char_pressed();
+    private static native String native_get_key_name(int32 key);
+    private static native void native_set_exit_key(int32 key);
+    private static native bool native_is_gamepad_available(int32 gamepad);
+    private static native String native_get_gamepad_name(int32 gamepad);
+    private static native bool native_is_gamepad_button_pressed(int32 gamepad, int32 button);
+    private static native bool native_is_gamepad_button_down(int32 gamepad, int32 button);
+    private static native bool native_is_gamepad_button_released(int32 gamepad, int32 button);
+    private static native bool native_is_gamepad_button_up(int32 gamepad, int32 button);
+    private static native int32 native_get_gamepad_button_pressed();
+    private static native int32 native_get_gamepad_axis_count(int32 gamepad);
+    private static native float32 native_get_gamepad_axis_movement(int32 gamepad, int32 axis);
+    private static native int32 native_set_gamepad_mappings(String mappings);
+    private static native void native_set_gamepad_vibration(int32 gamepad, float32 leftMotor, float32 rightMotor, float32 duration);
+    private static native bool native_is_mouse_button_pressed(int32 button);
+    private static native bool native_is_mouse_button_down(int32 button);
+    private static native bool native_is_mouse_button_released(int32 button);
+    private static native bool native_is_mouse_button_up(int32 button);
+    private static native int32 native_get_mouse_x();
+    private static native int32 native_get_mouse_y();
+    private static native void native_get_mouse_position(Vector2 __out);
+    private static native void native_get_mouse_delta(Vector2 __out);
+    private static native void native_set_mouse_position(int32 x, int32 y);
+    private static native void native_set_mouse_offset(int32 offsetX, int32 offsetY);
+    private static native void native_set_mouse_scale(float32 scaleX, float32 scaleY);
+    private static native float32 native_get_mouse_wheel_move();
+    private static native void native_get_mouse_wheel_move_v(Vector2 __out);
+    private static native void native_set_mouse_cursor(int32 cursor);
+    private static native int32 native_get_touch_x();
+    private static native int32 native_get_touch_y();
+    private static native void native_get_touch_position(int32 index, Vector2 __out);
+    private static native int32 native_get_touch_point_id(int32 index);
+    private static native int32 native_get_touch_point_count();
+    private static native void native_set_gestures_enabled(uint32 flags);
+    private static native bool native_is_gesture_detected(uint32 gesture);
+    private static native int32 native_get_gesture_detected();
+    private static native float32 native_get_gesture_hold_duration();
+    private static native void native_get_gesture_drag_vector(Vector2 __out);
+    private static native float32 native_get_gesture_drag_angle();
+    private static native void native_get_gesture_pinch_vector(Vector2 __out);
+    private static native float32 native_get_gesture_pinch_angle();
+    private static native void native_get_shapes_texture_rectangle(Rectangle __out);
+    private static native void native_draw_pixel(int32 posX, int32 posY, Color color);
+    private static native void native_draw_pixel_v(Vector2 position, Color color);
+    private static native void native_draw_line(int32 startPosX, int32 startPosY, int32 endPosX, int32 endPosY, Color color);
+    private static native void native_draw_line_v(Vector2 startPos, Vector2 endPos, Color color);
+    private static native void native_draw_line_ex(Vector2 startPos, Vector2 endPos, float32 thick, Color color);
+    private static native void native_draw_line_bezier(Vector2 startPos, Vector2 endPos, float32 thick, Color color);
+    private static native void native_draw_line_dashed(Vector2 startPos, Vector2 endPos, int32 dashSize, int32 spaceSize, Color color);
+    private static native void native_draw_triangle(Vector2 v1, Vector2 v2, Vector2 v3, Color color);
+    private static native void native_draw_triangle_gradient(Vector2 v1, Vector2 v2, Vector2 v3, Color c1, Color c2, Color c3);
+    private static native void native_draw_triangle_lines(Vector2 v1, Vector2 v2, Vector2 v3, Color color);
+    private static native void native_draw_triangle_lines_ex(Vector2 v1, Vector2 v2, Vector2 v3, float32 thick, Color color);
+    private static native void native_draw_rectangle(int32 posX, int32 posY, int32 width, int32 height, Color color);
+    private static native void native_draw_rectangle_v(Vector2 position, Vector2 size, Color color);
+    private static native void native_draw_rectangle_rec(Rectangle rec, Color color);
+    private static native void native_draw_rectangle_pro(Rectangle rec, Vector2 origin, float32 rotation, Color color);
+    private static native void native_draw_rectangle_gradient_v(int32 posX, int32 posY, int32 width, int32 height, Color top, Color bottom);
+    private static native void native_draw_rectangle_gradient_h(int32 posX, int32 posY, int32 width, int32 height, Color left, Color right);
+    private static native void native_draw_rectangle_gradient_ex(Rectangle rec, Color col1, Color col2, Color col3, Color col4);
+    private static native void native_draw_rectangle_lines(int32 posX, int32 posY, int32 width, int32 height, Color color);
+    private static native void native_draw_rectangle_lines_ex(Rectangle rec, float32 thick, Color color);
+    private static native void native_draw_rectangle_rounded(Rectangle rec, float32 roundness, int32 segments, Color color);
+    private static native void native_draw_rectangle_rounded_lines(Rectangle rec, float32 roundness, int32 segments, Color color);
+    private static native void native_draw_rectangle_rounded_lines_ex(Rectangle rec, float32 roundness, int32 segments, float32 thick, Color color);
+    private static native void native_draw_poly(Vector2 center, int32 sides, float32 radius, float32 rotation, Color color);
+    private static native void native_draw_poly_lines(Vector2 center, int32 sides, float32 radius, float32 rotation, Color color);
+    private static native void native_draw_poly_lines_ex(Vector2 center, int32 sides, float32 radius, float32 rotation, float32 thick, Color color);
+    private static native void native_draw_circle(int32 centerX, int32 centerY, float32 radius, Color color);
+    private static native void native_draw_circle_v(Vector2 center, float32 radius, Color color);
+    private static native void native_draw_circle_gradient(Vector2 center, float32 radius, Color inner, Color outer);
+    private static native void native_draw_circle_sector(Vector2 center, float32 radius, float32 startAngle, float32 endAngle, int32 segments, Color color);
+    private static native void native_draw_circle_sector_lines(Vector2 center, float32 radius, float32 startAngle, float32 endAngle, int32 segments, Color color);
+    private static native void native_draw_circle_sector_lines_ex(Vector2 center, float32 radius, float32 startAngle, float32 endAngle, int32 segments, float32 thick, Color color);
+    private static native void native_draw_circle_lines(int32 centerX, int32 centerY, float32 radius, Color color);
+    private static native void native_draw_circle_lines_v(Vector2 center, float32 radius, Color color);
+    private static native void native_draw_circle_lines_ex(Vector2 center, float32 radius, float32 thick, Color color);
+    private static native void native_draw_ellipse(int32 centerX, int32 centerY, float32 radiusH, float32 radiusV, Color color);
+    private static native void native_draw_ellipse_v(Vector2 center, float32 radiusH, float32 radiusV, Color color);
+    private static native void native_draw_ellipse_lines(int32 centerX, int32 centerY, float32 radiusH, float32 radiusV, Color color);
+    private static native void native_draw_ellipse_lines_v(Vector2 center, float32 radiusH, float32 radiusV, Color color);
+    private static native void native_draw_ellipse_lines_ex(Vector2 center, float32 radiusH, float32 radiusV, float32 thick, Color color);
+    private static native void native_draw_ring(Vector2 center, float32 innerRadius, float32 outerRadius, float32 startAngle, float32 endAngle, int32 segments, Color color);
+    private static native void native_draw_ring_lines(Vector2 center, float32 innerRadius, float32 outerRadius, float32 startAngle, float32 endAngle, int32 segments, Color color);
+    private static native void native_draw_ring_lines_ex(Vector2 center, float32 innerRadius, float32 outerRadius, float32 startAngle, float32 endAngle, int32 segments, float32 thick, Color color);
+    private static native void native_draw_spline_segment_linear(Vector2 p1, Vector2 p2, float32 thick, Color color);
+    private static native void native_draw_spline_segment_basis(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, float32 thick, Color color);
+    private static native void native_draw_spline_segment_catmull_rom(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, float32 thick, Color color);
+    private static native void native_draw_spline_segment_bezier_quadratic(Vector2 p1, Vector2 c2, Vector2 p3, float32 thick, Color color);
+    private static native void native_draw_spline_segment_bezier_cubic(Vector2 p1, Vector2 c2, Vector2 c3, Vector2 p4, float32 thick, Color color);
+    private static native void native_get_spline_point_linear(Vector2 startPos, Vector2 endPos, float32 t, Vector2 __out);
+    private static native void native_get_spline_point_basis(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, float32 t, Vector2 __out);
+    private static native void native_get_spline_point_catmull_rom(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, float32 t, Vector2 __out);
+    private static native void native_get_spline_point_bezier_quadratic(Vector2 p1, Vector2 c2, Vector2 p3, float32 t, Vector2 __out);
+    private static native void native_get_spline_point_bezier_cubic(Vector2 p1, Vector2 c2, Vector2 c3, Vector2 p4, float32 t, Vector2 __out);
+    private static native bool native_check_collision_recs(Rectangle rec1, Rectangle rec2);
+    private static native bool native_check_collision_circles(Vector2 center1, float32 radius1, Vector2 center2, float32 radius2);
+    private static native bool native_check_collision_circle_rec(Vector2 center, float32 radius, Rectangle rec);
+    private static native bool native_check_collision_circle_line(Vector2 center, float32 radius, Vector2 p1, Vector2 p2);
+    private static native bool native_check_collision_point_rec(Vector2 point, Rectangle rec);
+    private static native bool native_check_collision_point_circle(Vector2 point, Vector2 center, float32 radius);
+    private static native bool native_check_collision_point_triangle(Vector2 point, Vector2 p1, Vector2 p2, Vector2 p3);
+    private static native bool native_check_collision_point_line(Vector2 point, Vector2 p1, Vector2 p2, int32 threshold);
+    private static native void native_get_collision_rec(Rectangle rec1, Rectangle rec2, Rectangle __out);
+    private static native bool native_color_is_equal(Color col1, Color col2);
+    private static native void native_fade(Color color, float32 alpha, Color __out);
+    private static native int32 native_color_to_int(Color color);
+    private static native void native_color_normalize(Color color, Vector4 __out);
+    private static native void native_color_from_normalized(Vector4 normalized, Color __out);
+    private static native void native_color_to_hsv(Color color, Vector3 __out);
+    private static native void native_color_from_hsv(float32 hue, float32 saturation, float32 value, Color __out);
+    private static native void native_color_tint(Color color, Color tint, Color __out);
+    private static native void native_color_brightness(Color color, float32 factor, Color __out);
+    private static native void native_color_contrast(Color color, float32 contrast, Color __out);
+    private static native void native_color_alpha(Color color, float32 alpha, Color __out);
+    private static native void native_color_alpha_blend(Color dst, Color src, Color tint, Color __out);
+    private static native void native_color_lerp(Color color1, Color color2, float32 factor, Color __out);
+    private static native void native_get_color(uint32 hexValue, Color __out);
+    private static native int32 native_get_pixel_data_size(int32 width, int32 height, int32 format);
+    private static native void native_draw_fps(int32 posX, int32 posY);
+    private static native void native_draw_text(String text, int32 posX, int32 posY, int32 fontSize, Color color);
+    private static native void native_set_text_line_spacing(int32 spacing);
+    private static native int32 native_measure_text(String text, int32 fontSize);
+    private static native int32 native_get_codepoint_count(String text);
+    private static native bool native_text_is_equal(String text1, String text2);
+    private static native uint32 native_text_length(String text);
+    private static native String native_text_subtext(String text, int32 position, int32 length);
+    private static native String native_text_remove_spaces(String text);
+    private static native int32 native_text_find_index(String text, String search);
+    private static native int32 native_text_to_integer(String text);
+    private static native float32 native_text_to_float(String text);
+    private static native void native_draw_line3d(Vector3 startPos, Vector3 endPos, Color color);
+    private static native void native_draw_point3d(Vector3 position, Color color);
+    private static native void native_draw_circle3d(Vector3 center, float32 radius, Vector3 rotationAxis, float32 rotationAngle, Color color);
+    private static native void native_draw_triangle3d(Vector3 v1, Vector3 v2, Vector3 v3, Color color);
+    private static native void native_draw_cube(Vector3 position, float32 width, float32 height, float32 length, Color color);
+    private static native void native_draw_cube_v(Vector3 position, Vector3 size, Color color);
+    private static native void native_draw_cube_wires(Vector3 position, float32 width, float32 height, float32 length, Color color);
+    private static native void native_draw_cube_wires_v(Vector3 position, Vector3 size, Color color);
+    private static native void native_draw_sphere(Vector3 centerPos, float32 radius, Color color);
+    private static native void native_draw_sphere_ex(Vector3 centerPos, float32 radius, int32 rings, int32 slices, Color color);
+    private static native void native_draw_sphere_wires(Vector3 centerPos, float32 radius, int32 rings, int32 slices, Color color);
+    private static native void native_draw_cylinder(Vector3 position, float32 radiusTop, float32 radiusBottom, float32 height, int32 sides, Color color);
+    private static native void native_draw_cylinder_ex(Vector3 startPos, Vector3 endPos, float32 startRadius, float32 endRadius, int32 sides, Color color);
+    private static native void native_draw_cylinder_wires(Vector3 position, float32 radiusTop, float32 radiusBottom, float32 height, int32 sides, Color color);
+    private static native void native_draw_cylinder_wires_ex(Vector3 startPos, Vector3 endPos, float32 startRadius, float32 endRadius, int32 sides, Color color);
+    private static native void native_draw_capsule(Vector3 startPos, Vector3 endPos, float32 radius, int32 rings, int32 slices, Color color);
+    private static native void native_draw_capsule_wires(Vector3 startPos, Vector3 endPos, float32 radius, int32 rings, int32 slices, Color color);
+    private static native void native_draw_plane(Vector3 centerPos, Vector2 size, Color color);
+    private static native void native_draw_grid(int32 slices, float32 spacing);
+    private static native bool native_check_collision_spheres(Vector3 center1, float32 radius1, Vector3 center2, float32 radius2);
+    private static native void native_init_audio_device();
+    private static native void native_close_audio_device();
+    private static native bool native_is_audio_device_ready();
+    private static native void native_set_master_volume(float32 volume);
+    private static native float32 native_get_master_volume();
+    private static native void native_set_audio_stream_buffer_size_default(int32 size);
+}

@@ -1,0 +1,20 @@
+package raylib.enums;
+
+public class ConfigFlags {
+    public static int32 FLAG_VSYNC_HINT = 64;
+    public static int32 FLAG_FULLSCREEN_MODE = 2;
+    public static int32 FLAG_WINDOW_RESIZABLE = 4;
+    public static int32 FLAG_WINDOW_UNDECORATED = 8;
+    public static int32 FLAG_WINDOW_HIDDEN = 128;
+    public static int32 FLAG_WINDOW_MINIMIZED = 512;
+    public static int32 FLAG_WINDOW_MAXIMIZED = 1024;
+    public static int32 FLAG_WINDOW_UNFOCUSED = 2048;
+    public static int32 FLAG_WINDOW_TOPMOST = 4096;
+    public static int32 FLAG_WINDOW_ALWAYS_RUN = 256;
+    public static int32 FLAG_WINDOW_TRANSPARENT = 16;
+    public static int32 FLAG_WINDOW_HIGHDPI = 8192;
+    public static int32 FLAG_WINDOW_MOUSE_PASSTHROUGH = 16384;
+    public static int32 FLAG_BORDERLESS_WINDOWED_MODE = 32768;
+    public static int32 FLAG_MSAA_4X_HINT = 32;
+    public static int32 FLAG_INTERLACED_HINT = 65536;
+}

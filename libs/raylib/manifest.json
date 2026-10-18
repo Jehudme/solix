@@ -1,0 +1,204 @@
+{
+  "author": null,
+  "dependencies": [
+    {
+      "name": "solixlib",
+      "type": "library",
+      "version": "1.2.0"
+    },
+    {
+      "type": "source",
+      "path": "src/main.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/Raylib.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/BlendMode.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/CameraMode.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/CameraProjection.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/ConfigFlags.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/CubemapLayout.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/FontType.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/GamepadAxis.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/GamepadButton.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/Gesture.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/KeyboardKey.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/MaterialMapIndex.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/MouseButton.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/MouseCursor.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/NPatchLayout.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/PixelFormat.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/ShaderAttributeDataType.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/ShaderLocationIndex.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/ShaderUniformDataType.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/TextureFilter.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/TextureWrap.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/enums/TraceLogLevel.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Color.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Rectangle.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Vector2.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Vector3.slx"
+    },
+    {
+      "type": "source",
+      "path": "src/raylib/types/Vector4.slx"
+    }
+  ],
+  "description": null,
+  "license": null,
+  "profiles": {
+    "debug": {
+      "pre_compile": [
+        "python3 scripts/build_native.py"
+      ],
+      "asm_filename": "out.slxasm",
+      "compilation": {
+        "additional_dependencies": [],
+        "entry_point": "main",
+        "logs": {
+          "filename": "logs/debug.log",
+          "flush_level": "debug",
+          "level": "debug",
+          "pattern": "[%^%-8l%$] [%-12n] %v",
+          "sink": "STDOUT"
+        },
+        "multithreaded": false
+      },
+      "exe_filename": "out.slxbin",
+      "output_directory": "build/debug",
+      "relative_paths": true,
+      "runtime": {
+        "arguments": [],
+        "heap_size": null,
+        "stack_size": null
+      }
+    },
+    "release": {
+      "pre_compile": [
+        "python3 scripts/build_native.py"
+      ],
+      "asm_filename": "out.slxasm",
+      "compilation": {
+        "additional_dependencies": [],
+        "entry_point": "main",
+        "logs": {
+          "filename": "logs/release.log",
+          "flush_level": "warning",
+          "level": "warning",
+          "pattern": "[%^%-8l%$] [%-12n] %v",
+          "sink": "STDOUT"
+        },
+        "multithreaded": true
+      },
+      "exe_filename": "out.slxbin",
+      "output_directory": "build/release",
+      "relative_paths": true,
+      "runtime": {
+        "arguments": [],
+        "heap_size": null,
+        "stack_size": null
+      }
+    },
+    "test": {
+      "asm_filename": "out.slxasm",
+      "compilation": {
+        "additional_dependencies": [],
+        "entry_point": "main",
+        "logs": {
+          "filename": "logs/test.log",
+          "flush_level": "debug",
+          "level": "debug",
+          "pattern": "[%^%-8l%$] [%-12n] %v",
+          "sink": "STDOUT"
+        },
+        "multithreaded": false
+      },
+      "exe_filename": "out.slxbin",
+      "output_directory": "build/test",
+      "relative_paths": true,
+      "runtime": {
+        "arguments": [],
+        "heap_size": null,
+        "stack_size": null
+      }
+    }
+  },
+  "project": "solix-raylib",
+  "tags": [],
+  "version": "0.1.0"
+}

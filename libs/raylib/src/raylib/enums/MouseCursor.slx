@@ -1,0 +1,15 @@
+package raylib.enums;
+
+public class MouseCursor {
+    public static int32 MOUSE_CURSOR_DEFAULT = 0;
+    public static int32 MOUSE_CURSOR_ARROW = 1;
+    public static int32 MOUSE_CURSOR_IBEAM = 2;
+    public static int32 MOUSE_CURSOR_CROSSHAIR = 3;
+    public static int32 MOUSE_CURSOR_POINTING_HAND = 4;
+    public static int32 MOUSE_CURSOR_RESIZE_EW = 5;
+    public static int32 MOUSE_CURSOR_RESIZE_NS = 6;
+    public static int32 MOUSE_CURSOR_RESIZE_NWSE = 7;
+    public static int32 MOUSE_CURSOR_RESIZE_NESW = 8;
+    public static int32 MOUSE_CURSOR_RESIZE_ALL = 9;
+    public static int32 MOUSE_CURSOR_NOT_ALLOWED = 10;
+}

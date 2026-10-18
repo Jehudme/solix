@@ -1,0 +1,12 @@
+package raylib.enums;
+
+public class TraceLogLevel {
+    public static int32 LOG_ALL = 0;
+    public static int32 LOG_TRACE = 1;
+    public static int32 LOG_DEBUG = 2;
+    public static int32 LOG_INFO = 3;
+    public static int32 LOG_WARNING = 4;
+    public static int32 LOG_ERROR = 5;
+    public static int32 LOG_FATAL = 6;
+    public static int32 LOG_NONE = 7;
+}
