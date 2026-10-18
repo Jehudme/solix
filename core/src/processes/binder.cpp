@@ -4067,6 +4067,7 @@ void Binder::visit(ClassDeclaration &n) {
     if (n.base_class_type) {
       ClassDeclaration *base_cls = nullptr;
       std::string curr_base = n.base_class_type->name;
+      std::unordered_set<ClassDeclaration *> visited{&n};
       while (!curr_base.empty()) {
         Node *resolved = global_scope.resolve(curr_base);
         if (!resolved && !n.package_context.empty()) {
@@ -4074,6 +4075,10 @@ void Binder::visit(ClassDeclaration &n) {
         }
         if (resolved && resolved->node_type == NodeType::CLASS_DECL) {
           base_cls = static_cast<ClassDeclaration *>(resolved);
+          if (visited.count(base_cls)) {
+            break;
+          }
+          visited.insert(base_cls);
           if (base_cls->destructor) {
             if (n.destructor) {
               n.destructor->super_destructor = base_cls->destructor;
