@@ -135,9 +135,16 @@ def main():
 
     script_dir = Path(__file__).resolve().parent
     solixlib_dir = script_dir.parent
-    repo_root = solixlib_dir.parent
+    if solixlib_dir.parent.name == "libs":
+        repo_root = solixlib_dir.parent.parent
+    else:
+        repo_root = solixlib_dir.parent
 
     core_include = repo_root / "core" / "include"
+    if not core_include.exists():
+        if (solixlib_dir.parent / "core" / "include").exists():
+            repo_root = solixlib_dir.parent
+            core_include = repo_root / "core" / "include"
     if not core_include.exists():
         print(f"[build_native] Core include directory not found at {core_include}, skipping compilation.")
         return 0

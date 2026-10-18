@@ -46,6 +46,12 @@ public:
     static std::optional<std::filesystem::path> discover_bundled_solixlib();
     bool try_auto_install_bundled_solixlib();
 
+    // Generalized bundled project discovery and auto-installation
+    static std::optional<std::filesystem::path> discover_bundled_library(const std::string& name);
+    static std::vector<std::filesystem::path> discover_all_bundled_libraries();
+    bool try_auto_install_bundled_library(const std::string& name);
+    bool try_auto_install_all_bundled_libraries();
+
 private:
     void load_registry();
     void save_registry();
