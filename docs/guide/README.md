@@ -16,6 +16,7 @@ Welcome to the Solix developer guides. These documents are written for developer
 | 8 | [Generics & Template Metaprogramming](08_generics_and_templates.md) | Generic classes, multiple type parameters, generic methods, deduction, monomorphization |
 | 9 | [Native Plugins & C/C++ Interoperability](09_native_plugins.md) | Writing C/C++ plugins, ABI conventions, shared library loading (`.so`/`.dll`/`.dylib`), CLI auto-discovery |
 | 10 | [Application Packaging & Resources](packaging_and_resources.md) | Single-file `.slxpac` distribution, miniz packaging, native library discovery, `Resource` API, dual-location filesystem |
+| 11 | [Raylib Game Engine Binding Plan](solix_raylib_plan.md) | Multi-platform Raylib bindings, automated code generator from `raylib_api.json`, Zig companion compilation, game loop |
 
 ## Related Resources
 
