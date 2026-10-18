@@ -101,7 +101,9 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake build-essential libspdlog-dev libfmt-dev ninja-build
+          sudo apt-get install -y cmake build-essential libspdlog-dev libfmt-dev ninja-build \
+            libasound2-dev libx11-dev libxrandr-dev libxi-dev libxinerama-dev libxcursor-dev \
+            libgl1-mesa-dev libglu1-mesa-dev
 
       - name: Configure CMake with Sanitizers
         run: |

@@ -1,16 +1,16 @@
-# Solix v3.0.0 Release Notes
+# Solix v2.0.0 Release Notes
 
 **Release Date:** October 18, 2026  
-**Tag:** [`v3.0.0`](https://github.com/Jehudme/solix/releases/tag/v3.0.0)  
+**Tag:** [`v2.0.0`](https://github.com/Jehudme/solix/releases/tag/v2.0.0)  
 **License:** MIT  
 
 ---
 
 ## 🚀 Overview
 
-We are thrilled to announce **Solix v3.0.0**!
+We are thrilled to announce **Solix v2.0.0**!
 
-Solix v3.0.0 is a major milestone release delivering a modern, robust command-line experience, comprehensive package management workflows, clean distribution staging, direct `.slxpac` package bundle execution and installation, active profile dependency overriding, and resilient execution guards across Linux, macOS, and Windows.
+Solix v2.0.0 is a major milestone release delivering a modern, robust command-line experience, comprehensive package management workflows, clean distribution staging, direct `.slxpac` package bundle execution and installation, active profile dependency overriding, and resilient execution guards across Linux, macOS, and Windows.
 
 Additionally, this release upgrades the companion **Raylib** library to version **1.0.0**, packages both `solixlib` and `raylib` into standalone `.slxpac` archives alongside pre-staged distributions, and integrates automated post-install registration in CPack packages across Debian (`.deb`), RPM (`.rpm`), and Windows NSIS (`.exe`).
 

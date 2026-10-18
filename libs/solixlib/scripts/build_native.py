@@ -201,6 +201,13 @@ def main():
 
         if ok:
             success_count += 1
+            if target_key == "windows":
+                alt_name = "solixlib_native.dll" if target_info["output_filename"].startswith("lib") else "libsolixlib_native.dll"
+                alt_file = output_dir / alt_name
+                if dest_file.exists() and not alt_file.exists():
+                    shutil.copy2(dest_file, alt_file)
+                elif alt_file.exists() and not dest_file.exists():
+                    shutil.copy2(alt_file, dest_file)
 
     # Clean up Windows-specific linker artifacts (.lib, .exp, .pdb) in output directory
     for ext in ("*.lib", "*.exp", "*.pdb"):

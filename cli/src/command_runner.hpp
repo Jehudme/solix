@@ -51,16 +51,18 @@ public:
 
         ScopedCwd cwd_guard(working_dir);
 
-        int raw_status = std::system(cmd_str.c_str());
-
 #ifdef _WIN32
-        if (raw_status != 0 && cmd_str.rfind("python3 ", 0) == 0) {
-            std::string fallback_cmd = "python " + cmd_str.substr(8);
-            std::cout << "[fallback] $ " << fallback_cmd << std::endl;
-            raw_status = std::system(fallback_cmd.c_str());
+        std::string actual_cmd = cmd_str;
+        if (actual_cmd.rfind("python3", 0) == 0 && (actual_cmd.size() == 7 || actual_cmd[7] == ' ')) {
+            actual_cmd = "python" + actual_cmd.substr(7);
+        }
+        int raw_status = std::system(actual_cmd.c_str());
+        if (raw_status != 0 && actual_cmd != cmd_str) {
+            raw_status = std::system(cmd_str.c_str());
         }
         int exit_code = raw_status;
 #else
+        int raw_status = std::system(cmd_str.c_str());
         int exit_code = 0;
         if (WIFEXITED(raw_status)) {
             exit_code = WEXITSTATUS(raw_status);

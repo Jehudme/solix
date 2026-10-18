@@ -81,6 +81,13 @@ def build_target(native_dir, build_dir, target_key, output_path, release=True, u
         return False
 
     compiled_lib = output_path.parent / target_info["output_filename"]
+    if target_key == "windows":
+        alt_name = "solix_raylib.dll" if target_info["output_filename"].startswith("lib") else "libsolix_raylib.dll"
+        alt_lib = output_path.parent / alt_name
+        if alt_lib.exists() and not compiled_lib.exists():
+            shutil.copy2(alt_lib, compiled_lib)
+        elif compiled_lib.exists() and not alt_lib.exists():
+            shutil.copy2(compiled_lib, alt_lib)
     if compiled_lib.exists():
         print(f"[build_native] Successfully produced {compiled_lib.name}")
         return True
@@ -129,7 +136,18 @@ def main():
         dest_file = output_dir / target_info["output_filename"]
         target_build_dir = build_root / target_key
 
-        if dest_file.exists() and not args.force:
+        if target_key == "windows":
+            alt_name = "solix_raylib.dll" if target_info["output_filename"].startswith("lib") else "libsolix_raylib.dll"
+            alt_file = output_dir / alt_name
+            if (dest_file.exists() or alt_file.exists()) and not args.force:
+                if alt_file.exists() and not dest_file.exists():
+                    shutil.copy2(alt_file, dest_file)
+                elif dest_file.exists() and not alt_file.exists():
+                    shutil.copy2(dest_file, alt_file)
+                print(f"[build_native] {dest_file.name} is already built. Use --force to rebuild.")
+                success_count += 1
+                continue
+        elif dest_file.exists() and not args.force:
             print(f"[build_native] {dest_file.name} is already built. Use --force to rebuild.")
             success_count += 1
             continue

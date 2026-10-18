@@ -511,7 +511,7 @@ Introduce formal distinction between applications (`"type": "app"`) and librarie
 
 ---
 
-## Phase 21: CLI Modernization, List Refinements, Pack Ingestion, Guards and Release v3.0.0
+## Phase 21: CLI Modernization, List Refinements, Pack Ingestion, Guards and Release v2.0.0
 
 - **Priority**: `P0 Blocker`
 - **Affected Modules**: `cli/`, `CMakeLists.txt`, `.github/workflows/release.yml`, `libs/raylib/manifest.json`, `editors/vscode/package.json`, `docs/`
@@ -524,7 +524,7 @@ Complete toolchain modernization, quality-of-life enhancements, command aliasing
 3. Packaging & Ingestion: Allow direct installation of `.slxpac` bundles via `solix install`; support packaging installed applications via `solix pack <name>@<version> -o <out.slxpac>`; preserve reduced `manifest.json` in `.slxpac` bundles; simplify `solix pack` by reusing the clean staging distribution architecture.
 4. Active Profile Overrides: Active profile `compilation.additional_dependencies` cleanly overrides root dependency profile configurations in `dependency_resolver`.
 5. Edge-Case Guards: Reject `solix run` on library projects and library `.slxpac` bundles; warn when `-P/--profile` is specified on pre-built targets; disambiguate target path arguments; auto-install path dependencies safely without overwriting.
-6. CPack & Release v3.0.0: Update CPack configuration with automatic companion library installation scripts; configure release pipeline to create `solixlib` and `raylib` archives and `.slxpac` bundles; bump raylib to `1.0.0` and toolchain version to `3.0.0`.
+6. CPack & Release v2.0.0: Update CPack configuration with automatic companion library installation scripts; configure release pipeline to create `solixlib` and `raylib` archives and `.slxpac` bundles; bump raylib to `1.0.0` and toolchain version to `2.0.0`.
 
 ### Action Items
 - [x] Remove `solix ide` subcommand and deprecated tests.
