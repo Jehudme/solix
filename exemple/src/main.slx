@@ -1,0 +1,465 @@
+import solix.core.String;
+import raylib.Raylib;
+import raylib.types.Color;
+import raylib.enums.KeyboardKey;
+
+class TextHelper {
+    public static void draw_centered(char[] text, int32 y, int32 fontSize, Color color) {
+        int32 width = Raylib.measure_text(text, fontSize);
+        int32 x = (800 - width) / 2;
+        Raylib.draw_text(text, x, y, fontSize, color);
+    }
+
+    public static char[] format_int(char[] prefix, int32 val) {
+        String p = new String(prefix);
+        String v = String.from_int(val);
+        String res = p.concat(v);
+        return res.data;
+    }
+}
+
+class Brick {
+    public float64 x;
+    public float64 y;
+    public float64 width;
+    public float64 height;
+    public int32 points;
+    public Color color;
+    public bool active;
+
+    public Brick(float64 x, float64 y, float64 w, float64 h, int32 pts, Color col) {
+        this.x = x;
+        this.y = y;
+        this.width = w;
+        this.height = h;
+        this.points = pts;
+        this.color = col;
+        this.active = true;
+    }
+
+    public void draw() {
+        if (!this.active) return;
+        Raylib.draw_rectangle((int32)this.x, (int32)this.y, (int32)this.width, (int32)this.height, this.color);
+        Raylib.draw_rectangle_lines((int32)this.x, (int32)this.y, (int32)this.width, (int32)this.height, Color.DARKGRAY);
+    }
+}
+
+class Paddle {
+    public float64 x;
+    public float64 y;
+    public float64 width;
+    public float64 height;
+    public float64 speed;
+
+    public Paddle(float64 x, float64 y, float64 w, float64 h, float64 spd) {
+        this.x = x;
+        this.y = y;
+        this.width = w;
+        this.height = h;
+        this.speed = spd;
+    }
+
+    public void move_left() {
+        this.x -= this.speed;
+        if (this.x < 10.0) {
+            this.x = 10.0;
+        }
+    }
+
+    public void move_right(float64 screen_w) {
+        this.x += this.speed;
+        if (this.x + this.width > screen_w - 10.0) {
+            this.x = screen_w - 10.0 - this.width;
+        }
+    }
+
+    public void draw() {
+        Raylib.draw_rectangle((int32)this.x, (int32)this.y, (int32)this.width, (int32)this.height, Color.SKYBLUE);
+        Raylib.draw_rectangle_lines((int32)this.x, (int32)this.y, (int32)this.width, (int32)this.height, Color.WHITE);
+    }
+}
+
+class Ball {
+    public float64 x;
+    public float64 y;
+    public float64 radius;
+    public float64 speed_x;
+    public float64 speed_y;
+    public bool is_stuck;
+
+    public Ball(float64 r) {
+        this.radius = r;
+        this.x = 400.0;
+        this.y = 530.0;
+        this.speed_x = 0.0;
+        this.speed_y = 0.0;
+        this.is_stuck = true;
+    }
+
+    public void reset_on_paddle(Paddle paddle) {
+        this.x = paddle.x + paddle.width / 2.0;
+        this.y = paddle.y - this.radius - 2.0;
+        this.speed_x = 0.0;
+        this.speed_y = 0.0;
+        this.is_stuck = true;
+    }
+
+    public void launch() {
+        this.speed_x = 4.0;
+        this.speed_y = -6.5;
+        this.is_stuck = false;
+    }
+
+    public void update(Paddle paddle) {
+        if (this.is_stuck) {
+            this.x = paddle.x + paddle.width / 2.0;
+            this.y = paddle.y - this.radius - 2.0;
+        } else {
+            this.x += this.speed_x;
+            this.y += this.speed_y;
+        }
+    }
+
+    public void draw() {
+        Raylib.draw_circle((int32)this.x, (int32)this.y, (float32)this.radius, Color.YELLOW);
+        Raylib.draw_circle_lines((int32)this.x, (int32)this.y, (float32)this.radius, Color.GOLD);
+    }
+}
+
+class BreakoutGame {
+    public static int32 STATE_TITLE = 0;
+    public static int32 STATE_PLAYING = 1;
+    public static int32 STATE_PAUSED = 2;
+    public static int32 STATE_GAME_OVER = 3;
+    public static int32 STATE_VICTORY = 4;
+
+    public int32 state;
+    public int32 score;
+    public int32 high_score;
+    public int32 lives;
+    public int32 bricks_left;
+
+    public Paddle paddle;
+    public Ball ball;
+    public Brick[] bricks;
+    public int32 total_bricks;
+
+    public BreakoutGame() {
+        this.state = STATE_TITLE;
+        this.score = 0;
+        this.high_score = 0;
+        this.lives = 3;
+        this.total_bricks = 50;
+        this.bricks_left = 50;
+
+        this.paddle = new Paddle(350.0, 540.0, 100.0, 16.0, 8.0);
+        this.ball = new Ball(7.0);
+        this.bricks = new Brick[50];
+        this.init_bricks();
+    }
+
+    public void init_bricks() {
+        int32 cols = 10;
+        int32 rows = 5;
+        float64 brick_w = 72.0;
+        float64 brick_h = 22.0;
+        float64 pad = 6.0;
+        float64 start_x = 15.0;
+        float64 start_y = 65.0;
+
+        int32 idx = 0;
+        for (int32 r = 0; r < rows; r++) {
+            Color row_col = Color.RED;
+            int32 pts = 50;
+            if (r == 1) {
+                row_col = Color.ORANGE;
+                pts = 40;
+            } else if (r == 2) {
+                row_col = Color.YELLOW;
+                pts = 30;
+            } else if (r == 3) {
+                row_col = Color.GREEN;
+                pts = 20;
+            } else if (r == 4) {
+                row_col = Color.SKYBLUE;
+                pts = 10;
+            }
+
+            for (int32 c = 0; c < cols; c++) {
+                float64 bx = start_x + (float64)c * (brick_w + pad);
+                float64 by = start_y + (float64)r * (brick_h + pad);
+                this.bricks[idx] = new Brick(bx, by, brick_w, brick_h, pts, row_col);
+                idx++;
+            }
+        }
+        this.bricks_left = this.total_bricks;
+    }
+
+    public void start_new_game() {
+        this.score = 0;
+        this.lives = 3;
+        this.init_bricks();
+        this.paddle.x = 350.0;
+        this.ball.reset_on_paddle(this.paddle);
+        this.state = STATE_PLAYING;
+    }
+
+    public void update() {
+        if (this.state == STATE_TITLE) {
+            if (Raylib.is_key_pressed(KeyboardKey.KEY_ENTER) || Raylib.is_key_pressed(KeyboardKey.KEY_SPACE)) {
+                this.start_new_game();
+            }
+            return;
+        }
+
+        if (this.state == STATE_PAUSED) {
+            if (Raylib.is_key_pressed(KeyboardKey.KEY_P) || Raylib.is_key_pressed(KeyboardKey.KEY_SPACE)) {
+                this.state = STATE_PLAYING;
+            } else if (Raylib.is_key_pressed(KeyboardKey.KEY_R)) {
+                this.start_new_game();
+            } else if (Raylib.is_key_pressed(KeyboardKey.KEY_M)) {
+                this.state = STATE_TITLE;
+            }
+            return;
+        }
+
+        if (this.state == STATE_GAME_OVER || this.state == STATE_VICTORY) {
+            if (Raylib.is_key_pressed(KeyboardKey.KEY_ENTER) || Raylib.is_key_pressed(KeyboardKey.KEY_SPACE)) {
+                this.start_new_game();
+            } else if (Raylib.is_key_pressed(KeyboardKey.KEY_M)) {
+                this.state = STATE_TITLE;
+            }
+            return;
+        }
+
+        if (this.state == STATE_PLAYING) {
+            // Check Pause
+            if (Raylib.is_key_pressed(KeyboardKey.KEY_P)) {
+                this.state = STATE_PAUSED;
+                return;
+            }
+
+            // Paddle Controls
+            if (Raylib.is_key_down(KeyboardKey.KEY_LEFT) || Raylib.is_key_down(KeyboardKey.KEY_A)) {
+                this.paddle.move_left();
+            }
+            if (Raylib.is_key_down(KeyboardKey.KEY_RIGHT) || Raylib.is_key_down(KeyboardKey.KEY_D)) {
+                this.paddle.move_right(800.0);
+            }
+
+            // Ball Launch
+            if (this.ball.is_stuck) {
+                if (Raylib.is_key_pressed(KeyboardKey.KEY_SPACE)) {
+                    this.ball.launch();
+                }
+            }
+
+            this.ball.update(this.paddle);
+
+            if (!this.ball.is_stuck) {
+                // Wall Collisions
+                if (this.ball.x - this.ball.radius <= 0.0) {
+                    this.ball.x = this.ball.radius;
+                    this.ball.speed_x = -this.ball.speed_x;
+                } else if (this.ball.x + this.ball.radius >= 800.0) {
+                    this.ball.x = 800.0 - this.ball.radius;
+                    this.ball.speed_x = -this.ball.speed_x;
+                }
+
+                if (this.ball.y - this.ball.radius <= 40.0) {
+                    this.ball.y = 40.0 + this.ball.radius;
+                    this.ball.speed_y = -this.ball.speed_y;
+                } else if (this.ball.y - this.ball.radius > 600.0) {
+                    // Ball lost
+                    this.lives--;
+                    if (this.lives <= 0) {
+                        if (this.score > this.high_score) {
+                            this.high_score = this.score;
+                        }
+                        this.state = STATE_GAME_OVER;
+                        return;
+                    } else {
+                        this.ball.reset_on_paddle(this.paddle);
+                    }
+                }
+
+                // Paddle Collision
+                if (this.ball.speed_y > 0.0) {
+                    float64 b_bottom = this.ball.y + this.ball.radius;
+                    float64 b_left = this.ball.x - this.ball.radius;
+                    float64 b_right = this.ball.x + this.ball.radius;
+
+                    if (b_bottom >= this.paddle.y && this.ball.y <= this.paddle.y + this.paddle.height) {
+                        if (b_right >= this.paddle.x && b_left <= this.paddle.x + this.paddle.width) {
+                            this.ball.y = this.paddle.y - this.ball.radius;
+                            float64 center_paddle = this.paddle.x + this.paddle.width / 2.0;
+                            float64 hit_norm = (this.ball.x - center_paddle) / (this.paddle.width / 2.0);
+                            if (hit_norm < -1.0) hit_norm = -1.0;
+                            if (hit_norm > 1.0) hit_norm = 1.0;
+
+                            this.ball.speed_x = hit_norm * 7.5;
+                            this.ball.speed_y = -6.5;
+                        }
+                    }
+                }
+
+                // Brick Collisions
+                for (int32 i = 0; i < this.total_bricks; i++) {
+                    Brick brk = this.bricks[i];
+                    if (brk.active) {
+                        float64 near_x = this.ball.x;
+                        if (near_x < brk.x) near_x = brk.x;
+                        if (near_x > brk.x + brk.width) near_x = brk.x + brk.width;
+
+                        float64 near_y = this.ball.y;
+                        if (near_y < brk.y) near_y = brk.y;
+                        if (near_y > brk.y + brk.height) near_y = brk.y + brk.height;
+
+                        float64 dx = this.ball.x - near_x;
+                        float64 dy = this.ball.y - near_y;
+
+                        if ((dx * dx + dy * dy) <= (this.ball.radius * this.ball.radius)) {
+                            brk.active = false;
+                            this.score += brk.points;
+                            this.bricks_left--;
+
+                            if (dx * dx > dy * dy) {
+                                this.ball.speed_x = -this.ball.speed_x;
+                            } else {
+                                this.ball.speed_y = -this.ball.speed_y;
+                            }
+
+                            if (this.bricks_left <= 0) {
+                                this.score += this.lives * 150;
+                                if (this.score > this.high_score) {
+                                    this.high_score = this.score;
+                                }
+                                this.state = STATE_VICTORY;
+                                return;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void draw() {
+        Raylib.begin_drawing();
+        Raylib.clear_background(new Color(20, 22, 30, 255));
+
+        if (this.state == STATE_TITLE) {
+            // Title Screen
+            TextHelper.draw_centered("SOLIX BREAKOUT", 120, 50, Color.GOLD);
+            TextHelper.draw_centered("Cross-Platform Arcade Edition", 185, 20, Color.SKYBLUE);
+
+            Raylib.draw_rectangle(180, 250, 440, 200, new Color(32, 36, 48, 255));
+            Raylib.draw_rectangle_lines(180, 250, 440, 200, Color.DARKGRAY);
+
+            TextHelper.draw_centered("HOW TO PLAY", 270, 22, Color.YELLOW);
+            TextHelper.draw_centered("[LEFT] / [RIGHT] or [A] / [D] : Move Paddle", 310, 18, Color.RAYWHITE);
+            TextHelper.draw_centered("[SPACE] : Launch Ball", 340, 18, Color.RAYWHITE);
+            TextHelper.draw_centered("[P] : Pause Game   |   [ESC] : Quit", 370, 18, Color.LIGHTGRAY);
+
+            TextHelper.draw_centered("Press [ENTER] or [SPACE] to Play", 490, 26, Color.LIME);
+
+            if (this.high_score > 0) {
+                char[] hs_text = TextHelper.format_int("BEST SCORE: ", this.high_score);
+                TextHelper.draw_centered(hs_text, 540, 20, Color.GOLD);
+            }
+        } else if (this.state == STATE_PLAYING || this.state == STATE_PAUSED) {
+            // Draw HUD
+            Raylib.draw_rectangle(0, 0, 800, 40, new Color(28, 32, 42, 255));
+            Raylib.draw_line(0, 40, 800, 40, Color.DARKGRAY);
+
+            char[] score_str = TextHelper.format_int("SCORE: ", this.score);
+            Raylib.draw_text(score_str, 20, 12, 18, Color.RAYWHITE);
+
+            char[] lives_str = TextHelper.format_int("LIVES: ", this.lives);
+            Raylib.draw_text(lives_str, 220, 12, 18, Color.RED);
+
+            char[] bricks_str = TextHelper.format_int("BRICKS: ", this.bricks_left);
+            Raylib.draw_text(bricks_str, 400, 12, 18, Color.SKYBLUE);
+
+            char[] hs_str = TextHelper.format_int("HIGH: ", this.high_score);
+            Raylib.draw_text(hs_str, 660, 12, 18, Color.GOLD);
+
+            // Draw Bricks
+            for (int32 i = 0; i < this.total_bricks; i++) {
+                this.bricks[i].draw();
+            }
+
+            // Draw Paddle and Ball
+            this.paddle.draw();
+            this.ball.draw();
+
+            if (this.ball.is_stuck) {
+                TextHelper.draw_centered("Press [SPACE] to Launch Ball", 480, 20, Color.YELLOW);
+            }
+
+            // Draw Pause Menu Overlay
+            if (this.state == STATE_PAUSED) {
+                Raylib.draw_rectangle(200, 180, 400, 240, new Color(15, 18, 26, 245));
+                Raylib.draw_rectangle_lines(200, 180, 400, 240, Color.GOLD);
+
+                TextHelper.draw_centered("GAME PAUSED", 215, 36, Color.YELLOW);
+                TextHelper.draw_centered("Press [P] or [SPACE] to Resume", 280, 20, Color.RAYWHITE);
+                TextHelper.draw_centered("Press [R] to Restart", 320, 20, Color.SKYBLUE);
+                TextHelper.draw_centered("Press [M] for Main Menu", 360, 20, Color.LIGHTGRAY);
+            }
+        } else if (this.state == STATE_GAME_OVER) {
+            // Game Over Screen
+            TextHelper.draw_centered("GAME OVER", 140, 52, Color.RED);
+            TextHelper.draw_centered("You ran out of lives!", 210, 22, Color.LIGHTGRAY);
+
+            char[] final_score = TextHelper.format_int("Final Score: ", this.score);
+            TextHelper.draw_centered(final_score, 270, 28, Color.WHITE);
+
+            char[] best_score = TextHelper.format_int("High Score: ", this.high_score);
+            TextHelper.draw_centered(best_score, 320, 24, Color.GOLD);
+
+            Raylib.draw_rectangle(200, 390, 400, 130, new Color(28, 32, 42, 255));
+            Raylib.draw_rectangle_lines(200, 390, 400, 130, Color.DARKGRAY);
+
+            TextHelper.draw_centered("Press [ENTER] or [SPACE] to Try Again", 420, 20, Color.YELLOW);
+            TextHelper.draw_centered("Press [M] for Main Menu", 465, 20, Color.RAYWHITE);
+        } else if (this.state == STATE_VICTORY) {
+            // Victory Screen
+            TextHelper.draw_centered("VICTORY!", 130, 54, Color.GREEN);
+            TextHelper.draw_centered("Congratulations! You cleared all bricks!", 200, 22, Color.GOLD);
+
+            char[] final_score = TextHelper.format_int("Final Score: ", this.score);
+            TextHelper.draw_centered(final_score, 260, 30, Color.WHITE);
+
+            char[] bonus_str = TextHelper.format_int("Lives Remaining Bonus: +", this.lives * 150);
+            TextHelper.draw_centered(bonus_str, 310, 20, Color.SKYBLUE);
+
+            char[] best_score = TextHelper.format_int("High Score: ", this.high_score);
+            TextHelper.draw_centered(best_score, 350, 24, Color.GOLD);
+
+            Raylib.draw_rectangle(200, 410, 400, 120, new Color(28, 32, 42, 255));
+            Raylib.draw_rectangle_lines(200, 410, 400, 120, Color.DARKGRAY);
+
+            TextHelper.draw_centered("Press [ENTER] or [SPACE] to Play Again", 435, 20, Color.YELLOW);
+            TextHelper.draw_centered("Press [M] for Main Menu", 475, 20, Color.RAYWHITE);
+        }
+
+        Raylib.end_drawing();
+    }
+}
+
+int32 main() {
+    Raylib.init_window(800, 600, "Solix Breakout");
+    Raylib.set_target_fps(60);
+
+    BreakoutGame game = new BreakoutGame();
+
+    while (!Raylib.window_should_close()) {
+        game.update();
+        game.draw();
+    }
+
+    Raylib.close_window();
+    return 0;
+}

@@ -1,0 +1,95 @@
+{
+  "author": null,
+  "dependencies": [
+    {
+      "name": "solixlib",
+      "type": "library",
+      "version": "1.2.1"
+    },
+    {
+      "name": "solix-raylib",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "path": "src/main.slx",
+      "type": "source"
+    }
+  ],
+  "description": "Classic Breakout arcade game built in Solix with Raylib",
+  "license": null,
+  "profiles": {
+    "debug": {
+      "asm_filename": "out.slxasm",
+      "compilation": {
+        "additional_dependencies": [],
+        "entry_point": "main",
+        "logs": {
+          "filename": "logs/debug.log",
+          "flush_level": "debug",
+          "level": "debug",
+          "pattern": "[%^%-8l%$] [%-12n] %v",
+          "sink": "STDOUT"
+        },
+        "multithreaded": false
+      },
+      "exe_filename": "out.slxbin",
+      "output_directory": "build/debug",
+      "relative_paths": true,
+      "runtime": {
+        "arguments": [],
+        "heap_size": null,
+        "stack_size": null
+      }
+    },
+    "release": {
+      "asm_filename": "out.slxasm",
+      "compilation": {
+        "additional_dependencies": [],
+        "entry_point": "main",
+        "logs": {
+          "filename": "logs/release.log",
+          "flush_level": "warning",
+          "level": "warning",
+          "pattern": "[%^%-8l%$] [%-12n] %v",
+          "sink": "STDOUT"
+        },
+        "multithreaded": true
+      },
+      "exe_filename": "out.slxbin",
+      "output_directory": "build/release",
+      "relative_paths": true,
+      "runtime": {
+        "arguments": [],
+        "heap_size": null,
+        "stack_size": null
+      }
+    },
+    "test": {
+      "asm_filename": "out.slxasm",
+      "compilation": {
+        "additional_dependencies": [],
+        "entry_point": "main",
+        "logs": {
+          "filename": "logs/test.log",
+          "flush_level": "debug",
+          "level": "debug",
+          "pattern": "[%^%-8l%$] [%-12n] %v",
+          "sink": "STDOUT"
+        },
+        "multithreaded": false
+      },
+      "exe_filename": "out.slxbin",
+      "output_directory": "build/test",
+      "relative_paths": true,
+      "runtime": {
+        "arguments": [],
+        "heap_size": null,
+        "stack_size": null
+      }
+    }
+  },
+  "project": "breakout",
+  "tags": [],
+  "version": "0.1.0"
+}

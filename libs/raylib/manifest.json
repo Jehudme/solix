@@ -8,10 +8,6 @@
     },
     {
       "type": "source",
-      "path": "src/main.slx"
-    },
-    {
-      "type": "source",
       "path": "src/raylib/Raylib.slx"
     },
     {

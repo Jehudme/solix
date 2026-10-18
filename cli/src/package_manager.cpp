@@ -294,26 +294,32 @@ uintmax_t PackageManager::calculate_directory_size(const std::filesystem::path& 
 std::optional<std::filesystem::path> PackageManager::discover_bundled_library(const std::string& name) {
     std::filesystem::path exe_dir = solix::get_executable_dir();
 
-    // 1. Installed package layout: <prefix>/share/solix/<name>
-    std::vector<std::filesystem::path> candidates = {
-        exe_dir.parent_path() / "share" / "solix" / name,
-        exe_dir / ".." / "share" / "solix" / name,
-        exe_dir / "share" / "solix" / name,
-        exe_dir.parent_path() / "share" / "solix" / "libs" / name,
-        // 2. In-tree development layout: <repo>/libs/<name> or <repo>/<name>
-        exe_dir.parent_path().parent_path() / "libs" / name,
-        exe_dir.parent_path() / "libs" / name,
-        exe_dir.parent_path().parent_path() / name,
-        exe_dir.parent_path() / name,
-        exe_dir.parent_path().parent_path() / name / "project",
-        exe_dir.parent_path() / name / "project"
-    };
+    std::vector<std::string> search_names = { name };
+    if (name == "solix-raylib") search_names.push_back("raylib");
+    else if (name == "raylib") search_names.push_back("solix-raylib");
 
-    for (const auto& cand : candidates) {
-        std::filesystem::path normal_cand = cand.lexically_normal();
-        std::filesystem::path mf = solix::find_project_manifest(normal_cand);
-        if (std::filesystem::exists(mf) && std::filesystem::exists(normal_cand / "src")) {
-            return normal_cand;
+    for (const auto& n : search_names) {
+        // 1. Installed package layout: <prefix>/share/solix/<name>
+        std::vector<std::filesystem::path> candidates = {
+            exe_dir.parent_path() / "share" / "solix" / n,
+            exe_dir / ".." / "share" / "solix" / n,
+            exe_dir / "share" / "solix" / n,
+            exe_dir.parent_path() / "share" / "solix" / "libs" / n,
+            // 2. In-tree development layout: <repo>/libs/<name> or <repo>/<name>
+            exe_dir.parent_path().parent_path() / "libs" / n,
+            exe_dir.parent_path() / "libs" / n,
+            exe_dir.parent_path().parent_path() / n,
+            exe_dir.parent_path() / n,
+            exe_dir.parent_path().parent_path() / n / "project",
+            exe_dir.parent_path() / n / "project"
+        };
+
+        for (const auto& cand : candidates) {
+            std::filesystem::path normal_cand = cand.lexically_normal();
+            std::filesystem::path mf = solix::find_project_manifest(normal_cand);
+            if (std::filesystem::exists(mf) && std::filesystem::exists(normal_cand / "src")) {
+                return normal_cand;
+            }
         }
     }
     return std::nullopt;
