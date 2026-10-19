@@ -119,3 +119,89 @@ In `Runtime::object_destructor`:
   - The runtime calls `decrease_reference(child_addr)`.
   - If `child_addr`'s reference count reaches 0, its destructor (`~ClassName()`) is immediately executed, followed by freeing memory.
 - If child elements are nested tuples, destruction cascades recursively with zero memory leaks.
+
+---
+
+## 5. Practical Use Cases & Idioms (What Can You Do With It?)
+
+### 5.1 Multi-Value Function Returns
+Functions can return multiple heterogeneous values without needing to define single-use classes:
+```solix
+tuple find_user_session(int32 user_id) {
+    bool is_active = check_active(user_id);
+    int64 session_token = 9876543210;
+    string username = "jehud";
+    return new tuple(is_active, session_token, username);
+}
+
+void main() {
+    tuple session = find_user_session(42);
+    if ((bool)session[0]) {
+        int64 token = (int64)session[1];
+        string user = (string)session[2];
+        // proceed with authenticated session
+    }
+}
+```
+
+### 5.2 Variadic Formatting & Logging Utilities
+Build custom variadic functions that accept any sequence of heterogeneous arguments:
+```solix
+void log_info<args...>(string category, args...) {
+    Console.print("[" + category + "] ");
+    for (int32 i = 0; i < args.length; i++) {
+        if (args[i] instanceof int32) {
+            Console.print(String.from_int32((int32)args[i]));
+        } else if (args[i] instanceof string) {
+            Console.print((string)args[i]);
+        } else if (args[i] instanceof bool) {
+            Console.print((bool)args[i] ? "true" : "false");
+        }
+        Console.print(" ");
+    }
+    Console.println("");
+}
+
+// Caller usage:
+log_info("NETWORK", "Handshake completed with peer", 102, "status:", true);
+```
+
+### 5.3 Heterogeneous Containers with Dynamic Inspection
+Store disparate types in a unified tuple and process each element based on its dynamic type:
+```solix
+void process_bundle(tuple items) {
+    for (int32 i = 0; i < items.length; i++) {
+        if (items[i] instanceof Worker) {
+            Worker w = (Worker)items[i];
+            w.work();
+        } else if (items[i] instanceof int32) {
+            int32 count = (int32)items[i];
+            // process scalar
+        }
+    }
+}
+```
+
+### 5.4 Deterministic Multi-Resource RAII Guard
+Group multiple RAII resources into a single tuple so that all contained resources (e.g., file handles, locks, network connections) are released together at the end of the block or during exception unwinding:
+```solix
+void transactional_work() {
+    tuple guards = new tuple(new DatabaseLock(), new FileHandle("/tmp/db.lock"));
+    // If an exception is thrown here or if the function exits early,
+    // DatabaseLock.~DatabaseLock() and FileHandle.~FileHandle() are
+    // guaranteed to execute immediately in reverse order.
+}
+```
+
+### 5.5 High-Level Class Wrapper Foundation (`solix.core.Tuple`)
+Because the primitive is named `tuple`, standard library authors can build a higher-level class wrapper `Tuple` around it:
+```solix
+// Future solixlib wrapper class:
+public class Tuple {
+    private tuple _raw;
+    public Tuple(tuple raw) { this._raw = raw; }
+    public int32 size() { return this._raw.length; }
+    public tuple unwrap() { return this._raw; }
+}
+```
+
