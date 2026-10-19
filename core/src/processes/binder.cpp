@@ -92,6 +92,10 @@ Node *Binder::instantiate_template(const std::string &template_name,
   std::unordered_map<std::string, TypeInfo> substitutions;
   for (size_t i = 0; i < tparams.size(); ++i) {
     substitutions[tparams[i]] = type_args[i];
+    if (tparams[i].length() > 3 && tparams[i].substr(tparams[i].length() - 3) == "...") {
+      std::string plain = tparams[i].substr(0, tparams[i].length() - 3);
+      substitutions[plain] = type_args[i];
+    }
     log_trace("Substitution mapping: {} -> {}", tparams[i],
               type_args[i].to_string());
   }
@@ -109,8 +113,18 @@ Node *Binder::instantiate_template(const std::string &template_name,
     static_cast<AliasStatement *>(clone)->template_parameters.clear();
     static_cast<AliasStatement *>(clone)->alias_name = mangled_name;
   } else if (clone->node_type == NodeType::METHOD_DECL) {
-    static_cast<MethodDeclaration *>(clone)->template_parameters.clear();
-    static_cast<MethodDeclaration *>(clone)->method_name = mangled_name;
+    auto *m = static_cast<MethodDeclaration *>(clone);
+    m->template_parameters.clear();
+    m->method_name = mangled_name;
+    if (!m->parameters.empty()) {
+      auto *last_param = static_cast<VariableDeclaration *>(m->parameters.back().get());
+      if (last_param->type_info.is_variadic_pack) {
+        last_param->type_info = type_args.back();
+        last_param->type_info.is_tuple = true;
+        last_param->type_info.is_variadic_pack = false;
+        last_param->is_reference_type = true;
+      }
+    }
   }
 
   log_trace("Executing template substitution visitor on clone for '{}'",
@@ -794,6 +808,16 @@ TypeInfo Binder::resolve_type(const TypeInfo &raw_type, Node *error_node) {
       result.param_types.push_back(resolve_type(p, error_node));
     }
     result.name = result.to_string();
+    return result;
+  }
+  if (raw_type.is_tuple || raw_type.name == "tuple") {
+    TypeInfo result = raw_type;
+    result.is_tuple = true;
+    result.name = "tuple";
+    result.type_args.clear();
+    for (const auto &arg : raw_type.type_args) {
+      result.type_args.push_back(resolve_type(arg, error_node));
+    }
     return result;
   }
   if (raw_type.name.empty()) {
@@ -1808,11 +1832,21 @@ bool Binder::is_assignable(const TypeInfo &target, const TypeInfo &source) {
     return true;
   // null (void) is assignable to any reference type, array, or function pointer
   if (source.name == "void" && source.array_depth == 0 && !source.is_function_pointer) {
+    if (target.is_tuple) return true;
     if (target.is_function_pointer) return true;
     // Allow assigning null to arrays or to classes (reference types)
     if (target.array_depth > 0) return true;
     Node *tgt_node = global_scope.resolve(target.name);
     if (tgt_node && tgt_node->node_type == NodeType::CLASS_DECL && !tgt_node->is_primitive) return true;
+  }
+  if (source.name == "tuple_element") return true;
+  if (target.is_tuple && source.is_tuple) {
+    if (target.type_args.empty() || source.type_args.empty()) return true;
+    if (target.type_args.size() != source.type_args.size()) return false;
+    for (size_t i = 0; i < target.type_args.size(); ++i) {
+      if (!is_assignable(target.type_args[i], source.type_args[i])) return false;
+    }
+    return true;
   }
   if (target.is_function_pointer) {
     if (!source.is_function_pointer) return false;
@@ -2409,6 +2443,29 @@ void Binder::visit(AssignmentExpression &n) {
 void Binder::visit(ArrayAccessExpression &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
     TypeInfo array_type = evaluate_expression(n.array.get());
+    if (array_type.is_tuple) {
+      TypeInfo index_type = evaluate_expression(n.index.get());
+      if (index_type.name != "int32" || index_type.array_depth != 0) {
+        record_error(&n, fmt::format("Tuple index must be int32, got '{}'", index_type.name));
+      }
+      if (n.index->node_type == NodeType::LITERAL) {
+        auto *lit = static_cast<LiteralNode *>(n.index.get());
+        if (std::holds_alternative<int64_t>(lit->value)) {
+          int64_t idx = std::get<int64_t>(lit->value);
+          if (idx < 0 || (!array_type.type_args.empty() && idx >= static_cast<int64_t>(array_type.type_args.size()))) {
+            record_error(&n, fmt::format("Tuple index {} out of bounds for length {}", idx, array_type.type_args.size()));
+          }
+          if (!array_type.type_args.empty() && idx >= 0 && idx < static_cast<int64_t>(array_type.type_args.size())) {
+            n.expression_type = array_type.type_args[idx];
+            evaluated_type = n.expression_type;
+            return;
+          }
+        }
+      }
+      n.expression_type = TypeInfo("tuple_element", 0);
+      evaluated_type = n.expression_type;
+      return;
+    }
     if (array_type.array_depth == 0)
       record_error(&n, "Cannot index a non-array value");
     TypeInfo index_type = evaluate_expression(n.index.get());
@@ -2466,6 +2523,14 @@ void Binder::visit(MemberAccessExpression &n) {
 
     if (!is_static_path) {
       object_type = evaluate_expression(n.object.get());
+      if (object_type.is_tuple) {
+        if (n.member_name == "length") {
+          n.expression_type = {"int32", 0};
+          evaluated_type = n.expression_type;
+          return;
+        }
+        record_error(&n, "Tuples only have the 'length' property");
+      }
       if (object_type.array_depth > 0) {
         if (n.member_name == "length") {
           n.expression_type = {"int32", 0};
@@ -2689,6 +2754,65 @@ void Binder::visit(MethodCallExpression &n) {
       return;
     }
 
+    auto handle_variadics_deduction = [&](MethodDeclaration *method_bp, std::vector<TypeInfo> &deduced_args) {
+      bool is_variadic = (!method_bp->template_parameters.empty() &&
+                          method_bp->template_parameters.back().length() > 3 &&
+                          method_bp->template_parameters.back().substr(method_bp->template_parameters.back().length() - 3) == "...") ||
+                         (!method_bp->parameters.empty() && (static_cast<VariableDeclaration*>(method_bp->parameters.back().get())->type_info.is_variadic_pack ||
+                          (static_cast<VariableDeclaration*>(method_bp->parameters.back().get())->type_info.is_tuple && !method_bp->template_parameters.empty() && method_bp->template_parameters.back().find("...") != std::string::npos)));
+      if (is_variadic) {
+        size_t fixed_count = method_bp->parameters.size() - 1;
+        if (n.arguments.size() >= fixed_count &&
+            (n.arguments.size() != fixed_count + 1 || n.arguments.back()->node_type != NodeType::TUPLE_CREATION)) {
+          auto tuple_expr = std::make_unique<TupleCreationExpression>();
+          tuple_expr->line = n.line;
+          tuple_expr->column = n.column;
+          tuple_expr->source = n.source;
+          tuple_expr->expression_type = deduced_args.back();
+          for (size_t ai = fixed_count; ai < n.arguments.size(); ++ai) {
+            tuple_expr->elements.push_back(std::move(n.arguments[ai]));
+          }
+          n.arguments.resize(fixed_count);
+          n.arguments.push_back(std::move(tuple_expr));
+          argument_types.resize(fixed_count);
+          argument_types.push_back(deduced_args.back());
+        }
+      }
+    };
+
+    auto handle_explicit_variadics = [&](MethodDeclaration *method_bp, std::vector<TypeInfo> &resolved_targs) {
+      bool is_bp_variadic = (!method_bp->template_parameters.empty() &&
+                             method_bp->template_parameters.back().length() > 3 &&
+                             method_bp->template_parameters.back().substr(method_bp->template_parameters.back().length() - 3) == "...");
+      if (is_bp_variadic) {
+        size_t fixed_tparams = method_bp->template_parameters.size() - 1;
+        if (resolved_targs.size() > fixed_tparams || (resolved_targs.size() == fixed_tparams + 1 && !resolved_targs.back().is_tuple)) {
+          TypeInfo packed_tuple("tuple", 0);
+          packed_tuple.is_tuple = true;
+          for (size_t ti = fixed_tparams; ti < resolved_targs.size(); ++ti) {
+            packed_tuple.type_args.push_back(resolved_targs[ti]);
+          }
+          resolved_targs.resize(fixed_tparams);
+          resolved_targs.push_back(packed_tuple);
+        }
+        size_t fixed_count = method_bp->parameters.size() - 1;
+        if (n.arguments.size() >= fixed_count && (n.arguments.size() != fixed_count + 1 || n.arguments.back()->node_type != NodeType::TUPLE_CREATION)) {
+          auto tuple_expr = std::make_unique<TupleCreationExpression>();
+          tuple_expr->line = n.line;
+          tuple_expr->column = n.column;
+          tuple_expr->source = n.source;
+          tuple_expr->expression_type = resolved_targs.back();
+          for (size_t ai = fixed_count; ai < n.arguments.size(); ++ai) {
+            tuple_expr->elements.push_back(std::move(n.arguments[ai]));
+          }
+          n.arguments.resize(fixed_count);
+          n.arguments.push_back(std::move(tuple_expr));
+          argument_types.resize(fixed_count);
+          argument_types.push_back(resolved_targs.back());
+        }
+      }
+    };
+
     if (n.callee->node_type == NodeType::MEMBER_ACCESS) {
       auto *member_access =
           static_cast<MemberAccessExpression *>(n.callee.get());
@@ -2786,9 +2910,13 @@ void Binder::visit(MethodCallExpression &n) {
         base_name = current_resolve_class->mangled_name + "." +
                     member_access->member_name;
         if (!n.type_args.empty() && template_registry.count(base_name)) {
+          Node *blueprint = template_registry[base_name];
           std::vector<TypeInfo> resolved_targs;
           for (auto &t : n.type_args)
             resolved_targs.push_back(resolve_type(t, &n));
+          if (blueprint && blueprint->node_type == NodeType::METHOD_DECL) {
+            handle_explicit_variadics(static_cast<MethodDeclaration *>(blueprint), resolved_targs);
+          }
           instantiate_template(base_name, resolved_targs, &n);
           base_name += "<";
           for (size_t i = 0; i < resolved_targs.size(); ++i) {
@@ -2819,6 +2947,7 @@ void Binder::visit(MethodCallExpression &n) {
             if (deduce_template_arguments(param_types, argument_types,
                                           method_bp->template_parameters,
                                           deduced_args)) {
+              handle_variadics_deduction(method_bp, deduced_args);
               std::string instantiated_base = base_name + "<";
               for (size_t i = 0; i < deduced_args.size(); ++i) {
                 instantiated_base += deduced_args[i].to_string();
@@ -3075,10 +3204,14 @@ void Binder::visit(MethodCallExpression &n) {
           }
         }
 
-        if (!n.type_args.empty()) {
+        if (!n.type_args.empty() && template_registry.count(base_name)) {
+          Node *blueprint = template_registry[base_name];
           std::vector<TypeInfo> resolved_targs;
           for (auto &t : n.type_args)
             resolved_targs.push_back(resolve_type(t, &n));
+          if (blueprint && blueprint->node_type == NodeType::METHOD_DECL) {
+            handle_explicit_variadics(static_cast<MethodDeclaration *>(blueprint), resolved_targs);
+          }
           instantiate_template(base_name, resolved_targs, &n);
           base_name += "<";
           for (size_t i = 0; i < resolved_targs.size(); ++i) {
@@ -3109,6 +3242,7 @@ void Binder::visit(MethodCallExpression &n) {
             if (deduce_template_arguments(param_types, argument_types,
                                           method_bp->template_parameters,
                                           deduced_args)) {
+              handle_variadics_deduction(method_bp, deduced_args);
               std::string instantiated_base = base_name + "<";
               for (size_t i = 0; i < deduced_args.size(); ++i) {
                 instantiated_base += deduced_args[i].to_string();
@@ -3312,10 +3446,41 @@ void Binder::visit(ArrayLiteralExpression &n) {
   }
 }
 
+void Binder::visit(TupleCreationExpression &n) {
+  if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
+    n.tuple_type.name = "tuple";
+    n.tuple_type.is_tuple = true;
+    n.tuple_type.type_args.clear();
+    for (const auto &element : n.elements) {
+      TypeInfo t = evaluate_expression(element.get());
+      n.tuple_type.type_args.push_back(t);
+    }
+    n.expression_type = n.tuple_type;
+    evaluated_type = n.expression_type;
+    log_trace("Evaluated tuple creation -> '{}'", evaluated_type.to_string());
+  }
+}
+
 void Binder::visit(CastExpression &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
     TypeInfo source_type = evaluate_expression(n.expression.get());
     n.target_type = resolve_type(n.target_type, &n);
+
+    bool is_from_tuple_element = (source_type.name == "tuple_element") ||
+      (n.expression && n.expression->node_type == NodeType::ARRAY_ACCESS &&
+       static_cast<ArrayAccessExpression*>(n.expression.get())->array->expression_type.is_tuple);
+
+    if (is_from_tuple_element) {
+      Node *target_class = global_scope.resolve(n.target_type.name);
+      if (target_class && target_class->node_type == NodeType::CLASS_DECL) {
+        n.target_vtable_id = static_cast<ClassDeclaration *>(target_class)->vtable_id;
+      }
+      n.expression_type = n.target_type;
+      evaluated_type = n.expression_type;
+      log_trace("Evaluated explicit cast from tuple element -> '{}'", n.target_type.to_string());
+      return;
+    }
+
     auto is_primitive = [&](const TypeInfo &t) {
       if (t.array_depth > 0)
         return false;
@@ -3367,10 +3532,17 @@ void Binder::visit(CastExpression &n) {
 void Binder::visit(InstanceofExpression &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {
     TypeInfo source_type = evaluate_expression(n.expression.get());
-    Node *src_decl = global_scope.resolve(source_type.name);
-    if (src_decl && src_decl->is_primitive && source_type.array_depth == 0) {
-      record_error(&n, "'instanceof' cannot be applied to primitive types");
-      return;
+
+    bool is_from_tuple_element = (source_type.name == "tuple_element") ||
+      (n.expression && n.expression->node_type == NodeType::ARRAY_ACCESS &&
+       static_cast<ArrayAccessExpression*>(n.expression.get())->array->expression_type.is_tuple);
+
+    if (!is_from_tuple_element) {
+      Node *src_decl = global_scope.resolve(source_type.name);
+      if (src_decl && src_decl->is_primitive && source_type.array_depth == 0) {
+        record_error(&n, "'instanceof' cannot be applied to primitive types");
+        return;
+      }
     }
 
     Node *target_node = resolve_symbol(n.target_type.name, &n, false);
@@ -3389,13 +3561,17 @@ void Binder::visit(InstanceofExpression &n) {
 
     n.target_type = resolve_type(n.target_type, &n);
     Node *target_class = global_scope.resolve(n.target_type.name);
-    if (target_class && target_class->is_primitive && n.target_type.array_depth == 0) {
-      record_error(&n, "'instanceof' cannot be applied to primitive types");
-      return;
+    if (!is_from_tuple_element) {
+      if (target_class && target_class->is_primitive && n.target_type.array_depth == 0) {
+        record_error(&n, "'instanceof' cannot be applied to primitive types");
+        return;
+      }
     }
     if (target_class && target_class->node_type == NodeType::CLASS_DECL) {
       n.target_vtable_id =
           static_cast<ClassDeclaration *>(target_class)->vtable_id;
+    } else {
+      n.target_vtable_id = -1;
     }
     n.expression_type = {"bool", 0};
     evaluated_type = n.expression_type;
@@ -3403,6 +3579,7 @@ void Binder::visit(InstanceofExpression &n) {
               source_type.to_string(), n.target_type.to_string());
   }
 }
+
 
 void Binder::visit(TernaryExpression &n) {
   if (current_pass == BinderPass::EVALUATE_EXPRESSION) {

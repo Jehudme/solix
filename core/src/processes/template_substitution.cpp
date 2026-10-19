@@ -44,6 +44,12 @@ void TemplateSubstitutionVisitor::visit(ArrayLiteralExpression& n) {
         if (elem) elem->accept(*this);
     }
 }
+void TemplateSubstitutionVisitor::visit(TupleCreationExpression& n) {
+    substitute_type(n.tuple_type);
+    for (auto& elem : n.elements) {
+        if (elem) elem->accept(*this);
+    }
+}
 void TemplateSubstitutionVisitor::visit(CastExpression& n) {
     substitute_type(n.target_type);
     if (n.expression) n.expression->accept(*this);

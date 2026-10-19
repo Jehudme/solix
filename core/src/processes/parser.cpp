@@ -217,6 +217,17 @@ TypeInfo ParserState::parse_type_info() {
       type.name = "float64";
     else if (t.type == TokenType::PRIMITIVE_CHAR)
       type.name = "char";
+  } else if (t.type == TokenType::PRIMITIVE_TUPLE) {
+    type.name = "tuple";
+    type.is_tuple = true;
+    if (match(TokenType::OPERATOR_LESS_THAN)) {
+      log_trace("Parsing generic type arguments for tuple");
+      do {
+        type.type_args.push_back(parse_type_info());
+      } while (match(TokenType::PUNCTUATION_COMMA));
+      consume(TokenType::OPERATOR_GREATER_THAN,
+              "Expected '>' after template arguments");
+    }
   } else if (t.type == TokenType::IDENTIFIER) {
     type.name = std::get<std::string>(t.value);
     while (match(TokenType::PUNCTUATION_DOT) || match(TokenType::PUNCTUATION_DOUBLE_COLON)) {
@@ -561,6 +572,17 @@ std::unique_ptr<Node> ParserState::parse_primary() {
               "Expected ']' after array size");
       return std::make_unique<ArrayCreationExpression>(new_tok, std::move(type),
                                                        std::move(size));
+    } else if (type.is_tuple || type.name == "tuple") {
+      type.is_tuple = true;
+      consume(TokenType::PUNCTUATION_OPEN_PAREN, "Expected '(' after tuple in new");
+      std::vector<std::unique_ptr<Node>> elements;
+      if (!check(TokenType::PUNCTUATION_CLOSE_PAREN)) {
+        do {
+          elements.push_back(parse_expression());
+        } while (match(TokenType::PUNCTUATION_COMMA));
+      }
+      consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after tuple arguments");
+      return std::make_unique<TupleCreationExpression>(new_tok, std::move(type), std::move(elements));
     } else {
       if (type.array_depth > 0) {
         throw ParseError("Array allocation requires size expression", new_tok.line, new_tok.column);
@@ -720,7 +742,8 @@ std::unique_ptr<Node> ParserState::parse_primary() {
     Token sizeof_tok = previous();
     consume(TokenType::PUNCTUATION_OPEN_PAREN, "Expected '(' after 'sizeof'");
 
-    if (peek().type >= TokenType::PRIMITIVE_VOID && peek().type <= TokenType::PRIMITIVE_CHAR) {
+    if ((peek().type >= TokenType::PRIMITIVE_VOID && peek().type <= TokenType::PRIMITIVE_CHAR) ||
+        peek().type == TokenType::PRIMITIVE_TUPLE) {
       TypeInfo type = parse_type_info();
       consume(TokenType::PUNCTUATION_CLOSE_PAREN, "Expected ')' after sizeof argument");
       return std::make_unique<SizeOfExpression>(sizeof_tok, std::make_shared<TypeInfo>(type), nullptr);
@@ -758,6 +781,7 @@ std::unique_ptr<Node> ParserState::parse_primary() {
     Token paren = previous();
     if ((peek().type >= TokenType::PRIMITIVE_VOID &&
          peek().type <= TokenType::PRIMITIVE_CHAR) ||
+        peek().type == TokenType::PRIMITIVE_TUPLE ||
         (peek().type == TokenType::IDENTIFIER &&
          (tokens[current + 1]->type == TokenType::PUNCTUATION_CLOSE_PAREN ||
           tokens[current + 1]->type ==
@@ -890,8 +914,9 @@ std::unique_ptr<Node> ParserState::parse_statement() {
   }
 
   bool is_var_decl = false;
-  if (peek().type >= TokenType::PRIMITIVE_VOID &&
-      peek().type <= TokenType::PRIMITIVE_CHAR)
+  if ((peek().type >= TokenType::PRIMITIVE_VOID &&
+      peek().type <= TokenType::PRIMITIVE_CHAR) ||
+      peek().type == TokenType::PRIMITIVE_TUPLE)
     is_var_decl = true;
   else if (peek().type == TokenType::IDENTIFIER) {
     size_t temp = current;
@@ -940,7 +965,7 @@ std::unique_ptr<Node> ParserState::parse_statement() {
     bool looks_like_var_decl = false;
     try {
       TypeInfo type = parse_type_info();
-      bool is_ref = match(TokenType::PUNCTUATION_AMPERSAND);
+      match(TokenType::PUNCTUATION_AMPERSAND);
       if (check(TokenType::IDENTIFIER)) {
         looks_like_var_decl = true;
       }
@@ -1044,6 +1069,7 @@ std::unique_ptr<Node> ParserState::parse_for_statement() {
   } else if (check(TokenType::KEYWORD_CONST) ||
              (peek().type >= TokenType::PRIMITIVE_VOID &&
               peek().type <= TokenType::PRIMITIVE_CHAR) ||
+             peek().type == TokenType::PRIMITIVE_TUPLE ||
              (peek().type == TokenType::IDENTIFIER &&
               tokens[current + 1]->type == TokenType::IDENTIFIER)) {
     bool is_const = match(TokenType::KEYWORD_CONST);
@@ -1266,7 +1292,7 @@ std::unique_ptr<Node> ParserState::parse_top_level_declaration() {
   }
 
   return parse_field_or_method(modifier, is_static, is_inline, is_native,
-                               is_const, false, false, false, false);
+                               is_const, is_virtual, is_override, is_weak, is_abstract);
 }
 
 std::unique_ptr<Node> ParserState::parse_package_statement() {
@@ -1773,16 +1799,35 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
 
   if (match(TokenType::OPERATOR_LESS_THAN)) {
     log_trace("Parsing template signature for method/field '{}'", name_str);
+    bool seen_variadic = false;
     do {
-      TypeInfo t = parse_type_info();
-      spec_args.push_back(t);
-      if (t.name == "void" || t.name == "bool" ||
-          t.name.find("int") != std::string::npos ||
-          t.name.find("float") != std::string::npos || t.name == "char" ||
-          t.array_depth > 0 || !t.type_args.empty()) {
-        is_specialization = true;
+      if (seen_variadic) {
+        throw ParseError("Variadic template parameter must be the last parameter in template parameter list", peek().line, peek().column);
       }
-      tparams.push_back(t.name);
+      std::string tp_name;
+      bool is_var = false;
+      if (match(TokenType::PUNCTUATION_ELLIPSIS)) {
+        Token p = consume(TokenType::IDENTIFIER, "Expected template parameter name after '...'");
+        tp_name = std::get<std::string>(p.value) + "...";
+        is_var = true;
+      } else {
+        TypeInfo t = parse_type_info();
+        tp_name = t.to_string();
+        if (match(TokenType::PUNCTUATION_ELLIPSIS)) {
+          tp_name += "...";
+          is_var = true;
+        } else {
+          spec_args.push_back(t);
+          if (t.name == "void" || t.name == "bool" ||
+              t.name.find("int") != std::string::npos ||
+              t.name.find("float") != std::string::npos || t.name == "char" ||
+              t.array_depth > 0 || !t.type_args.empty()) {
+            is_specialization = true;
+          }
+        }
+      }
+      if (is_var) seen_variadic = true;
+      tparams.push_back(tp_name);
     } while (match(TokenType::PUNCTUATION_COMMA));
     consume(TokenType::OPERATOR_GREATER_THAN,
             "Expected '>' after template parameters");
@@ -1815,7 +1860,30 @@ std::unique_ptr<Node> ParserState::parse_field_or_method(
     method->is_abstract = is_abstract;
     method->is_override = is_override;
 
+    bool seen_variadic_param = false;
     while (!check(TokenType::PUNCTUATION_CLOSE_PAREN) && !is_at_end()) {
+      if (seen_variadic_param) {
+        throw ParseError("Variadic parameter must be the last parameter in method signature", peek().line, peek().column);
+      }
+      if (peek().type == TokenType::IDENTIFIER && tokens[current + 1]->type == TokenType::PUNCTUATION_ELLIPSIS) {
+        Token p_name = advance(); // consumes identifier
+        advance(); // consumes ...
+        std::string var_name = std::get<std::string>(p_name.value);
+        if (check(TokenType::IDENTIFIER)) {
+          Token actual_name = advance();
+          var_name = std::get<std::string>(actual_name.value);
+        }
+        TypeInfo p_type("tuple", 0);
+        p_type.is_tuple = true;
+        p_type.is_variadic_pack = true;
+        auto param = std::make_unique<VariableDeclaration>(p_name, var_name, std::move(p_type));
+        param->is_reference_type = true;
+        method->parameters.push_back(std::move(param));
+        seen_variadic_param = true;
+        if (!match(TokenType::PUNCTUATION_COMMA))
+          break;
+        continue;
+      }
       TypeInfo p_type = parse_type_info();
       bool p_ref = match(TokenType::PUNCTUATION_AMPERSAND);
       Token p_name = consume(TokenType::IDENTIFIER, "Expected parameter name");

@@ -26,6 +26,7 @@ public:
     void visit(NewInstanceExpression& n) override;
     void visit(ArrayCreationExpression& n) override;
     void visit(ArrayLiteralExpression& n) override;
+    void visit(TupleCreationExpression& n) override;
     void visit(CastExpression& n) override;
     void visit(InstanceofExpression& n) override;
     void visit(TernaryExpression& n) override;

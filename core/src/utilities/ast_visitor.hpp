@@ -19,6 +19,7 @@ struct TernaryExpression;
 struct SizeOfExpression;
 struct DefaultExpression;
 struct LambdaExpression;
+struct TupleCreationExpression;
 
 struct BlockStatement;
 struct IfStatement;
@@ -68,6 +69,7 @@ struct NodeVisitor {
     virtual void visit(SizeOfExpression& node) = 0;
     virtual void visit(DefaultExpression& node) = 0;
     virtual void visit(LambdaExpression& node) = 0;
+    virtual void visit(TupleCreationExpression& node) = 0;
 
     virtual void visit(BlockStatement& node) = 0;
     virtual void visit(IfStatement& node) = 0;

@@ -89,6 +89,10 @@ public:
         for (const auto& el : n.elements) collect(el.get());
     }
 
+    void visit(TupleCreationExpression& n) override {
+        for (const auto& el : n.elements) collect(el.get());
+    }
+
     void visit(CastExpression& n) override {
         collect(n.expression.get());
     }

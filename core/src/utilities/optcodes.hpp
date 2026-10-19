@@ -141,7 +141,15 @@ enum class OpCode : uint8_t {
   EXIT,
 
   // Destructors
-  DEFINE_DESTRUCTOR
+  DEFINE_DESTRUCTOR,
+
+  // Tuples
+  NEW_TUPLE,
+  TUPLE_GET,
+  TUPLE_LEN,
+  TUPLE_TYPE,
+  TUPLE_CAST,
+  TUPLE_INSTANCEOF
 };
 
 inline const char* opcode_to_string(uint8_t op) {
@@ -248,6 +256,12 @@ inline const char* opcode_to_string(uint8_t op) {
         case OpCode::ASSERT: return "ASSERT";
         case OpCode::EXIT: return "EXIT";
         case OpCode::DEFINE_DESTRUCTOR: return "DEFINE_DESTRUCTOR";
+        case OpCode::NEW_TUPLE: return "NEW_TUPLE";
+        case OpCode::TUPLE_GET: return "TUPLE_GET";
+        case OpCode::TUPLE_LEN: return "TUPLE_LEN";
+        case OpCode::TUPLE_TYPE: return "TUPLE_TYPE";
+        case OpCode::TUPLE_CAST: return "TUPLE_CAST";
+        case OpCode::TUPLE_INSTANCEOF: return "TUPLE_INSTANCEOF";
         default: return "UNKNOWN";
     }
 }
@@ -355,6 +369,12 @@ inline OpCode string_to_opcode(const std::string& str) {
     if (str == "ASSERT") return OpCode::ASSERT;
     if (str == "EXIT") return OpCode::EXIT;
     if (str == "DEFINE_DESTRUCTOR") return OpCode::DEFINE_DESTRUCTOR;
+    if (str == "NEW_TUPLE") return OpCode::NEW_TUPLE;
+    if (str == "TUPLE_GET") return OpCode::TUPLE_GET;
+    if (str == "TUPLE_LEN") return OpCode::TUPLE_LEN;
+    if (str == "TUPLE_TYPE") return OpCode::TUPLE_TYPE;
+    if (str == "TUPLE_CAST") return OpCode::TUPLE_CAST;
+    if (str == "TUPLE_INSTANCEOF") return OpCode::TUPLE_INSTANCEOF;
     return OpCode::HALT; // fallback
 }
 

@@ -13,6 +13,7 @@ namespace solix {
 static bool is_reference_type(const TypeInfo &t) {
   if (t.is_function_pointer) return false;
   if (t.array_depth > 0) return true;
+  if (t.is_tuple || t.name == "tuple") return true;
   if (t.name.empty() || t.name == "void") return false;
   static const std::unordered_set<std::string> primitives = {
       "int", "int8", "int16", "int32", "int64",
@@ -21,6 +22,62 @@ static bool is_reference_type(const TypeInfo &t) {
       "byte", "short", "long", "double"
   };
   return primitives.find(t.name) == primitives.end();
+}
+
+static constexpr uint32_t TYPE_TAG_VOID = 1;
+static constexpr uint32_t TYPE_TAG_BOOL = 2;
+static constexpr uint32_t TYPE_TAG_CHAR = 3;
+static constexpr uint32_t TYPE_TAG_INT8 = 4;
+static constexpr uint32_t TYPE_TAG_UINT8 = 5;
+static constexpr uint32_t TYPE_TAG_INT16 = 6;
+static constexpr uint32_t TYPE_TAG_UINT16 = 7;
+static constexpr uint32_t TYPE_TAG_INT32 = 8;
+static constexpr uint32_t TYPE_TAG_UINT32 = 9;
+static constexpr uint32_t TYPE_TAG_INT64 = 10;
+static constexpr uint32_t TYPE_TAG_UINT64 = 11;
+static constexpr uint32_t TYPE_TAG_FLOAT32 = 12;
+static constexpr uint32_t TYPE_TAG_FLOAT64 = 13;
+
+static constexpr uint32_t TYPE_TAG_REF_FLAG = 0x80000000;
+static constexpr uint32_t TYPE_TAG_STRING   = 0x8000000E;
+static constexpr uint32_t TYPE_TAG_TUPLE    = 0x8000000F;
+static constexpr uint32_t TYPE_TAG_ARRAY    = 0x80000010;
+
+static uint32_t get_type_tag(const TypeInfo &t, const std::unordered_map<std::string, Node*> &symbols) {
+  if (t.is_function_pointer) return 100;
+  if (t.is_tuple || t.name == "tuple") return TYPE_TAG_TUPLE;
+  if (t.name == "string" && t.array_depth == 0) return TYPE_TAG_STRING;
+  if (t.array_depth > 0) return TYPE_TAG_ARRAY;
+  
+  if (t.name == "void") return TYPE_TAG_VOID;
+  if (t.name == "bool") return TYPE_TAG_BOOL;
+  if (t.name == "char") return TYPE_TAG_CHAR;
+  if (t.name == "int8") return TYPE_TAG_INT8;
+  if (t.name == "uint8" || t.name == "byte" || t.name == "ubyte") return TYPE_TAG_UINT8;
+  if (t.name == "int16" || t.name == "short") return TYPE_TAG_INT16;
+  if (t.name == "uint16" || t.name == "ushort") return TYPE_TAG_UINT16;
+  if (t.name == "int32" || t.name == "int") return TYPE_TAG_INT32;
+  if (t.name == "uint32" || t.name == "uint") return TYPE_TAG_UINT32;
+  if (t.name == "int64" || t.name == "long") return TYPE_TAG_INT64;
+  if (t.name == "uint64" || t.name == "ulong") return TYPE_TAG_UINT64;
+  if (t.name == "float32" || t.name == "float") return TYPE_TAG_FLOAT32;
+  if (t.name == "float64" || t.name == "double") return TYPE_TAG_FLOAT64;
+  
+  auto it = symbols.find(t.name);
+  if (it != symbols.end() && it->second && it->second->node_type == NodeType::CLASS_DECL) {
+    auto *cls = static_cast<ClassDeclaration *>(it->second);
+    return TYPE_TAG_REF_FLAG | 0x40000000 | (static_cast<uint32_t>(cls->vtable_id) & 0x3FFFFFFF);
+  }
+  for (const auto &[sym_name, node] : symbols) {
+    if (node && node->node_type == NodeType::CLASS_DECL) {
+      auto *cls = static_cast<ClassDeclaration *>(node);
+      if (cls->class_name == t.name || cls->mangled_name == t.name ||
+          (sym_name.length() > t.name.length() && sym_name.substr(sym_name.length() - t.name.length() - 1) == "." + t.name)) {
+        return TYPE_TAG_REF_FLAG | 0x40000000 | (static_cast<uint32_t>(cls->vtable_id) & 0x3FFFFFFF);
+      }
+    }
+  }
+  return TYPE_TAG_REF_FLAG | 0x40000000 | 0x3FFFFFFF;
 }
 
 static inline uint32_t encode_property_imm(const FieldDeclaration *field) {
@@ -45,6 +102,7 @@ static bool produces_retained_reference(Node *expr) {
     case NodeType::NEW_INSTANCE:
     case NodeType::ARRAY_CREATION:
     case NodeType::ARRAY_LITERAL:
+    case NodeType::TUPLE_CREATION:
     case NodeType::METHOD_CALL:
     case NodeType::MEMBER_ACCESS:
     case NodeType::ARRAY_ACCESS:
@@ -378,6 +436,26 @@ std::string Assembler::disassemble() const {
       uint32_t vtid = read_u32_local(pc);
       uint32_t dtor_ip = read_u32_local(pc);
       ss << "vtable_id=" << vtid << ", dtor_ip=" << dtor_ip;
+      break;
+    }
+    case OpCode::NEW_TUPLE: {
+      uint32_t count = read_u32_local(pc);
+      ss << "count=" << count << " [";
+      for (uint32_t i = 0; i < count; ++i) {
+        uint32_t tag = read_u32_local(pc);
+        ss << "0x" << std::hex << tag << std::dec << (i + 1 < count ? ", " : "");
+      }
+      ss << "]";
+      break;
+    }
+    case OpCode::TUPLE_CAST: {
+      uint32_t target_tag = read_u32_local(pc);
+      ss << "target_tag=0x" << std::hex << target_tag << std::dec;
+      break;
+    }
+    case OpCode::TUPLE_INSTANCEOF: {
+      uint32_t target_tag = read_u32_local(pc);
+      ss << "target_tag=0x" << std::hex << target_tag << std::dec;
       break;
     }
     default:
@@ -2145,7 +2223,11 @@ void Assembler::visit(MemberAccessExpression &node) {
   auto *field = static_cast<FieldDeclaration *>(mem_acc->resolved_declaration);
   if (!mem_acc->resolved_declaration && mem_acc->member_name == "length") {
     compile_expression(mem_acc->object.get());
-    emit_byte(static_cast<uint8_t>(OpCode::ARRAY_LENGTH));
+    if (mem_acc->object->expression_type.is_tuple) {
+      emit_byte(static_cast<uint8_t>(OpCode::TUPLE_LEN));
+    } else {
+      emit_byte(static_cast<uint8_t>(OpCode::ARRAY_LENGTH));
+    }
     return;
   }
 
@@ -2170,6 +2252,12 @@ void Assembler::visit(MemberAccessExpression &node) {
 
 void Assembler::visit(ArrayAccessExpression &node) {
   auto *arr_acc = &node;
+  if (arr_acc->array->expression_type.is_tuple) {
+    compile_expression(arr_acc->array.get());
+    compile_expression(arr_acc->index.get());
+    emit_byte(static_cast<uint8_t>(OpCode::TUPLE_GET));
+    return;
+  }
   compile_expression(arr_acc->array.get());
   compile_expression(arr_acc->index.get());
   emit_byte(static_cast<uint8_t>(OpCode::GET_ARRAY));
@@ -2208,8 +2296,33 @@ void Assembler::visit(ArrayLiteralExpression &node) {
   }
 }
 
+void Assembler::visit(TupleCreationExpression &node) {
+  auto *tup = &node;
+  for (size_t i = 0; i < tup->elements.size(); ++i) {
+    compile_expression(tup->elements[i].get());
+    if (is_reference_type(tup->elements[i]->expression_type) &&
+        !produces_retained_reference(tup->elements[i].get())) {
+      emit_byte(static_cast<uint8_t>(OpCode::INC_REF));
+    }
+  }
+  emit_byte(static_cast<uint8_t>(OpCode::NEW_TUPLE));
+  emit_int32(static_cast<uint32_t>(tup->elements.size()));
+  for (size_t i = 0; i < tup->elements.size(); ++i) {
+    emit_int32(get_type_tag(tup->elements[i]->expression_type, context.symbols));
+  }
+}
+
 void Assembler::visit(CastExpression &node) {
   auto *cast_expr = &node;
+  if (cast_expr->expression && cast_expr->expression->node_type == NodeType::ARRAY_ACCESS &&
+      static_cast<ArrayAccessExpression*>(cast_expr->expression.get())->array->expression_type.is_tuple) {
+    auto *arr_acc = static_cast<ArrayAccessExpression*>(cast_expr->expression.get());
+    compile_expression(arr_acc->array.get());
+    compile_expression(arr_acc->index.get());
+    emit_byte(static_cast<uint8_t>(OpCode::TUPLE_CAST));
+    emit_int32(get_type_tag(cast_expr->target_type, context.symbols));
+    return;
+  }
   compile_expression(cast_expr->expression.get());
 
   std::string src_type = cast_expr->expression->expression_type.name;
@@ -2252,6 +2365,15 @@ void Assembler::visit(CastExpression &node) {
 
 void Assembler::visit(InstanceofExpression &node) {
   auto *inst_expr = &node;
+  if (inst_expr->expression && inst_expr->expression->node_type == NodeType::ARRAY_ACCESS &&
+      static_cast<ArrayAccessExpression*>(inst_expr->expression.get())->array->expression_type.is_tuple) {
+    auto *arr_acc = static_cast<ArrayAccessExpression*>(inst_expr->expression.get());
+    compile_expression(arr_acc->array.get());
+    compile_expression(arr_acc->index.get());
+    emit_byte(static_cast<uint8_t>(OpCode::TUPLE_INSTANCEOF));
+    emit_int32(get_type_tag(inst_expr->target_type, context.symbols));
+    return;
+  }
   compile_expression(inst_expr->expression.get());
   if (inst_expr->target_vtable_id != -1) {
     emit_byte(static_cast<uint8_t>(OpCode::INSTANCEOF));

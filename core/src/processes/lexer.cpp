@@ -310,7 +310,15 @@ public:
                     case ']': add_token(TokenType::PUNCTUATION_CLOSE_BRACKET); break;
                     case ';': add_token(TokenType::PUNCTUATION_SEMICOLON); break;
                     case ',': add_token(TokenType::PUNCTUATION_COMMA); break;
-                    case '.': add_token(TokenType::PUNCTUATION_DOT); break;
+                    case '.':
+                        if (peek() == '.' && peek_next() == '.') {
+                            advance();
+                            advance();
+                            add_token(TokenType::PUNCTUATION_ELLIPSIS);
+                        } else {
+                            add_token(TokenType::PUNCTUATION_DOT);
+                        }
+                        break;
                     case ':': add_token(match(':') ? TokenType::PUNCTUATION_DOUBLE_COLON : TokenType::PUNCTUATION_COLON); break;
                     case '?': add_token(TokenType::OPERATOR_QUESTION); break;
                     case '~': add_token(TokenType::OPERATOR_BITWISE_NOT); break;
