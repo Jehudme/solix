@@ -43,7 +43,8 @@ static constexpr uint32_t TYPE_TAG_STRING   = 0x8000000E;
 static constexpr uint32_t TYPE_TAG_TUPLE    = 0x8000000F;
 static constexpr uint32_t TYPE_TAG_ARRAY    = 0x80000010;
 
-static uint32_t get_type_tag(const TypeInfo &t, const std::unordered_map<std::string, Node*> &symbols) {
+template <typename NodesMap>
+static uint32_t get_type_tag(const TypeInfo &t, const NodesMap &nodes_map) {
   if (t.is_function_pointer) return 100;
   if (t.is_tuple || t.name == "tuple") return TYPE_TAG_TUPLE;
   if (t.name == "string" && t.array_depth == 0) return TYPE_TAG_STRING;
@@ -63,17 +64,14 @@ static uint32_t get_type_tag(const TypeInfo &t, const std::unordered_map<std::st
   if (t.name == "float32" || t.name == "float") return TYPE_TAG_FLOAT32;
   if (t.name == "float64" || t.name == "double") return TYPE_TAG_FLOAT64;
   
-  auto it = symbols.find(t.name);
-  if (it != symbols.end() && it->second && it->second->node_type == NodeType::CLASS_DECL) {
-    auto *cls = static_cast<ClassDeclaration *>(it->second);
-    return TYPE_TAG_REF_FLAG | 0x40000000 | (static_cast<uint32_t>(cls->vtable_id) & 0x3FFFFFFF);
-  }
-  for (const auto &[sym_name, node] : symbols) {
-    if (node && node->node_type == NodeType::CLASS_DECL) {
-      auto *cls = static_cast<ClassDeclaration *>(node);
-      if (cls->class_name == t.name || cls->mangled_name == t.name ||
-          (sym_name.length() > t.name.length() && sym_name.substr(sym_name.length() - t.name.length() - 1) == "." + t.name)) {
-        return TYPE_TAG_REF_FLAG | 0x40000000 | (static_cast<uint32_t>(cls->vtable_id) & 0x3FFFFFFF);
+  for (const auto &[src, nodes] : nodes_map) {
+    for (const auto &node : nodes) {
+      if (node->node_type == NodeType::CLASS_DECL) {
+        auto *cls = static_cast<ClassDeclaration *>(node.get());
+        if (cls->class_name == t.name || cls->mangled_name == t.name ||
+            (cls->mangled_name.length() > t.name.length() && cls->mangled_name.substr(cls->mangled_name.length() - t.name.length() - 1) == "." + t.name)) {
+          return TYPE_TAG_REF_FLAG | 0x40000000 | (static_cast<uint32_t>(cls->vtable_id) & 0x3FFFFFFF);
+        }
       }
     }
   }
@@ -2308,7 +2306,7 @@ void Assembler::visit(TupleCreationExpression &node) {
   emit_byte(static_cast<uint8_t>(OpCode::NEW_TUPLE));
   emit_int32(static_cast<uint32_t>(tup->elements.size()));
   for (size_t i = 0; i < tup->elements.size(); ++i) {
-    emit_int32(get_type_tag(tup->elements[i]->expression_type, context.symbols));
+    emit_int32(get_type_tag(tup->elements[i]->expression_type, context.nodes));
   }
 }
 
@@ -2320,7 +2318,11 @@ void Assembler::visit(CastExpression &node) {
     compile_expression(arr_acc->array.get());
     compile_expression(arr_acc->index.get());
     emit_byte(static_cast<uint8_t>(OpCode::TUPLE_CAST));
-    emit_int32(get_type_tag(cast_expr->target_type, context.symbols));
+    if (cast_expr->target_vtable_id != -1) {
+      emit_int32(TYPE_TAG_REF_FLAG | 0x40000000 | (static_cast<uint32_t>(cast_expr->target_vtable_id) & 0x3FFFFFFF));
+    } else {
+      emit_int32(get_type_tag(cast_expr->target_type, context.nodes));
+    }
     return;
   }
   compile_expression(cast_expr->expression.get());
@@ -2371,7 +2373,11 @@ void Assembler::visit(InstanceofExpression &node) {
     compile_expression(arr_acc->array.get());
     compile_expression(arr_acc->index.get());
     emit_byte(static_cast<uint8_t>(OpCode::TUPLE_INSTANCEOF));
-    emit_int32(get_type_tag(inst_expr->target_type, context.symbols));
+    if (inst_expr->target_vtable_id != -1) {
+      emit_int32(TYPE_TAG_REF_FLAG | 0x40000000 | (static_cast<uint32_t>(inst_expr->target_vtable_id) & 0x3FFFFFFF));
+    } else {
+      emit_int32(get_type_tag(inst_expr->target_type, context.nodes));
+    }
     return;
   }
   compile_expression(inst_expr->expression.get());

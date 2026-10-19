@@ -1948,23 +1948,21 @@ op_DEC_REF_SLOT:
                   }
               } else if (target_tag & 0x40000000) { // class
                   uint32_t target_vtid = target_tag & 0x3FFFFFFF;
-                  if (target_vtid != 0x3FFFFFFF) {
-                      if (memory.get_block_tag(child) != BlockTag::OBJECT) {
-                          throw std::runtime_error("TypeCastException: Incompatible reference type");
+                  if (memory.get_block_tag(child) != BlockTag::OBJECT) {
+                      throw std::runtime_error("TypeCastException: Incompatible reference type");
+                  }
+                  int32_t cur_vtid = static_cast<int32_t>(memory.read_u32(child, 0));
+                  bool matched = false;
+                  while (cur_vtid != -1) {
+                      if (static_cast<uint32_t>(cur_vtid) == target_vtid ||
+                          (itables.count(cur_vtid) && itables[cur_vtid].count(target_vtid))) {
+                          matched = true;
+                          break;
                       }
-                      int32_t cur_vtid = static_cast<int32_t>(memory.read_u32(child, 0));
-                      bool matched = false;
-                      while (cur_vtid != -1) {
-                          if (static_cast<uint32_t>(cur_vtid) == target_vtid ||
-                              (itables.count(cur_vtid) && itables[cur_vtid].count(target_vtid))) {
-                              matched = true;
-                              break;
-                          }
-                          cur_vtid = vtable_bases.count(cur_vtid) ? vtable_bases[cur_vtid] : -1;
-                      }
-                      if (!matched) {
-                          throw std::runtime_error("TypeCastException: Incompatible class cast");
-                      }
+                      cur_vtid = vtable_bases.count(cur_vtid) ? vtable_bases[cur_vtid] : -1;
+                  }
+                  if (!matched) {
+                      throw std::runtime_error("TypeCastException: Incompatible class cast");
                   }
               }
               memory.increase_reference(child);
@@ -2022,7 +2020,7 @@ op_DEC_REF_SLOT:
           } else if (target_tag & 0x40000000) { // class
               uint32_t target_vtid = target_tag & 0x3FFFFFFF;
               if (target_vtid == 0x3FFFFFFF) {
-                  PUSH(1);
+                  PUSH(0);
                   DISPATCH();
               }
               if (memory.get_block_tag(child) != BlockTag::OBJECT) {

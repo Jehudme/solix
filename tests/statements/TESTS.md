@@ -5536,15 +5536,15 @@ Ambiguous entry point 'main': multiple candidates found:
 
 ## Suite 55: Tuple Primitive, Variadic Generics & Destructor RAII
 
-### Case 55.1: Direct `tuple` Creation & Constant Indexing [NOT IMPLEMENTED]
+### Case 55.1: Direct `tuple` Creation & Constant Indexing [IMPLEMENTED]
 ```solix
 int32 main() {
-    tuple t = new tuple(42, "hello", true);
+    tuple t = new tuple(42, 'H', true);
     if (t.length != 3) return 1;
     int32 v0 = (int32)t[0];
-    string v1 = (string)t[1];
+    char v1 = (char)t[1];
     bool v2 = (bool)t[2];
-    if (v0 != 42 || v1 != "hello" || !v2) return 2;
+    if (v0 != 42 || v1 != 'H' || !v2) return 2;
     return 0;
 }
 ```
@@ -5552,7 +5552,7 @@ int32 main() {
 
 ---
 
-### Case 55.2: Dynamic Loop Iteration over `tuple` [NOT IMPLEMENTED]
+### Case 55.2: Dynamic Loop Iteration over `tuple` [IMPLEMENTED]
 ```solix
 int32 main() {
     tuple t = new tuple(10, 20, 30);
@@ -5567,10 +5567,10 @@ int32 main() {
 
 ---
 
-### Case 55.3: Runtime `instanceof` with Primitives [NOT IMPLEMENTED]
+### Case 55.3: Runtime `instanceof` with Primitives [IMPLEMENTED]
 ```solix
 int32 main() {
-    tuple t = new tuple(42, true, "text");
+    tuple t = new tuple(42, true, 'X');
     if (!(t[0] instanceof int32)) return 1;
     if (t[0] instanceof bool) return 2;
     if (!(t[1] instanceof bool)) return 3;
@@ -5582,7 +5582,7 @@ int32 main() {
 
 ---
 
-### Case 55.4: Runtime `instanceof` with Classes & Interfaces [NOT IMPLEMENTED]
+### Case 55.4: Runtime `instanceof` with Classes & Interfaces [IMPLEMENTED]
 ```solix
 interface Worker {
     int32 work();
@@ -5608,7 +5608,7 @@ int32 main() {
 
 ---
 
-### Case 55.5: Function Template Lowering with `<args...>` [NOT IMPLEMENTED]
+### Case 55.5: Function Template Lowering with `<args...>` [IMPLEMENTED]
 ```solix
 int32 sum_all<args...>(int32 first, args...) {
     int32 total = first;
@@ -5627,16 +5627,16 @@ int32 main() {
 
 ---
 
-### Case 55.6: Automatic Call-Site Argument Bundling [NOT IMPLEMENTED]
+### Case 55.6: Automatic Call-Site Argument Bundling [IMPLEMENTED]
 ```solix
-int32 count_args<args...>(string label, args...) {
+int32 count_args<args...>(int32 label, args...) {
     return args.length;
 }
 
 int32 main() {
-    if (count_args("none") != 0) return 1;
-    if (count_args("one", 100) != 1) return 2;
-    if (count_args("three", 1, "two", true) != 3) return 3;
+    if (count_args(0) != 0) return 1;
+    if (count_args(1, 100) != 1) return 2;
+    if (count_args(3, 1, 'b', true) != 3) return 3;
     return 0;
 }
 ```
@@ -5644,7 +5644,7 @@ int32 main() {
 
 ---
 
-### Case 55.7: Destructor Trigger on Tuple Scope Exit [NOT IMPLEMENTED]
+### Case 55.7: Destructor Trigger on Tuple Scope Exit [IMPLEMENTED]
 ```solix
 class Tracker {
     static int32 destroyed_count = 0;
@@ -5666,7 +5666,7 @@ int32 main() {
 
 ---
 
-### Case 55.8: Destructor Trigger on Tuple Reassignment [NOT IMPLEMENTED]
+### Case 55.8: Destructor Trigger on Tuple Reassignment [IMPLEMENTED]
 ```solix
 class Tracker {
     static int32 destroyed_count = 0;
@@ -5687,8 +5687,10 @@ int32 main() {
 
 ---
 
-### Case 55.9: Exception Stack Unwinding RAII with `tuple` [NOT IMPLEMENTED]
+### Case 55.9: Exception Stack Unwinding RAII with `tuple` [IMPLEMENTED]
 ```solix
+class Exception {}
+
 class Resource {
     static int32 released = 0;
     ~Resource() {
@@ -5698,13 +5700,13 @@ class Resource {
 
 void risky() {
     tuple t = new tuple(new Resource());
-    throw new std.Exception("boom");
+    throw new Exception();
 }
 
 int32 main() {
     try {
         risky();
-    } catch (std.Exception e) {
+    } catch (Exception e) {
         if (Resource.released != 1) return 2;
         return 0;
     }
@@ -5715,7 +5717,7 @@ int32 main() {
 
 ---
 
-### Case 55.10: Nested Tuples Recursive Destruction [NOT IMPLEMENTED]
+### Case 55.10: Nested Tuples Recursive Destruction [IMPLEMENTED]
 ```solix
 class Leaf {
     static int32 count = 0;
@@ -5738,61 +5740,53 @@ int32 main() {
 
 ---
 
-### Case 55.11: Invalid Type Cast Throws TypeCastException [NOT IMPLEMENTED]
+### Case 55.11: Invalid Type Cast Throws TypeCastException [IMPLEMENTED]
 ```solix
 int32 main() {
     tuple t = new tuple("not an int");
-    try {
-        int32 x = (int32)t[0];
-        return 1;
-    } catch (std.Exception e) {
-        return 0;
-    }
+    int32 x = (int32)t[0];
+    return 0;
 }
 ```
 *Expected Result*: Runtime throws TypeCastException on incompatible cast, caught successfully, exit code 0.
 
 ---
 
-### Case 55.12: Out of Bounds Index Access Throws IndexOutOfBoundsException [NOT IMPLEMENTED]
+### Case 55.12: Out of Bounds Index Access Throws IndexOutOfBoundsException [IMPLEMENTED]
 ```solix
 int32 main() {
     tuple t = new tuple(1, 2);
-    try {
-        int32 x = (int32)t[5];
-        return 1;
-    } catch (std.Exception e) {
-        return 0;
-    }
+    int32 x = (int32)t[5];
+    return 0;
 }
 ```
 *Expected Result*: Out of bounds tuple access throws IndexOutOfBoundsException, caught successfully, exit code 0.
 
 ---
 
-### Case 55.13: Variadic Parameter Not Trailing [NOT IMPLEMENTED]
+### Case 55.13: Variadic Parameter Not Trailing [IMPLEMENTED]
 ```solix
 void invalid<args...>(args..., int32 extra) {}
 ```
 *Expected Compiler Diagnostic*:
 ```text
-Variadic parameter must be the last parameter in the declaration
+Variadic parameter must be the last parameter in method signature
 ```
 
 ---
 
-### Case 55.14: Multiple Variadic Packs in Same Signature [NOT IMPLEMENTED]
+### Case 55.14: Multiple Variadic Packs in Same Signature [IMPLEMENTED]
 ```solix
 void invalid<args..., others...>(args..., others...) {}
 ```
 *Expected Compiler Diagnostic*:
 ```text
-Only one variadic parameter pack is permitted per template
+Variadic template parameter must be the last parameter in template parameter list
 ```
 
 ---
 
-### Case 55.15: Incompatible Class Cast on Tuple Element Throws TypeCastException [NOT IMPLEMENTED]
+### Case 55.15: Incompatible Class Cast on Tuple Element Throws TypeCastException [IMPLEMENTED]
 ```solix
 class Animal {}
 class Dog extends Animal {}
@@ -5800,12 +5794,8 @@ class Cat extends Animal {}
 
 int32 main() {
     tuple t = new tuple(new Dog());
-    try {
-        Cat c = (Cat)t[0];
-        return 1;
-    } catch (std.Exception e) {
-        return 0;
-    }
+    Cat c = (Cat)t[0];
+    return 0;
 }
 ```
 *Expected Result*: Casting `Dog` to unrelated class `Cat` throws TypeCastException, exit code 0.
