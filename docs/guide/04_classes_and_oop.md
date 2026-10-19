@@ -457,3 +457,60 @@ public class FileStream {
    ```
 5. **Deterministic Exception Stack Unwinding**: When an exception is thrown, the runtime unwinds active call frames and block scopes. All active local objects in those frames are decremented and destroyed in reverse declaration order (LIFO) **before** control transfers to matching `catch` blocks or outer handlers.
 
+### Practical Usage Patterns
+
+#### Pattern A: Scoped Block Cleanup (RAII)
+Declare resource-managing objects in a dedicated lexical scope block `{ }`. When execution exits the block (normally or via `break`/`continue`/`return`), the destructor runs immediately:
+
+```solix
+public void process_file(String path) {
+    {
+        FileStream file = new FileStream(path);
+        file.write("data");
+    } // file goes out of scope here -> ~FileStream() runs immediately!
+
+    Console.println("File was closed deterministically before this line.");
+}
+```
+
+#### Pattern B: Early Release via Null Assignment
+To release a resource before the enclosing scope ends, set the reference variable to `null`:
+
+```solix
+FileStream file = new FileStream("output.txt");
+file.write("hello");
+
+file = null; // ref_count drops to 0 -> ~FileStream() runs immediately right here!
+
+// Lengthy long-running task continues with resource already freed...
+long_computation();
+```
+
+#### Pattern C: Cascading Member Destruction
+When a parent object containing reference-type fields is destroyed, the runtime automatically cleans up each member field, triggering their destructors in cascade:
+
+```solix
+public class Buffer {
+    public ~Buffer() {
+        Console.println("Buffer memory released");
+    }
+}
+
+public class Worker {
+    private Buffer buffer;
+
+    public Worker() {
+        this.buffer = new Buffer();
+    }
+
+    public ~Worker() {
+        Console.println("Worker shutting down");
+    }
+}
+
+// When Worker instance is destroyed:
+// 1. ~Worker() runs ("Worker shutting down")
+// 2. Worker.buffer is decremented -> ~Buffer() runs ("Buffer memory released")
+```
+
+

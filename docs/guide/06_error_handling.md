@@ -14,6 +14,7 @@ Solix handles exceptional conditions through a structured **try-catch-finally** 
 6. [Custom Exception Classes](#custom-exception-classes)
 7. [The `finally` Guarantee](#the-finally-guarantee)
 8. [Exception Propagation](#exception-propagation)
+9. [RAII and Exception Stack Unwinding](#raii-and-exception-stack-unwinding)
 
 ---
 
@@ -289,3 +290,53 @@ public void validate_input(char[][] args) {
     }
 }
 ```
+
+---
+
+## RAII and Exception Stack Unwinding
+
+A crucial feature of Solix's error handling model is deterministic **RAII exception safety**. When an exception is thrown, the runtime automatically unwinds intermediate block scopes and call frames until a matching `catch` block is reached:
+
+1. In each unwound scope, all active local variables holding object references are decremented (`DEC_REF_SLOT`).
+2. If an object's reference count drops to 0, its **destructor (`~ClassName()`) is triggered immediately**.
+3. Destructors run in strict reverse declaration order (LIFO).
+4. All local resources in the unwound stack frames are guaranteed to be cleaned up **before** execution enters the matching `catch` block.
+
+### Example: Automatic Cleanup on Exception
+
+```solix
+public class ScopedLock {
+    private String name;
+
+    public ScopedLock(String name) {
+        this.name = name;
+        Console.println("Lock acquired: ".concat(this.name));
+    }
+
+    public ~ScopedLock() {
+        Console.println("Lock released: ".concat(this.name));
+    }
+}
+
+public void do_risky_task() {
+    ScopedLock lock = new ScopedLock("db_lock");
+    
+    // An error occurs inside the operation:
+    throw new IOException("Database connection lost");
+    
+    // Even though do_risky_task() does not catch the exception,
+    // ~ScopedLock() runs automatically during stack unwinding!
+}
+
+public void main() {
+    try {
+        do_risky_task();
+    } catch (IOException ex) {
+        // At this point, "Lock released: db_lock" has ALREADY executed!
+        Console.println("Handling error: ".concat(ex.get_message()));
+    }
+}
+```
+
+This guarantees that resources (file descriptors, locks, sockets, memory buffers) are never leaked during exception handling, without needing boilerplate `try ... catch ... finally` cleanup blocks at every intermediate call site.
+

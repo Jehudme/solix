@@ -9,9 +9,9 @@ Welcome to the Solix developer guides. These documents are written for developer
 | 1 | [Getting Started](01_getting_started.md) | Installation, CLI, Hello World, arguments, exit codes |
 | 2 | [Variables and Types](02_variables_and_types.md) | All 13 primitives, declarations, `const`, arrays, `String`, `null` |
 | 3 | [Control Flow](03_control_flow.md) | `if/else`, `while`, `do-while`, `for`, `switch`, `break`, `continue`, `return` |
-| 4 | [Classes and OOP](04_classes_and_oop.md) | Classes, constructors, inheritance, interfaces, `virtual/override`, operators |
-| 5 | [Memory Management and ARC](05_memory_management_and_arc.md) | ARC, object headers, strong/weak references, cycle breaking, destruction |
-| 6 | [Error Handling](06_error_handling.md) | Exception hierarchy, `try/catch/finally`, custom exceptions, propagation |
+| 4 | [Classes and OOP](04_classes_and_oop.md) | Classes, constructors, destructors (`~ClassName()`), inheritance, interfaces, `virtual/override`, operators |
+| 5 | [Memory Management and ARC](05_memory_management_and_arc.md) | ARC, object headers, strong/weak references, cycle breaking, deterministic RAII destructors |
+| 6 | [Error Handling](06_error_handling.md) | Exception hierarchy, `try/catch/finally`, RAII stack unwinding, custom exceptions, propagation |
 | 7 | [Functions, Function Pointers & Lambdas](07_functions_and_lambdas.md) | Static methods, function pointers `ret(*)(params)`, lambdas `=>`, closures, ARC captures |
 | 8 | [Generics & Template Metaprogramming](08_generics_and_templates.md) | Generic classes, multiple type parameters, generic methods, deduction, monomorphization |
 | 9 | [Native Plugins & C/C++ Interoperability](09_native_plugins.md) | Writing C/C++ plugins, ABI conventions, shared library loading (`.so`/`.dll`/`.dylib`), CLI auto-discovery |

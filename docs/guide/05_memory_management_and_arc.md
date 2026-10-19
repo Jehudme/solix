@@ -14,7 +14,8 @@ Solix uses **Automatic Reference Counting (ARC)** for heap memory management. Th
 6. [Weak References (`weak`)](#weak-references-weak)
 7. [Breaking Circular References](#breaking-circular-references)
 8. [What Happens at Object Destruction](#what-happens-at-object-destruction)
-9. [Free Block Reuse](#free-block-reuse)
+9. [User-Defined Destructors and RAII (`~ClassName()`)](#user-defined-destructors-and-raii-classname)
+10. [Free Block Reuse](#free-block-reuse)
 
 ---
 
@@ -208,14 +209,60 @@ The rule of thumb: **the "owner" holds a strong reference; the "back-pointer" or
 
 ## What Happens at Object Destruction
 
-When `ref_count` reaches zero:
+When an object's `ref_count` reaches zero:
 
-1. The runtime walks all **reference-type fields** in the object's vtable layout and calls `DEC_REF` on each.
-2. Any **weak reference registry** entries pointing to this address are nullified (set to 0).
-3. The header word at `address - 1` is overwritten with a freed-block descriptor.
-4. The memory block is added to the **free block list** for reuse.
+1. **User-Defined Destructor Invocation**: If the class (or any base class in its inheritance hierarchy) defines a destructor (`~ClassName()`), the runtime invokes it immediately. Subclass destructors execute first, followed automatically by parent class destructors in reverse-inheritance order.
+2. **Cascading Field Cleanup**: The runtime walks all **reference-type fields** in the object's layout and calls `DEC_REF` on each, recursively freeing nested resources.
+3. **Weak Reference Invalidation**: Any **weak reference registry** entries pointing to this address are automatically cleared (set to 0).
+4. **Header Invalidation**: The header word at `address - 1` is overwritten with a freed-block descriptor.
+5. **Memory Reclamation**: The block is added to the **free block list** for immediate reuse.
 
-Field cleanup is performed automatically — there are no user-defined destructors in Solix.
+---
+
+## User-Defined Destructors and RAII (`~ClassName()`)
+
+Solix enables **Resource Acquisition Is Initialization (RAII)** using C++/C#-style destructors (`~ClassName()`). Because Solix uses deterministic Automatic Reference Counting rather than a non-deterministic garbage collector, destructors run **immediately** when the last reference drops out of scope, is reassigned, or is unwound by an exception.
+
+### Declaring and Using a Destructor
+
+```solix
+public class ScopedConnection {
+    private int32 connection_id;
+
+    public ScopedConnection(int32 id) {
+        this.connection_id = id;
+        Console.println("Connection opened");
+    }
+
+    // Destructor: runs immediately when ref_count reaches 0
+    public ~ScopedConnection() {
+        if (this.connection_id != 0) {
+            Console.println("Connection closed");
+            this.connection_id = 0;
+        }
+    }
+}
+
+// Scoped Usage
+public void process_request() {
+    // 1. Acquired on scope entry
+    ScopedConnection conn = new ScopedConnection(101);
+
+    // 2. Used during method execution
+    do_work();
+
+    // 3. conn goes out of scope -> ~ScopedConnection() runs immediately here!
+}
+```
+
+### Destruction Trigger Scenarios
+A destructor is guaranteed to run deterministically in the following situations:
+
+1. **Scope Exit**: When execution exits the block `{ }` where the variable was declared.
+2. **Early Return**: When a function returns early, all local variables in active scopes are destroyed in LIFO order before the return value is passed to the caller.
+3. **Reassignment / Nulling**: Overwriting a reference variable (`conn = null` or `conn = new ScopedConnection(102)`) immediately decrements the previous object's refcount to 0 and executes its destructor.
+4. **Container Deallocation**: When an array or container is destroyed, all contained reference elements have their refcounts decremented and destructors executed.
+5. **Exception Stack Unwinding**: If an exception is thrown, stack unwinding runs destructors for all local variables in every unwound frame before entering a `catch` block.
 
 ---
 
