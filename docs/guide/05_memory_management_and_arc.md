@@ -261,8 +261,29 @@ A destructor is guaranteed to run deterministically in the following situations:
 1. **Scope Exit**: When execution exits the block `{ }` where the variable was declared.
 2. **Early Return**: When a function returns early, all local variables in active scopes are destroyed in LIFO order before the return value is passed to the caller.
 3. **Reassignment / Nulling**: Overwriting a reference variable (`conn = null` or `conn = new ScopedConnection(102)`) immediately decrements the previous object's refcount to 0 and executes its destructor.
-4. **Container Deallocation**: When an array or container is destroyed, all contained reference elements have their refcounts decremented and destructors executed.
+4. **Container Deallocation**: When an array, tuple, or container is destroyed, all contained reference elements have their refcounts decremented and destructors executed.
 5. **Exception Stack Unwinding**: If an exception is thrown, stack unwinding runs destructors for all local variables in every unwound frame before entering a `catch` block.
+
+### Tuple RAII and Recursive Destruction
+
+Tuples in Solix are first-class primitives allocated on the dynamic heap with `BlockTag::TUPLE`. When a tuple's reference count drops to 0:
+- The runtime automatically traverses the tuple's elements.
+- For each element marked as a reference type in the tuple's type table, the runtime decrements its reference count via `decrease_reference`.
+- If an element's reference count reaches 0, its destructor (`~ClassName()`) is triggered immediately.
+- If elements include nested tuples, destruction cascades recursively down the hierarchy before freeing memory blocks, ensuring zero memory leaks.
+
+```solix
+class DatabaseConnection {
+    ~DatabaseConnection() {
+        Console.println("Connection closed");
+    }
+}
+
+void query() {
+    tuple resources = new tuple(new DatabaseConnection(), 42);
+    // When resources goes out of scope, DatabaseConnection is closed deterministically.
+}
+```
 
 ---
 

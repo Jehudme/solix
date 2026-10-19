@@ -250,6 +250,17 @@ Conversion instructions pop the top stack word, reinterpret or convert its value
 | 85 | `GET_EXCEPTION`             | —         | `( -- exobj )`      | Push the currently active exception object reference onto the stack. Used inside `catch` handlers to access the thrown object. |
 | 86 | `CLEAR_EXCEPTION`           | —         | `( -- )`            | Clear the active exception state. Emitted at the end of a `catch` or `finally` block to signal that the exception has been handled. |
 
+### 3.11 Tuple Operations (opcodes 101–106)
+
+| Op  | Mnemonic           | Immediate                       | Stack Effect                | Description |
+|-----|--------------------|---------------------------------|-----------------------------|-------------|
+| 101 | `NEW_TUPLE`        | `imm32` (count) + `imm32[count]` (type tags) | `( e0 .. eN-1 -- tuple_ref )` | Allocate a new tuple holding `count` elements with associated type tags. |
+| 102 | `TUPLE_GET`        | —                               | `( tuple_ref idx -- val )`  | Subscript index access `tuple_ref[idx]`. Increments reference count if element is a reference type. Faults if `idx >= length`. |
+| 103 | `TUPLE_LEN`        | —                               | `( tuple_ref -- len )`      | Push the element count of the tuple. |
+| 104 | `TUPLE_TYPE`       | —                               | `( tuple_ref idx -- tag )`  | Push the 32-bit type tag of the element at `idx`. |
+| 105 | `TUPLE_CAST`       | `imm32` (target type tag)       | `( tuple_ref idx -- val )`  | Validate and cast element at `idx` to target type tag. Throws `TypeCastException` on mismatch. |
+| 106 | `TUPLE_INSTANCEOF` | `imm32` (target type tag)       | `( tuple_ref idx -- bool )` | Evaluate if element at `idx` conforms to target type tag (primitive or class/interface hierarchy). |
+
 ---
 
 ## 4. Stack Frame Layout
@@ -303,6 +314,19 @@ heap[addr + K]  ─── element[K-1]
 ```
 
 The element count word at `addr + 0` is what `ARRAY_LENGTH` reads and what `GET_ARRAY`/`SET_ARRAY` use for bounds checking.
+
+### Tuple
+
+A tuple of `N` elements occupies a heap block tagged as `BlockTag::TUPLE` (`11`):
+
+```
+heap[addr − 8]  ─── count          (uint32_t = N)
+heap[addr − 4]  ─── tag_and_ref    ((BlockTag::TUPLE << 28) | ref_count)
+heap[addr + 0]  ─── types[0..N-1]  (uint32_t type tags array)
+heap[addr + align_8(N * 4)] ─── values[0..N-1] (uint64_t values payload)
+```
+
+When a tuple's reference count drops to 0, the runtime destructor inspects each element's type tag: any element with `types[i] & 0x80000000` (reference flag) has its reference count decremented recursively via `decrease_reference`, triggering user-defined destructors (`~ClassName()`) deterministically.
 
 ---
 
