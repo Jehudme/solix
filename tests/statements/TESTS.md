@@ -5532,10 +5532,280 @@ Ambiguous entry point 'main': multiple candidates found:
 ```
 *Expected Result*: Compilation fails with compiler error listing candidate files, rows (lines), and columns.
 
+---
 
+## Suite 55: Tuple Primitive, Variadic Generics & Destructor RAII
 
+### Case 55.1: Direct `tuple` Creation & Constant Indexing [NOT IMPLEMENTED]
+```solix
+int32 main() {
+    tuple t = new tuple(42, "hello", true);
+    if (t.length != 3) return 1;
+    int32 v0 = (int32)t[0];
+    string v1 = (string)t[1];
+    bool v2 = (bool)t[2];
+    if (v0 != 42 || v1 != "hello" || !v2) return 2;
+    return 0;
+}
+```
+*Expected Result*: Returns exit code 0.
 
+---
 
+### Case 55.2: Dynamic Loop Iteration over `tuple` [NOT IMPLEMENTED]
+```solix
+int32 main() {
+    tuple t = new tuple(10, 20, 30);
+    int32 sum = 0;
+    for (int32 i = 0; i < t.length; i++) {
+        sum = sum + (int32)t[i];
+    }
+    return sum == 60 ? 0 : 1;
+}
+```
+*Expected Result*: Returns exit code 0.
 
+---
 
+### Case 55.3: Runtime `instanceof` with Primitives [NOT IMPLEMENTED]
+```solix
+int32 main() {
+    tuple t = new tuple(42, true, "text");
+    if (!(t[0] instanceof int32)) return 1;
+    if (t[0] instanceof bool) return 2;
+    if (!(t[1] instanceof bool)) return 3;
+    if (t[1] instanceof int32) return 4;
+    return 0;
+}
+```
+*Expected Result*: Returns exit code 0.
 
+---
+
+### Case 55.4: Runtime `instanceof` with Classes & Interfaces [NOT IMPLEMENTED]
+```solix
+interface Worker {
+    int32 work();
+}
+
+class Robot implements Worker {
+    public int32 work() { return 100; }
+}
+
+class Person {}
+
+int32 main() {
+    tuple t = new tuple(new Robot(), new Person());
+    if (!(t[0] instanceof Worker)) return 1;
+    if (!(t[0] instanceof Robot)) return 2;
+    if (t[0] instanceof Person) return 3;
+    if (t[1] instanceof Worker) return 4;
+    if (!(t[1] instanceof Person)) return 5;
+    return 0;
+}
+```
+*Expected Result*: Returns exit code 0.
+
+---
+
+### Case 55.5: Function Template Lowering with `<args...>` [NOT IMPLEMENTED]
+```solix
+int32 sum_all<args...>(int32 first, args...) {
+    int32 total = first;
+    for (int32 i = 0; i < args.length; i++) {
+        total = total + (int32)args[i];
+    }
+    return total;
+}
+
+int32 main() {
+    int32 res = sum_all(10, 20, 30, 40);
+    return res == 100 ? 0 : 1;
+}
+```
+*Expected Result*: Trailing variadic pack lowered into tuple, returns exit code 0.
+
+---
+
+### Case 55.6: Automatic Call-Site Argument Bundling [NOT IMPLEMENTED]
+```solix
+int32 count_args<args...>(string label, args...) {
+    return args.length;
+}
+
+int32 main() {
+    if (count_args("none") != 0) return 1;
+    if (count_args("one", 100) != 1) return 2;
+    if (count_args("three", 1, "two", true) != 3) return 3;
+    return 0;
+}
+```
+*Expected Result*: Call-site bundles excess arguments into a tuple automatically, returns exit code 0.
+
+---
+
+### Case 55.7: Destructor Trigger on Tuple Scope Exit [NOT IMPLEMENTED]
+```solix
+class Tracker {
+    static int32 destroyed_count = 0;
+    ~Tracker() {
+        destroyed_count = destroyed_count + 1;
+    }
+}
+
+void test_scope() {
+    tuple t = new tuple(new Tracker(), new Tracker());
+}
+
+int32 main() {
+    test_scope();
+    return Tracker.destroyed_count == 2 ? 0 : 1;
+}
+```
+*Expected Result*: When the tuple goes out of scope, contained reference objects are destroyed recursively, exit code 0.
+
+---
+
+### Case 55.8: Destructor Trigger on Tuple Reassignment [NOT IMPLEMENTED]
+```solix
+class Tracker {
+    static int32 destroyed_count = 0;
+    ~Tracker() {
+        destroyed_count = destroyed_count + 1;
+    }
+}
+
+int32 main() {
+    tuple t = new tuple(new Tracker());
+    if (Tracker.destroyed_count != 0) return 1;
+    t = null;
+    if (Tracker.destroyed_count != 1) return 2;
+    return 0;
+}
+```
+*Expected Result*: Reassigning tuple decrements references and immediately executes child destructors, exit code 0.
+
+---
+
+### Case 55.9: Exception Stack Unwinding RAII with `tuple` [NOT IMPLEMENTED]
+```solix
+class Resource {
+    static int32 released = 0;
+    ~Resource() {
+        released = released + 1;
+    }
+}
+
+void risky() {
+    tuple t = new tuple(new Resource());
+    throw new std.Exception("boom");
+}
+
+int32 main() {
+    try {
+        risky();
+    } catch (std.Exception e) {
+        if (Resource.released != 1) return 2;
+        return 0;
+    }
+    return 1;
+}
+```
+*Expected Result*: Frame unwinding decrements tuple references and invokes contained resource destructors before catch clause, exit code 0.
+
+---
+
+### Case 55.10: Nested Tuples Recursive Destruction [NOT IMPLEMENTED]
+```solix
+class Leaf {
+    static int32 count = 0;
+    ~Leaf() {
+        count = count + 1;
+    }
+}
+
+void test_nested() {
+    tuple inner = new tuple(new Leaf());
+    tuple outer = new tuple(inner);
+}
+
+int32 main() {
+    test_nested();
+    return Leaf.count == 1 ? 0 : 1;
+}
+```
+*Expected Result*: Outer tuple destruction cascades into inner tuple destruction and then leaf destruction, exit code 0.
+
+---
+
+### Case 55.11: Invalid Type Cast Throws TypeCastException [NOT IMPLEMENTED]
+```solix
+int32 main() {
+    tuple t = new tuple("not an int");
+    try {
+        int32 x = (int32)t[0];
+        return 1;
+    } catch (std.Exception e) {
+        return 0;
+    }
+}
+```
+*Expected Result*: Runtime throws TypeCastException on incompatible cast, caught successfully, exit code 0.
+
+---
+
+### Case 55.12: Out of Bounds Index Access Throws IndexOutOfBoundsException [NOT IMPLEMENTED]
+```solix
+int32 main() {
+    tuple t = new tuple(1, 2);
+    try {
+        int32 x = (int32)t[5];
+        return 1;
+    } catch (std.Exception e) {
+        return 0;
+    }
+}
+```
+*Expected Result*: Out of bounds tuple access throws IndexOutOfBoundsException, caught successfully, exit code 0.
+
+---
+
+### Case 55.13: Variadic Parameter Not Trailing [NOT IMPLEMENTED]
+```solix
+void invalid<args...>(args..., int32 extra) {}
+```
+*Expected Compiler Diagnostic*:
+```text
+Variadic parameter must be the last parameter in the declaration
+```
+
+---
+
+### Case 55.14: Multiple Variadic Packs in Same Signature [NOT IMPLEMENTED]
+```solix
+void invalid<args..., others...>(args..., others...) {}
+```
+*Expected Compiler Diagnostic*:
+```text
+Only one variadic parameter pack is permitted per template
+```
+
+---
+
+### Case 55.15: Incompatible Class Cast on Tuple Element Throws TypeCastException [NOT IMPLEMENTED]
+```solix
+class Animal {}
+class Dog extends Animal {}
+class Cat extends Animal {}
+
+int32 main() {
+    tuple t = new tuple(new Dog());
+    try {
+        Cat c = (Cat)t[0];
+        return 1;
+    } catch (std.Exception e) {
+        return 0;
+    }
+}
+```
+*Expected Result*: Casting `Dog` to unrelated class `Cat` throws TypeCastException, exit code 0.
