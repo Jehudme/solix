@@ -30,7 +30,8 @@ enum class BlockTag : uint8_t {
   ARRAY_I32 = 7,
   ARRAY_U64 = 8,
   ARRAY_REF = 9,
-  CLOSURE = 10
+  CLOSURE = 10,
+  TUPLE = 11
 };
 
 struct RuntimeContext;
@@ -120,6 +121,7 @@ struct Memory {
     else if (tag == BlockTag::ARRAY_U16 || tag == BlockTag::ARRAY_I16) payload_bytes = count * 2;
     else if (tag == BlockTag::ARRAY_U32 || tag == BlockTag::ARRAY_I32) payload_bytes = count * 4;
     else if (tag == BlockTag::ARRAY_U64 || tag == BlockTag::ARRAY_REF || tag == BlockTag::CLOSURE) payload_bytes = count * 8;
+    else if (tag == BlockTag::TUPLE) payload_bytes = ((count * 4 + 7) & ~7) + count * 8;
 
     size_t aligned_payload = (payload_bytes + 7) & ~7;
     if (aligned_payload == 0) aligned_payload = 8;

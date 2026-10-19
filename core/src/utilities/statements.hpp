@@ -18,6 +18,7 @@ enum class NodeType {
     ARRAY_ACCESS, MEMBER_ACCESS, METHOD_CALL, NEW_INSTANCE, ARRAY_CREATION,
     ARRAY_LITERAL, CAST_EXPR,
     INSTANCEOF_EXPR, TERNARY_EXPR, SIZEOF_EXPR, DEFAULT_EXPR, LAMBDA_EXPR,
+    TUPLE_CREATION,
 
     // Statements
     BLOCK, IF_STMT, FOR_STMT, WHILE_STMT, DO_WHILE_STMT, SWITCH_STMT, CASE_STMT,
@@ -39,6 +40,10 @@ struct TypeInfo {
     std::shared_ptr<TypeInfo> return_type = nullptr;
     std::vector<TypeInfo> param_types;
 
+    // Tuple Extension
+    bool is_tuple = false;
+    bool is_variadic_pack = false;
+
     TypeInfo() = default;
     TypeInfo(std::string n, int depth = 0) : name(std::move(n)), array_depth(depth) {}
     TypeInfo(const TypeInfo& other)
@@ -47,7 +52,9 @@ struct TypeInfo {
           type_args(other.type_args),
           is_function_pointer(other.is_function_pointer),
           return_type(other.return_type ? std::make_shared<TypeInfo>(*other.return_type) : nullptr),
-          param_types(other.param_types) {}
+          param_types(other.param_types),
+          is_tuple(other.is_tuple),
+          is_variadic_pack(other.is_variadic_pack) {}
     TypeInfo(TypeInfo&&) noexcept = default;
     TypeInfo& operator=(const TypeInfo& other) {
         if (this != &other) {
@@ -57,12 +64,16 @@ struct TypeInfo {
             is_function_pointer = other.is_function_pointer;
             return_type = other.return_type ? std::make_shared<TypeInfo>(*other.return_type) : nullptr;
             param_types = other.param_types;
+            is_tuple = other.is_tuple;
+            is_variadic_pack = other.is_variadic_pack;
         }
         return *this;
     }
     TypeInfo& operator=(TypeInfo&&) noexcept = default;
 
     bool operator==(const TypeInfo& other) const {
+        if (is_tuple != other.is_tuple) return false;
+        if (is_variadic_pack != other.is_variadic_pack) return false;
         if (is_function_pointer != other.is_function_pointer) return false;
         if (array_depth != other.array_depth) return false;
         if (is_function_pointer) {
@@ -90,6 +101,19 @@ struct TypeInfo {
                 if (i + 1 < param_types.size()) res += ", ";
             }
             res += ")";
+            for (int i = 0; i < array_depth; i++) res += "[]";
+            return res;
+        }
+        if (is_tuple) {
+            std::string res = "tuple";
+            if (!type_args.empty()) {
+                res += "<";
+                for (size_t i = 0; i < type_args.size(); i++) {
+                    res += type_args[i].to_string();
+                    if (i < type_args.size() - 1) res += ",";
+                }
+                res += ">";
+            }
             for (int i = 0; i < array_depth; i++) res += "[]";
             return res;
         }
@@ -315,6 +339,29 @@ struct ArrayLiteralExpression : public Node {
 
     std::vector<std::unique_ptr<Node>> elements;
     ArrayLiteralExpression(const Token& t) : Node(NodeType::ARRAY_LITERAL, t) {}
+};
+
+struct TupleCreationExpression : public Node {
+    std::unique_ptr<Node> clone() const override;
+
+    void accept(NodeVisitor& v) override { v.visit(*this); }
+
+    TypeInfo tuple_type;
+    std::vector<std::unique_ptr<Node>> elements;
+    TupleCreationExpression()
+        : Node(NodeType::TUPLE_CREATION, Token{}), tuple_type("tuple", 0) {
+        tuple_type.is_tuple = true;
+    }
+    TupleCreationExpression(const Token& t)
+        : Node(NodeType::TUPLE_CREATION, t), tuple_type("tuple", 0) {
+        tuple_type.is_tuple = true;
+    }
+    TupleCreationExpression(const Token& t, TypeInfo type, std::vector<std::unique_ptr<Node>> elems = {})
+        : Node(NodeType::TUPLE_CREATION, t), tuple_type(std::move(type)), elements(std::move(elems)) {
+        for (auto& el : elements) {
+            if (el) el->parent = this;
+        }
+    }
 };
 
 struct CastExpression : public Node {

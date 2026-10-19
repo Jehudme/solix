@@ -297,3 +297,27 @@ if (maybeValue.is_present()) {
     Console.println(val);
 }
 ```
+
+---
+
+## The `tuple` Primitive Type
+
+The `tuple` type in Solix is a built-in primitive representing an ordered, fixed-length heterogeneous collection of values.
+
+```solix
+tuple t = new tuple(42, "hello", true);
+int32 len = t.length;          // 3
+int32 v0 = (int32)t[0];        // 42
+String v1 = (String)t[1];      // "hello"
+bool v2 = (bool)t[2];          // true
+```
+
+### Dynamic Operations on Tuples
+- **Subscript Access**: `t[i]` retrieves the element at integer index `i`.
+- **`instanceof`**: Evaluates whether an element matches a type (primitive or reference):
+  ```solix
+  if (t[0] instanceof int32) { ... }
+  ```
+- **Type Casting**: `(Type)t[i]` coerces the element to the given type, with runtime validation throwing `TypeCastException` on mismatch.
+- **Automatic Cleanup**: Contained reference objects are managed by ARC and automatically destroyed via RAII when the tuple's ref count drops to zero.
+

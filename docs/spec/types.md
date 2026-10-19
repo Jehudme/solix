@@ -38,10 +38,20 @@ Primitive types are value types. They are stored directly in stack slots or obje
 | `uint64`  | 64 bits  | No     | 0 to 18 446 744 073 709 551 615                     | `0`           |
 | `float32` | 32 bits  | —      | IEEE 754 single-precision                           | `0.0f`        |
 | `float64` | 64 bits  | —      | IEEE 754 double-precision                           | `0.0`         |
+| `tuple`   | dynamic  | —      | Fixed-length heterogeneous collection of values     | `null`        |
 | `void`    | —        | —      | No value; valid only as a method return type         | —             |
 
 > [!NOTE]
 > All primitive values occupy one full 64-bit stack word at runtime. The VM sign-extends or zero-extends narrower types when they are pushed onto the operand stack, and truncates on conversion back.
+
+### 1.1 The Tuple Primitive Type (`tuple`)
+
+`tuple` is a first-class language primitive used for grouping heterogeneous values and lowering variadic template parameters (`<args...>`).
+- Created via `new tuple(...)`.
+- Exposes `.length` and index access `t[i]`.
+- Supports dynamic `instanceof` and casting `(Type)t[i]` at runtime.
+- Governed by ARC reference counting with automatic recursive destructor execution upon reaching 0 references.
+- Distinct from future high-level wrapper classes (e.g., `solix.core.Tuple`).
 
 ---
 

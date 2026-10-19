@@ -586,6 +586,37 @@ Implement C++/C#-style deterministic class destructors (`~ClassName()`) with Aut
 - [x] Author formal specification `docs/spec/statements/declarations/destructors.md`, update index `docs/spec/statements/README.md`, and update developer guide `docs/guide/04_classes_and_oop.md`.
 - [x] Verify 100% test pass rate across all 85 test suites.
 
+---
+
+## Phase 23: First-Class `tuple` Primitive Type, Variadic Generics (`<args...>`), and Destructor RAII
+
+- **Priority**: `P1 High`
+- **Affected Modules**: `core/`, `lsp/`, `editors/vscode/`, `docs/`, `tests/statements/`
+- **Status**: - [x] Completed & Merged (2026-10-19)
+
+### Objective
+Implement first-class `tuple` primitive type and variadic function parameter lowering (`<args...>`) with deterministic destructor/RAII cleanup in the Solix language, compiler, bytecode ISA, and runtime virtual machine:
+1. **Primitive `tuple` Type**: Built-in heterogeneous collection primitive (leaving `Tuple` reserved for future `solixlib` wrapper classes).
+2. **Variadic Lowering (`<args...>` -> `tuple`)**: Function template parameter packs `<args...>` and parameter lists `args...` lowered automatically into tuple parameters with automatic call-site argument bundling via `NEW_TUPLE`.
+3. **Dynamic Operations**: Subscript indexing `t[i]`, length querying `t.length`, runtime type checking `instanceof` (both primitive and class hierarchies), and explicit casting `(Type)t[i]` with runtime validation.
+4. **Deterministic Destructor RAII**: Automatic recursive child destructor execution when a tuple's reference count drops to 0 (scope exit, variable reassignment, early return, or exception stack unwinding).
+
+### Action Items
+- [x] Add `PRIMITIVE_TUPLE`, `PUNCTUATION_ELLIPSIS` (`...`), and keyword `"tuple"` to lexer and token definitions.
+- [x] Update VS Code TextMate grammar with `tuple` primitive highlighting.
+- [x] Add AST node `TupleCreationExpression` and extend `TypeInfo` with `is_tuple` and `is_variadic_pack`.
+- [x] Implement AST cloning, LSP spatial index visitors, and template substitution for `TupleCreationExpression`.
+- [x] Extend opcode set with `NEW_TUPLE`, `TUPLE_GET`, `TUPLE_LEN`, `TUPLE_TYPE`, `TUPLE_CAST`, `TUPLE_INSTANCEOF`.
+- [x] Implement parser support for `tuple` type parsing, `new tuple(...)`, variadic template params `<args...>`, and variadic parameters `args...`.
+- [x] Implement template deduction and call-site trailing argument bundling into `TupleCreationExpression` across member methods, inheritance methods, and global functions.
+- [x] Implement semantic binding, assignability checks, and type-tag resolution in `binder.cpp`.
+- [x] Implement code generation for tuple creation, indexing, length, casting, and instanceof in `assembler.cpp`.
+- [x] Implement heap allocation (`BlockTag::TUPLE = 11`), computed-goto opcode dispatch, and recursive destructor RAII cleanup in `runtime.cpp`.
+- [x] Define test specifications in `tests/statements/TESTS.md` (Suite 55: Cases 55.1 to 55.15).
+- [x] Implement Catch2 test suite `tests/statements/declarations/test_tuple_primitive.cpp` (all 28 assertions passing 100%).
+- [x] Author formal specification `docs/spec/statements/declarations/tuple_primitive.md`, update `docs/spec/statements/README.md`, `docs/spec/types.md`, `docs/spec/vm_isa.md`, and update developer guides `docs/guide/02_variables_and_types.md`, `docs/guide/05_memory_management_and_arc.md`, `docs/guide/08_generics_and_templates.md`.
+- [x] Verify 100% test pass rate across all 86 test suites.
+
 
 
 

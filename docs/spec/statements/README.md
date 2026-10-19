@@ -24,6 +24,7 @@ Each document focuses strictly on the architecture and mechanics of the construc
 - [`method_declaration.md`](declarations/method_declaration.md) — Static, virtual, and abstract member functions
 - [`operator_declaration.md`](declarations/operator_declaration.md) — Operator overloading for `+`, `-`, `*`, `/`, `=`
 - [`generic_declaration.md`](declarations/generic_declaration.md) — Template metaprogramming, classes, methods, and monomorphization
+- [`tuple_primitive.md`](declarations/tuple_primitive.md) — First-class `tuple` primitive, variadic packs `<args...>`, and deterministic RAII cleanup
 
 ### Part III: Control Flow & Execution Statements (`control_flow/`)
 - [`block_statement.md`](control_flow/block_statement.md) — Lexical scope boundaries & ARC scope-exit cleanup

@@ -179,3 +179,36 @@ Understanding how Solix compiles generics helps you write more efficient code:
 
 3. **Separate VTables**:
    - Each unique specialization (e.g., `Holder<int32>` vs `Holder<float64>`) receives its own virtual method table and interface dispatch table (`itable`), ensuring correct polymorphic dispatch.
+
+---
+
+## 8. Variadic Generics (`<args...>`) & Tuple Lowering
+
+Solix supports variadic method templates that accept an arbitrary number of heterogeneous arguments using the ellipsis parameter pack syntax `<args...>`:
+
+```solix
+public class Formatter {
+    public static int32 print_all<args...>(int32 count, args...) {
+        for (int32 i = 0; i < args.length; i++) {
+            if (args[i] instanceof int32) {
+                // handle int32
+            } else if (args[i] instanceof String) {
+                // handle String
+            }
+        }
+        return args.length;
+    }
+}
+```
+
+### Compiler Lowering
+1. The parameter `args...` is lowered into a single `tuple` primitive parameter:
+   ```solix
+   public static int32 print_all(int32 count, tuple args)
+   ```
+2. When calling `Formatter.print_all(3, 10, "text", true)`, the compiler bundles the trailing arguments into a `NEW_TUPLE` expression:
+   ```solix
+   Formatter.print_all(3, new tuple(10, "text", true))
+   ```
+3. Variadic arguments support full RAII semantics: when `args` exits scope or unwinds during an exception, all contained reference objects are destroyed deterministically.
+

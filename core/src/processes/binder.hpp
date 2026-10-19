@@ -49,6 +49,7 @@ public:
     void visit(NewInstanceExpression& node) override;
     void visit(ArrayCreationExpression& node) override;
     void visit(ArrayLiteralExpression& node) override;
+    void visit(TupleCreationExpression& node) override;
     void visit(CastExpression& node) override;
     void visit(InstanceofExpression& node) override;
     void visit(TernaryExpression& node) override;

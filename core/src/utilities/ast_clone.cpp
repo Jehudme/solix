@@ -143,6 +143,17 @@ std::unique_ptr<Node> ArrayLiteralExpression::clone() const {
     return cloned;
 }
 
+std::unique_ptr<Node> TupleCreationExpression::clone() const {
+    auto cloned = std::make_unique<TupleCreationExpression>(make_dummy_token(this), tuple_type);
+    for (const auto& el : elements) {
+        auto c = el ? el->clone() : nullptr;
+        if (c) c->parent = cloned.get();
+        cloned->elements.push_back(std::move(c));
+    }
+    copy_children(this, cloned.get());
+    return cloned;
+}
+
 std::unique_ptr<Node> CastExpression::clone() const {
     auto cloned = std::make_unique<CastExpression>(
         make_dummy_token(this),

@@ -238,6 +238,22 @@ RuntimeContext::RuntimeContext(const RuntimeOptions &opts)
           }
         }
       }
+    } else if (tag == BlockTag::TUPLE) {
+      uint32_t count = mem.get_array_length(address);
+      Address types_offset = 0;
+      Address values_offset = ((count * 4 + 7) & ~7);
+      for (uint32_t i = 0; i < count; ++i) {
+        uint32_t type_tag = mem.read_u32(address + types_offset, i * 4);
+        if (type_tag & 0x80000000) {
+          if (address + values_offset + i * 8 + 8 <= mem.heap.size()) {
+            Address child_addr = static_cast<Address>(mem.read_u64(address + values_offset, i * 8));
+            if (child_addr != 0) {
+              mem.write_u64(address + values_offset, i * 8, 0);
+              mem.decrease_reference(child_addr);
+            }
+          }
+        }
+      }
     }
   };
 
@@ -537,6 +553,12 @@ vm_dispatch:
     case 99: goto op_ASSERT;
     case 100: goto op_EXIT;
     case 101: goto op_DEFINE_DESTRUCTOR;
+    case 102: goto op_NEW_TUPLE;
+    case 103: goto op_TUPLE_GET;
+    case 104: goto op_TUPLE_LEN;
+    case 105: goto op_TUPLE_TYPE;
+    case 106: goto op_TUPLE_CAST;
+    case 107: goto op_TUPLE_INSTANCEOF;
     default: goto op_HALT;
   }
 #else
@@ -642,7 +664,13 @@ vm_dispatch:
       &&op_DEC_REF_SLOT,
       &&op_ASSERT,
       &&op_EXIT,
-      &&op_DEFINE_DESTRUCTOR
+      &&op_DEFINE_DESTRUCTOR,
+      &&op_NEW_TUPLE,
+      &&op_TUPLE_GET,
+      &&op_TUPLE_LEN,
+      &&op_TUPLE_TYPE,
+      &&op_TUPLE_CAST,
+      &&op_TUPLE_INSTANCEOF
   };
 
 #define DISPATCH() do { \
@@ -1825,6 +1853,200 @@ op_DEC_REF_SLOT:
       uint32_t dtor_ip = read_u32(bytecode, program_counter);
       vtable_destructors[vtid] = dtor_ip;
       DISPATCH();
+  }
+  op_NEW_TUPLE:
+  {
+      uint32_t count = read_u32(bytecode, program_counter);
+      uint64_t *stack_vals = sp - count;
+      size_t values_offset = (count * 4 + 7) & ~7;
+      Address tuple_addr = static_cast<Address>(memory.dynamic_allocation(count, BlockTag::TUPLE));
+      for (uint32_t i = 0; i < count; ++i) {
+          uint32_t elem_tag = read_u32(bytecode, program_counter);
+          memory.write_u32(tuple_addr, i * 4, elem_tag);
+      }
+      for (uint32_t i = 0; i < count; ++i) {
+          memory.write_u64(tuple_addr, static_cast<uint32_t>(values_offset + i * 8), stack_vals[i]);
+      }
+      sp -= count;
+      PUSH(tuple_addr);
+      DISPATCH();
+  }
+  op_TUPLE_GET:
+  {
+      uint32_t index = static_cast<uint32_t>(POP());
+      Address tuple_addr = static_cast<Address>(POP());
+      if (tuple_addr == 0) throw std::runtime_error("NullPointer");
+      uint32_t count = memory.get_array_length(tuple_addr);
+      if (index >= count) {
+          throw std::runtime_error("IndexOutOfBoundsException: tuple index " + std::to_string(index) + " >= length " + std::to_string(count));
+      }
+      uint32_t type_tag = memory.read_u32(tuple_addr, index * 4);
+      Address values_offset = (count * 4 + 7) & ~7;
+      uint64_t val = memory.read_u64(tuple_addr, values_offset + index * 8);
+      if (type_tag & 0x80000000) {
+          Address child = static_cast<Address>(val);
+          if (child != 0) {
+              memory.increase_reference(child);
+          }
+      }
+      PUSH(val);
+      DISPATCH();
+  }
+  op_TUPLE_LEN:
+  {
+      Address tuple_addr = static_cast<Address>(POP());
+      if (tuple_addr == 0) throw std::runtime_error("NullPointer");
+      uint32_t count = memory.get_array_length(tuple_addr);
+      PUSH(static_cast<uint64_t>(count));
+      DISPATCH();
+  }
+  op_TUPLE_TYPE:
+  {
+      uint32_t index = static_cast<uint32_t>(POP());
+      Address tuple_addr = static_cast<Address>(POP());
+      if (tuple_addr == 0) throw std::runtime_error("NullPointer");
+      uint32_t count = memory.get_array_length(tuple_addr);
+      if (index >= count) {
+          throw std::runtime_error("IndexOutOfBoundsException: tuple index " + std::to_string(index) + " >= length " + std::to_string(count));
+      }
+      uint32_t type_tag = memory.read_u32(tuple_addr, index * 4);
+      PUSH(static_cast<uint64_t>(type_tag));
+      DISPATCH();
+  }
+  op_TUPLE_CAST:
+  {
+      uint32_t target_tag = read_u32(bytecode, program_counter);
+      uint32_t index = static_cast<uint32_t>(POP());
+      Address tuple_addr = static_cast<Address>(POP());
+      if (tuple_addr == 0) throw std::runtime_error("NullPointer");
+      uint32_t count = memory.get_array_length(tuple_addr);
+      if (index >= count) {
+          throw std::runtime_error("IndexOutOfBoundsException: tuple index " + std::to_string(index) + " >= length " + std::to_string(count));
+      }
+      uint32_t elem_tag = memory.read_u32(tuple_addr, index * 4);
+      Address values_offset = (count * 4 + 7) & ~7;
+      uint64_t val = memory.read_u64(tuple_addr, values_offset + index * 8);
+
+      if (target_tag & 0x80000000) {
+          if (!(elem_tag & 0x80000000)) {
+              throw std::runtime_error("TypeCastException: Cannot cast primitive tuple element to reference type");
+          }
+          Address child = static_cast<Address>(val);
+          if (child != 0) {
+              if (target_tag == 0x8000000E) { // string
+                  if (memory.get_block_tag(child) != BlockTag::ARRAY_U8) {
+                      throw std::runtime_error("TypeCastException: Cannot cast to string");
+                  }
+              } else if (target_tag == 0x8000000F) { // tuple
+                  if (memory.get_block_tag(child) != BlockTag::TUPLE) {
+                      throw std::runtime_error("TypeCastException: Cannot cast to tuple");
+                  }
+              } else if (target_tag == 0x80000010) { // array
+                  BlockTag btag = memory.get_block_tag(child);
+                  if (btag < BlockTag::ARRAY_U8 || btag > BlockTag::ARRAY_REF) {
+                      throw std::runtime_error("TypeCastException: Cannot cast to array");
+                  }
+              } else if (target_tag & 0x40000000) { // class
+                  uint32_t target_vtid = target_tag & 0x3FFFFFFF;
+                  if (memory.get_block_tag(child) != BlockTag::OBJECT) {
+                      throw std::runtime_error("TypeCastException: Incompatible reference type");
+                  }
+                  int32_t cur_vtid = static_cast<int32_t>(memory.read_u32(child, 0));
+                  bool matched = false;
+                  while (cur_vtid != -1) {
+                      if (static_cast<uint32_t>(cur_vtid) == target_vtid ||
+                          (itables.count(cur_vtid) && itables[cur_vtid].count(target_vtid))) {
+                          matched = true;
+                          break;
+                      }
+                      cur_vtid = vtable_bases.count(cur_vtid) ? vtable_bases[cur_vtid] : -1;
+                  }
+                  if (!matched) {
+                      throw std::runtime_error("TypeCastException: Incompatible class cast");
+                  }
+              }
+              memory.increase_reference(child);
+          }
+          PUSH(child);
+      } else {
+          if (elem_tag & 0x80000000) {
+              throw std::runtime_error("TypeCastException: Cannot cast reference tuple element to primitive type");
+          }
+          if (elem_tag != target_tag) {
+              throw std::runtime_error("TypeCastException: Incompatible primitive type cast");
+          }
+          PUSH(val);
+      }
+      DISPATCH();
+  }
+  op_TUPLE_INSTANCEOF:
+  {
+      uint32_t target_tag = read_u32(bytecode, program_counter);
+      uint32_t index = static_cast<uint32_t>(POP());
+      Address tuple_addr = static_cast<Address>(POP());
+      if (tuple_addr == 0) {
+          PUSH(0);
+          DISPATCH();
+      }
+      uint32_t count = memory.get_array_length(tuple_addr);
+      if (index >= count) {
+          PUSH(0);
+          DISPATCH();
+      }
+      uint32_t elem_tag = memory.read_u32(tuple_addr, index * 4);
+      Address values_offset = (count * 4 + 7) & ~7;
+      uint64_t val = memory.read_u64(tuple_addr, values_offset + index * 8);
+
+      if (target_tag & 0x80000000) {
+          if (!(elem_tag & 0x80000000)) {
+              PUSH(0);
+              DISPATCH();
+          }
+          Address child = static_cast<Address>(val);
+          if (child == 0) {
+              PUSH(0);
+              DISPATCH();
+          }
+          if (target_tag == 0x8000000E) { // string
+              PUSH(memory.get_block_tag(child) == BlockTag::ARRAY_U8 ? 1 : 0);
+              DISPATCH();
+          } else if (target_tag == 0x8000000F) { // tuple
+              PUSH(memory.get_block_tag(child) == BlockTag::TUPLE ? 1 : 0);
+              DISPATCH();
+          } else if (target_tag == 0x80000010) { // array
+              BlockTag btag = memory.get_block_tag(child);
+              PUSH((btag >= BlockTag::ARRAY_U8 && btag <= BlockTag::ARRAY_REF) ? 1 : 0);
+              DISPATCH();
+          } else if (target_tag & 0x40000000) { // class
+              uint32_t target_vtid = target_tag & 0x3FFFFFFF;
+              if (target_vtid == 0x3FFFFFFF) {
+                  PUSH(0);
+                  DISPATCH();
+              }
+              if (memory.get_block_tag(child) != BlockTag::OBJECT) {
+                  PUSH(0);
+                  DISPATCH();
+              }
+              int32_t cur_vtid = static_cast<int32_t>(memory.read_u32(child, 0));
+              bool matched = false;
+              while (cur_vtid != -1) {
+                  if (static_cast<uint32_t>(cur_vtid) == target_vtid ||
+                      (itables.count(cur_vtid) && itables[cur_vtid].count(target_vtid))) {
+                      matched = true;
+                      break;
+                  }
+                  cur_vtid = vtable_bases.count(cur_vtid) ? vtable_bases[cur_vtid] : -1;
+              }
+              PUSH(matched ? 1 : 0);
+              DISPATCH();
+          } else {
+              PUSH(0);
+              DISPATCH();
+          }
+      } else {
+          PUSH((elem_tag == target_tag) ? 1 : 0);
+          DISPATCH();
+      }
   }
 #undef PUSH
 #undef POP
