@@ -566,7 +566,10 @@ TEST_CASE("Universal Multi-Platform Cross-Compilation & Packaging (Part XXV)", "
 
     SECTION("Case 25.1: Multi-Platform Zig Cross-Compilation of solixlib_native") {
         auto out_dir = sandbox.path() / "native_libs";
-        auto script_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libs" / "solixlib" / "scripts" / "build_native.py";
+        auto script_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libraries" / "solixlib" / "scripts" / "build_native.py";
+        if (!std::filesystem::exists(script_path)) {
+            script_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libs" / "solixlib" / "scripts" / "build_native.py";
+        }
         if (!std::filesystem::exists(script_path)) {
             script_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib" / "scripts" / "build_native.py";
         }
@@ -601,7 +604,8 @@ TEST_CASE("Universal Multi-Platform Cross-Compilation & Packaging (Part XXV)", "
 
     SECTION("Case 25.2: Release Packaging of Canonical solixlib into Universal Multi-Platform .slxpac") {
         auto orig_cwd = std::filesystem::current_path();
-        std::filesystem::path solixlib_dir = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libs" / "solixlib";
+        std::filesystem::path solixlib_dir = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libraries" / "solixlib";
+        if (!std::filesystem::exists(solixlib_dir)) solixlib_dir = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libs" / "solixlib";
         if (!std::filesystem::exists(solixlib_dir)) solixlib_dir = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
         std::filesystem::current_path(solixlib_dir);
 
@@ -638,7 +642,8 @@ TEST_CASE("Universal Multi-Platform Cross-Compilation & Packaging (Part XXV)", "
         auto app_dir = sandbox.path() / "universal_consumer";
         std::filesystem::create_directories(app_dir / "src");
 
-        std::filesystem::path solixlib_dir = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libs" / "solixlib";
+        std::filesystem::path solixlib_dir = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libraries" / "solixlib";
+        if (!std::filesystem::exists(solixlib_dir)) solixlib_dir = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libs" / "solixlib";
         if (!std::filesystem::exists(solixlib_dir)) solixlib_dir = std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
 
         nlohmann::json manifest;

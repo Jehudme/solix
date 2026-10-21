@@ -504,7 +504,10 @@ TEST_CASE("Suite 11: LSP Navigation & Inspection (Definitions, Type-Definitions 
     }
 
     SECTION("Case 11.7: TextMate Syntax Grammar Completeness") {
-        std::filesystem::path tm_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "editors" / "vscode" / "syntaxes" / "solix.tmLanguage.json";
+        std::filesystem::path tm_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "intergrations" / "vscode" / "syntaxes" / "solix.tmLanguage.json";
+        if (!std::filesystem::exists(tm_path)) {
+            tm_path = std::filesystem::path(SOLIX_PROJECT_ROOT) / "editors" / "vscode" / "syntaxes" / "solix.tmLanguage.json";
+        }
         std::ifstream f(tm_path);
         REQUIRE(f.is_open());
         nlohmann::json tm;

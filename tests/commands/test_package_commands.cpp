@@ -41,7 +41,9 @@ static std::filesystem::path create_test_project(TempDir& sandbox,
 }
 
 static std::filesystem::path get_test_solixlib_path() {
-    auto p = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libs" / "solixlib";
+    auto p = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libraries" / "solixlib";
+    if (std::filesystem::exists(p)) return p;
+    p = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libs" / "solixlib";
     if (std::filesystem::exists(p)) return p;
     return std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
 }
@@ -414,7 +416,7 @@ TEST_CASE("Package Manager - Canonical Solixlib Project Layout (Part XXIV)", "[p
         CHECK(std::filesystem::exists(*discovered / "src" / "solix"));
     }
 
-    SECTION("Case 24.4: Bundled Discovery and Auto-Installation of raylib from libs/raylib/") {
+    SECTION("Case 24.4: Bundled Discovery and Auto-Installation of raylib from libraries/raylib/") {
         auto discovered_raylib = PackageManager::discover_bundled_library("raylib");
         REQUIRE(discovered_raylib.has_value());
         CHECK(std::filesystem::exists(*discovered_raylib / "manifest.json"));

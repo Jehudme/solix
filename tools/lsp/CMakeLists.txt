@@ -10,7 +10,7 @@ target_include_directories(solix_lsp_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/core/include
     ${CMAKE_SOURCE_DIR}/core/src
-    ${CMAKE_SOURCE_DIR}/cli/src
+    ${CMAKE_SOURCE_DIR}/tools/cli/src
 )
 
 target_link_libraries(solix_lsp_core PUBLIC

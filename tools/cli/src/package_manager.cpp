@@ -774,7 +774,9 @@ std::optional<std::filesystem::path> PackageManager::discover_bundled_library(co
             exe_dir / ".." / "share" / "solix" / n,
             exe_dir / "share" / "solix" / n,
             exe_dir.parent_path() / "share" / "solix" / "libs" / n,
-            // 2. In-tree development layout: <repo>/libs/<name> or <repo>/<name>
+            // 2. In-tree development layout: <repo>/libraries/<name> or <repo>/libs/<name> or <repo>/<name>
+            exe_dir.parent_path().parent_path() / "libraries" / n,
+            exe_dir.parent_path() / "libraries" / n,
             exe_dir.parent_path().parent_path() / "libs" / n,
             exe_dir.parent_path() / "libs" / n,
             exe_dir.parent_path().parent_path() / n,

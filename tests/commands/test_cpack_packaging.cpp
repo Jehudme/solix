@@ -42,7 +42,8 @@ TEST_CASE("Suite 17: CPack Multi-OS Packaging & Installer Staging", "[packaging]
     }
 
     SECTION("Case 17.2: Standard Library Bundling Integrity in Package Tree") {
-        std::filesystem::path solixlib_src = project_root / "libs" / "solixlib";
+        std::filesystem::path solixlib_src = project_root / "libraries" / "solixlib";
+        if (!std::filesystem::exists(solixlib_src)) solixlib_src = project_root / "libs" / "solixlib";
         if (!std::filesystem::exists(solixlib_src)) solixlib_src = project_root / "solixlib";
         REQUIRE((std::filesystem::exists(solixlib_src / "manifest.json") || std::filesystem::exists(solixlib_src / "solix.json")));
         REQUIRE(std::filesystem::exists(solixlib_src / "src"));
@@ -72,7 +73,9 @@ TEST_CASE("Suite 17: CPack Multi-OS Packaging & Installer Staging", "[packaging]
 
         bool has_vsix = false;
         std::error_code ec_vsix;
-        for (const auto& entry : std::filesystem::directory_iterator(project_root / "editors" / "vscode", ec_vsix)) {
+        auto vsix_dir = project_root / "intergrations" / "vscode";
+        if (!std::filesystem::exists(vsix_dir)) vsix_dir = project_root / "editors" / "vscode";
+        for (const auto& entry : std::filesystem::directory_iterator(vsix_dir, ec_vsix)) {
             if (entry.path().extension() == ".vsix") {
                 has_vsix = true;
                 break;

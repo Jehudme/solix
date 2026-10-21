@@ -12,7 +12,9 @@
 namespace solix::test {
 
 inline std::filesystem::path get_solixlib_root() {
-    auto p = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libs" / "solixlib";
+    auto p = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libraries" / "solixlib";
+    if (std::filesystem::exists(p)) return p;
+    p = std::filesystem::path(SOLIX_PROJECT_ROOT) / "libs" / "solixlib";
     if (std::filesystem::exists(p)) return p;
     return std::filesystem::path(SOLIX_PROJECT_ROOT) / "solixlib";
 }

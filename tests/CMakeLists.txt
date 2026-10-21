@@ -40,9 +40,9 @@ target_include_directories(solix_tests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/core/include
     ${PROJECT_SOURCE_DIR}/core/src
-    ${PROJECT_SOURCE_DIR}/cli/src
-    ${PROJECT_SOURCE_DIR}/cli/src/commands
-    ${PROJECT_SOURCE_DIR}/lsp/include
+    ${PROJECT_SOURCE_DIR}/tools/cli/src
+    ${PROJECT_SOURCE_DIR}/tools/cli/src/commands
+    ${PROJECT_SOURCE_DIR}/tools/lsp/include
 )
 
 target_compile_definitions(solix_tests PRIVATE

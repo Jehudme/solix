@@ -33,7 +33,7 @@ target_link_libraries(solix_cli_core PUBLIC solix_core CLI11::CLI11 nlohmann_jso
 target_include_directories(solix_cli_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/commands
-    ${CMAKE_SOURCE_DIR}/lsp/include
+    ${CMAKE_SOURCE_DIR}/tools/lsp/include
 )
 
 add_executable(solix

@@ -83,17 +83,17 @@ if(TARGET miniz)
 endif()
 
 add_subdirectory(core)
-add_subdirectory(lsp)
-add_subdirectory(cli)
-add_subdirectory(libs/solixlib/native)
-add_subdirectory(libs/raylib/native)
+add_subdirectory(tools/lsp)
+add_subdirectory(tools/cli)
+add_subdirectory(libraries/solixlib/native)
+add_subdirectory(libraries/raylib/native)
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     add_subdirectory(tests)
 endif()
 
 # Install standard library into share/solix/solixlib
 install(
-    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/solixlib/"
+    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libraries/solixlib/"
     DESTINATION share/solix/solixlib
     COMPONENT solixlib
     FILES_MATCHING
@@ -125,7 +125,7 @@ install(
 
 # Install official raylib companion library into share/solix/raylib
 install(
-    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libs/raylib/"
+    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/libraries/raylib/"
     DESTINATION share/solix/raylib
     COMPONENT raylib
     FILES_MATCHING
@@ -140,7 +140,7 @@ install(
 )
 
 # Install VS Code extension bundle if present
-file(GLOB SOLIX_VSIX_FILES "${CMAKE_CURRENT_SOURCE_DIR}/editors/vscode/solix-*.vsix")
+file(GLOB SOLIX_VSIX_FILES "${CMAKE_CURRENT_SOURCE_DIR}/intergrations/vscode/solix-*.vsix")
 if(SOLIX_VSIX_FILES)
     install(
         FILES ${SOLIX_VSIX_FILES}
